@@ -34,6 +34,22 @@ git clone git@github.com:MarvinSchenkel/dotfiles.git ~/git/dotfiles
 ~/git/dotfiles/install.sh
 ```
 
+## Desktop app skills
+
+Skills authored in the Claude desktop app UI live in that app's own store
+(`~/Library/Application Support/Claude/local-agent-mode-sessions/...`), keyed by
+session and skill IDs. That store can't be symlinked, so those skills are
+**copied** into `skills/` here rather than linked. After creating or editing one
+in the app, re-sync with:
+
+```bash
+~/git/dotfiles/import-desktop-skills.sh
+```
+
+It imports only skills you created (`creatorType: user`), skips Anthropic's
+bundled ones, and skips anything listed in `SKIP` at the top of the script
+(currently `fix-comments`, since the repo's `fix_comments` is preferred).
+
 ## Notes
 
 - `skills/review-pr` is a machine-local symlink into the music-assistant repo,
