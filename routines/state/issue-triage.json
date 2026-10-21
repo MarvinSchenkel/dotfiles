@@ -87,7 +87,29 @@
    "notes": [
     "10-21 12:30 run: new issue. Native failure most likely the Port not reaching MA's stream server on 8097; AirPlay volume snap-back is the #6664 family, plus an MA-side DACP write-back lead. Info ask drafted.",
     "10-21 13:45 reply: you posted the info ask from the board (10:43 UTC, https://github.com/music-assistant/support/issues/6838). Waiting for innerskyone."
-   ]
+   ],
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-21T10:43:09Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6838#issuecomment-6314013477"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "sonos",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6671,
@@ -122,11 +144,6 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "warn",
      "Still broken on 2.10.7",
      "still broken"
@@ -138,7 +155,45 @@
    "bookkeeping": [],
    "notes": [
     "10-21 12:30 run: you reopened it 10:01 UTC. Re-added: 2.10.7 resume does nothing after #6821's stop because the speaker reports PAUSED and stable only presses play; dev's server#6607 already resumes the queue. Beta test ask drafted."
-   ]
+   ],
+   "milestone": "2.10.7",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "dekiesel",
+     "at": "2026-10-17T14:18:58Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6671#issuecomment-6234992539"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6821,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-10T10:47:15Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6607,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-30T20:49:01Z",
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "Fix to be Confirmed",
+     "tidal",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6837,
@@ -162,25 +217,35 @@
    "plan": "Design call (row #6837). Reply explains it and gives the workaround: start the station from MA.",
    "branch": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the clear steps. When you start the station by voice, it plays in Google's own Cast app, not through Music Assistant. The announcement has to take the speaker over from that app, and afterwards Music Assistant has nothing it can resume: it can't restart a session another app started, which is what the 'Invalid PlayerMedia data' warning in your log means. If you start the station from Music Assistant instead (in the MA app, or with the music_assistant.play_media action in Home Assistant), it resumes after the announcement. We'll look at handling this case more clearly than with that warning.",
    "action": "Decide how MA should handle an announcement on top of a foreign Cast app (design row #6837), then post the reply with the start-it-from-MA workaround.",
    "bookkeeping": [],
    "notes": [
     "10-21 11:32 run: new issue. Restore after an announcement can't resume a session Google's own Cast app started; falls back to play_media on foreign media and logs 'Invalid PlayerMedia data'. Same on stable. Design row added, reply drafted."
    ],
-   "ask": "design"
+   "ask": "design",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "andreaskoelsch",
+     "at": "2026-10-21T09:14:47Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6837"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "tunein",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6836,
@@ -218,7 +283,33 @@
     "10-21 11:30 edit: output protocol advice changed to \"leave it on Auto\". For a LinkPlay shell Auto resolves to the linked DLNA player (linkplay_player.py:128-130, protocol_linking.py:2078), with AirPlay only as fallback.",
     "10-21 12:40 reply: you posted the reply from the board with your edits (09:33 UTC, https://github.com/music-assistant/support/issues/6836#issuecomment-6312751592). Waiting for davidfi01."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-21T09:33:39Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6836#issuecomment-6312751592"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "dlna",
+     "airplay",
+     "triage",
+     "hass",
+     "sendspin",
+     "waiting-for-user",
+     "WiiM",
+     "SiriusXM"
+    ]
+   }
   },
   {
    "n": 6833,
@@ -266,7 +357,37 @@
     "10-21 09:11 run: you merged server#7131 at 06:41 UTC (backport-to-stable), already on backport/2.10.8. I set Fix to be Confirmed + milestone 2.10.8. The DEV test ask was never posted, so the draft is now a confirm-on-2.10.8 reply.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "dunxd",
+     "at": "2026-10-20T19:23:52Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6833#issuecomment-6299354611"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7131,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-21T06:41:35Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6835,
@@ -304,7 +425,29 @@
     "10-21 13:05 dry run of autonomous info asks: GPT Sol revised twice (old Settings path was wrong, the separate Spotify-account question became a capture condition). Agreed text stored as the draft; the next run may post it under the new rules.",
     "10-21 13:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6835#issuecomment-6314882453), GPT: post, the diagnostics lack a debug trace of a failed skip and nobody asked for it yet; steps verified, Spotify contention handled as a capture condition."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-21T11:33:10Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6835#issuecomment-6314882453"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "hass",
+     "waiting-for-user",
+     "HEOS"
+    ]
+   }
   },
   {
    "n": 6831,
@@ -362,7 +505,39 @@
     "10-21 09:11 run: you posted the DEV Docker test ask (06:35 UTC, https://github.com/music-assistant/support/issues/6831#issuecomment-6309724742). Waiting for amodig.",
     "10-21 13:35: added the missing \"test asked\" badge (your DEV Docker ask 10-21 06:35 UTC); PR state refreshed (server#7132 open, draft)."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-21T06:35:59Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6831#issuecomment-6309724742"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7132,
+      "state": "OPEN",
+      "draft": true,
+      "merged_at": null,
+      "own": true
+     }
+    ],
+    "test_ask": {
+     "at": "2026-10-21T06:35:59Z",
+     "url": "https://github.com/music-assistant/support/issues/6831#issuecomment-6309724742"
+    },
+    "after_test_ask_reporter": false,
+    "labels": [
+     "waiting-for-user",
+     "HEOS"
+    ]
+   }
   },
   {
    "n": 6821,
@@ -400,7 +575,28 @@
     "10-20 11:38 run: jo-che (09:27 UTC) posted a per-room table: One S Gen 2/3 play 192/24; Stereo Cubes Gen 2, Connector Gen 2 (Wi-Fi) and One M Gen 1 (fw 2.17.4) top out at 96/24. Retested on pr-7112. New: in a group led by a One S at 192 kHz, the One M and Connector drop after ~2 s, because only the leader's sample rate setting counts. Ball is with Simanias, no action for you.",
     "10-20 14:38 run: Simanias (11:49 UTC) will add a per-device max sample rate plus a PR so a group follows its lowest member's rate (not today, he's abroad). He has a Connector Gen 2 without problems and suggests jo-che moves the Raumfeld host to a wired device. No action for you."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "Simanias",
+     "at": "2026-10-20T11:49:04Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6821#issuecomment-6290164319"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "hass",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6822,
@@ -412,7 +608,7 @@
    "gh": {
     "login": "OzGav",
     "team": true,
-    "at": "2026-10-21T12:31:00Z",
+    "at": "2026-10-21T12:31:50Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -423,13 +619,7 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, those steps match what we think happens, and the fact that turning off Sendspin for web players makes it go away points the same way. When a web player connects over Sendspin, MA briefly reports it before its settings have loaded, and the Home Assistant integration reads the missing 'expose' value as on. We're working on a fix for that, so you can keep Sendspin on. The unavailable leftovers and the _2, _3 entity ids are a separate request, we've noted it.",
    "bookkeeping": [],
    "notes": [
@@ -442,7 +632,28 @@
     "10-21 14:30 run: OzGav (12:31 UTC) suggested trying Chrome instead of Safari. The draft still holds (maisun already showed turning off Sendspin for web players stops it, which fits the pre-registration race rather than a Safari quirk), so it stays for you."
    ],
    "action": "maisun gave deterministic steps and found that turning off Sendspin for web players stops it, which fits the pre-registration race. Post the updated reply (it no longer asks for a debug log) and decide whether to start a fix session.",
-   "ask": "reply-answer"
+   "ask": "reply-answer",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "OzGav",
+     "at": "2026-10-21T12:31:50Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6822#issuecomment-6315964121"
+    },
+    "reporter_new": false,
+    "team_new": true,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "hass",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6819,
@@ -454,9 +665,9 @@
    "gh": {
     "login": "MarvinSchenkel",
     "team": true,
-    "at": "2026-10-21T12:36:00Z",
-    "pr_open": false,
-    "pr_draft": false
+    "at": "2026-10-21T12:36:16Z",
+    "pr_open": true,
+    "pr_draft": true
    },
    "summary": "2.10.7 and the pr-7100 DEV add-on, HAOS. Players from the AirPlay2 Multiroom Audio add-on (shairport-sync) run on the same host as MA. On Automatic, playback errors and nothing plays. AirPlay 2 compatibility mode works. The reporter asks MA to pick compatibility mode itself. OzGav called it a feature request, the bot quoted the docs.",
    "fix": "server#7135 (draft): in Automatic streaming mode, a ShairportSync receiver advertised from the MA host uses AirPlay 2 compatibility mode, reusing the host-address check from _is_own_airplay_receiver. A streaming mode set by hand still wins.",
@@ -489,12 +700,49 @@
     "10-19 17:38 run: iVolt1 (15:16 UTC) disagrees with the feature request label: Automatic fails while MA already has the info that the AirPlay 2 instance shares its IP, and the manual fix isn't obvious for add-on/Docker users. Reply rewritten to meet that halfway; still your call on option A.",
     "10-21 12:25: you chose option A and asked for a fix. Fix session launched (fix/airplay-same-host-shairport off origin/dev). Design row removed.",
     "10-21 13:30 run: the fix session opened draft server#7135 (11:15 UTC). Card moved to Reproduced + fixed; reply now links the PR.",
-    "10-21 14:30 run: you posted the pr-7135 DEV test ask (12:36 UTC), so the 'picking it up' draft is dropped. Waiting for iVolt1."
+    "10-21 14:30 run: you posted the pr-7135 DEV test ask (12:36 UTC), so the 'picking it up' draft is dropped. Waiting for iVolt1.",
+    "10-21 14:55 v2 migration: the fix session reported back, marked done."
    ],
    "action": "",
    "fix_thread": {
     "id": "mcp:1a31e149-73ab-4c4b-9bbd-6a38988b54b1",
-    "title": "Fix: Automatic streaming mode for same-host shairport players (#6819)"
+    "title": "Fix: Automatic streaming mode for same-host shairport players (#6819)",
+    "kind": "fix",
+    "done": true
+   },
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-21T12:36:16Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6819#issuecomment-6316054009"
+    },
+    "reporter_new": false,
+    "team_new": true,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7135,
+      "state": "OPEN",
+      "draft": true,
+      "merged_at": null,
+      "own": true
+     }
+    ],
+    "test_ask": {
+     "at": "2026-10-21T12:36:16Z",
+     "url": "https://github.com/music-assistant/support/issues/6819#issuecomment-6316054009"
+    },
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "hass",
+     "waiting-for-user"
+    ]
    }
   },
   {
@@ -532,7 +780,28 @@
     "10-20 14:00 (on request): reply now points to the per-device Browser media controls setting (frontend#2626, in 2.10.7 and 2.11.0b5). The 'Any actively selected player' mode sends media keys to the selected player, which fits the syncgroup play/pause pair. Dropped the private-window question, the setting test replaces it.",
     "10-20 14:38 run: you posted the Browser media controls reply (11:47 UTC). Waiting for CaseyRo."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T11:46:59Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6817#issuecomment-6290129828"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "sendspin",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6762,
@@ -568,7 +837,28 @@
     "10-16 14:38 run: new issue. Not reproduced, asks whether the slider follows receiver-side changes and which player (HA Onkyo vs DLNA) it is.",
     "10-20 16:38 run: you posted the receiver-volume + which-player reply (14:37 UTC). Waiting for pug77."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T14:36:49Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6762#issuecomment-6293411177"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "dlna",
+     "triage",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6695,
@@ -580,7 +870,7 @@
    "gh": {
     "login": "Anto79-ops",
     "team": false,
-    "at": "2026-10-10T18:07:00Z",
+    "at": "2026-10-10T18:07:20Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -591,18 +881,7 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, the timings helped. Your analysis matches what the code does: for a Universal Group of Cast speakers the announcement timer starts when the group reports playing. The group reports that right away, before the speakers have buffered and started the audio. So the music comes back about two seconds after the clip should have ended, measured from the wrong starting point, and that cuts off the last word. Could you enable debug logging for Music Assistant, run one group announcement, and attach the log? That lets us check how long your Nest devices take to really start, so we can time the resume from the speakers instead of from the group.",
    "bookkeeping": [],
    "notes": [
@@ -610,7 +889,29 @@
     "10-14 11:40 run: only a bot reminder (03:31 UTC), nothing new."
    ],
    "action": "Pick the fix shape: (A, my lean) for a group player, wait for PLAYING and IDLE on the members instead of the group's optimistic state; (B) UGP skips optimistic PLAYING for announcements; (C) fixed tail padding. Post the reply asking for a debug log.",
-   "ask": "input"
+   "ask": "input",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "Anto79-ops",
+     "at": "2026-10-10T18:07:20Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6695"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "waiting-for-user",
+     "triage/reminded-2",
+     "triage/reminded-1"
+    ]
+   }
   },
   {
    "n": 6709,
@@ -623,8 +924,8 @@
     "login": "bdeprez",
     "team": false,
     "at": "2026-10-13T20:17:14Z",
-    "pr_open": false,
-    "pr_draft": false
+    "pr_open": true,
+    "pr_draft": true
    },
    "summary": "Playing an album to an Apple TV 4K (AirPlay 2 native, PTP, flow mode) shows the cover on track 1. On the next track or after a skip the generic music note appears. A new album shows its cover again, but only for its first track.",
    "fix": "server#6912 (draft): track the queue item of the last delivered metadata, and a new item clears the artwork checksum so a cover shared with the last track is sent again.",
@@ -640,19 +941,14 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ],
-    [
      "muted",
      "Assigned to you",
      "assigned"
+    ],
+    [
+     "info",
+     "Test asked 10-12",
+     "test asked"
     ]
    ],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks a lot for the log, it shows exactly what's going on. Music Assistant now hands the cover over on every track, and the AirPlay helper sends it to the Apple TV each time. But for tracks from the same album the helper reuses the same cover ID with every new track, and your Apple TV seems to accept that once and then drop the art. We'll change the helper so a new track always gets a new cover ID, and I'll ping you here when there's a build to try.",
@@ -666,7 +962,40 @@
     "10-14 11:40 run: bdeprez's Verbose log (pr-6912 DEV build, warm splices, no restart): cliairplay loads the 80702-byte cover on every item (l.230/589/922/1050) and posts it in every updateMRNowPlayingInfo (~81.7 KB body), but logs 'artwork unchanged; keeping identifier 875d5a1a8b735785' on every Next. The wire looks the same on the Next that keeps the cover and the one that loses it, so the reused ArtworkIdentifier on a new item is the likely trigger (~75%). The 'artworkData skipped' half of the hypothesis is wrong. v0.5.7/v0.5.8 don't touch ap2_mrp artwork. Moved to Reproduced, cannot fix (helper side)."
    ],
    "action": "Decide on the airplay-cli change (new ArtworkIdentifier per track, reverses part of #58, ask Marcel) and whether I build it. Post the reply.",
-   "ask": "input"
+   "ask": "input",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "bdeprez",
+     "at": "2026-10-13T20:17:14Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6709#issuecomment-6154351857"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6912,
+      "state": "OPEN",
+      "draft": true,
+      "merged_at": null,
+      "own": true
+     }
+    ],
+    "test_ask": {
+     "at": "2026-10-12T12:27:09Z",
+     "url": "https://github.com/music-assistant/support/issues/6709#issuecomment-6124246222"
+    },
+    "after_test_ask_reporter": true,
+    "labels": [
+     "airplay",
+     "triage",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6688,
@@ -678,7 +1007,7 @@
    "gh": {
     "login": "jetpacktuxedo",
     "team": false,
-    "at": "2026-10-09T18:36:00Z",
+    "at": "2026-10-09T18:36:05Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -694,25 +1023,44 @@
      "label": "server#2608 (moved reporting into Plex Connect, the cause)"
     }
    ],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the clear report. This is how it currently works: Music Assistant only reports plays to Plex for players that are exposed through the Plex Connect plugin, and each Plex Connect instance links one player. Your diagnostics show a single Plex Connect instance, which I guess is your Voice PE, so that one shows up in Plex and the others don't. As a workaround you can add a Plex Connect instance for each player you want tracked (Settings, Plugins, add Plex Connect, pick the player). We'll look at reporting plays to Plex for every player, also without Plex Connect.",
    "bookkeeping": [],
    "notes": [
     "10-12 07:40 run: new issue. By design since #2608: only the player linked to a Plex Connect instance reports. Workaround in the reply, design call on bringing reporting back for all players."
    ],
    "action": "Decide whether the Plex provider reports plays for all players again (ping anatosun, who moved it into Plex Connect). Post the reply.",
-   "ask": "design"
+   "ask": "design",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "jetpacktuxedo",
+     "at": "2026-10-09T18:36:05Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6688"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 2608,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2025-11-25T08:20:07Z",
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "plex",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6706,
@@ -751,7 +1099,28 @@
     "10-19 07:38 run: zsmisi (10-18 14:35 UTC): the 21-digit id from myaccount.google.com/brandaccounts still only shows the first profile; a song liked on profile 1 appears, profile 2's likes don't. On dev the id reaches ytmusicapi as onBehalfOfUser for every library call when it's exactly 21 digits (no trimming), else it is dropped silently. server#7075 (merged 10-17, cookie rotation) doesn't touch this. Can't reproduce without the account.",
     "10-20 17:38 run: you posted the 21-digit check + re-add ask (14:45 UTC). Waiting for zsmisi."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T14:45:17Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6706#issuecomment-6293599507"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "youtube_music",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "since": "2026-10-12 07:40",
@@ -792,7 +1161,37 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics."
+   "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
+   "milestone": "2.11.0",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "ChrisB85",
+     "at": "2026-10-10T16:01:24Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6692#issuecomment-6099429609"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6878,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-11T09:46:15Z",
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "Fix to be Confirmed",
+     "filesystem_local",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6680,
@@ -834,7 +1233,36 @@
     "10-12 07:40 run: rocklobster42195 (10-09 17:26 UTC) checked with playback started from the Sonos app itself: the speaker pushes metadataStatus 7-16 s after getPlaybackStatus already knows the new item, so the late push is Sonos firmware. Their own tool polls getPlaybackStatus every 2 s and gets 1.4-1.7 s. That's a third option next to our time-played idea. The time-played report only exists for MA's cloud queue, which is what MA uses, so it still gives ~1 s without polling. The stale-generation skip revert is unaffected by this.",
     "10-19 10:38 run: you replied 07:54 UTC: on a single Sonos here every track change was pushed within a second, so this looks like #6536 (slow subscriber on their side). Asked for a clean retest with MA as the only listener and a VPN check. Moved to Cannot reproduce, waiting on the reporter. The design call is parked until that result."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-19T07:54:30Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6680#issuecomment-6262429676"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6575,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-29T20:45:19Z",
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "sonos",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6731,
@@ -901,7 +1329,57 @@
     "10-20 13:38 run: you posted the corrected reply (11:14 UTC): RAM temp folder was the cause, home-assistant-addon#48 merged, rebuild steps for the DEV app with pr-6959. Waiting for amsound's 6 h retest.",
     "10-21 13:35: added the missing \"test asked\" badge (your DEV add-on ask 10-20 11:14 UTC)."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T11:14:26Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6731#issuecomment-6289596380"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/home-assistant-addon",
+      "n": 48,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-20T10:57:39Z",
+      "own": true
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6959,
+      "state": "OPEN",
+      "draft": false,
+      "merged_at": null,
+      "own": true
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6606,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-30T10:50:30Z",
+      "own": true
+     }
+    ],
+    "test_ask": {
+     "at": "2026-10-20T11:14:26Z",
+     "url": "https://github.com/music-assistant/support/issues/6731#issuecomment-6289596380"
+    },
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "tunein",
+     "apple_music",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6674,
@@ -945,7 +1423,35 @@
     "10-15 10:40 run: kiwipaulrob: one of their own agents cancelled Reconcile duplicate albums on 10-08 20:03 UTC and switched the schedule off, so it hasn't run for six days. Since then: 10-11 17:29 a backlog (40 pending, 20 filesystem syncs running, cache DB 1.85 GB), restart 19:20; 10-13 19:04 idle, counts and library_items answer in 0.00-0.02 s. The 10-11 episode had no album reconcile, so the slowdown also follows the other hourly tasks (MusicBrainz link, missing-metadata scan) and big filesystem syncs, which fits the single exclusive DB connection more than one query. They offer to re-enable the task and capture a freeze with debug logging. Last 'No such file' error 10-13 06:54 from the remote share.",
     "10-20 14:38 run: you posted the reply (12:16 UTC): yes to the controlled repro (album reconcile back on, debug log + diagnostics at the next freeze), and the MusicBrainz-link and missing-metadata scans join the fix scope. Fix waits for that log; design row stays."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T12:16:29Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6674#issuecomment-6290630574"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6236,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-16T15:15:29Z",
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6675,
@@ -997,7 +1503,36 @@
     "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7099 failed on a conflict, but it resolves cleanly (patch bp-7099.patch keeps stable's metadata refresh call, the test moves into a new class in test_playlists.py (test_playlist_access.py is 2.11 only), 25 tests pass, the test change needs your OK). Open the manual backport onto backport/2.10.8 (patch ready), then post the confirm reply.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "kiwipaulrob",
+     "at": "2026-10-17T22:19:56Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6675#issuecomment-6242123258"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7099,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-19T07:04:00Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "Fix to be Confirmed",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6670,
@@ -1010,7 +1545,7 @@
     "login": "mnestrud",
     "team": false,
     "at": "2026-10-08T14:40:21Z",
-    "pr_open": true,
+    "pr_open": false,
     "pr_draft": false
    },
    "summary": "dev 7e3670848, three Sonos (Era 300 + 2 Amps). When the coordinator A leaves the group outside MA (Sonos app, Arc TV input), Sonos makes B the coordinator and B and C keep playing A's queue. MA then shows B playing its own stale queue and A's queue idle, adds to A don't reach the speakers, ungrouping B in MA fails (QueueEmpty / no audio received) and a DSP edit on B restarts B's own queue (the #6662 symptom through another trigger). Reproduced 3 of 3 by the reporter on real speakers. Same reporter as #6662.",
@@ -1044,7 +1579,45 @@
     "10-15 10:40 run: Copilot's review of server#6779 (head 4db498cb63) has 2 [CRITICAL] and 2 [PROBLEM] findings in sonos/player.py: the coordinator-move handler can clear state after a same-queue reload (no generation check, :1333), can stop a source that took over the destination during the wait (:1343), its task isn't cancelled in on_unload (:1297), and a terminal clip event can't release the announcement wait while the duration lookup is pending (:862). The critical gate put it back in draft 08:28 UTC. It's mnestrud's to address.",
     "10-21 11:50: off your list. server#6779 is back in draft until mnestrud fixes the 2 Copilot findings; the review question stays drafted for when it is ready."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "mnestrud",
+     "at": "2026-10-08T14:40:21Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6670"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6779,
+      "state": "OPEN",
+      "draft": true,
+      "merged_at": null,
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6760,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-08T11:26:57Z",
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "sonos",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6645,
@@ -1118,16 +1691,6 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ],
-    [
      "ok",
      "FtbC + 2.10.7 booked",
      "booked"
@@ -1154,7 +1717,214 @@
     "10-19 07:38 run: ryanphillipthomas (10-17 16:58 UTC, 2.10.7, HA app, AirPlay sync group): 8-27 s Play calls, 11 429s in one interval, and asks how to enter a personal developer token while the bundled one is accepted but throttled, plus get a matching user token. Your 10-18 05:28 update doesn't answer that. On dev there is no supported way: setup_flow.py only asks for a developer token when the bundled one is rejected, and a music user token is tied to the developer token it was issued under, so the manual user token field doesn't help. Drafted a short answer; the token field stays your decision."
    ],
    "action": "Post the token answer. Still open: whether to add a personal developer token field (now asked by 4 reporters).",
-   "ask": "reply-answer"
+   "ask": "reply-answer",
+   "milestone": "2.11.0",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-18T05:28:39Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6645#issuecomment-6246103491"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6845,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-10T17:16:20Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6846,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-10T18:25:18Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6843,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-10T19:49:20Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6844,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-12T07:38:04Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/frontend",
+      "n": 2953,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-12T08:47:02Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6990,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-14T08:34:45Z",
+      "own": true
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6992,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-14T09:07:44Z",
+      "own": true
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6986,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-14T09:10:10Z",
+      "own": true
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6987,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-14T09:14:51Z",
+      "own": true
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6995,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-14T09:24:52Z",
+      "own": true
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6994,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-14T09:33:01Z",
+      "own": true
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6847,
+      "state": "CLOSED",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     },
+     {
+      "repo": "Bazooper-blip/MAserver",
+      "n": 1,
+      "state": "CLOSED",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     },
+     {
+      "repo": "Bazooper-blip/MAserver",
+      "n": 2,
+      "state": "CLOSED",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     },
+     {
+      "repo": "Bazooper-blip/MAserver",
+      "n": 3,
+      "state": "CLOSED",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     },
+     {
+      "repo": "Bazooper-blip/MAserver",
+      "n": 4,
+      "state": "CLOSED",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     },
+     {
+      "repo": "Bazooper-blip/MAserver",
+      "n": 5,
+      "state": "CLOSED",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6862,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-10T20:17:26Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6863,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-10T20:07:36Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6871,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-10T23:48:10Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6998,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-14T13:27:45Z",
+      "own": true
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6999,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-14T13:22:03Z",
+      "own": true
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 7002,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-14T13:37:42Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "apple_music",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6500,
@@ -1204,10 +1974,40 @@
     "login": "MarvinSchenkel",
     "team": true,
     "at": "2026-10-20T11:17:32Z",
-    "pr_open": true,
-    "pr_draft": true
+    "pr_open": false,
+    "pr_draft": false
    },
-   "action": ""
+   "action": "",
+   "milestone": "2.11.0",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T11:17:32Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6500#issuecomment-6289646653"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6506,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-20T11:15:27Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "bug",
+     "Fix to be Confirmed",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6602,
@@ -1233,11 +2033,6 @@
     }
    ],
    "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
     [
      "muted",
      "Handed to Marcel",
@@ -1275,7 +2070,53 @@
     "pr_draft": false
    },
    "action": "CDrummond says it's still broken on 2.11.0b4 and found a single-user case (artists first opened from search lose their image). Nudge Marcel on the artist overwrite, or have me take it over.",
-   "ask": "nudge"
+   "ask": "nudge",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "CDrummond",
+     "at": "2026-10-10T06:44:22Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6602#issuecomment-6094771359"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6708,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-05T23:05:34Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6794,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-09T09:46:04Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/support",
+      "n": 6650,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-06T16:16:03Z",
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Frontend",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6694,
@@ -1324,7 +2165,37 @@
     "10-14 16:40 run: davidfi01 will confirm once server#7001 is in a beta. Still waiting on your review of #7001.",
     "10-14 17:40 run: You merged server#7001 at 15:20 UTC with backport-to-stable. The backport run failed (modify/delete on siriusxm/constants.py, conflicts in manifest.json, strings.json, en.json, requirements_all.txt): stable still runs the old sxm 0.2.8 provider, aiosxm only exists on 2.11. So I set FtbC + milestone 2.11.0 instead of 2.10.7. No reply needed, davidfi01 already said he'll test the beta."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.11.0",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "davidfi01",
+     "at": "2026-10-14T14:12:59Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6694#issuecomment-6170395541"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7001,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-14T15:20:16Z",
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "Fix to be Confirmed",
+     "needs-attention",
+     "SiriusXM"
+    ]
+   }
   },
   {
    "n": 6685,
@@ -1361,7 +2232,33 @@
     "10-12 15:40 run: you posted the reply from the board (13:38 UTC). Waiting for the reporter.",
     "10-21 13:30 run: last comment sweep: the draft was already posted by you (MarvinSchenkel 2026-10-12 13:38), so it is dropped."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-12T13:38:14Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6685#issuecomment-6125416832"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "hass",
+     "sendspin",
+     "waiting-for-user",
+     "WiiM",
+     "triage/reminded-2",
+     "triage/reminded-1"
+    ]
+   }
   },
   {
    "n": 6672,
@@ -1369,7 +2266,7 @@
    "col": "pr",
    "area": "airplay-cli / src/ap2_client.c ap2cl_pause + ap2cl_play (buffered AirPlay 2)",
    "since": "2026-10-09 07:40",
-   "last": "copilot 2026-10-15 08:38",
+   "last": "PipTheBirb 2026-10-13 13:28",
    "gh": {
     "login": "PipTheBirb",
     "team": false,
@@ -1391,11 +2288,6 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "muted",
      "Assigned to you",
      "assigned"
@@ -1414,7 +2306,38 @@
     "10-21 13:30 run: you merged airplay-cli#91 (11:08/11:15 UTC). Next: one airplay-cli release covers #6672 and #6812, then the pin bump."
    ],
    "action": "airplay-cli#91 (#6672) and airplay-cli#95 (#6812) are both merged. Cut one airplay-cli release (latest is v0.5.8 from 10-14) so the bot bumps the server pin; the reporters get a DEV test ask after that.",
-   "ask": "merge"
+   "ask": "merge",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "PipTheBirb",
+     "at": "2026-10-13T13:28:36Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6672#issuecomment-6146653465"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/airplay-cli",
+      "n": 91,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-21T11:08:52Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "hass",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6664,
@@ -1457,12 +2380,55 @@
     "10-14 11:40 run: mawi13's verbose test analysed. MA sent no volume to Küche; the 65 s grid is the Sonos holding native volume during AirPlay (his own native test shows it). Possible mitigation: send Sonos volume over the AirPlay session while it renders over AirPlay, needs a bench check. Reply asks for dashboard wiring + unfiltered log.",
     "10-21 12:05: discussion session started at your request: is the HA Sonos integration the cause, and did mawi13 set HA entities as volume control (diagnostics player configs). Draft reply on hold until it reports.",
     "10-21 12:40 edit + reply: you replaced the draft with your own text (solo AirPlay test, full log, dashboard/automation question) and it went out (10:06 UTC, https://github.com/music-assistant/support/issues/6664#issuecomment-6313370521). Waiting for mawi13.",
-    "10-21 12:30 run: lead from #6838 triage: the AirPlay DACP device-volume path (_adopt_device_volume, airplay/player.py:828-839, 1031-1044) writes VOLUME= back without an owns_volume check, like the Sendspin bridge path. Worth checking in the discussion session."
+    "10-21 12:30 run: lead from #6838 triage: the AirPlay DACP device-volume path (_adopt_device_volume, airplay/player.py:828-839, 1031-1044) writes VOLUME= back without an owns_volume check, like the Sendspin bridge path. Worth checking in the discussion session.",
+    "10-21 14:55 v2 migration: the discuss session reported back, marked done."
    ],
    "action": "",
    "fix_thread": {
     "id": "mcp:2f731df0-9c10-4818-a82d-3f2d694a394e",
-    "title": "Discuss #6664: Sonos volume via AirPlay bridge"
+    "title": "Discuss #6664: Sonos volume via AirPlay bridge",
+    "kind": "discuss",
+    "done": true
+   },
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-21T10:06:51Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6664#issuecomment-6313370521"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6675,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-04T21:55:11Z",
+      "own": false
+     },
+     {
+      "repo": "HuskerMinion/techo5",
+      "n": 97,
+      "state": "CLOSED",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "sonos",
+     "hass",
+     "sendspin",
+     "waiting-for-user"
+    ]
    }
   },
   {
@@ -1503,7 +2469,28 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-21T09:29:17Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6512#issuecomment-6312671788"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "Chromecast",
+     "spotify",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6490,
@@ -1543,6 +2530,29 @@
     "at": "2026-10-12T13:20:45Z",
     "pr_open": false,
     "pr_draft": false
+   },
+   "milestone": "2.11.0",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "OzGav",
+     "at": "2026-10-12T13:20:45Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6490#issuecomment-6125122658"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "Fix to be Confirmed",
+     "Frontend",
+     "waiting-for-user",
+     "triage/reminded-2",
+     "triage/reminded-1"
+    ]
    }
   },
   {
@@ -1577,7 +2587,28 @@
     "pr_draft": false
    },
    "action": "Ask the reporter to retest the Sendspin to AirPlay bridge start on current dev. No small safe fix exists for the anchor floor.",
-   "ask": "reply-test"
+   "ask": "reply-test",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "johnp3004",
+     "at": "2026-09-13T18:24:58Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6419#issuecomment-5655193390"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "sendspin",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6402,
@@ -1616,6 +2647,27 @@
     "at": "2026-10-12T13:19:58Z",
     "pr_open": false,
     "pr_draft": false
+   },
+   "milestone": "2.11.0",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "OzGav",
+     "at": "2026-10-12T13:19:58Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6402#issuecomment-6125108303"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "Fix to be Confirmed",
+     "spotify",
+     "waiting-for-user"
+    ]
    }
   },
   {
@@ -1631,18 +2683,7 @@
    "branch": "triage-6400, unchanged (/Users/marvin/git/music-assistant/server-worktrees/triage-6400)",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, that matches what we found. The repeats come from old entries in the speaker's own HEOS queue, which Music Assistant's queue clear doesn't touch, and each of them plays the latest announcement. Clearing the queue on the speaker, for example in the HEOS app, is a good workaround until we fix the cleanup on our side.",
    "bookkeeping": [],
    "notes": [
@@ -1657,7 +2698,28 @@
     "pr_draft": false
    },
    "action": "Optional: post the short workaround note. The HEOS queue cleanup decision is still open.",
-   "ask": "reply-answer"
+   "ask": "reply-answer",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "Dragon-Creature",
+     "at": "2026-10-18T02:31:00Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6400#issuecomment-6244747092"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "needs-attention",
+     "HEOS"
+    ]
+   }
   },
   {
    "n": 6395,
@@ -1699,7 +2761,30 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-07T06:33:43Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6395#issuecomment-6032401641"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "waiting-for-user",
+     "triage/reminded-2",
+     "triage/reminded-1"
+    ]
+   }
   },
   {
    "n": 6329,
@@ -1718,13 +2803,13 @@
    "badges": [
     [
      "warn",
-     "Hand findings to Marcel",
-     "decide"
-    ],
-    [
-     "warn",
      "Reply drafted",
      "reply"
+    ],
+    [
+     "info",
+     "Test asked 09-11",
+     "test asked"
     ]
    ],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, the repeat-one log is really useful. When it happened with repeat all at the end of an album, roughly how many tracks did that album have? And if you catch it again, a debug log of just the last track wrapping round to the first would help.",
@@ -1741,7 +2826,95 @@
     "pr_draft": false
    },
    "action": "Decide whether to pass the repeat-one early enqueue to Marcel or fix it ourselves. The draft question only matters if he wants the repeat-all case confirmed.",
-   "ask": "input"
+   "ask": "input",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "Geweldich",
+     "at": "2026-09-30T11:09:20Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6329#issuecomment-5909960897"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6237,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-09T21:22:34Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6239,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-09T21:24:40Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6243,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-09T20:23:50Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6246,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-09T20:53:10Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6247,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-09T20:53:15Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6278,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-11T18:01:30Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6291,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-11T23:57:57Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 6302,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-12T22:20:10Z",
+      "own": false
+     }
+    ],
+    "test_ask": {
+     "at": "2026-09-11T10:21:43Z",
+     "url": "https://github.com/music-assistant/support/issues/6329#issuecomment-5633019706"
+    },
+    "after_test_ask_reporter": true,
+    "labels": [
+     "sonos",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6303,
@@ -1779,7 +2952,27 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T14:49:03Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6303#issuecomment-6293684608"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "invalid",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6299,
@@ -1823,7 +3016,40 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": null
+   "action": null,
+   "milestone": "2.11.0",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "OzGav",
+     "at": "2026-10-12T13:19:23Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6299#issuecomment-6125098347"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/frontend",
+      "n": 2845,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-28T15:33:37Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "Frontend",
+     "waiting-for-user",
+     "triage/reminded-2",
+     "triage/reminded-1"
+    ]
+   }
   },
   {
    "n": 4971,
@@ -1832,7 +3058,7 @@
    "col": "info",
    "area": "server / playlists controller + models ProviderFeature (feature request)",
    "since": "2026-10-01 14:40",
-   "last": "dentedbread 2026-10-02 18:09",
+   "last": "MarvinSchenkel 2026-10-06 13:51",
    "summary": "A feature-request discussion, not a bug. You adopted it on 09-15 for the playlist-reordering item on the dev board. pcc0x (author of the merged server#6212 and #6200) offers to build the server side: a move command on the playlist controller, a new provider feature so only backends that can store an order advertise it, builtin and OpenSubsonic first, models PR first, then a draft. They asked twice (09-19, 09-29) whether that shape is right and got no answer. OzGav tagged you at 11:36 UTC to answer it.",
    "fix": "",
    "plan": "",
@@ -1855,13 +3081,30 @@
     "10-06 16:40 run: you answered pcc0x at 13:51 UTC with backlog#221 and tasks #222/#223/#225. The decision is made, waiting on pcc0x to pick them up."
    ],
    "gh": {
-    "login": "dentedbread",
-    "team": false,
-    "at": "2026-10-02T18:09:53Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-06T13:51:35Z",
     "pr_open": false,
     "pr_draft": false
    },
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-06T13:51:35Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/discussions/4971#discussioncomment-18778091"
+    },
+    "reporter_new": true,
+    "team_new": true,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": []
+   }
   },
   {
    "n": 6189,
@@ -1869,7 +3112,7 @@
    "col": "cantfix",
    "area": "server / controllers/music/media/albums.py",
    "since": "2026-10-02 14:15",
-   "last": "marcelveldt 2026-08-26 23:48",
+   "last": "marcelveldt 2026-08-26 21:48",
    "summary": "get_library_album_tracks passes no limit, so the 500 default of get_library_items_by_query truncates huge classical box sets (the reporter has one with 3,335 tracks). Marcel deferred it to the 2.11 server-side pagination rework, since raising the limit would hit message size limits. Origin/dev still has the same code and no pagination PR is open yet. Nothing new on the thread since 08-26.",
    "fix": "",
    "checked": "origin/dev albums.py:622 get_library_album_tracks unchanged (no limit). No open pagination PR in server.",
@@ -1895,6 +3138,26 @@
     "at": "2026-08-26T21:48:58Z",
     "pr_open": false,
     "pr_draft": false
+   },
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "marcelveldt",
+     "at": "2026-08-26T21:48:58Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6189#issuecomment-5431520277"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "needs-attention",
+     "CORE"
+    ]
    }
   },
   {
@@ -1939,7 +3202,40 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": ""
+   "action": "",
+   "milestone": "2.11.0",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "OzGav",
+     "at": "2026-10-12T13:18:47Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6150#issuecomment-6125087909"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/frontend",
+      "n": 2762,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-09-15T11:03:08Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "Frontend",
+     "waiting-for-user",
+     "triage/reminded-2",
+     "triage/reminded-1"
+    ]
+   }
   },
   {
    "n": 5018,
@@ -1947,7 +3243,7 @@
    "col": "cantfix",
    "area": "airplay-cli (+ server / providers/airplay)",
    "since": "2026-10-02 14:15",
-   "last": "salanki 2026-08-29 19:15",
+   "last": "salanki 2026-08-29 17:15",
    "summary": "For jpaju's Bluesound devices the root cause is known: BluOS reports its volume only over AirPlay 2 MRP, and MA listens to DACP only (airplay-cli sends volumeUpdates=false and never dispatches MRP volume messages). The Denon (AirPlay 1) works since the 2.10 rewrite, and HomePods are ignored on purpose. Supporting BluOS means an MRP volume feature in airplay-cli, not a server bugfix. Salanki's report is a different bug: a Sonos Move on the Sendspin to AirPlay bridge gets a stale stored volume applied at bridge startup. Salanki says it still happens on 2.10. No team reply since 08-12.",
    "fix": "",
    "checked": "Root cause from the 09-01 investigation (memory). No airplay-cli or server change since that adds MRP volume handling.",
@@ -1956,11 +3252,6 @@
    "diff": "",
    "prs": [],
    "badges": [
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ],
     [
      "warn",
      "Reply drafted",
@@ -1980,7 +3271,28 @@
     "pr_draft": false
    },
    "action": "Decide whether MRP volume reporting in airplay-cli is worth building (and who owns it), then post the reply.",
-   "ask": "design"
+   "ask": "design",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "salanki",
+     "at": "2026-08-29T17:15:18Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/5018#issuecomment-5463771426"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6023,
@@ -1988,7 +3300,7 @@
    "col": "cantfix",
    "area": "server / providers/fastmcp_server (+ models config_entries.parse_value)",
    "since": "2026-10-02 14:15",
-   "last": "rwlove 2026-08-21 19:56",
+   "last": "rwlove 2026-08-21 17:56",
    "summary": "The cause is a string \"false\", not a dropped boolean. The single-key tool declares `value: Any`, so its JSON schema for value is just a description with no type. The reporter's MCP gateway or client then sends booleans as strings. ConfigEntry.parse_value in models converts BOOLEAN strings with bool(value), so \"false\" becomes True. This matches every row of the reporter's table: \"true\" gives True, \"0\" gives 0 through int(), and \"false\" gives True. A real JSON false passes through correctly, and the bulk tool works because the gateway sends real booleans inside the values object. The bug is still on dev and stable (provider 0.17.0, models 1.1.214). trudenboy's server#5175 deletes this tool and routes config through native commands such as config/players/save. A string \"false\" sent there would still hit the same bool() coercion in models. Update 10-06: server#5175 is merged and only helps clients that send real booleans; the models bool(\"false\") coercion is still the root cause on dev.",
    "fix": "",
    "checked": "Scripted repro against origin/dev fastmcp_server, using the existing test fixtures and a BOOLEAN entry flow_mode with default=True. Calling config_set_player_value with value=False gives diff after=False and saves {'flow_mode': False}, which is correct. With value=\"false\" the dry-run diff shows before=True, after=True, which is the reported symptom. The tool schema for `value` is {'description': 'New value.'} with no type. parse_value is identical in models 1.1.188 (b15) and 1.1.214 (dev). server#5175 head (v2.1.18) no longer has config_set_player_value.",
@@ -2002,11 +3314,6 @@
     }
    ],
    "badges": [
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ],
     [
      "warn",
      "Reply drafted",
@@ -2027,7 +3334,35 @@
     "pr_draft": false
    },
    "action": "Say yes/no to the models parse_value fix (BOOLEAN strings), now that server#5175 turned out to fix only half of it. Then post the reply.",
-   "ask": "input"
+   "ask": "input",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "rwlove",
+     "at": "2026-08-21T17:56:26Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6023#issuecomment-5373402655"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 5175,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-05T08:03:57Z",
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6628,
@@ -2069,7 +3404,44 @@
    "title": "QQ Music full-stream URL requests fail with 104003; CgiGetEVkey succeeds",
    "col": "cantfix",
    "area": "server / providers/qqmusic",
-   "summary": "QQ Music lists music but full-stream URL resolution fails with 104003 and the preview fallback gets a 403, so tracks are skipped. The reporter has a local endpoint correction that works. xiasi0, the provider maintainer, will fix it after their vacation."
+   "summary": "QQ Music lists music but full-stream URL resolution fails with 104003 and the preview fallback gets a 403, so tracks are skipped. The reporter has a local endpoint correction that works. xiasi0, the provider maintainer, will fix it after their vacation.",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "xiasi0",
+     "at": "2026-10-06T18:49:41Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6628#issuecomment-6023181168"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6737,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-09T11:04:30Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/support",
+      "n": 6650,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-06T16:16:03Z",
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6728,
@@ -2108,7 +3480,30 @@
     "10-15 10:40 run: you posted the corrected HEOS reply (08:2x UTC). Waiting on the reporter.",
     "10-15 11:40 run: Tommatheussen (HEOS maintainer) added a check: after grouping in MA, see whether the HEOS app also shows the group. Not grouped there means MA grouping logic, grouped means HEOS-internal. Still waiting on the reporter."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "Tommatheussen",
+     "at": "2026-10-15T08:41:56Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6728#issuecomment-6188090004"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "hass",
+     "waiting-for-user",
+     "HEOS",
+     "triage/reminded-1"
+    ]
+   }
   },
   {
    "n": 6737,
@@ -2138,11 +3533,6 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "info",
      "Waiting for user",
      "waiting"
@@ -2157,7 +3547,37 @@
     "10-20 14:xx (on request): posted the reply saying we know the cause and are fixing it, diagnostics optional (issuecomment-6290984396). Diagnostics aren't needed for the fix; they'd only name the stale native."
    ],
    "action": "Start the fix: keep the UP config until the native takes the protocol, revive it on the 45 s fallback, prune stale linked ids. Needs your OK to change test_restore_native_claims_carries_config_and_deletes_wrapper.",
-   "ask": "input"
+   "ask": "input",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T12:36:19Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6737#issuecomment-6290984396"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6610,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-01T10:32:27Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6739,
@@ -2171,7 +3591,7 @@
     "team": false,
     "at": "2026-10-16T12:45:57Z",
     "pr_open": true,
-    "pr_draft": true
+    "pr_draft": false
    },
    "summary": "2.10.6, Firefox, Chromium and the Android app: scroll down an artist with many albums, open an album, go back, and the artist page starts at the top again.",
    "fix": "Local branch fix/artist-view-scroll-restore @ f73739ce (worktree frontend-worktrees/triage-6739, not pushed): new useHistoryScrollRestore composable saves the .content-section scrollTop per route on leave/update and restores it on history back once the async rows have made the page tall enough (ResizeObserver, cancelled by user input, 5 s cap). ArtistDetails skips its scroll-to-top while restoring. 2 unit tests, vue-tsc and lint clean.",
@@ -2186,11 +3606,6 @@
     }
    ],
    "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
     [
      "muted",
      "Assigned to you",
@@ -2208,7 +3623,37 @@
     "10-16 15:38 run: dentedbread (not the reporter) asks if the fix is global, e.g. back from a playlist to the Playlists view. frontend#3004 only covers ArtistDetails. The Playlists listing goes through ItemsListing restoreState, which should already restore, so that would be a separate bug (not checked live). Second draft reply below answers him. frontend#3004 unchanged since 10-15 13:53."
    ],
    "action": "Answer Copilot's 2 new comments on frontend#3004 (lean: decline both as rare edge cases, or fix the same-URL history jump by watching the route object). Then drag the screenshots (frontend-worktrees/triage-6739/.verify-env/screens) into the body, mark it ready and post the DEV add-on ask (pr-3004). The draft reply now also answers dentedbread's \"is it global?\" question, post it once the PR is ready.",
-   "ask": "merge"
+   "ask": "merge",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "dentedbread",
+     "at": "2026-10-16T12:45:57Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6739#issuecomment-6215798896"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/frontend",
+      "n": 3004,
+      "state": "OPEN",
+      "draft": false,
+      "merged_at": null,
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Frontend",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6738,
@@ -2231,25 +3676,38 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the detailed report and for clearing up the 403s, that saved us a lot of time.\n\nWe think we found the cause on our side. For HLS radio like SiriusXM, Music Assistant reads the stream at exactly real time and keeps only about half a second of audio in reserve. SiriusXM delivers audio in roughly 10 second chunks, and each new chunk is only fetched when the previous one runs out. If that fetch takes longer than the reserve, you hear a short gap. That explains why the gaps are under a second, why they don't happen at every chunk, and why the logs show nothing. We reproduced the same pattern with a simulated slow stream, and a bigger read-ahead made it go away.\n\nOne side note: the AirPlay buffer_depth setting only applies to AirPlay 2, so on your RAOP zones those 2000/3000 ms tests didn't actually change anything. That's on us, not you.\n\nWe're working on a fix and will ping you here when there's a build to test.",
    "bookkeeping": [],
    "notes": [
     "10-14 11:40 run: new issue. Synthetic repro of the mechanism (HLS -re keeps ~0.5 s lead, on-demand segment fetch at each boundary), not on the real SXM CDN. Fix shape is a design call (lean: -readrate_initial_burst for HLS radio)."
    ],
    "action": "Pick the fix (lean: -readrate_initial_burst ~10 s for HLS radio, generic + backport) and I build it. Post the reply.",
-   "ask": "input"
+   "ask": "input",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "Ccohen68",
+     "at": "2026-10-14T00:46:18Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6738#issuecomment-6158329121"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "spotify",
+     "hass",
+     "needs-attention",
+     "SiriusXM"
+    ]
+   }
   },
   {
    "n": 6743,
@@ -2285,7 +3743,30 @@
     "10-14 13:40 run: new issue. The bar resets the TCP session itself in both AirPlay modes; no JBL to reproduce on. Reply asks about other AirPlay devices, iPhone AirPlay, host firewall (timing/PTP back-channel) and a Verbose log.",
     "10-15 10:40 run: you posted the JBL questions reply (08:2x UTC). Waiting on the reporter."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-15T08:23:30Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6743#issuecomment-6187772502"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "Chromecast",
+     "waiting-for-user",
+     "triage/reminded-1"
+    ]
+   }
   },
   {
    "n": 6748,
@@ -2341,7 +3822,62 @@
     "10-21 10:47 run: your docs PR music-assistant.io#1147 (Cast default HTTP profile 2) is open, linked here. Confirm reply still pending.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "olifoss",
+     "at": "2026-10-17T21:13:56Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6748#issuecomment-6241202319"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7120,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-20T15:38:53Z",
+      "own": true
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 7101,
+      "state": "OPEN",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 3088,
+      "state": "CLOSED",
+      "draft": true,
+      "merged_at": null,
+      "own": false
+     },
+     {
+      "repo": "music-assistant/music-assistant.io",
+      "n": 1147,
+      "state": "OPEN",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "Chromecast",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6749,
@@ -2354,8 +3890,8 @@
     "login": "MarvinSchenkel",
     "team": true,
     "at": "2026-10-19T11:12:58Z",
-    "pr_open": true,
-    "pr_draft": true
+    "pr_open": false,
+    "pr_draft": false
    },
    "summary": "2.10.6, audiobook on a WiiM. When MA stops a player that has been paused for 30 s, the player's next position report overwrites the queue's elapsed time. A stopped WiiM reports the full stream length, so the queue jumps to the end of the book (57276 s became 60879 s). A player reporting 0 sends it back to the session start. resume_pos and Audiobookshelf progress stay right, only the queue position MA shows and stores is wrong. The reporter included an accurate analysis and a simulated-player test.",
    "fix": "server#7022 (merged 10-19 11:11 UTC, backport-to-stable, on backport PR server#7101): on_player_elapsed_time_corrected only re-bases while the player is PLAYING or PAUSED. The WiiM seek-while-LOADING path is a separate bug, local branch fix/wiim-position-while-loading @ 6334ef6dc4.",
@@ -2403,7 +3939,51 @@
     "10-19 follow-up: you merged server#7022 (11:11 UTC, backport-to-stable, cherry-picked onto server#7101). I set Fix to be confirmed + milestone 2.10.8 and posted a comment asking riskywhat to open a new issue for the seek/LOADING bug. The WiiM branch waits for that issue.",
     "10-20 17:38 run: the 2.10.8 backport PR server#7101 is out of draft now and also carries #7074, #7082 and #7120."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-19T11:12:58Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6749#issuecomment-6265876198"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7022,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-19T11:11:37Z",
+      "own": true
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 7101,
+      "state": "OPEN",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     }
+    ],
+    "test_ask": {
+     "at": "2026-10-15T09:49:35Z",
+     "url": "https://github.com/music-assistant/support/issues/6749#issuecomment-6189273703"
+    },
+    "after_test_ask_reporter": true,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "sonos",
+     "audiobookshelf",
+     "waiting-for-user",
+     "WiiM"
+    ]
+   }
   },
   {
    "n": 6752,
@@ -2460,7 +4040,41 @@
     "10-21 09:11 run: you merged server#7117 at 06:26 UTC (backport-to-stable), already on backport/2.10.8. I set Fix to be Confirmed + milestone 2.10.8 and updated the reply to name the release.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "moodwrench",
+     "at": "2026-10-20T17:43:15Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6752#issuecomment-6297283085"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7117,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-21T06:26:20Z",
+      "own": true
+     }
+    ],
+    "test_ask": {
+     "at": "2026-10-20T12:01:58Z",
+     "url": "https://github.com/music-assistant/support/issues/6752#issuecomment-6290377228"
+    },
+    "after_test_ask_reporter": true,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "spotify",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6751,
@@ -2511,7 +4125,41 @@
     "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7035 failed and the fix needs 2.11 code (needs get_group_and_player_lock(strict=True) from #6505/#6510 and on_player_dsp_change(after_group_change=) from #6760, and the test file is missing on stable). Drop the backport label and move the issue to 2.11.0 (and change 2.10.8 in the reply), or backport by hand. Then post the confirm reply.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "mnestrud",
+     "at": "2026-10-15T14:12:24Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6751#issuecomment-6194154537"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7035,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-19T07:17:33Z",
+      "own": true
+     }
+    ],
+    "test_ask": {
+     "at": "2026-10-15T13:45:09Z",
+     "url": "https://github.com/music-assistant/support/issues/6751#issuecomment-6193575636"
+    },
+    "after_test_ask_reporter": true,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "sonos",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6756,
@@ -2534,18 +4182,7 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks a lot for these measurements and logs, they pin it down nicely. The ~2 s you see even on radio is mostly our fixed 1 s wait after pressing next, plus loading the new stream and Sonos fetching it. The extra time on Spotify goes into stopping the old Soloist run and starting and logging in a new one before we hand the track to the speaker. The requests on the old session id are Sonos moving on in its own cached queue after we close the old stream; we reject those and they don't add delay. We'll look at cleaning up the old track right away instead of after the wait, shortening that wait, and measuring where the Soloist restart spends its time.",
    "bookkeeping": [],
    "notes": [
@@ -2554,7 +4191,31 @@
     "10-21 07:38 run: tylernolf (00:49 UTC) ran all three checks on 2.10.7: radio skip 2.5-3.2 s, Soloist 4.4-5.3 s, librespot 3.6-3.9 s, with DEBUG excerpts. Opus analysis split it: ~1.9 s floor for every source, Soloist stop + new login adds ~2.6 s over radio and ~1.2 s over librespot. Moved to Reproduced, cannot fix (design call)."
    ],
    "action": "tylernolf's timings confirm the split: ~1.9 s floor on every source (1 s debounce + load + Sonos fetch) and ~2.6 s extra for the Soloist stop/restart. Decide whether I build lever 1 (early teardown + ~0.4 s debounce) and a Soloist DEBUG timing PR, then post the reply.",
-   "ask": "input"
+   "ask": "input",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "tylernolf",
+     "at": "2026-10-21T00:49:25Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6756#issuecomment-6305201613"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Chromecast",
+     "spotify",
+     "sonos",
+     "hass",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6757,
@@ -2593,12 +4254,37 @@
     "10-21 07:38 run: zosopage1963 (16:12 UTC) reproduced on the Chrome web player with Plex on 2.10.7 and attached a Player Queues DEBUG log. The log has no shuffle trace at all (that path doesn't log) and no refused command. Next step is a Verbose Web Server log plus the user role.",
     "10-21 12:15: repro session started at your request against your local Plex server (Plex album/playlist on This device, Tidal comparison, dev then 2.10.7). Draft reply on hold until it reports.",
     "10-21 13:20: info ask held from auto-posting while the repro session works the card.",
-    "10-21 13:45 edit + reply: redrafted from the repro result (dropped the admin question, added the screenshot and grouping/Plex Connect questions) and posted on your OK (11:13 UTC, https://github.com/music-assistant/support/issues/6757#issuecomment-6314541606). Waiting for zosopage1963."
+    "10-21 13:45 edit + reply: redrafted from the repro result (dropped the admin question, added the screenshot and grouping/Plex Connect questions) and posted on your OK (11:13 UTC, https://github.com/music-assistant/support/issues/6757#issuecomment-6314541606). Waiting for zosopage1963.",
+    "10-21 14:55 v2 migration: the repro session reported back, marked done."
    ],
    "action": "",
    "fix_thread": {
     "id": "mcp:b947aee9-eba6-476a-94ac-10fa0c05a450",
-    "title": "Repro #6757: shuffle ignored with Plex"
+    "title": "Repro #6757: shuffle ignored with Plex",
+    "kind": "repro",
+    "done": true
+   },
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-21T11:13:52Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6757#issuecomment-6314541606"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "sonos",
+     "hass",
+     "waiting-for-user"
+    ]
    }
   },
   {
@@ -2607,13 +4293,13 @@
    "col": "merged",
    "area": "server / helpers/audio.py decoded_pcm_format, controllers/streams/audio_analysis.py background scan, streams/controller.py preview",
    "since": "2026-10-15 17:38",
-   "last": "marklam 2026-10-15 15:30",
+   "last": "marklam 2026-10-15 15:27",
    "gh": {
     "login": "marklam",
     "team": false,
-    "at": "2026-10-15T15:30:00Z",
-    "pr_open": true,
-    "pr_draft": true
+    "at": "2026-10-15T15:27:32Z",
+    "pr_open": false,
+    "pr_draft": false
    },
    "summary": "2.10.6 HA add-on on a Pi. DSD files stored in WavPack either blow the background analysis time budget or finish without a Sonic Similarity key. The reporter's ffprobe shows the stream as 8-bit at 352.8 kHz.",
    "fix": "Our draft server#7041: a new pcm_container_bit_depth() (16 and 24 kept, anything else 32, same as ContentType.from_bit_depth) sets the AudioFormat bit depth in decoded_pcm_format, the background analysis format and the preview format.",
@@ -2653,7 +4339,38 @@
     "10-20 13:30 (on request): you merged server#7041 on 10-19 09:24 UTC (backport-to-stable); earlier runs missed it. I set Fix to be Confirmed + milestone 2.10.8. Cherry-pick onto backport/2.10.8 conflicts (helpers/audio.py, tests/controllers/streams/test_buffer_pcm_format.py). The DEV ask was never posted, so the draft is now a confirm reply.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "marklam",
+     "at": "2026-10-15T15:27:32Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6758"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7041,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-19T09:24:37Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "hass",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6810,
@@ -2676,25 +4393,35 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the extra measurements, they line up with the code. When the old Connect device goes inactive, Music Assistant stops its player right away, and that stop is not coordinated with the new device starting its group. If the two share speakers, the stop hits the speakers the new group just took. Fixing this needs a proper handoff between the two Spotify Connect devices, so it needs a bit of design work first. We'll look at it together with #6796.",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours."
    ],
    "action": "Decide how the Connect provider should hand off between devices that share speakers (skip vs. order the old session's stop), then reply.",
-   "ask": "design"
+   "ask": "design",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "suporte640",
+     "at": "2026-10-19T00:58:04Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6810#issuecomment-6257394545"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Spotify Connect",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6808,
@@ -2724,11 +4451,6 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "info",
      "Waiting for user",
      "waiting"
@@ -2737,11 +4459,6 @@
      "ok",
      "FtbC + 2.10.8 booked",
      "booked"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
     ]
    ],
    "reply": "",
@@ -2754,7 +4471,37 @@
     "10-20 14:38 run: you posted the rate limiter reply (12:15 UTC): 2.11 (server#6603) gives each client and Client ID its own limiter. The reconciliation quota burn is still a design call."
    ],
    "action": "Reply posted (2.11 splits the rate limiter per client). Still open: the fix shape for hourly album reconciliation burning his Client ID quota (design row #6808).",
-   "ask": "design"
+   "ask": "design",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T12:15:21Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6808#issuecomment-6290610538"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7098,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-19T07:01:17Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "Fix to be Confirmed",
+     "spotify",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6806,
@@ -2797,7 +4544,39 @@
     "10-19 09:38 run: you merged server#7097 (07:21 UTC, no backport label). Cherry-pick conflicts on stable, so I set Fix to be Confirmed + milestone 2.11.0. Reply is the confirm ask.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.11.0",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "Thyraz",
+     "at": "2026-10-18T18:56:10Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6806"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7097,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-19T07:21:21Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "spotify",
+     "hass",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6796,
@@ -2820,25 +4599,35 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the trace, the race makes sense with the current code: the old request's teardown can release the Spotify session before the replacement request has claimed it. Your ownership check is close to what we'd want, but we need to make sure a normal stop from Music Assistant still releases the device in the Spotify app. Could you let us know how the patched build behaves when you select the group from the Spotify app itself? We'll look at this together with #6810, which is a related handoff problem.",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours."
    ],
    "action": "Decide the teardown/handoff approach with #6810; post the reply asking for app confirmation.",
-   "ask": "design"
+   "ask": "design",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "axsuul",
+     "at": "2026-10-18T04:08:57Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6796#issuecomment-6245504504"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "sonos",
+     "Spotify Connect",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6787,
@@ -2874,7 +4663,29 @@
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours.",
     "10-20 17:38 run: you posted the Soloist + upstream go-librespot reply (14:50 UTC). Waiting for meggsico."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T14:50:16Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6787#issuecomment-6293710842"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Spotify Connect",
+     "hass",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6812,
@@ -2904,11 +4715,6 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "ok",
      "PR green",
      "green"
@@ -2925,7 +4731,38 @@
     "10-21 13:30 run: you merged airplay-cli#95 (11:08/11:15 UTC). Next: one airplay-cli release covers #6672 and #6812, then the pin bump."
    ],
    "action": "airplay-cli#91 (#6672) and airplay-cli#95 (#6812) are both merged. Cut one airplay-cli release (latest is v0.5.8 from 10-14) so the bot bumps the server pin; the reporters get a DEV test ask after that.",
-   "ask": "merge"
+   "ask": "merge",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "patrick131",
+     "at": "2026-10-19T01:09:06Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6812"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/airplay-cli",
+      "n": 95,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-21T11:15:58Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "hass",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6807,
@@ -2977,7 +4814,41 @@
     "10-21 10:47 run: you merged server#7100 at 08:25 UTC (backport-to-stable), already on backport/2.10.8. iVolt1 never posted a test result. I set Fix to be Confirmed + milestone 2.10.8 and drafted a confirm reply.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-19T07:10:09Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6807#issuecomment-6261737651"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7100,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-21T08:25:59Z",
+      "own": true
+     }
+    ],
+    "test_ask": {
+     "at": "2026-10-19T07:10:09Z",
+     "url": "https://github.com/music-assistant/support/issues/6807#issuecomment-6261737651"
+    },
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "Fix to be Confirmed",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6800,
@@ -3016,7 +4887,28 @@
     "10-21 11:20 reply: you posted the restart + tcpdump ask from the board (09:15 UTC, https://github.com/music-assistant/support/issues/6800#issuecomment-6312422645). Waiting for Vivi92821.",
     "10-21 14:30 run: Vivi92821 (11:32 UTC) sent a TCP timeline: the T8 hangs up first, MA's FIN on the old socket comes ~52 s late (aioslimproto CLOSE-WAIT bug, see checked). Posted on your behalf (https://github.com/music-assistant/support/issues/6800#issuecomment-6316208611): ask for the missing Verbose log and the original PCAP, no new capture yet. GPT: revise to that single ask (port filter idea and a second capture held back), accepted."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-21T12:43:36Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6800#issuecomment-6316208611"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Squeezelite",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6791,
@@ -3052,7 +4944,29 @@
     "10-19 07:38 run: new issue. Not enough info, reply asks for what's missing.",
     "10-20 17:38 run: you posted the Profiler diagnostics ask (14:42 UTC). Waiting for ChangoMunk."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T14:42:54Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6791#issuecomment-6293546508"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "snapcast",
+     "hass",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6775,
@@ -3075,25 +4989,35 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours."
    ],
    "action": "Decide whether Range support on live stream endpoints is worth it for LUMIN renderers.",
-   "ask": "design"
+   "ask": "design",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "robertoweij",
+     "at": "2026-10-16T21:09:17Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6775"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "dlna",
+     "waiting-for-user",
+     "triage/reminded-1"
+    ]
+   }
   },
   {
    "n": 6793,
@@ -3151,7 +5075,37 @@
     "10-20 13:30 (on request): you merged server#7095 on 10-19 11:55 UTC (backport-to-stable); earlier runs missed it. I set Fix to be Confirmed + milestone 2.10.8. Cherry-pick onto backport/2.10.8 conflicts only in the parser test file. The DEV ask was never posted, so the draft is now a confirm reply.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "dentedbread",
+     "at": "2026-10-17T15:30:42Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6793"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7095,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-19T11:55:51Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6778,
@@ -3200,7 +5154,37 @@
     "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7094 failed on a conflict, but it resolves cleanly (patch in scratchpad bp-7094.patch keeps stable's plain error path and adds a new stable test file, 8 Genius tests pass). Open the manual backport onto backport/2.10.8 (patch ready), then post the confirm reply.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "dentedbread",
+     "at": "2026-10-16T22:06:21Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6778"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7094,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-19T06:55:37Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6776,
@@ -3223,25 +5207,36 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the detailed steps and screenshots. When migrating to a Music Assistant playlist, local sources like Emby are only used if the track is already recognised in your library; otherwise only streaming providers get searched, so Qobuz wins or the track is skipped. Emby also doesn't give us MusicBrainz or ISRC ids, which makes that library match weaker. The three match modes giving different results is expected, they accept different levels of certainty. We need to look at letting migration search local providers too.",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours."
    ],
    "action": "Decide if playlist migration to Music Assistant should search and prefer local providers (Emby/filesystem), then post the reply.",
-   "ask": "design"
+   "ask": "design",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "dentedbread",
+     "at": "2026-10-16T21:30:55Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6776"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "qobuz",
+     "filesystem_local",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6772,
@@ -3264,25 +5259,34 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThe Forgotten rows show the items you played longest ago, taken from everything you have played so far. With a freshly reset or new library there are only a few played items, so these rows end up showing the same ones as Recently played. They spread out once you build up more play history. Hiding things you played very recently from these rows would be a reasonable improvement, so I'll treat this as a feature request.",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Works as designed per code read."
    ],
    "action": "Post the reply; optionally decide whether Forgotten rows should require a minimum time since last play.",
-   "ask": "reply-answer"
+   "ask": "reply-answer",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "dentedbread",
+     "at": "2026-10-16T19:54:23Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6772"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6798,
@@ -3328,7 +5332,38 @@
     "10-19 07:38 run: new issue. Fix identified in code, not reproduced in a browser. Frontend PR needs a browser repro and before/after screenshots, so not built unattended.",
     "10-20 15:38 run: you merged frontend#3031 (13:31 UTC, no backport label). Fix to be Confirmed + 2.11.0 booked and the \"available in 2.11\" reply posted (13:33 UTC). Waiting for Rocker2234."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.11.0",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T13:32:52Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6798#issuecomment-6292076360"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/frontend",
+      "n": 3031,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-20T13:31:36Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "Frontend",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6794,
@@ -3351,25 +5386,35 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the photo, that makes it clear. Since 2.10 search opens as a sheet that sits above the bottom bar, and its height is taken from the screen height. On a small screen with the keyboard open there is almost no room left, so the sheet ends up hidden behind the player. We need to rework how it behaves on short screens, so I can't give you a quick setting for it right now.",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours."
    ],
    "action": "Decide how the search sheet should behave on short viewports (cover dock vs dialog fallback) and post the reply.",
-   "ask": "design"
+   "ask": "design",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "kmycek",
+     "at": "2026-10-17T17:36:42Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6794"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Frontend",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6773,
@@ -3392,25 +5437,37 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the detailed write-up. The web player id comes from a key stored in the browser, so a new browser, a cleared cache or Safari dropping site data gives you a new player, and the older `ma_` ids you saw are from a scheme we no longer use. Nothing removes player configs automatically today, and there is no bulk removal yet. Expiring web players that haven't been seen for a while, or a bulk remove, both make sense, so we'll look at which way to go.",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours."
    ],
    "action": "Decide whether to expire unseen web player configs and/or add bulk removal; consider a backlog item, then post the reply.",
-   "ask": "design"
+   "ask": "design",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "theseal666",
+     "at": "2026-10-16T20:04:31Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6773"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "Spotify Connect",
+     "sendspin",
+     "waiting-for-user",
+     "triage/reminded-1"
+    ]
+   }
   },
   {
    "n": 6786,
@@ -3433,25 +5490,36 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
-    ]
-   ],
+   "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, this reproduces from the code. Play history is stored per reference, so starting the playlist from Listen Again records the YouTube Music copy and starting it from your library records the library copy, and Recently Played shows both. They are the same playlist, so nothing is wrong with your library. We'll look at merging them in Recently Played.",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Read-side dedupe is easy but overlaps the server#5714 playlog redesign."
    ],
    "action": "Decide read-side dedupe in recently_played vs keying the playlog on the library item (overlaps the #5714 playlog plan), then post the reply.",
-   "ask": "design"
+   "ask": "design",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "marapavelka",
+     "at": "2026-10-17T09:58:35Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6786#issuecomment-6232553956"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "youtube_music",
+     "hass",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6799,
@@ -3487,7 +5555,27 @@
     "10-19 07:38 run: new issue. Not enough info, reply asks for what's missing.",
     "10-20 15:38 run: you posted the Profiler + diagnostics ask (12:52 UTC). Waiting for s1k3ira."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T12:52:28Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6799#issuecomment-6291280226"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "apple_music",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6797,
@@ -3536,7 +5624,39 @@
     "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7096 failed on a conflict, but it resolves cleanly (patch bp-7096.patch applies only the _track_keys dedupe (dev's user-steering filter is 2.11 only), the new test drops its playback_sources patch, 506 player_queues tests pass, the test change needs your OK). Open the manual backport onto backport/2.10.8 (patch ready), then post the confirm reply.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "TubeCrafterYT",
+     "at": "2026-10-18T08:05:15Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6797"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7096,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-19T06:59:21Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "apple_music",
+     "hass",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6774,
@@ -3584,7 +5704,36 @@
     "10-21 07:38 run: you merged server#7118 at 02:08 UTC (backport-to-stable). I set Fix to be Confirmed + milestone 2.10.8. No backport bot comment and it isn't on server#7101 yet; a cherry-pick onto origin/stable applies cleanly. Confirm reply drafted.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T13:47:03Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6774#issuecomment-6292365652"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7118,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-21T02:08:13Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "Fix to be Confirmed",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6815,
@@ -3592,7 +5741,7 @@
    "col": "merged",
    "area": "server / providers/filesystem_local/__init__.py (missing albumartist fallback ~l.3739)",
    "since": "2026-10-19 08:38",
-   "last": "musicassistant-bot 2026-10-19 05:55",
+   "last": "ChrisB85 2026-10-19 05:54",
    "gh": {
     "login": "ChrisB85",
     "team": false,
@@ -3633,7 +5782,37 @@
     "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7102 failed on a conflict, but it resolves cleanly (patch bp-7102.patch applies the same two conditions to stable's if/elif, the test is a standalone stable version (dev's helper is 2.11 only), 344 filesystem tests pass, the test change needs your OK). Open the manual backport onto backport/2.10.8 (patch ready), then post the confirm reply.",
     "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": ""
+   "action": "",
+   "milestone": "2.10.8",
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "ChrisB85",
+     "at": "2026-10-19T05:54:08Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6815"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7102,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-19T07:15:41Z",
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "Fix to be Confirmed",
+     "filesystem_local",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6816,
@@ -3692,7 +5871,40 @@
     "10-20 15:38 run: you posted the pr-7116 DEV test ask (13:36 UTC). server#7116 still draft, CI green, Copilot clean. Waiting for raine-works.",
     "10-21 13:35: added the missing \"test asked\" badge (your test ask 10-20 13:35 UTC); PR state refreshed (server#7116 open, draft)."
    ],
-   "action": ""
+   "action": "",
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-20T13:35:53Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6816#issuecomment-6292137311"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7116,
+      "state": "OPEN",
+      "draft": true,
+      "merged_at": null,
+      "own": true
+     }
+    ],
+    "test_ask": {
+     "at": "2026-10-20T13:35:53Z",
+     "url": "https://github.com/music-assistant/support/issues/6816#issuecomment-6292137311"
+    },
+    "after_test_ask_reporter": false,
+    "labels": [
+     "spotify",
+     "sonos",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6828,
@@ -3752,7 +5964,38 @@
     "10-20 17:38 run: profLewis (15:30 UTC) refiled the report in the issue form and will test pr-7115. Nothing new technically. Waiting for their result.",
     "10-21 07:38 run: profLewis (00:18 UTC) posted the full MA + skill-service logs and a new repro on add-on 1.3.7-beta.2: two failures a minute apart (Errno 104 connection reset, then Server disconnected), the add-on never logged the POST, the third try played. Both errors are covered by server#7115 (ClientOSError and ServerDisconnectedError retry once). Not tested pr-7115 yet, will do next.",
     "10-21 13:35: added the missing \"test asked\" badge (your test ask 10-20 12:09 UTC). profLewis replied with logs since, but no test result yet."
-   ]
+   ],
+   "milestone": null,
+   "sync": {
+    "at": "2026-10-21T12:45:51Z",
+    "last_human": {
+     "login": "profLewis",
+     "at": "2026-10-21T00:18:32Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6828#issuecomment-6304794187"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7115,
+      "state": "OPEN",
+      "draft": true,
+      "merged_at": null,
+      "own": true
+     }
+    ],
+    "test_ask": {
+     "at": "2026-10-20T12:09:41Z",
+     "url": "https://github.com/music-assistant/support/issues/6828#issuecomment-6290511874"
+    },
+    "after_test_ask_reporter": true,
+    "labels": [
+     "waiting-for-user"
+    ]
+   }
   }
  ],
  "design": [
@@ -3959,5 +6202,256 @@
  "actions_applied_at": "2026-10-21T10:43:10Z",
  "auto_post": {
   "enabled": true
- }
+ },
+ "release_table": {
+  "2.10.7": [
+   {
+    "n": 6671,
+    "title": "Bose SoundTouch: resume after pause doesn't restart playback (2.10.7, after server#6821)",
+    "prs": [
+     "server#6821",
+     "server#6607"
+    ],
+    "on_stable": false
+   }
+  ],
+  "2.10.8": [
+   {
+    "n": 6833,
+    "title": "Home Assistant plugin stays in error after an HA restart ('search_control_entities is already registered')",
+    "prs": [
+     "server#7131"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6675,
+    "title": "add_playlist_tracks silently no-ops when the task queue is saturated",
+    "prs": [
+     "server#7099"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6748,
+    "title": "Chromecast stops every stream after about 24 MiB",
+    "prs": [
+     "server#7120"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6749,
+    "title": "Queue position jumps when a paused player is auto-stopped after 30 s",
+    "prs": [
+     "server#7022"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6752,
+    "title": "Spotify (Soloist): pausing in the Spotify app skips to the next track after 20 s",
+    "prs": [
+     "server#7117"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6751,
+    "title": "Ungrouping a playing group's leader with DSP enabled raises QueueEmpty",
+    "prs": [
+     "server#7035"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6758,
+    "title": "WavPack DSD exceeds the analysis budget or gets no Sonic Similarity key",
+    "prs": [
+     "server#7041"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6808,
+    "title": "Spotify: reconfigure during a rate limit wipes the stored account id, provider can't load",
+    "prs": [
+     "server#7098"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6807,
+    "title": "Several AirPlay receivers on one IP get linked to the wrong Universal Player",
+    "prs": [
+     "server#7100"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6793,
+    "title": "Emby: album-artist filter shows track-only artists",
+    "prs": [
+     "server#7095"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6778,
+    "title": "Genius returns lyrics of a different song, also for instrumentals",
+    "prs": [
+     "server#7094"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6797,
+    "title": "Autoplay similar mode re-adds tracks already in the queue (library vs Apple Music URI)",
+    "prs": [
+     "server#7096"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6774,
+    "title": "ARD Audiothek: SWR3 stream fixed in 2.11, account login crashes with KeyError 'users'",
+    "prs": [
+     "server#7118"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6815,
+    "title": "Local files: folder_name album artist fallback breaks albums in the share root",
+    "prs": [
+     "server#7102"
+    ],
+    "on_stable": false
+   }
+  ],
+  "2.11.0": [
+   {
+    "n": 6692,
+    "title": "Filesystem audiobooks: chapter files of multi-file books re-parsed on every sync",
+    "prs": [
+     "server#6878"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6645,
+    "title": "Any Apple Music playlists/stations/searching triggers Rate Limiter",
+    "prs": [
+     "server#6845",
+     "server#6846",
+     "server#6843",
+     "server#6844",
+     "frontend#2953",
+     "server#6990",
+     "server#6992",
+     "server#6986",
+     "server#6987",
+     "server#6995",
+     "server#6994",
+     "server#6862",
+     "server#6863",
+     "server#6871",
+     "server#6998",
+     "server#6999",
+     "server#7002"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6500,
+    "title": "empty images has the priority",
+    "prs": [
+     "server#6506"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6694,
+    "title": "SiriusXM Bluesville and Spa 404 on every segment (new tpac_iad_iad/.../enc/128k layout)",
+    "prs": [
+     "server#7001"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6490,
+    "title": "Search input does not reliably commit text when using an on-screen predictive keyboard",
+    "prs": [],
+    "on_stable": null
+   },
+   {
+    "n": 6402,
+    "title": "Spotify playback started by Music Assistant appears in another Spotify account/app as “Music Assistant” playback",
+    "prs": [],
+    "on_stable": null
+   },
+   {
+    "n": 6299,
+    "title": "Global search: alphabetical provider order + name de-dupe hides results from higher-quality providers",
+    "prs": [
+     "frontend#2845"
+    ],
+    "on_stable": null
+   },
+   {
+    "n": 6150,
+    "title": "Low contrast on the now playing screen with a blue background",
+    "prs": [
+     "frontend#2762"
+    ],
+    "on_stable": null
+   },
+   {
+    "n": 6806,
+    "title": "Spotify: playlist search hangs on the rate-limited global session (since #6647)",
+    "prs": [
+     "server#7097"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6798,
+    "title": "Clicking the waveform progress bar restarts the track from 0",
+    "prs": [
+     "frontend#3031"
+    ],
+    "on_stable": null
+   }
+  ]
+ },
+ "summary_cards": [
+  5018,
+  6023,
+  6329,
+  6400,
+  6419,
+  6602,
+  6645,
+  6671,
+  6672,
+  6688,
+  6695,
+  6709,
+  6737,
+  6738,
+  6739,
+  6756,
+  6772,
+  6773,
+  6775,
+  6776,
+  6786,
+  6794,
+  6796,
+  6808,
+  6810,
+  6812,
+  6822,
+  6837
+ ]
 }
