@@ -156,11 +156,13 @@ def fold_board_posts(state: dict, path: str) -> list[dict]:
         if card is None:
             continue
         card["reply"] = ""
-        card["action"] = ""
-        card.pop("ask", None)
         card["badges"] = [b for b in card.get("badges") or [] if _kind(b) not in ("needs attention", "auto held")]
-        if not any(_kind(b) == "waiting" for b in card["badges"]):
-            card["badges"].append(["info", "Waiting for user", "waiting"])
+        # Only a reply ask is answered by the post; a design call or input stays with Marvin.
+        if str(card.get("ask") or "").startswith("reply-") or not card.get("ask"):
+            card["action"] = ""
+            card.pop("ask", None)
+            if not any(_kind(b) == "waiting" for b in card["badges"]):
+                card["badges"].append(["info", "Waiting for user", "waiting"])
         card.setdefault("gh", {}).update({"login": MARVIN, "team": True, "at": _iso(at)})
         card["last"] = f"{MARVIN} {at:%Y-%m-%d %H:%M}"
         url = line.get("url") or ""
