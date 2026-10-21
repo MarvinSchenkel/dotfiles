@@ -223,13 +223,13 @@ The full report shows:
 - Badges on the cards, only in the report, never as GitHub labels: size, draft, user replied, reporter
   replied, backport recommended on ready and auto-approved PRs, yours, new review, failing CI, stacked, and
   days waiting on Marvin.
-- Per PR, behind its card: the 5 to 6 line max summary in `tldr`, CI, merge and Copilot facts, the blockers,
+- Per PR, in a dialog that opens when Marvin clicks its card: the 5 to 6 line max summary in `tldr`, CI, merge and Copilot facts, the blockers,
   the longer review notes in `summary`, and the findings per model, each with its id `f1`, `f2` and so on
   so Marvin can reply `post <pr> f2`. Set `model` on every finding: Claude, GPT Sol or Copilot.
 - For almost ready: your suggestion to fix the small outstanding thing, the patch as a coloured diff, and
   the prompt for a fix session with the necessary context and instructions, readable in place and with a
   copy button.
-- Merged and closed PRs as one compact row each.
+- Nothing below the matrix. Merged and closed PRs show up in the digest of the run that saw them.
 
 The digest shows the run time, dev sha and run note, then per column how many PRs it holds and how many
 need Marvin, and the count past the SLA. Below that, only the open PRs this run changed, one compact row

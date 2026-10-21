@@ -15,7 +15,6 @@ FULL_LIMIT = 2_000_000
 DIGEST_LIMIT = 40_000
 FULL_REPORT = "~/.claude-teamB/routine-reports/pr-review.html"
 WEEK = timedelta(days=7)
-COMPACT_MAX = 300
 COLS = [
     ("ready", "Ready to merge", "success"),
     ("almost", "Almost ready", "warning"),
@@ -84,7 +83,6 @@ pre code { background: none; padding: 0; }
 .wrap { display: flex; flex-direction: column; gap: 16px; padding: 4px 0 12px; }
 header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 10px; }
 h1 { font-size: 17px; font-weight: 600; margin: 0; }
-h2 { font-size: 13px; font-weight: 600; margin: 8px 0 0; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
 .sub { color: var(--muted-foreground); font-size: 13px; margin: 2px 0 0; }
 .note { font-size: 13px; margin: 0; max-width: 90ch; }
 .tallies { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -117,15 +115,17 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 760px; table-l
 .tag.size { --tc: var(--foreground); }
 .tag.ok { --tc: var(--success); } .tag.warn { --tc: var(--warning); } .tag.bad { --tc: var(--destructive); } .tag.info { --tc: var(--info); }
 .tag.late { color: var(--card); background: var(--destructive); }
-details.pr { border: 1px solid var(--border); border-left: 3px solid var(--c); border-radius: var(--radius); scroll-margin-top: 8px; }
-details.pr > summary { cursor: pointer; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; list-style: none; }
-details.pr > summary::-webkit-details-marker, .fd > summary::-webkit-details-marker, .more > summary::-webkit-details-marker { display: none; }
-details.pr > summary::before, .fd > summary::before, .more > summary::before { content: "\\25B8"; color: var(--muted-foreground); font-size: 10px; }
-details[open].pr > summary::before, .fd[open] > summary::before, .more[open] > summary::before { content: "\\25BE"; }
+dialog.pr { width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--border); border-top: 3px solid var(--c); border-radius: var(--radius); background: var(--card); color: var(--card-foreground); overflow: auto; }
+dialog.pr::backdrop { background: rgb(0 0 0 / .45); }
+.rh { position: sticky; top: 0; z-index: 1; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; background: var(--card); border-bottom: 1px solid var(--border); }
+.rh .btn { margin-left: auto; }
+.fd > summary::-webkit-details-marker, .more > summary::-webkit-details-marker { display: none; }
+.fd > summary::before, .more > summary::before { content: "\\25B8"; color: var(--muted-foreground); font-size: 10px; }
+.fd[open] > summary::before, .more[open] > summary::before { content: "\\25BE"; }
 .pr .n { font: 500 12px var(--font-mono); color: var(--muted-foreground); }
 .pr .t { font-weight: 600; flex: 1 1 300px; }
 .pill { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 1px 7px; border-radius: 4px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
-.body { padding: 2px 14px 14px 26px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; }
+.body { padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; }
 .by { color: var(--muted-foreground); font-size: 12px; display: flex; flex-wrap: wrap; gap: 2px 12px; }
 .tldr { font-size: 14px; margin: 0; }
 .box { border-radius: var(--radius); padding: 7px 11px; margin: 0; background: color-mix(in srgb, var(--bc, var(--warning)) 12%, transparent); }
@@ -155,11 +155,6 @@ ul.plain { margin: 0; padding-left: 18px; display: flex; flex-direction: column;
 .dh { color: var(--info); } .df { color: var(--muted-foreground); font-weight: 600; }
 .btn { font: 500 11.5px var(--font-sans); padding: 3px 9px; border-radius: var(--radius); border: 1px solid var(--border); background: transparent; color: var(--foreground); cursor: pointer; }
 .btn:hover { border-color: var(--info); }
-table.closed { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-.closed td { padding: 4px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
-.closed td.n { font-family: var(--font-mono); white-space: nowrap; }
-.closed td.w { color: var(--muted-foreground); white-space: nowrap; }
-.footer { font-size: 12px; color: var(--muted-foreground); border-top: 1px solid var(--border); padding-top: 10px; line-height: 1.7; }
 [hidden] { display: none !important; }
 """
 
@@ -177,7 +172,11 @@ document.addEventListener("click", e => {
   const a = e.target.closest("a.chip");
   if (a) {
     const d = document.getElementById(a.getAttribute("href").slice(1));
-    if (d) { e.preventDefault(); d.open = true; d.scrollIntoView({behavior: "smooth", block: "start"}); }
+    if (d) { e.preventDefault(); d.showModal(); d.scrollTop = 0; }
+    return;
+  }
+  if (e.target.closest("[data-close]") || e.target.matches("dialog.pr")) {
+    e.target.closest("dialog").close();
     return;
   }
   const b = e.target.closest("button[data-copy]");
@@ -186,7 +185,8 @@ document.addEventListener("click", e => {
   const el = document.getElementById(b.dataset.copy);
   const done = () => { b.textContent = "Copied"; };
   const pick = () => {
-    el.closest("details").open = true;
+    const box = el.closest("details");
+    if (box) box.open = true;
     const r = document.createRange(); r.selectNodeContents(el);
     const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
     b.textContent = "Selected, press copy";
@@ -273,19 +273,11 @@ def _page(state: dict, now: datetime) -> str:
         f'<div class="scroll"><table class="matrix"><thead><tr><th class="status">Status</th>{thead}</tr></thead>'
         f'<tbody>{"".join(rows)}</tbody></table></div>'
     )
-    details = '<h2>Reviews</h2>' + "".join(_detail(p, now) for p in ordered)
-    closed = _closed_section(state, now)
-    footer = (
-        '<div class="footer">Reply in this thread: <code>post 7045 f2</code> posts a finding, '
-        "<code>fix 7045</code> pushes the prepared patch, <code>approve 7045</code> approves and queues the merge, "
-        "<code>chip 7045</code> starts a fix session, <code>prompt 7045</code> prints the prompt, "
-        "<code>show 7045</code> prints the full review, <code>review 7045</code> reviews it again, "
-        "<code>skip 7045</code> keeps it out of the report. Other repos use <code>models#438</code>.</div>"
-    )
+    reviews = "".join(_detail(p, now) for p in ordered)
     return (
         '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         f"<title>PR backlog</title><style>{THEME}{CSS}{PAGE}</style></head><body><div class=\"wrap\">"
-        f"{head}{note}{controls}{matrix}{details}{closed}{footer}</div><script>{JS}</script></body></html>"
+        f"{head}{note}{controls}{matrix}</div>{reviews}<script>{JS}</script></body></html>"
     )
 
 
@@ -397,27 +389,6 @@ def _matrix_prs(state: dict, now: datetime) -> list:
     return [p for p in state.get("prs", []) if p.get("state", "open") == "open" or _recent_auto(p, now)]
 
 
-def _closed_section(state: dict, now: datetime) -> str:
-    """One compact row per merged or closed PR that left the matrix."""
-    rows = [p for p in state.get("prs", []) if p.get("state", "open") != "open" and not _recent_auto(p, now)]
-    if not rows:
-        return ""
-    rows.sort(key=lambda p: _ts(p.get("closed_at")) or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
-    extra = len(rows) - COMPACT_MAX
-    out = []
-    for p in rows[:COMPACT_MAX]:
-        what = f'{p.get("state")} {_fmt(p.get("closed_at"), date_only=True)}'.strip()
-        if p.get("auto_approved"):
-            what += ", auto-approved"
-        out.append(
-            f'<tr data-q="{escape(_q(p))}" data-d="0"><td class="n"><a href="{escape(p.get("url", ""))}">{escape(_label(p))}</a></td>'
-            f'<td>{escape(p.get("title", ""), quote=False)}</td><td class="w">{escape(p.get("author", ""))}</td>'
-            f'<td class="w">{escape(what)}</td></tr>'
-        )
-    more = f'<p class="hint">{extra} older merged or closed PRs are kept in the state file only.</p>' if extra > 0 else ""
-    return f'<h2>Merged or closed</h2><table class="closed">{"".join(out)}</table>{more}'
-
-
 def _chip(p: dict, now: datetime) -> str:
     """Render a matrix card that jumps to the PR's review."""
     col = _col(p, now)
@@ -474,14 +445,15 @@ def _tags(p: dict, now: datetime) -> list:
 
 
 def _detail(p: dict, now: datetime) -> str:
-    """Render one PR's full review as a collapsible block."""
+    """Render one PR's full review as the dialog its card opens."""
     col = _col(p, now)
     _, col_label, var = next(c for c in COLS if c[0] == col)
     lbl = _label(p)
     sha = str(p.get("head_sha") or "")[:9] or "head"
     summary = (
-        f'<summary><span class="n">{escape(lbl)}</span><span class="t">{escape(p.get("title", ""), quote=False)}</span>'
-        f'<span class="pill">{escape(col_label)}</span>{"".join(_tags(p, now))}</summary>'
+        f'<div class="rh"><span class="n">{escape(lbl)}</span><span class="t">{escape(p.get("title", ""), quote=False)}</span>'
+        f'<span class="pill">{escape(col_label)}</span>{"".join(_tags(p, now))}'
+        '<button class="btn" data-close aria-label="Close">Close</button></div>'
     )
     loc = f'{p.get("code", "?")} loc, +{p.get("add", "?")}/-{p.get("del", "?")} total'
     by = (
@@ -547,10 +519,10 @@ def _detail(p: dict, now: datetime) -> str:
 
 
 def _wrap_detail(p: dict, var: str, summary: str, parts: list) -> str:
-    """Wrap a review body in its details element."""
+    """Wrap a review body in its dialog."""
     return (
-        f'<details class="pr" id="{_anchor(p)}" style="--c:var(--{var})" data-q="{escape(_q(p))}" '
-        f'data-d="{1 if p.get("draft") else 0}">{summary}<div class="body">{"".join(parts)}</div></details>'
+        f'<dialog class="pr" id="{_anchor(p)}" style="--c:var(--{var})">{summary}'
+        f'<div class="body">{"".join(parts)}</div></dialog>'
     )
 
 
