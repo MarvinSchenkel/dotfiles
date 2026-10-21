@@ -39,3 +39,7 @@ Thread ids and task ids live in each routine's state file. T3's fixed-time sched
 hence one task per hour for the two hourly routines.
 
 The scheduler runs inside T3 Code, so routines only fire while the app is open, same as the desktop.
+
+The `local.routine-reports` LaunchAgent (`launchd/`, installed by `../install.sh`) serves
+`~/.claude-teamB/routine-reports` on `http://127.0.0.1:8765`, so a routine can keep its full report open in
+its thread's side panel.

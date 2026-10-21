@@ -36,4 +36,17 @@ if [ -d "$TEAMB" ]; then
   link "$HOME/.claude/projects"            "$TEAMB/projects"
 fi
 
+# Serves ~/.claude-teamB/routine-reports on 127.0.0.1:8765 for the T3 side panel.
+# Copied, not linked: launchd skips symlinked plists at login.
+AGENT="$HOME/Library/LaunchAgents/local.routine-reports.plist"
+if ! cmp -s "$DOTFILES/routines/launchd/local.routine-reports.plist" "$AGENT"; then
+  mkdir -p "$HOME/.claude-teamB/routine-reports"
+  launchctl bootout "gui/$(id -u)" "$AGENT" 2>/dev/null || true
+  cp "$DOTFILES/routines/launchd/local.routine-reports.plist" "$AGENT"
+  launchctl bootstrap "gui/$(id -u)" "$AGENT"
+  echo "load  $AGENT"
+else
+  echo "ok    $AGENT"
+fi
+
 echo "Done."

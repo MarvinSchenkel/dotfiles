@@ -184,8 +184,15 @@ python3 ~/git/dotfiles/routines/issue-triage/build.py ~/git/dotfiles/routines/st
 ```
 
 - The full board goes to `~/.claude-teamB/routine-reports/issue-triage.html`, outside git on purpose.
-  Marvin opens it with `open ~/.claude-teamB/routine-reports/issue-triage.html`. It holds every card in
-  full and stays under 2 MB.
+  It holds every card in full and stays under 2 MB. The `local.routine-reports` LaunchAgent
+  (`routines/launchd/`, installed by `install.sh`) serves that folder on `http://127.0.0.1:8765`, and the
+  board stays open in this thread's side panel.
+- After the build, refresh the side panel: `t3_preview_list`, then `preview_navigate` the tab whose URL
+  starts with `http://127.0.0.1:8765/issue-triage.html` to `http://127.0.0.1:8765/issue-triage.html?run=<YYYYMMDDHHMM>`
+  with the run time; the query keeps the panel from showing the cached previous board. With no such tab,
+  `preview_open` that URL.
+  If the URL doesn't answer, run `launchctl kickstart -k gui/$(id -u)/local.routine-reports` and retry
+  once; if it still fails, say so in the chat summary.
 - The digest is what you show in the thread with `html_render`. It stays under 40,000 characters,
   because `html_render` takes the page as a tool argument and the routine runs eleven times a day. Run
   `html_preview` on the digest first only when `build.py` changed since the last run, which
@@ -198,14 +205,12 @@ The digest:
 
 - The title and only "Last run <time>".
 - The card count per lane, with how many in each lane need Marvin.
-- Every card that needs attention as one compact row: the number linked to GitHub, the title, the lane,
-  a one-line status taken from `action`, and the age of the last activity.
-- Cards that changed this run are marked "new" or "changed"; changed cards that need nothing from Marvin
-  get their own short list. A card counts as changed when its newest note carries the time of the last
+- Only the cards that are new or changed this run, one compact row each: the number linked to GitHub, the
+  title, the lane, a one-line status, the age of the last activity and a "new" or "changed" mark. Cards
+  that need Marvin come first. A card counts as changed when its newest note carries the time of the last
   run, so stamp every note a run writes with `<MM-DD HH:MM> run:` using the run time.
-- The design calls as one-liners.
-- A footer with the `open` command for the full board and the reply grammar.
-- No drafts, no diffs and no note bodies.
+- A footer pointing at the side panel and the `open` command, plus the reply grammar.
+- No attention list, no design calls, no drafts, no diffs and no note bodies; those live on the full board.
 
 The full board:
 
@@ -288,7 +293,7 @@ board embedded, so earlier run notes still match.
 ```json
 {
   "thread_id": "<this thread's id>",
-  "scheduled_task_id": "<the T3 scheduled task id>",
+  "scheduled_task_ids": ["<one T3 scheduled task id per HH:30 slot>"],
   "last_run": "2026-10-21 07:38 CEST",
   "columns": [["info", "Not enough info", "Stopped early. The draft reply asks for what's missing."]],
   "cards": [

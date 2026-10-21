@@ -45,8 +45,22 @@ BOLD = re.compile(r"\*\*(.+?)\*\*")
 
 CSS = """
 :root { color-scheme: light dark; }
+/* Standalone theme for the side panel tab, which gets no T3 theme variables. */
+:root {
+  --background: #ffffff; --foreground: #18181b; --muted: #f4f4f5; --muted-foreground: #71717a; --border: #e4e4e7;
+  --info: #2563eb; --destructive: #dc2626; --warning: #b45309; --success: #15803d; --radius: 8px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f0f11; --foreground: #f4f4f5; --muted: #27272a; --muted-foreground: #a1a1aa; --border: #2e2e33;
+    --info: #60a5fa; --destructive: #f87171; --warning: #fbbf24; --success: #4ade80;
+  }
+}
 * { box-sizing: border-box; }
-body { font-family: var(--font-sans); color: var(--foreground); margin: 0; font-size: 14px; line-height: 1.5; }
+html { background: var(--background); }
+body { font-family: var(--font-sans); color: var(--foreground); margin: 0; padding: 16px; font-size: 14px; line-height: 1.5; }
 a { color: inherit; text-decoration-color: var(--muted-foreground); text-underline-offset: 2px; }
 code, .mono { font-family: var(--font-mono); font-size: .9em; }
 .wrap { display: flex; flex-direction: column; gap: 20px; padding: 4px 0 12px; }
@@ -56,7 +70,7 @@ h2 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: v
 .tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .tools input[type=search] { flex: 1 1 240px; min-width: 0; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--foreground); font: inherit; }
 .tools label { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted-foreground); }
-.cols { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: start; }
+.cols { display: grid; grid-template-columns: repeat(7, minmax(220px, 1fr)); gap: 8px; align-items: start; overflow-x: auto; padding-bottom: 4px; }
 .col { border: 1px solid var(--border); border-top: 3px solid var(--c); border-radius: var(--radius); padding: 8px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .col-head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 .col-head b { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); line-height: 1.3; }
@@ -136,7 +150,6 @@ h2 { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color:
 .r .t { flex: 1; min-width: 0; }
 .r .l2 { color: var(--muted-foreground); font-size: 12.5px; margin-top: 1px; }
 .b { font: 500 10px var(--font-mono); padding: 0 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: .03em; color: var(--info); background: color-mix(in srgb, var(--info) 14%, transparent); white-space: nowrap; }
-ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
 .foot { font-size: 12px; color: var(--muted-foreground); border-top: 1px solid var(--border); padding-top: 8px; display: flex; flex-direction: column; gap: 3px; }
 .foot code { color: var(--foreground); }
 """
@@ -252,7 +265,7 @@ def render_full(state: dict) -> str:
 
 
 def render_digest(state: dict, board_path: str | None, status_len: int) -> str:
-    """Render the compact inline digest: lane counts, attention list, changed cards and design calls."""
+    """Render the compact inline digest: lane counts and the cards that are new or changed this run."""
     run = state.get("last_run") or ""
     run_at = _run_time(run)
     cards = sorted(state["cards"], key=_last_at, reverse=True)
@@ -266,31 +279,18 @@ def render_digest(state: dict, board_path: str | None, status_len: int) -> str:
             f'<div class="lane" style="--c:var({COL_COLOR.get(key, "--muted-foreground")})"><div class="k">{escape(name)}</div>'
             f'<div class="v">{len(in_col)}</div><div class="s">{f"{due} need you" if due else "&nbsp;"}</div></div>'
         )
-    attention = [c for c in cards if _pending(c)]
-    changed = [c for c in cards if not _pending(c) and _changed(c, run)]
+    changed = [c for c in cards if _new(c, run) or _changed(c, run)]
+    board = escape((board_path or "~/.claude-teamB/routine-reports/issue-triage.html").replace(os.path.expanduser("~"), "~", 1))
     parts = [
         f'<div><h1>Support issue triage</h1><div class="sub">Last run {escape(run or "never")}</div></div>',
         '<div class="lanes">' + "".join(lanes) + "</div>",
-        f"<section><h2>Needs you ({len(attention)})</h2>"
-        + ('<div class="rows">' + "".join(_row(c, names, run, run_at, status_len) for c in attention) + "</div>"
-           if attention else '<div class="sub">Nothing waits on you.</div>')
+        f"<section><h2>Changed this run ({len(changed)})</h2>"
+        + ('<div class="rows">' + "".join(_row(c, names, run, run_at, status_len) for c in changed) + "</div>"
+           if changed else '<div class="sub">Nothing changed this run.</div>')
         + "</section>",
+        f'<div class="foot"><span>Full board with filter, drafts and diffs in the side panel, or <code>open {board}</code></span>'
+        f"<span>Replies: <code>{REPLY_GRAMMAR}</code></span></div>",
     ]
-    if changed:
-        parts.append(
-            f"<section><h2>Also changed this run ({len(changed)})</h2><div class=\"rows\">"
-            + "".join(_row(c, names, run, run_at, status_len) for c in changed) + "</div></section>"
-        )
-    if state.get("design"):
-        parts.append(
-            f'<section><h2>Design calls ({len(state["design"])})</h2><ul>'
-            + "".join(f"<li>{_link_issue_prefix(r[0])}</li>" for r in state["design"]) + "</ul></section>"
-        )
-    board = escape((board_path or "~/.claude-teamB/routine-reports/issue-triage.html").replace(os.path.expanduser("~"), "~", 1))
-    parts.append(
-        f'<div class="foot"><span>Full board with drafts, notes and diffs: <code>open {board}</code></span>'
-        f"<span>Replies: <code>{REPLY_GRAMMAR}</code></span></div>"
-    )
     return (
         '<!doctype html><html><head><meta charset="utf-8"><title>Support issue triage</title><base target="_blank"><style>'
         + DIGEST_CSS + '</style></head><body><div class="wrap">' + "".join(parts) + "</div></body></html>"
@@ -309,9 +309,8 @@ def _write(path: str, html: str, limit: int) -> None:
 
 def _row(c: dict, names: dict, run: str, run_at: datetime | None, status_len: int) -> str:
     """Render one digest row."""
-    since = (c.get("since") or "")[:16]
     mark = ""
-    if run and since == run[:16]:
+    if _new(c, run):
         mark = '<span class="b">new</span>'
     elif _changed(c, run):
         mark = '<span class="b">changed</span>'
@@ -330,6 +329,11 @@ def _changed(c: dict, run: str) -> bool:
     """Whether the card's newest note is from the last run or later."""
     m = NOTE_TIME.match((c.get("notes") or [""])[-1])
     return bool(m and run) and f"{m.group(1)} {m.group(2)}" >= run[5:16]
+
+
+def _new(c: dict, run: str) -> bool:
+    """Whether the card was first seen in the last run."""
+    return bool(run) and (c.get("since") or "")[:16] == run[:16]
 
 
 def _run_time(run: str) -> datetime | None:
@@ -354,14 +358,6 @@ def _age(c: dict, run_at: datetime | None) -> str:
         at = at.replace(tzinfo=run_at.tzinfo)
     hours = max(0, (run_at - at).total_seconds() / 3600)
     return f"{int(hours * 60)}m ago" if hours < 1 else f"{int(hours)}h ago" if hours < 48 else f"{int(hours // 24)}d ago"
-
-
-def _link_issue_prefix(text: str) -> str:
-    """Link a leading #n to the support issue and escape the rest."""
-    m = re.match(r"#(\d+)", text)
-    if not m:
-        return _rich(text)
-    return f'<a href="https://github.com/{SUPPORT}/issues/{m.group(1)}">#{m.group(1)}</a>' + _rich(text[m.end():])
 
 
 def _kind(b: list) -> str:
