@@ -138,7 +138,11 @@ Stop early when:
   support#6481. Keep the `[!NOTE]` header, keep both the HAOS and the Docker sections unless the issue
   states the install type, replace `pr-NNNN` in both places with the server PR number, leave
   `frontend_repo` blank and end with one short paragraph on what to test for this issue.
-- When a PR with a related issue gets merged, update the issue:
+- When a PR with a related issue gets merged, update the issue as below and draft no reply. Marvin closes
+  every fixed issue himself with a closing message when the release ships, so a "fixed, ships in the next
+  release" or "confirm once you're on it" reply is never drafted, and an open test ask on that card is
+  dropped. A Fix merged card only needs Marvin when something besides the release is open: the reporter
+  says it's still broken, a design call, or a question the fix doesn't answer.
   - Set the "Fix to be confirmed" label.
   - With the "backport to stable" label on the PR, set the milestone to the next patch version, for
     example 2.10.5. This holds even when the cherry-pick conflicts; put a muted `backport?` badge on the
@@ -240,8 +244,8 @@ Badges are `[tone, label, kind]` with tone one of `bad`, `warn`, `info`, `ok`, `
 status tags on every card:
 - "needs attention": the issue requires an action from Marvin. That is a draft reply while the reporter
   spoke last and no PR is open, pending bookkeeping, or a badge of kind `needs attention`, `review`,
-  `decide`, `local fix`, `local fix · hw`, `verify red`, `still broken`, `backport?`, `retest` or
-  `not on stable`.
+  `decide`, `local fix`, `local fix · hw`, `verify red`, `still broken`, `retest` or `not on stable`.
+  `backport?` is muted information, never attention.
 - "waiting for user": Marvin or a teammate replied last, or the reporter was asked to test, and the user
   has to respond.
 
@@ -249,9 +253,19 @@ No badges like "draft reply"; Marvin expects those to be there when he opens the
 every card that needs attention; it is the text of the highlighted pane.
 
 After the render, end the turn with a chat summary. Say what changed this run in a few sentences, then end
-with a short list of all cards that currently need Marvin's attention, one line each with the issue and
-what he needs to do. Include the ones carried over from earlier runs that did not change this run. Sort the
-list by importance, most important first. Write every issue number as a link to its card on the board,
+with an overview of all cards that currently need Marvin, including the ones carried over from earlier
+runs, grouped by the card's `ask` under these headings, in this order, empty groups left out:
+
+- Replies to confirm (`reply`): a drafted reply waiting to be posted. Start each line with what kind of
+  reply it is: test ask, info ask or answer.
+- Input (`input`): a go or no-go, or a pick between fix options I laid out, before work can go on.
+- Design calls (`design`): a decision on how Music Assistant should behave, usually with a row in `design`.
+- Merge and release (`merge`): review, merge or release a PR.
+- Nudges (`nudge`): ping a teammate or contributor.
+
+One line per card with the issue and what Marvin needs to do, most important first within a group. Set `ask`
+on every card that needs Marvin (`reply-test`, `reply-info`, `reply-answer`, `input`, `design`, `merge`,
+`nudge`); when a card needs two things, pick the one that unblocks it. Write every issue number as a link to its card on the board,
 filtered and opened: `[#6823](http://127.0.0.1:8765/issue-triage.html?q=6823#c-6823)`; a core card uses
 `?q=<n>#c-core-<n>`.
 
@@ -322,6 +336,7 @@ board embedded, so earlier run notes still match.
       "gh": { "login": "davidfi01", "team": false, "at": "2026-10-21T02:08:04Z", "pr_open": false, "pr_draft": false },
       "summary": "",
       "action": "one or two sentences for the attention pane",
+      "ask": "reply-test | reply-info | reply-answer | input | design | merge | nudge",
       "badges": [["bad", "Needs your action", "needs attention"]],
       "reply": "draft reply, starting with the NOTE header",
       "prs": [{ "url": "https://github.com/music-assistant/server/pull/7131", "label": "server#7131 (ours, draft, CI green)" }],

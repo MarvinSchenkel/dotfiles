@@ -38,7 +38,7 @@ KEEP = {"booked", "still broken", "backport?", "test asked", "tested"}
 # Badge kinds that put a card on Marvin's list.
 ACT = {
     "needs attention", "review", "decide", "local fix", "local fix · hw", "verify red",
-    "still broken", "backport?", "retest", "not on stable",
+    "still broken", "retest", "not on stable",
 }
 REF = re.compile(
     r"(https://github\.com/[\w.\-/#]+|\b(?:home-assistant/core|music-assistant/[\w-]+|server|frontend|models"

@@ -91,7 +91,8 @@
    "bookkeeping": [],
    "notes": [
     "10-21 11:32 run: new issue. Restore after an announcement can't resume a session Google's own Cast app started; falls back to play_media on foreign media and logs 'Invalid PlayerMedia data'. Same on stable. Design row added, reply drafted."
-   ]
+   ],
+   "ask": "design"
   },
   {
    "n": 6836,
@@ -128,7 +129,8 @@
     "10-21 11:20 edit: you agreed the WiiM provider is the answer. Redrafted to point the SiriusXM dropouts at #6738 (RAOP HLS gaps, their beta setup used AirPlay protocol 1) and to ask for a log only for non-SiriusXM dropouts on DLNA.",
     "10-21 11:30 edit: output protocol advice changed to \"leave it on Auto\". For a LinkPlay shell Auto resolves to the linked DLNA player (linkplay_player.py:128-130, protocol_linking.py:2078), with AirPlay only as fallback."
    ],
-   "action": "Reply redrafted: declines the HA override, points the SiriusXM dropouts at #6738, keeps the output protocol on Auto (DLNA). Post it."
+   "action": "Reply redrafted: declines the HA override, points the SiriusXM dropouts at #6738, keeps the output protocol on Auto (DLNA). Post it.",
+   "ask": "reply-answer"
   },
   {
    "n": 6833,
@@ -158,11 +160,6 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "ok",
      "FtbC + 2.10.8 booked",
      "booked"
@@ -173,14 +170,15 @@
      "assigned"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the log, it shows exactly what happens. While HA restarted, one connection attempt hung until the 300 second setup timeout hit. That timeout path didn't clean up, so the plugin kept a command registered that it then couldn't register again, and every retry, Repair or Reload failed with 'already registered' until a restart. That's fixed in music-assistant/server#7131 and ships in 2.10.8. Until then, restarting the MA app after an HA restart is the workaround. Could you let us know once you're on 2.10.8 whether the plugin reconnects by itself after an HA restart?",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-21 07:38 run: new issue, reproduced hermetically by an Opus triage agent. A gogogo fix agent is building the draft PR (A/B, Copilot, you assigned).",
     "10-21 07:38 run: gogogo agent opened draft server#7131 (fix/hass-connect-cancel-cleanup @ 383dba6, +3 lines: CancelledError cleanup around hass.connect()). One new test, no existing tests touched. A/B: fails without the fix (unregister called 0 times), passes with it; tests/providers/hass 150 passed. All hooks incl. mypy passed via a synced worktree venv. CI green, Copilot 0 comments. You're assigned. Reply is the DEV add-on ask (HAOS).",
-    "10-21 09:11 run: you merged server#7131 at 06:41 UTC (backport-to-stable), already on backport/2.10.8. I set Fix to be Confirmed + milestone 2.10.8. The DEV test ask was never posted, so the draft is now a confirm-on-2.10.8 reply."
+    "10-21 09:11 run: you merged server#7131 at 06:41 UTC (backport-to-stable), already on backport/2.10.8. I set Fix to be Confirmed + milestone 2.10.8. The DEV test ask was never posted, so the draft is now a confirm-on-2.10.8 reply.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": "You merged server#7131 before dunxd tested it; I booked Fix to be Confirmed + 2.10.8 and swapped the DEV test ask for a confirm reply. Post it."
+   "action": ""
   },
   {
    "n": 6835,
@@ -216,7 +214,8 @@
     "10-21 07:38 run: new issue. Not enough info: diagnostics only, HEOS 'Unsupported format' + Spotify slot errors, needs a debug log of one stalled skip. Related to #6831 (same speaker family, flow URL not delivering audio fast enough) but a different trigger.",
     "10-21 07:38 run: server#7132 (flow stream read-any, for #6831) may also shorten the time to first bytes after a skip here. Worth a retest once it's in a nightly."
    ],
-   "action": "Post the debug log ask (and the 'Spotify streaming somewhere else' hint)."
+   "action": "Post the debug log ask (and the 'Spotify streaming somewhere else' hint).",
+   "ask": "reply-info"
   },
   {
    "n": 6831,
@@ -346,7 +345,8 @@
     "10-20 17:38 run: OzGav (15:00 UTC) tried it and leans to the stale entity theory: check whether the HA entity is unavailable, tick and untick 'expose to Home Assistant', and confirm it's gone. That doesn't match maisun's 12:49 report (the entity goes online whenever MA is open in Safari), so the pre-registration race is still the better fit. Our reply hasn't been posted yet.",
     "10-21 09:11 run: maisun (06:11 UTC) disabled Sendspin for web players and the entities stopped coming back (a workaround, they want Sendspin), and listed exact steps. They don't mind web player devices in HA, they mind unavailable leftovers and _2/_3 entity ids. Reply redrafted: drops the debug log ask, notes the leftover request as separate."
    ],
-   "action": "maisun gave deterministic steps and found that turning off Sendspin for web players stops it, which fits the pre-registration race. Post the updated reply (it no longer asks for a debug log) and decide whether to start a fix session."
+   "action": "maisun gave deterministic steps and found that turning off Sendspin for web players stops it, which fits the pre-registration race. Post the updated reply (it no longer asks for a debug log) and decide whether to start a fix session.",
+   "ask": "reply-answer"
   },
   {
    "n": 6819,
@@ -387,7 +387,8 @@
     "10-19 16:38 run: new issue. Documented limitation (shared PTP ports with nqptp). Auto-selecting compatibility mode for same-host ShairportSync devices is a small enhancement, design call. Same reporter as #6807 (they ran pr-7100).",
     "10-19 17:38 run: iVolt1 (15:16 UTC) disagrees with the feature request label: Automatic fails while MA already has the info that the AirPlay 2 instance shares its IP, and the manual fix isn't obvious for add-on/Docker users. Reply rewritten to meet that halfway; still your call on option A."
    ],
-   "action": "iVolt1 argues it's a bug, not a feature request. Decide on option A (Automatic picks compatibility mode for same-host ShairportSync players, small player.py change) and post the reply, or keep it docs-only."
+   "action": "iVolt1 argues it's a bug, not a feature request. Decide on option A (Automatic picks compatibility mode for same-host ShairportSync players, small player.py change) and post the reply, or keep it docs-only.",
+   "ask": "design"
   },
   {
    "n": 6817,
@@ -501,7 +502,8 @@
     "10-12 07:40 run: new issue. Code read explains it (UGP's optimistic PLAYING starts the announcement timer before the Casts play), no hardware repro, fix shape is a design call.",
     "10-14 11:40 run: only a bot reminder (03:31 UTC), nothing new."
    ],
-   "action": "Pick the fix shape: (A, my lean) for a group player, wait for PLAYING and IDLE on the members instead of the group's optimistic state; (B) UGP skips optimistic PLAYING for announcements; (C) fixed tail padding. Post the reply asking for a debug log."
+   "action": "Pick the fix shape: (A, my lean) for a group player, wait for PLAYING and IDLE on the members instead of the group's optimistic state; (B) UGP skips optimistic PLAYING for announcements; (C) fixed tail padding. Post the reply asking for a debug log.",
+   "ask": "input"
   },
   {
    "n": 6709,
@@ -556,7 +558,8 @@
     "10-13 16:40 run: you posted the Verbose log ask (13:58 UTC). The cliairplay reset decision waits for that log.",
     "10-14 11:40 run: bdeprez's Verbose log (pr-6912 DEV build, warm splices, no restart): cliairplay loads the 80702-byte cover on every item (l.230/589/922/1050) and posts it in every updateMRNowPlayingInfo (~81.7 KB body), but logs 'artwork unchanged; keeping identifier 875d5a1a8b735785' on every Next. The wire looks the same on the Next that keeps the cover and the one that loses it, so the reused ArtworkIdentifier on a new item is the likely trigger (~75%). The 'artworkData skipped' half of the hypothesis is wrong. v0.5.7/v0.5.8 don't touch ap2_mrp artwork. Moved to Reproduced, cannot fix (helper side)."
    ],
-   "action": "Decide on the airplay-cli change (new ArtworkIdentifier per track, reverses part of #58, ask Marcel) and whether I build it. Post the reply."
+   "action": "Decide on the airplay-cli change (new ArtworkIdentifier per track, reverses part of #58, ask Marcel) and whether I build it. Post the reply.",
+   "ask": "input"
   },
   {
    "n": 6688,
@@ -601,7 +604,8 @@
    "notes": [
     "10-12 07:40 run: new issue. By design since #2608: only the player linked to a Plex Connect instance reports. Workaround in the reply, design call on bringing reporting back for all players."
    ],
-   "action": "Decide whether the Plex provider reports plays for all players again (ping anatosun, who moved it into Plex Connect). Post the reply."
+   "action": "Decide whether the Plex provider reports plays for all players again (ping anatosun, who moved it into Plex Connect). Post the reply.",
+   "ask": "design"
   },
   {
    "n": 6706,
@@ -660,19 +664,15 @@
      "ok",
      "FtbC + 2.11.0 booked",
      "booked"
-    ],
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the clear write-up, the code path you pointed at was exactly it. Marcel fixed it in music-assistant/server#6878: a sync no longer re-reads the chapter files of a multi-file audiobook when nothing changed. It's in the nightly now and will ship with 2.11.0, since it builds on other Local files changes that aren't in 2.10. Could you let us know if a sync with no changes processes 0 items once you're on it?",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
-    "10-12 07:40 run: new issue, already fixed by Marcel's server#6878 (merged 10-11). Cherry-pick conflicts on stable, so I set milestone 2.11.0 (FtbC was already there)."
+    "10-12 07:40 run: new issue, already fixed by Marcel's server#6878 (merged 10-11). Cherry-pick conflicts on stable, so I set milestone 2.11.0 (FtbC was already there).",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": "Post the confirm reply (fixed by server#6878, ships in 2.11.0).",
+   "action": "",
    "n": 6692,
    "title": "Filesystem audiobooks: chapter files of multi-file books re-parsed on every sync",
    "col": "merged",
@@ -872,7 +872,7 @@
      "backport?"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@kiwipaulrob Thanks for the report. The fix is merged in music-assistant/server#7099. Adding items to a playlist now reports the ones that couldn't be resolved, and the task message only counts what was really added. It's in the nightly now and is planned for 2.10.8, the next patch release. Could you let us know once you're on it whether it's solved?",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-09 07:40 run: new issue. Static read found no silent-drop path, likely separate from #6674. Reply asks for provider, URI format and a task's final progress text.",
@@ -881,7 +881,8 @@
     "10-19 07:38 run: kiwipaulrob's controlled repro (10-17 22:19 UTC): builtin playlist, 25+21 URIs, batch 2 says \"Added 21 item(s)\" with failure_count 0 but only 20 landed, one bandcamp URI logged \"Can't add ... item not found\". Confirmed in code and with a red unit test: the builtin provider drops an unresolvable URI with only a warning and the controller counts its input list. Small clear fix, moved to pr.",
     "10-19 07:38 run: kiwipaulrob's controlled repro (10-17 22:19) flipped this to enough info. Opus subagent reproduced the overcount with a unit test; Opus fix agent opened draft server#7099 (2 tests, A/B fail/pass, 274 relevant tests pass, GPT Sol review clean). The later-batches-dropped theory isn't supported: a per-playlist lock runs batches one at a time. Separate from #6674. You're assigned. CI green, Copilot clean.",
     "10-19 09:38 run: you merged server#7099 with backport-to-stable. I set Fix to be Confirmed + milestone 2.10.8 (created the milestone). Auto backport: cherry-pick failed, patch bp-7099.patch keeps stable's metadata refresh call, the test moves into a new class in test_playlists.py (test_playlist_access.py is 2.11 only), 25 tests pass, the test change needs your OK.",
-    "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7099 failed on a conflict, but it resolves cleanly (patch bp-7099.patch keeps stable's metadata refresh call, the test moves into a new class in test_playlists.py (test_playlist_access.py is 2.11 only), 25 tests pass, the test change needs your OK). Open the manual backport onto backport/2.10.8 (patch ready), then post the confirm reply."
+    "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7099 failed on a conflict, but it resolves cleanly (patch bp-7099.patch keeps stable's metadata refresh call, the test moves into a new class in test_playlists.py (test_playlist_access.py is 2.11 only), 25 tests pass, the test change needs your OK). Open the manual backport onto backport/2.10.8 (patch ready), then post the confirm reply.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
    "action": ""
   },
@@ -917,14 +918,9 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "info",
-     "PR needs review",
-     "review"
+     "Waiting on mnestrud",
+     "waiting"
     ]
    ],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the detailed analysis and the PR. We'll review music-assistant/server#6779. One thing we'll look at is what happens when the transfer itself fails, for example when the old coordinator went offline, so it doesn't retry on every player update. Since the check sits in the core queue controller, it would also help to know if you only tested it with Sonos or also with another provider that regroups natively.",
@@ -932,9 +928,10 @@
    "notes": [
     "10-08 17:40 run: new issue. The reporter already opened server#6779 with a fix, CI and Draft PR green. Not reproducible here (3 Sonos needed). Review card.",
     "10-15 10:15 run: mnestrud refocused server#6779 on the Sonos provider only (per Marcel), marked it ready 10-14 19:27 and asked for a fresh Copilot review (requested 10-15 08:15). CI lint/pytest fail only because the new aiosonos events (GROUP_COORDINATOR_CHANGED, SESSION_ERROR, AUDIO_CLIP_STATUS) aren't in a released aiosonos yet.",
-    "10-15 10:40 run: Copilot's review of server#6779 (head 4db498cb63) has 2 [CRITICAL] and 2 [PROBLEM] findings in sonos/player.py: the coordinator-move handler can clear state after a same-queue reload (no generation check, :1333), can stop a source that took over the destination during the wait (:1343), its task isn't cancelled in on_unload (:1297), and a terminal clip event can't release the announcement wait while the duration lookup is pending (:862). The critical gate put it back in draft 08:28 UTC. It's mnestrud's to address."
+    "10-15 10:40 run: Copilot's review of server#6779 (head 4db498cb63) has 2 [CRITICAL] and 2 [PROBLEM] findings in sonos/player.py: the coordinator-move handler can clear state after a same-queue reload (no generation check, :1333), can stop a source that took over the destination during the wait (:1343), its task isn't cancelled in on_unload (:1297), and a terminal clip event can't release the announcement wait while the duration lookup is pending (:862). The critical gate put it back in draft 08:28 UTC. It's mnestrud's to address.",
+    "10-21 11:50: off your list. server#6779 is back in draft until mnestrud fixes the 2 Copilot findings; the review question stays drafted for when it is ready."
    ],
-   "action": "Nothing for you until mnestrud addresses Copilot's 2 critical findings on server#6779 (bot moved it back to draft) and aiosonos#179/#180/#188 ship. Post the reply."
+   "action": ""
   },
   {
    "n": 6645,
@@ -1043,7 +1040,8 @@
     "10-19 07:38 run: you posted the 2.10.7 update (10-18 05:28) and moved the milestone to 2.11.0.",
     "10-19 07:38 run: ryanphillipthomas (10-17 16:58 UTC, 2.10.7, HA app, AirPlay sync group): 8-27 s Play calls, 11 429s in one interval, and asks how to enter a personal developer token while the bundled one is accepted but throttled, plus get a matching user token. Your 10-18 05:28 update doesn't answer that. On dev there is no supported way: setup_flow.py only asks for a developer token when the bundled one is rejected, and a music user token is tied to the developer token it was issued under, so the manual user token field doesn't help. Drafted a short answer; the token field stays your decision."
    ],
-   "action": "Post the token answer. Still open: whether to add a personal developer token field (now asked by 4 reporters)."
+   "action": "Post the token answer. Still open: whether to add a personal developer token field (now asked by 4 reporters).",
+   "ask": "reply-answer"
   },
   {
    "n": 6500,
@@ -1163,7 +1161,8 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "CDrummond says it's still broken on 2.11.0b4 and found a single-user case (artists first opened from search lose their image). Nudge Marcel on the artist overwrite, or have me take it over."
+   "action": "CDrummond says it's still broken on 2.11.0b4 and found a single-user case (artists first opened from search lose their image). Nudge Marcel on the artist overwrite, or have me take it over.",
+   "ask": "nudge"
   },
   {
    "n": 6694,
@@ -1248,7 +1247,8 @@
     "10-12 07:40 run: new issue. Likely the external-source guard in __final_can_group_with (reproduced with mock players), not confirmed for the reporter. Reply asks them to idle the WiiM.",
     "10-12 15:40 run: you posted the reply from the board (13:38 UTC). Waiting for the reporter."
    ],
-   "action": ""
+   "action": "",
+   "ask": "reply-answer"
   },
   {
    "n": 6672,
@@ -1298,7 +1298,8 @@
     "10-15 10:15 run: airplay-cli#91 got a reworked pause shape (force-push 07:17, extra commit 08:03 'Record the paused frame after the rate-0 round trip'). Copilot had 2 findings on the first push, both resolved on the second review: 0 open findings, CI green at 4e753f0a55. Still needs the one WiiM Keuken retest of the new shape before merge.",
     "10-15 11:40 run: You reverted Copilot's post-response sample in f43c73a after the WiiM Amp retest (every SETRATEANCHORTIME takes ~207 ms, so a post-response sample anchored resumes 207 ms late). Copilot re-reviewed f43c73a at 08:38 UTC: approval recommended, 0 open findings, CI green. No reply until the fix is in a dev build."
    ],
-   "action": "airplay-cli#91 is done: WiiM Amp retest passed at f43c73a and Copilot recommends approval with 0 findings. Mark it ready, merge, and cut an airplay-cli release for the server pin bump."
+   "action": "airplay-cli#91 is done: WiiM Amp retest passed at f43c73a and Copilot recommends approval with 0 findings. Mark it ready, merge, and cut an airplay-cli release for the server pin bump.",
+   "ask": "merge"
   },
   {
    "n": 6664,
@@ -1340,7 +1341,8 @@
     "10-12 15:40 run: you posted the reply from the board (13:34 UTC). Waiting for the reporter.",
     "10-14 11:40 run: mawi13's verbose test analysed. MA sent no volume to Küche; the 65 s grid is the Sonos holding native volume during AirPlay (his own native test shows it). Possible mitigation: send Sonos volume over the AirPlay session while it renders over AirPlay, needs a bench check. Reply asks for dashboard wiring + unfiltered log."
    ],
-   "action": "Post the reply (MA never sent the volume to Küche; ask dashboard wiring + unfiltered log). Optional: let me bench-check AirPlay vs native volume on the Move."
+   "action": "Post the reply (MA never sent the volume to Küche; ask dashboard wiring + unfiltered log). Optional: let me bench-check AirPlay vs native volume on the Move.",
+   "ask": "reply-info"
   },
   {
    "n": 6512,
@@ -1453,7 +1455,8 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "Ask the reporter to retest the Sendspin to AirPlay bridge start on current dev. No small safe fix exists for the anchor floor."
+   "action": "Ask the reporter to retest the Sendspin to AirPlay bridge start on current dev. No small safe fix exists for the anchor floor.",
+   "ask": "reply-test"
   },
   {
    "n": 6402,
@@ -1532,7 +1535,8 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "Optional: post the short workaround note. The HEOS queue cleanup decision is still open."
+   "action": "Optional: post the short workaround note. The HEOS queue cleanup decision is still open.",
+   "ask": "reply-answer"
   },
   {
    "n": 6395,
@@ -1614,7 +1618,8 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "Decide whether to pass the repeat-one early enqueue to Marcel or fix it ourselves. The draft question only matters if he wants the repeat-all case confirmed."
+   "action": "Decide whether to pass the repeat-one early enqueue to Marcel or fix it ourselves. The draft question only matters if he wants the repeat-all case confirmed.",
+   "ask": "input"
   },
   {
    "n": 6303,
@@ -1851,7 +1856,8 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "Decide whether MRP volume reporting in airplay-cli is worth building (and who owns it), then post the reply."
+   "action": "Decide whether MRP volume reporting in airplay-cli is worth building (and who owns it), then post the reply.",
+   "ask": "design"
   },
   {
    "n": 6023,
@@ -1897,7 +1903,8 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "Say yes/no to the models parse_value fix (BOOLEAN strings), now that server#5175 turned out to fix only half of it. Then post the reply."
+   "action": "Say yes/no to the models parse_value fix (BOOLEAN strings), now that server#5175 turned out to fix only half of it. Then post the reply.",
+   "ask": "input"
   },
   {
    "n": 6628,
@@ -1978,7 +1985,8 @@
     "10-19 07:38 run: cicca55 (10-16 16:45): HTTP profile 3 with AAC works on the Galaxy Tab, final update planned around 10-20. OzGav set waiting-for-user again.",
     "10-21 07:38 run: cicca55 (18:17 UTC) confirms AAC + HTTP profile 3 played over an hour on 10-19 without interruptions, and says it already improved before 2.10.7. Ready to close."
    ],
-   "action": "cicca55 confirms AAC + HTTP profile 3 played over an hour without a stop. Post the thanks reply and close."
+   "action": "cicca55 confirms AAC + HTTP profile 3 played over an hour without a stop. Post the thanks reply and close.",
+   "ask": "reply-answer"
   },
   {
    "n": 6728,
@@ -2065,7 +2073,8 @@
     "10-19 07:38 run: bwente (10-17 21:08 UTC): 2.10.7 gave the same player yet another new UP id, no diagnostics, still no answer on which native player holds the stale link. Nothing in 2.10.7 or dev changes this path (only #7010, UP name following). home-assistant/core#187029 (pajikcz, 10-17, assigned arturpragacz) is related but has a different trigger: WiiM native player missing at startup, so after the 45 s fallback its DLNA and AirPlay protocols each got a fresh UP id; the Oct 2 UP was dropped when the native came back. Shared part is the UP id not surviving a native/UP handover (delete on native claim, mint on fallback). Fix item (2) in the plan, reviving a stored UP instead of minting, helps both. The draft reply was never posted.",
     "10-20 14:xx (on request): posted the reply saying we know the cause and are fixing it, diagnostics optional (issuecomment-6290984396). Diagnostics aren't needed for the fix; they'd only name the stale native."
    ],
-   "action": "Start the fix: keep the UP config until the native takes the protocol, revive it on the 45 s fallback, prune stale linked ids. Needs your OK to change test_restore_native_claims_carries_config_and_deletes_wrapper."
+   "action": "Start the fix: keep the UP config until the native takes the protocol, revive it on the 45 s fallback, prune stale linked ids. Needs your OK to change test_restore_native_claims_carries_config_and_deletes_wrapper.",
+   "ask": "input"
   },
   {
    "n": 6739,
@@ -2115,7 +2124,8 @@
     "10-15 16:38 run: you re-requested Copilot on frontend#3004 (13:46 UTC). It left 2 new comments at 13:53: (1) a jump between two history entries with the same URL (artist A, B, A, then pick the first A from the browser history menu) doesn't re-run restore because only fullPath is watched; (2) Home Assistant history entries rebuilt after a frame reload all get position 0, so two visits of the same URL can share a cache slot. Both are real but rare paths and the worst case is the wrong scroll offset. My lean: reply and resolve both as out of scope, (1) is cheap to fix by watching the route object if you prefer. The PR body still has no screenshots.",
     "10-16 15:38 run: dentedbread (not the reporter) asks if the fix is global, e.g. back from a playlist to the Playlists view. frontend#3004 only covers ArtistDetails. The Playlists listing goes through ItemsListing restoreState, which should already restore, so that would be a separate bug (not checked live). Second draft reply below answers him. frontend#3004 unchanged since 10-15 13:53."
    ],
-   "action": "Answer Copilot's 2 new comments on frontend#3004 (lean: decline both as rare edge cases, or fix the same-URL history jump by watching the route object). Then drag the screenshots (frontend-worktrees/triage-6739/.verify-env/screens) into the body, mark it ready and post the DEV add-on ask (pr-3004). The draft reply now also answers dentedbread's \"is it global?\" question, post it once the PR is ready."
+   "action": "Answer Copilot's 2 new comments on frontend#3004 (lean: decline both as rare edge cases, or fix the same-URL history jump by watching the route object). Then drag the screenshots (frontend-worktrees/triage-6739/.verify-env/screens) into the body, mark it ready and post the DEV add-on ask (pr-3004). The draft reply now also answers dentedbread's \"is it global?\" question, post it once the PR is ready.",
+   "ask": "merge"
   },
   {
    "n": 6738,
@@ -2155,7 +2165,8 @@
    "notes": [
     "10-14 11:40 run: new issue. Synthetic repro of the mechanism (HLS -re keeps ~0.5 s lead, on-demand segment fetch at each boundary), not on the real SXM CDN. Fix shape is a design call (lean: -readrate_initial_burst for HLS radio)."
    ],
-   "action": "Pick the fix (lean: -readrate_initial_burst ~10 s for HLS radio, generic + backport) and I build it. Post the reply."
+   "action": "Pick the fix (lean: -readrate_initial_burst ~10 s for HLS radio, generic + backport) and I build it. Post the reply.",
+   "ask": "input"
   },
   {
    "n": 6743,
@@ -2233,25 +2244,21 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "ok",
      "FtbC + 2.10.8 booked",
      "booked"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@FlorianSlopeLift thanks again for the clean A/B, that settled it. music-assistant/server#7120 is merged: Cast players use HTTP profile 2 (no content length) by default again, so newer speakers no longer stop after about 24 MiB. It ships in 2.10.8 and is in the next nightly. Players you set to profile 2 by hand can stay that way. If you ever picked profile 3 yourself, that choice is kept, so switch it back to the default.\n\n@olifoss this should cover your waipu.tv stick too. Could you both let us know once you're on 2.10.8 whether radio and longer FLAC tracks keep playing?",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-15 10:15 run: new issue. No byte cap in MA. Likely the receiver reacting to the forced Content-Length of profile 3 (24 MiB is far below the announced 12 h). Not reproducible without the reporter's devices, so a profile A/B on their side first.",
     "10-19 07:38 run: FlorianSlopeLift (10-16 18:59 UTC, HTML paste) ran the A/B: profile 3 stopped at 626-630 s (~24 MiB) in 4/4 runs, profile 2 played 15+ min (~35 MiB) on one GET with no next.mp3. Only other event an APP_ERROR at an ICY title change, harmless. Diagnostics: 2.10.6, nothing at the cutoff. olifoss (10-17 21:13 UTC): Waipu TV 4K stick, Spotify flow, stops after ~3 min, which is ~24 MiB at FLAC rates, so likely the same; their Sendspin/Chrome warnings are from their phone's web player and unrelated. Cause confirmed on the reporter side: forced Content-Length (Cast default since your #4133). Needs a default decision.",
     "10-20 17:38 run: you merged server#7120 at 15:38 UTC (backport-to-stable), which went with option (a): Cast default back to profile 2. I set Fix to be Confirmed + milestone 2.10.8. The backport PR server#7101 already carries it. Confirm reply drafted.",
-    "10-21 10:47 run: your docs PR music-assistant.io#1147 (Cast default HTTP profile 2) is open, linked here. Confirm reply still pending."
+    "10-21 10:47 run: your docs PR music-assistant.io#1147 (Cast default HTTP profile 2) is open, linked here. Confirm reply still pending.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": "Your server#7120 merged with backport-to-stable; I booked Fix to be Confirmed + 2.10.8. Post the confirm reply."
+   "action": ""
   },
   {
    "n": 6749,
@@ -2343,11 +2350,6 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "ok",
      "FtbC + 2.10.8 booked",
      "booked"
@@ -2363,7 +2365,7 @@
      "assigned"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks Jon, that's a really thorough test, including the seek and natural track change checks. music-assistant/server#7117 is merged and ships in 2.10.8.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-15 10:15 run: new issue. Reproduced with a unit test, fixed on a local branch from the reporter's patch, A/B confirmed. Not pushed: Soloist is Marcel's, and my push for #6749 was blocked by the classifier anyway.",
@@ -2372,9 +2374,10 @@
     "10-20 16:38 run: server#7117's Verify check is red from two 12:01 UTC runs, while the PR-checks comment says the description is fine. A re-run replays the old event payload and failed again, so it needs a fresh PR edit event (any body or title edit) to go green.",
     "10-20 17:38 run: the Verify re-run (14:39 UTC) failed for a real reason: the template box 'The code change is tested and works locally' isn't ticked. Tick it once tylernolf confirms pr-7117, which also clears Verify.",
     "10-21 07:38 run: moodwrench (17:43 UTC) tested pr-7117 on Docker with the Soloist backend and Satellite1 speakers on Sendspin: 2.10.7 still skips after 'Source stalled: no audio for 20s'; with the PR, pausing from HA's Spotify card or the phone app stops the queue within 0.6 s, resume from MA continues at the same spot, seek near the end and a natural next track don't trigger it. OzGav marked server#7117 ready for review at 22:33 UTC; Verify is still red on the unticked tested box.",
-    "10-21 09:11 run: you merged server#7117 at 06:26 UTC (backport-to-stable), already on backport/2.10.8. I set Fix to be Confirmed + milestone 2.10.8 and updated the reply to name the release."
+    "10-21 09:11 run: you merged server#7117 at 06:26 UTC (backport-to-stable), already on backport/2.10.8. I set Fix to be Confirmed + milestone 2.10.8 and updated the reply to name the release.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": "server#7117 merged (backport-to-stable); I booked Fix to be Confirmed + 2.10.8. Post the reply. moodwrench already confirmed the PR, so you can close the issue with it."
+   "action": ""
   },
   {
    "n": 6751,
@@ -2414,7 +2417,7 @@
      "backport?"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks again for testing it on your speakers, including the control run. The fix is merged in music-assistant/server#7035. It's in the nightly now and will ship with 2.11.0, since it needs code that isn't in 2.10.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-15 10:15 run: new issue. Reproduced with a unit test, fixed on a local branch, A/B confirmed. Three existing DSP tests assert the old scheduling target, so they need your OK before I touch them. Not pushed (my push for #6749 was blocked by the classifier).",
@@ -2422,7 +2425,8 @@
     "10-15 15:38 follow-up: you posted the DEV add-on ask for pr-7035 (13:45 UTC).",
     "10-15 16:38 run: mnestrud confirmed pr-7035 at 14:12 UTC on real Sonos (Era 300 with DSP leading an Amp): three clean ungroup runs plus a control run on the old code that still threw QueueEmpty. Backport check: the patch conflicts on stable and the DSP group-change test file doesn't exist there, so this is 2.11-only, milestone 2.11.0 after merge.",
     "10-19 09:38 run: you merged server#7035 with backport-to-stable. I set Fix to be Confirmed + milestone 2.10.8 (created the milestone). Auto backport: cherry-pick failed, needs get_group_and_player_lock(strict=True) from #6505/#6510 and on_player_dsp_change(after_group_change=) from #6760, and the test file is missing on stable.",
-    "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7035 failed and the fix needs 2.11 code (needs get_group_and_player_lock(strict=True) from #6505/#6510 and on_player_dsp_change(after_group_change=) from #6760, and the test file is missing on stable). Drop the backport label and move the issue to 2.11.0 (and change 2.10.8 in the reply), or backport by hand. Then post the confirm reply."
+    "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7035 failed and the fix needs 2.11 code (needs get_group_and_player_lock(strict=True) from #6505/#6510 and on_player_dsp_change(after_group_change=) from #6760, and the test file is missing on stable). Drop the backport label and move the issue to 2.11.0 (and change 2.10.8 in the reply), or backport by hand. Then post the confirm reply.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
    "action": ""
   },
@@ -2466,7 +2470,8 @@
     "10-20 17:38 run: you posted the Soloist skip explanation + debug log ask (14:40 UTC). The speed-up decision waits for that log.",
     "10-21 07:38 run: tylernolf (00:49 UTC) ran all three checks on 2.10.7: radio skip 2.5-3.2 s, Soloist 4.4-5.3 s, librespot 3.6-3.9 s, with DEBUG excerpts. Opus analysis split it: ~1.9 s floor for every source, Soloist stop + new login adds ~2.6 s over radio and ~1.2 s over librespot. Moved to Reproduced, cannot fix (design call)."
    ],
-   "action": "tylernolf's timings confirm the split: ~1.9 s floor on every source (1 s debounce + load + Sonos fetch) and ~2.6 s extra for the Soloist stop/restart. Decide whether I build lever 1 (early teardown + ~0.4 s debounce) and a Soloist DEBUG timing PR, then post the reply."
+   "action": "tylernolf's timings confirm the split: ~1.9 s floor on every source (1 s debounce + load + Sonos fetch) and ~2.6 s extra for the Soloist stop/restart. Decide whether I build lever 1 (early teardown + ~0.4 s debounce) and a Soloist DEBUG timing PR, then post the reply.",
+   "ask": "input"
   },
   {
    "n": 6757,
@@ -2504,7 +2509,8 @@
     "10-20 16:38 run: you posted the Player Queues debug log + non-Plex comparison ask (14:37 UTC). Waiting for the reporter.",
     "10-21 07:38 run: zosopage1963 (16:12 UTC) reproduced on the Chrome web player with Plex on 2.10.7 and attached a Player Queues DEBUG log. The log has no shuffle trace at all (that path doesn't log) and no refused command. Next step is a Verbose Web Server log plus the user role."
    ],
-   "action": "Post the reply asking for a Verbose Web Server log plus admin vs regular user; the Player Queues log can't show the shuffle step."
+   "action": "Post the reply asking for a Verbose Web Server log plus admin vs regular user; the Player Queues log can't show the shuffle step.",
+   "ask": "reply-info"
   },
   {
    "n": 6758,
@@ -2539,11 +2545,6 @@
      "booked"
     ],
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "muted",
      "backport? cherry-pick conflicts",
      "backport"
@@ -2554,15 +2555,16 @@
      "assigned"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@marklam this is fixed in music-assistant/server#7041 and will ship with 2.10.8. Once you're on it, could you let a DSD WavPack album go through the background analysis again and check that it finishes and the tracks get a key? Tracks analysed before the fix keep their empty key until they are analysed again.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-15 17:38 run: new issue. Reproduced with unit tests, fixed, draft server#7041, you're assigned.",
     "10-15 17:38 run: CI green. Copilot (15:57 UTC) left one [CRITICAL]: tracks already stored with a null key/mode at the current Smart Fades analysis_version stay 'complete', so the fix alone doesn't bring back their Sonic Similarity entries. Correct, this is the re-queue follow-up I'd noted. Not fixed yet because it's a design call.",
     "10-19 10:38 run: you answered the Copilot [CRITICAL] on server#7041 at 08:02 UTC (no re-queue, the affected rows are near zero and a null key does not change the fades), resolved it, Copilot re-reviewed 08:05 with approval recommended. Design call closed, reply is now the DEV ask.",
-    "10-20 13:30 (on request): you merged server#7041 on 10-19 09:24 UTC (backport-to-stable); earlier runs missed it. I set Fix to be Confirmed + milestone 2.10.8. Cherry-pick onto backport/2.10.8 conflicts (helpers/audio.py, tests/controllers/streams/test_buffer_pcm_format.py). The DEV ask was never posted, so the draft is now a confirm reply."
+    "10-20 13:30 (on request): you merged server#7041 on 10-19 09:24 UTC (backport-to-stable); earlier runs missed it. I set Fix to be Confirmed + milestone 2.10.8. Cherry-pick onto backport/2.10.8 conflicts (helpers/audio.py, tests/controllers/streams/test_buffer_pcm_format.py). The DEV ask was never posted, so the draft is now a confirm reply.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": "Post the confirm reply (server#7041 merged, ships in 2.10.8). marklam never got the DEV ask, so the reply asks them to check after updating."
+   "action": ""
   },
   {
    "n": 6810,
@@ -2602,7 +2604,8 @@
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours."
    ],
-   "action": "Decide how the Connect provider should hand off between devices that share speakers (skip vs. order the old session's stop), then reply."
+   "action": "Decide how the Connect provider should hand off between devices that share speakers (skip vs. order the old session's stop), then reply.",
+   "ask": "design"
   },
   {
    "n": 6808,
@@ -2661,7 +2664,8 @@
     "10-19 14:38 run: tjbaker posted twice (12:17, 12:37 UTC, still 2.10.7). (1) One real 429 at 10:31 (Retry-After 15 h) put the whole instance in MA's own cooldown: load, search, sync and reconfigure all refused locally, only an add-on restart cleared it. On dev that's mostly covered: server#6603 (2.11 only) keys throttlers per session and Client ID (spotify/provider.py:117-121, :1942), so a 429 on the shared client no longer blocks the custom Client ID and a changed Client ID starts clean. A reload with the same Client ID keeps the cooldown on purpose. (2) New and not fixed on dev: the hourly 'Reconcile duplicate albums' task calls albums.match_providers (albums.py:762-797), which searches every streaming provider with no rate-limit check. metadata/controller.py:669 only skips while a metadata provider is limited. On a 15.8k-album Plex library that is up to 600 Spotify searches a day on the custom Client ID (LOW priority stays on it by design, provider.py:1900-1908), matching his dashboard (500-900 /v1/search a day), and during a cooldown it logs 25 failures per run. (3) The 'Not retrying' warning (throttle_retry.py:349) doesn't name the session. Design row added.",
     "10-20 14:38 run: you posted the rate limiter reply (12:15 UTC): 2.11 (server#6603) gives each client and Client ID its own limiter. The reconciliation quota burn is still a design call."
    ],
-   "action": "Reply posted (2.11 splits the rate limiter per client). Still open: the fix shape for hourly album reconciliation burning his Client ID quota (design row #6808)."
+   "action": "Reply posted (2.11 splits the rate limiter per client). Still open: the fix shape for hourly album reconciliation burning his Client ID quota (design row #6808).",
+   "ask": "design"
   },
   {
    "n": 6806,
@@ -2694,21 +2698,17 @@
      "ok",
      "FtbC + 2.11.0 booked",
      "booked"
-    ],
-    [
-     "bad",
-     "Needs your action",
-     "needs attention"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@Thyraz Thanks for the report. The fix is merged in music-assistant/server#7097. When the shared Spotify session is rate limited, your own Client ID now fills in the playlist results after a few seconds. It's in the nightly now and will ship with 2.11.0, it doesn't apply cleanly to 2.10. Could you let us know once you're on it whether playlists show up again?",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Reproduced with a unit test, fix agent started.",
     "10-19 07:38 run: Opus fix agent: draft server#7097, 1 new test. A/B: fails without, 280/280 Spotify tests pass with it. A global cooldown under 60 s can still delay the search up to ~60 s (no up-front cooldown check). You're assigned. Copilot took 4 rounds: (1) waiting for RetriesExhausted outlasts the 8 s soft timeout and partial pages duplicated, (2) the 4 s deadline also cut healthy throttled pagination, (3) the fallback over-fetched. All fixed with tests, threads replied + resolved. pre-commit now really passes in a synced venv, so the box is ticked honestly. 283 Spotify tests pass, CI green.",
-    "10-19 09:38 run: you merged server#7097 (07:21 UTC, no backport label). Cherry-pick conflicts on stable, so I set Fix to be Confirmed + milestone 2.11.0. Reply is the confirm ask."
+    "10-19 09:38 run: you merged server#7097 (07:21 UTC, no backport label). Cherry-pick conflicts on stable, so I set Fix to be Confirmed + milestone 2.11.0. Reply is the confirm ask.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": "Post the confirm reply (merged, ships in 2.11.0)."
+   "action": ""
   },
   {
    "n": 6796,
@@ -2748,7 +2748,8 @@
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours."
    ],
-   "action": "Decide the teardown/handoff approach with #6810; post the reply asking for app confirmation."
+   "action": "Decide the teardown/handoff approach with #6810; post the reply asking for app confirmation.",
+   "ask": "design"
   },
   {
    "n": 6787,
@@ -2832,7 +2833,8 @@
     "10-20 14:38 run: the chip opened draft airplay-cli#95 (all builds and sanitizer tests green). Copilot (12:37 UTC) left 3 open findings: the shared-memory object isn't resized when a new daemon reuses an older, smaller one; tests use the production shm name and control port; no-pid registrations take one slot each and get rejected after 128 while still answering OK.",
     "10-20 15:38 run: airplay-cli#95 is out of draft, CI green, 0 unresolved threads after 4 Copilot rounds (shm recreate when too small, isolated test shm name and port, ownerless regs counted, reap-and-retry on a full table). Waiting for your merge."
    ],
-   "action": "Merge airplay-cli#95 (ready for review, CI green, all Copilot threads resolved, AirPlay is excluded from auto-merge). Then cut a cliairplay release and bump the server pin before replying to patrick131."
+   "action": "Merge airplay-cli#95 (ready for review, CI green, all Copilot threads resolved, AirPlay is excluded from auto-merge). Then cut a cliairplay release and bump the server pin before replying to patrick131.",
+   "ask": "merge"
   },
   {
    "n": 6807,
@@ -2862,11 +2864,6 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "ok",
      "FtbC + 2.10.8 booked",
      "booked"
@@ -2877,7 +2874,7 @@
      "assigned"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThe fix is merged in music-assistant/server#7100 and ships in 2.10.8: AirPlay receivers that share one IP but have different AirPlay ids no longer get linked to each other's Universal Player. It doesn't repair links that are already mixed up, so if a player still lands on the wrong Universal Player after the update, please let us know which one. Could you confirm once you're on 2.10.8?",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Reproduced with a unit test, fix agent started.",
@@ -2886,9 +2883,10 @@
     "10-19 09:38 run: your DEV add-on ask for pr-7100 is on the issue (07:10 UTC). Waiting on iVolt1.",
     "10-19 15:38 run: a comment on server#7100 at 12:49 UTC came from iVolt1's account but carries our '[!NOTE] written by Claude on Marvin's behalf' header and says we keep the PR in draft until they confirm. Looks pasted, not a test result. Still waiting on their DEV add-on test.",
     "10-19 16:38 run: iVolt1 filed #6819 (same-host shairport players fail on Automatic) while running pr-7100. No test result for #7100 itself yet.",
-    "10-21 10:47 run: you merged server#7100 at 08:25 UTC (backport-to-stable), already on backport/2.10.8. iVolt1 never posted a test result. I set Fix to be Confirmed + milestone 2.10.8 and drafted a confirm reply."
+    "10-21 10:47 run: you merged server#7100 at 08:25 UTC (backport-to-stable), already on backport/2.10.8. iVolt1 never posted a test result. I set Fix to be Confirmed + milestone 2.10.8 and drafted a confirm reply.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": "You merged server#7100 (backport-to-stable) before iVolt1 tested it; I booked Fix to be Confirmed + 2.10.8. Post the confirm reply."
+   "action": ""
   },
   {
    "n": 6800,
@@ -3002,7 +3000,8 @@
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours."
    ],
-   "action": "Decide whether Range support on live stream endpoints is worth it for LUMIN renderers."
+   "action": "Decide whether Range support on live stream endpoints is worth it for LUMIN renderers.",
+   "ask": "design"
   },
   {
    "n": 6793,
@@ -3037,11 +3036,6 @@
      "booked"
     ],
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "muted",
      "backport? test file conflicts",
      "backport"
@@ -3052,7 +3046,7 @@
      "assigned"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@dentedbread this is fixed in music-assistant/server#7095. Emby albums now take their album artists from Emby's album artist field, and a one-time pass on the next album sync removes the featured artists already linked to your albums. It's in the next nightly and beta, and in 2.10.8. Could you let us know if the album artist filter looks right after the next Emby sync?",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Reproduced with a unit test, fix agent started.",
@@ -3062,9 +3056,10 @@
     "10-19 10:38 run: CI finished green on 53f864ce, Copilot re-reviewed 07:49 ([CRITICAL] non-atomic last-artist delete, you declined at 07:49) and again 07:53 with approval recommended, 0 open threads. Reply is now the DEV ask.",
     "10-19 12:38 run: server#7095 got two pushes from your live session: 4c1a78ee8 (10:20 UTC, heal stored album artists once) and 18e0b1204 (10:32 UTC, every Emby instance counts as one source in the heal, plus a two-instance test). Copilot flagged a critical on 4c1a78ee8 (shared album across two Emby instances keeps the stale link), you replied and resolved it. CI on 18e0b1204 is green, Copilot re-review requested 10:38 UTC and still running. The DEV ask waits for that review.",
     "10-19 13:38 run: Copilot re-review of 18e0b1204 came back clean (10:41 UTC, approval recommended, 0 open threads), CI green. Reply is the DEV ask.",
-    "10-20 13:30 (on request): you merged server#7095 on 10-19 11:55 UTC (backport-to-stable); earlier runs missed it. I set Fix to be Confirmed + milestone 2.10.8. Cherry-pick onto backport/2.10.8 conflicts only in the parser test file. The DEV ask was never posted, so the draft is now a confirm reply."
+    "10-20 13:30 (on request): you merged server#7095 on 10-19 11:55 UTC (backport-to-stable); earlier runs missed it. I set Fix to be Confirmed + milestone 2.10.8. Cherry-pick onto backport/2.10.8 conflicts only in the parser test file. The DEV ask was never posted, so the draft is now a confirm reply.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": "Post the confirm reply (server#7095 merged with the one-time heal, ships in the next 2.11 beta/nightly and 2.10.8)."
+   "action": ""
   },
   {
    "n": 6778,
@@ -3104,13 +3099,14 @@
      "backport?"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@dentedbread Thanks for the report. The fix is merged in music-assistant/server#7094. Genius hits are now only used when the title and artist match the track, so you get no lyrics instead of the wrong song's. It's in the nightly now and is planned for 2.10.8, the next patch release. Could you let us know once you're on it whether it's solved?",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Reproduced with a unit test, fix agent started.",
     "10-19 07:38 run: Opus fix agent: draft server#7094, 3 new tests (2 mismatch cases from the issue, 1 match). A/B: 2 failed without the fix, 8/8 pass with it. You're assigned on the issue. Copilot's first review had 1 [CRITICAL], fixed by the agent (thread replied + resolved), re-review approval recommended. CI green, Copilot clean.",
     "10-19 09:38 run: you merged server#7094 with backport-to-stable. I set Fix to be Confirmed + milestone 2.10.8 (created the milestone). Auto backport: cherry-pick failed, patch in scratchpad bp-7094.patch keeps stable's plain error path and adds a new stable test file, 8 Genius tests pass.",
-    "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7094 failed on a conflict, but it resolves cleanly (patch in scratchpad bp-7094.patch keeps stable's plain error path and adds a new stable test file, 8 Genius tests pass). Open the manual backport onto backport/2.10.8 (patch ready), then post the confirm reply."
+    "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7094 failed on a conflict, but it resolves cleanly (patch in scratchpad bp-7094.patch keeps stable's plain error path and adds a new stable test file, 8 Genius tests pass). Open the manual backport onto backport/2.10.8 (patch ready), then post the confirm reply.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
    "action": ""
   },
@@ -3152,7 +3148,8 @@
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours."
    ],
-   "action": "Decide if playlist migration to Music Assistant should search and prefer local providers (Emby/filesystem), then post the reply."
+   "action": "Decide if playlist migration to Music Assistant should search and prefer local providers (Emby/filesystem), then post the reply.",
+   "ask": "design"
   },
   {
    "n": 6772,
@@ -3192,7 +3189,8 @@
    "notes": [
     "10-19 07:38 run: new issue. Works as designed per code read."
    ],
-   "action": "Post the reply; optionally decide whether Forgotten rows should require a minimum time since last play."
+   "action": "Post the reply; optionally decide whether Forgotten rows should require a minimum time since last play.",
+   "ask": "reply-answer"
   },
   {
    "n": 6798,
@@ -3278,7 +3276,8 @@
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours."
    ],
-   "action": "Decide how the search sheet should behave on short viewports (cover dock vs dialog fallback) and post the reply."
+   "action": "Decide how the search sheet should behave on short viewports (cover dock vs dialog fallback) and post the reply.",
+   "ask": "design"
   },
   {
    "n": 6773,
@@ -3318,7 +3317,8 @@
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours."
    ],
-   "action": "Decide whether to expire unseen web player configs and/or add bulk removal; consider a backlog item, then post the reply."
+   "action": "Decide whether to expire unseen web player configs and/or add bulk removal; consider a backlog item, then post the reply.",
+   "ask": "design"
   },
   {
    "n": 6786,
@@ -3358,7 +3358,8 @@
    "notes": [
     "10-19 07:38 run: new issue. Read-side dedupe is easy but overlaps the server#5714 playlog redesign."
    ],
-   "action": "Decide read-side dedupe in recently_played vs keying the playlog on the library item (overlaps the #5714 playlog plan), then post the reply."
+   "action": "Decide read-side dedupe in recently_played vs keying the playlog on the library item (overlaps the #5714 playlog plan), then post the reply.",
+   "ask": "design"
   },
   {
    "n": 6799,
@@ -3434,13 +3435,14 @@
      "backport?"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@TubeCrafterYT Thanks for the report. The fix is merged in music-assistant/server#7096. Autoplay now also checks the provider versions of the tracks already in your queue, so the same Apple Music songs don't get added again. It's in the nightly now and is planned for 2.10.8, the next patch release. Could you let us know once you're on it whether it's solved?",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Reproduced with a unit test, fix agent started.",
     "10-19 07:38 run: Opus fix agent: draft server#7096, 1 focused test. A/B: fails without (am-1 re-added), passes with; player_queues suite 852 passed. You're assigned. Copilot's first review flagged domain-wide matching (two instances of one provider sharing ids); now instance + item id only, re-review approval recommended. CI green, Copilot clean.",
     "10-19 09:38 run: you merged server#7096 with backport-to-stable. I set Fix to be Confirmed + milestone 2.10.8 (created the milestone). Auto backport: cherry-pick failed, patch bp-7096.patch applies only the _track_keys dedupe (dev's user-steering filter is 2.11 only), the new test drops its playback_sources patch, 506 player_queues tests pass, the test change needs your OK.",
-    "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7096 failed on a conflict, but it resolves cleanly (patch bp-7096.patch applies only the _track_keys dedupe (dev's user-steering filter is 2.11 only), the new test drops its playback_sources patch, 506 player_queues tests pass, the test change needs your OK). Open the manual backport onto backport/2.10.8 (patch ready), then post the confirm reply."
+    "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7096 failed on a conflict, but it resolves cleanly (patch bp-7096.patch applies only the _track_keys dedupe (dev's user-steering filter is 2.11 only), the new test drops its playback_sources patch, 506 player_queues tests pass, the test change needs your OK). Open the manual backport onto backport/2.10.8 (patch ready), then post the confirm reply.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
    "action": ""
   },
@@ -3472,11 +3474,6 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
      "ok",
      "FtbC + 2.10.8 booked",
      "booked"
@@ -3487,14 +3484,15 @@
      "assigned"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for testing the beta and for replaying the login calls, that made this quick. The account login is fixed in music-assistant/server#7118: Music Assistant no longer calls the account lookup that now returns 403, and takes your display name from the sign-in itself. It ships in 2.10.8 and is in the next nightly. The SWR3 stream fix you already confirmed on the beta comes with 2.11. Could you let us know once you're on 2.10.8 whether signing in with your ARD account works?",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Stream issue fixed on dev by jfeil's server#6295 (2.11). Account login still crashes; jfeil said he'd look.",
     "10-20 16:38 run: you opened server#7118 yourself and asked jfeil to sanity check it (13:47 UTC). jfeil approved at 14:23, Copilot reviewed 13:45 without inline threads, CI green. Card moved to Reproduced + fixed.",
-    "10-21 07:38 run: you merged server#7118 at 02:08 UTC (backport-to-stable). I set Fix to be Confirmed + milestone 2.10.8. No backport bot comment and it isn't on server#7101 yet; a cherry-pick onto origin/stable applies cleanly. Confirm reply drafted."
+    "10-21 07:38 run: you merged server#7118 at 02:08 UTC (backport-to-stable). I set Fix to be Confirmed + milestone 2.10.8. No backport bot comment and it isn't on server#7101 yet; a cherry-pick onto origin/stable applies cleanly. Confirm reply drafted.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
-   "action": "Your server#7118 merged with backport-to-stable; I booked Fix to be Confirmed + 2.10.8. Post the confirm reply. Not on backport PR server#7101 yet (cherry-picks cleanly, add it with the pre-release batch)."
+   "action": ""
   },
   {
    "n": 6815,
@@ -3534,13 +3532,14 @@
      "backport?"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@ChrisB85 Thanks for the report. The fix is merged in music-assistant/server#7102. For an album folder in the root of the share, the folder_name fallback now uses the track artist instead of an empty name. It's in the nightly now and is planned for 2.10.8, the next patch release. Could you let us know once you're on it whether it's solved?",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-19 08:38 run: new issue. Reporter's analysis confirmed on dev and stable. Fix agent started (TDD, A/B, draft PR, Copilot, assign you).",
     "10-19 08:38 run: Opus fix agent opened draft server#7102 (1 commit as you, all hooks incl. mypy passed). CI green, Copilot approval recommended with 0 comments. You're assigned on the issue. Reply is the DEV add-on ask.",
     "10-19 09:38 run: you merged server#7102 with backport-to-stable. I set Fix to be Confirmed + milestone 2.10.8 (created the milestone). Auto backport: cherry-pick failed, patch bp-7102.patch applies the same two conditions to stable's if/elif, the test is a standalone stable version (dev's helper is 2.11 only), 344 filesystem tests pass, the test change needs your OK.",
-    "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7102 failed on a conflict, but it resolves cleanly (patch bp-7102.patch applies the same two conditions to stable's if/elif, the test is a standalone stable version (dev's helper is 2.11 only), 344 filesystem tests pass, the test change needs your OK). Open the manual backport onto backport/2.10.8 (patch ready), then post the confirm reply."
+    "10-19 11:38 run: dropped needs-attention, the only open item is the cherry-pick, which you do in bulk before 2.10.8. The auto backport of server#7102 failed on a conflict, but it resolves cleanly (patch bp-7102.patch applies the same two conditions to stable's if/elif, the test is a standalone stable version (dev's helper is 2.11 only), 344 filesystem tests pass, the test change needs your OK). Open the manual backport onto backport/2.10.8 (patch ready), then post the confirm reply.",
+    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
    ],
    "action": ""
   },
