@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-21T09:30:00+02:00",
+ "last_run": "2026-10-21T10:05:00+02:00",
  "dev": "6a96b509a",
- "run_note": "OzGav fixed the #7124 Copilot CRITICAL and took it out of draft. Claude finds no blockers and GPT Sol raises one PROBLEM (negative MusicBrainz cache without expiry), but Copilot's review of the head is still pending after a quota stub, so it sits in almost ready. #7117, #7127, #7128 and your #7131 merged; nine older auto-approved PRs the seed still had open are now marked merged. Seven untracked drafts are carded unreviewed, and the support#6828 and support#6709 reporter replies on #7115 and #6912 are now recorded.",
+ "run_note": "OzGav's dd3d3d155 on #7124 fixes the stale MusicBrainz lookups, but all three reviewers still flag the same-name check being skipped when 'link via MusicBrainz' is off; there's a validated one-line patch, so it's back on you (fix or post). Your new #7133 (Sonic Similarity per-user row) and #7134 (Endless Mix from a station) are ready: Copilot recommends approval and we only found NITs, but they need another maintainer's approval. No merges, no auto-approvals, no reporter replies.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -2715,7 +2715,7 @@
     }
    ],
    "waiting_on": "you",
-   "changed_now": "reporter replied"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -3683,7 +3683,7 @@
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -4043,7 +4043,7 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "models",
@@ -4160,7 +4160,7 @@
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -4574,7 +4574,7 @@
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -4700,7 +4700,7 @@
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -4859,7 +4859,7 @@
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -4917,7 +4917,7 @@
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -4977,7 +4977,7 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -5037,7 +5037,7 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -5275,7 +5275,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "author",
-   "changed_now": "pushed"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -5551,7 +5551,7 @@
     }
    ],
    "waiting_on": "you",
-   "changed_now": "reporter replied"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -5675,7 +5675,7 @@
    "reviewed_now": false,
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -5788,80 +5788,96 @@
    "draft": false,
    "verdict": "almost",
    "assessment": "comment",
-   "status": "waiting",
-   "attention_since": null,
+   "status": "attention",
+   "attention_since": "2026-10-21T07:27:52Z",
    "size": "M",
    "code": 213,
-   "add": 209,
-   "del": 4,
+   "add": 210,
+   "del": 3,
    "ci_fail": false,
-   "ci": "green on 0f1358818",
+   "ci": "green on dd3d3d155",
    "core_touched": true,
    "providers_touched": [
     "musicbrainz"
    ],
    "merge_state": "merge-tree clean on origin/dev 6a96b509a; review required, no auto-merge",
-   "head_sha": "0f1358818",
-   "tldr": "OzGav fixed the Copilot CRITICAL: ids looked up while matching stay in a URL-keyed controller cache and only land on a newly inserted artist, in both scans. Claude finds no blockers (19 new + 207 artist tests pass, merges clean, no schema bump). GPT Sol flags one PROBLEM: a 'no MusicBrainz link' answer is cached with no expiry. Copilot's review of the head (requested 07:22Z, its own was a quota stub) hasn't landed yet. Core touched, so no auto-approve.",
-   "summary": "The new head replaces the old 'set item.mbid on rejection' with ArtistsController._url_mbids, a canonical-URL -> MBID|None map filled by _mbid_by_mapping and read by _looked_up_mbid only at insert time (_add_library_item, line 1866). Since the value is MusicBrainz's answer for the item's own URL, applying it to a newly inserted artist is always correct. It is never applied on the update path, so the leak Copilot flagged is gone. The repeat _get_library_item_by_match under _db_add_lock hits the cache for successful lookups (test asserts exactly two lookups for the whole add). The map is not a per-add carrier but a process-lifetime cache, bounded by MAX_LOOKED_UP_ARTIST_URLS with clear-all. Entries left behind by merge paths are harmless because each is a fact about a URL, not per-add state. A clear between scan and insert only costs a re-lookup or a missing MBID. No exception path leaves anything inconsistent: errors are caught and not cached. Concurrent adds may duplicate a lookup but cannot collide, because keys are pure functions of (domain, item_id, storefront). get_data is already persistently cached for 30 days, so network cost is one request per new conflicting id.\n\nBehaviour change versus origin/dev: a same-name candidate that has another id on the same streaming provider may now be rejected, and the scan continues to the next candidate (intended). Name matching is otherwise unchanged. Already merged artists are not split retroactively. The helpers/compare.py change only extracts the existing (MB_ARTIST, DISCOGS, TADB) tuple into ARTIST_EXTERNAL_ID_TYPES for reuse, which is justified. helpers/logging.py adds a small generic log_once with one caller. That is acceptable, though it could live in the controller. MUSICBRAINZ_WEB_URL in the provider's constants is imported by core, matching existing core->musicbrainz imports on dev. music_assistant/constants.py (API_SCHEMA_VERSION / DB schema) is untouched. The branch is 5 commits behind origin/dev with no overlapping files and merges cleanly.\n\nCritical fix check: _confirm_library_candidate no longer mutates the item; looked-up ids live in _url_mbids keyed by the item's own canonical URL and are only applied in _add_library_item, so the update path (first scan or the repeat scan under _db_add_lock) never persists them; the repeat scan reuses the cache, and test_rejected_candidate_gives_no_id_to_a_later_candidate covers the full add_item_to_library flow.\n\nGPT Sol and Claude agree the negative-cache behaviour is the only real gap; Claude rates it a NIT (f3), GPT Sol a PROBLEM (f4). Tests: Throwaway worktree at 0f1358818 (verified imports resolve to the worktree): tests/controllers/music/test_artists_same_name.py 19 passed in 0.89s; tests/controllers/music -k artist 207 passed. git merge-tree onto origin/dev: clean.",
+   "head_sha": "dd3d3d155",
+   "tldr": "OzGav's dd3d3d155 fixes the stale lookups: MusicBrainz answers now live for one add, so a link you add later is picked up. Still open, and found by all three reviewers: the same-name check is skipped when 'link via MusicBrainz' is off, although that setting is only about linking other services. A validated one-line patch fixes it. The 'add the missing link' hint is also wrong for URLs linked to several artists. Copilot's review of this head is pending.",
+   "summary": "dd3d3d155 replaces the controller-lifetime _url_mbids map with _match_lookups: a dict keyed by id(item), created lazily in _confirm_library_candidate and removed by weakref.finalize when the artist object dies. add_item_to_library passes the same object to both match passes and to _add_library_item, and _add_library_item reads the lookups before converting an ItemMapping. So the locked recheck reuses the first pass's answers and the insert picks up the found MBID. A new add (a new object) goes back to get_mbid_by_url, and from there to mass.cache. Concurrent adds of different objects cannot see each other's state. Two tasks sharing one object would share identical answers, which does no harm. Because the weakref ties the state to the object's lifetime, exceptions cannot leak it. id() reuse is safe because the finalizer runs before the memory is freed. A WeakKeyDictionary would not work here: MediaItem hashes by value, so two same-identity objects would share an entry. The id+finalize approach is justified.\n\nThe gating is still open. _confirm_library_candidate uses _musicbrainz_link_provider(), which returns None when link_providers_via_musicbrainz is off. That setting (advanced, default on) is about linking items to other music services, and its own description says identification on MusicBrainz continues regardless. Users who turned it off silently get the pre-PR merge behaviour. That is not a regression, but the setting does not mean that, and the fix is one line. The earlier worry about retries under the add lock is moot: a failed lookup returns None, the candidate is accepted in the unlocked pass, and the lock is never reached. The locked pass only asks MusicBrainz again when a new same-name candidate appeared in the meantime. Two minor points remain. get_data caches a None (unknown URL) for 30 days, so the 'add the link' hint does not take effect for up to a month. A URL linked to several artists produces the same 'not on MusicBrainz' hint. Tests: 21/21 pass in the new file, 209 pass for -k artist, ruff and mypy are clean, merge-tree is clean, and constants.py is untouched.",
    "blockers": [
-    "Copilot review of 0f1358818 still pending (re-requested 07:22Z after a quota stub).",
-    "GPT Sol PROBLEM f4: negative MusicBrainz answers are cached for the process lifetime; decide whether to ask for a TTL or accept it."
+    "Same-name check is skipped when 'link via MusicBrainz' is off: push the one-line fix or post the finding",
+    "Reply to and resolve Copilot thread r4334124132 (fixed in dd3d3d155)",
+    "Copilot review of dd3d3d155 pending"
    ],
    "findings": [
     {
      "model": "Claude",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/controllers/music/media/artists.py",
-     "line": 2050,
-     "title": "Failed MusicBrainz lookup is repeated while holding the artist add lock",
-     "detail": "_mbid_by_mapping only caches successful answers. When the first scan's lookup fails, the repeat match inside _db_add_lock does the request again through throttle_with_retries. A 502/503 raises ResourceTemporarilyUnavailable(backoff 30s), which is retried up to 5 times without arming a cooldown, so rate_limited stays False. With an unhealthy mirror, one conflicting artist can therefore hold the artist add lock for about 2 minutes per lookup, blocking every other artist insert during a sync. Origin/dev does no network I/O in the artist name scan; albums has a similar pattern on dev. This only happens on a same-provider name clash plus a MusicBrainz outage, so it is rare.",
-     "fix": "Remember URLs whose lookup failed during this add (or for a short TTL) and skip them in the repeat scan, or skip lookups entirely when the first scan already gave up on them.",
-     "id": "f1",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/controllers/music/media/artists.py",
-     "line": 1939,
-     "title": "Split only holds for the provider both artists share",
-     "detail": "The check only runs when the library candidate holds another id of the incoming item's provider. Once composer and guitarist are two library artists, a same-name artist from another provider (or a candidate without that provider's id, as test_rejected_candidate_gives_no_id_to_a_later_candidate shows) still merges into whichever same-name library artist the query returns first, even when the incoming MBID is known and the candidate's MBID differs. This is pre-existing name-matching behaviour on dev and outside this PR's scope.",
-     "fix": "Follow-up: when several same-name library candidates exist, look up the incoming URL's MBID and reject candidates whose stored mbid differs, without writing it to item.external_ids.",
-     "id": "f2",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "NIT",
-     "file": "music_assistant/controllers/music/media/artists.py",
-     "line": 2073,
-     "title": "Missing-link hint has no visible effect for up to 30 days",
-     "detail": "The INFO hint asks the user to add the streaming URL on MusicBrainz. MusicbrainzApiClient.get_data caches results, including the empty answer, for 30 days, and _url_mbids keeps the None for the process lifetime. The artist already merged is also not split afterwards, so a user who follows the hint sees nothing change.",
-     "fix": "Mention in the hint or docs that it applies to future matches only, or skip caching the 'URL unknown' answer for this lookup.",
-     "id": "f3",
-     "posted": null
-    },
-    {
-     "model": "GPT Sol",
      "severity": "PROBLEM",
      "file": "music_assistant/controllers/music/media/artists.py",
-     "line": 2050,
-     "title": "Missing MusicBrainz links stay cached without expiry",
-     "detail": "_url_mbids caches None and returns it on every later lookup without asking MusicBrainz again. After the user adds the missing link as the log hint asks, the controller keeps accepting name-only matches until restart or the 1000-entry clear, which a small library may never reach.",
-     "fix": "Give negative answers a short TTL or keep them only for the current add, plus a test where a missing link later becomes available.",
-     "id": "f4",
+     "line": 1959,
+     "title": "Same-name guard disabled by the cross-service linking setting",
+     "detail": "_confirm_library_candidate returns True (merge) when _musicbrainz_link_provider() is None, and that happens whenever 'Link items to your other music services through MusicBrainz' is off. That setting covers linking to other providers only, and its description explicitly says identifying on MusicBrainz still happens. Users who turned it off get distinct same-name artists merged again, with no log telling them why. Not a regression (default is on, and off means pre-PR behaviour), but the wrong gate for an identification check.",
+     "fix": "Use a private _musicbrainz_provider() that returns the provider when it is loaded, and patch that in the test harness (see suggested_fix).",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/controllers/music/media/artists.py",
+     "line": 2066,
+     "title": "Missing-link hint also fires for URLs linked to several artists",
+     "detail": "get_mbid_by_url returns None for both an unknown URL and a URL linked to more than one artist (musicbrainz/provider.py:709-710). For the second case, 'is not on MusicBrainz through <url> ... add <url> to their MusicBrainz page' is wrong: the link exists, just on more than one artist. That is plausible in exactly this same-name scenario.",
+     "fix": "Word the hint to cover both cases, e.g. 'is not linked to a single MusicBrainz artist through %s ... make sure %s is on their MusicBrainz page only', and update the _hint helper in the test.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/controllers/music/media/artists.py",
+     "line": 2096,
+     "title": "Hint's advice takes up to 30 days to take effect",
+     "detail": "MusicBrainzAPIClient.get_data is @use_cache(30 days) with cache_none=True, so an unknown URL (404 -> None) stays cached. After the user adds the link as the hint asks, matching keeps merging for up to a month (or until the cache is cleared). The in-memory part is fixed; this one is the provider's cache policy.",
+     "fix": "Mention the delay in the hint, or leave it as a known limitation. Changing MusicBrainz cache policy is out of scope for this PR.",
+     "posted": null
+    },
+    {
+     "model": "Copilot",
+     "severity": "CRITICAL",
+     "file": "music_assistant/controllers/music/media/artists.py",
+     "line": 1956,
+     "title": "MusicBrainz check skipped when cross-service linking is disabled",
+     "detail": "Copilot 'previously missed' finding in its 07:27Z review body (no thread): _musicbrainz_link_provider() returns None when cross-service linking is off, so same-provider artists still merge. Still present on dd3d3d155; Claude and GPT Sol agree.",
+     "fix": "Resolve the MusicBrainz provider independently of that setting (patch prepared).",
+     "posted": null
+    },
+    {
+     "model": "Copilot",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/music/media/artists.py",
+     "line": 2084,
+     "title": "Ambiguous artist URLs reported as missing links",
+     "detail": "Copilot 'previously missed' finding: get_mbid_by_url() returns None also when a URL links to several artists, so the hint wrongly says the link is missing. Still present.",
+     "fix": "Word the hint to cover both cases.",
+     "posted": null
+    },
+    {
+     "model": "Copilot",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/music/media/artists.py",
+     "line": null,
+     "title": "Failed URL lookups stay stale (thread r4334124132)",
+     "detail": "Fixed by dd3d3d155 (lookups scoped per added object); the thread is not answered or resolved yet.",
+     "fix": "OzGav replies and resolves the thread.",
      "posted": null
     },
     {
      "model": "GPT Sol",
      "severity": "SUGGESTION",
      "file": "music_assistant/controllers/music/media/artists.py",
-     "line": 111,
-     "title": "_logged_hints set is never trimmed",
-     "detail": "Every distinct missing-link hint adds a key to _logged_hints, and clearing _url_mbids does not clear it, so it grows for the controller lifetime. Small in practice (only conflicting ids).",
-     "fix": "Clear it together with _url_mbids or bound it.",
-     "id": "f5",
+     "line": 2073,
+     "title": "Lookups live as long as the artist object, not the add",
+     "detail": "GPT Sol rated this a PROBLEM: re-adding the same Artist/ItemMapping object reuses its cached None. Library sync builds fresh objects per add, so we see this as narrow.",
+     "fix": "Clear the lookups when add_item_to_library finishes.",
      "posted": null
     }
    ],
@@ -5874,24 +5890,28 @@
     }
    ],
    "copilot": {
-    "green": null,
-    "comments": 0,
-    "findings": 0,
-    "review_url": "",
-    "titles": []
+    "green": false,
+    "comments": 1,
+    "findings": 3,
+    "review_url": "https://github.com/music-assistant/server/pull/7124#pullrequestreview",
+    "titles": [
+     "[PROBLEM] Failed URL lookups remain stale (r4334124132, fixed in dd3d3d155)",
+     "[CRITICAL] MusicBrainz lookup skipped when cross-service linking is disabled (previously missed, body only)",
+     "[PROBLEM] Ambiguous artist URLs reported as missing links (previously missed, body only)"
+    ]
    },
    "copilot_reviewed_head": false,
-   "copilot_note": "Last real review 05:20Z on 3440df3a5 (1 CRITICAL, now fixed and answered by OzGav). 06:45Z review on 0f1358818 was a quota stub. Re-requested as Marvin 07:22Z, work started 07:22:39Z, no review yet at write time.",
+   "copilot_note": "Real review 07:27Z on 0f1358818: 1 thread + 2 'previously missed' findings in the body (those have no thread, so the critical gate doesn't see the CRITICAL). 07:42Z review on dd3d3d155 was a quota stub; re-requested as Marvin 08:00:48Z, work started 08:01:19Z, no review yet at write time.",
    "suggested_fix": {
-    "description": "Once Copilot is green on the head, either accept the negative-cache gap or ask OzGav for a short TTL on None entries in _url_mbids (GPT Sol f4, Claude f3). No patch: it is a design call for the author.",
-    "patch": "",
+    "description": "Gate the same-name MusicBrainz check on the MusicBrainz provider being loaded instead of on the cross-service linking setting. Validated: git apply --check OK on dd3d3d155, 21/21 tests pass, ruff and mypy clean.",
+    "patch": "diff --git a/music_assistant/controllers/music/media/artists.py b/music_assistant/controllers/music/media/artists.py\nindex ff41b56fa1..2596eb7a1f 100644\n--- a/music_assistant/controllers/music/media/artists.py\n+++ b/music_assistant/controllers/music/media/artists.py\n@@ -1956,7 +1956,7 @@ class ArtistsController(MediaControllerBase[Artist]):\n             return True\n         if not (conflict := self._same_provider_other_ids(db_item, item)):\n             return True\n-        if (musicbrainz := self._musicbrainz_link_provider()) is None:\n+        if (musicbrainz := self._musicbrainz_provider()) is None:\n             return True\n         mapping, library_mappings = conflict\n         lookups = self._lookups_of(item)\n@@ -2068,6 +2068,10 @@ class ArtistsController(MediaControllerBase[Artist]):\n             self._log_missing_musicbrainz_link(mapping, url, name, other_mbid)\n         return mbid\n \n+    def _musicbrainz_provider(self) -> MusicbrainzProvider | None:\n+        \"\"\"Return the MusicBrainz provider when it is loaded.\"\"\"\n+        return cast(\"MusicbrainzProvider | None\", self.mass.get_provider(\"musicbrainz\"))\n+\n     def _lookups_of(self, item: Artist | ItemMapping) -> dict[str, str | None]:\n         \"\"\"Return the MusicBrainz lookups made while adding this artist object, by URL.\"\"\"\n         key = id(item)\ndiff --git a/tests/controllers/music/test_artists_same_name.py b/tests/controllers/music/test_artists_same_name.py\nindex 422b709a8c..86a700e20f 100644\n--- a/tests/controllers/music/test_artists_same_name.py\n+++ b/tests/controllers/music/test_artists_same_name.py\n@@ -98,7 +98,7 @@ def _harness(\n         patch.object(mass, \"get_provider_manifest\", return_value=deezer_manifest),\n         patch.object(\n             mass.music.artists,\n-            \"_musicbrainz_link_provider\",\n+            \"_musicbrainz_provider\",\n             return_value=musicbrainz if musicbrainz_loaded else None,\n         ),\n     ):\n",
     "pushed": null
    },
    "backport": null,
-   "prompt": "Server PR #7124 (https://github.com/music-assistant/server/pull/7124), head 0f1358818, by OzGav. In music_assistant/controllers/music/media/artists.py, ArtistsController._url_mbids caches None for streaming URLs MusicBrainz doesn't know, for the process lifetime. Give those negative entries a short TTL (or keep them only for the current add) so a link the user adds on MusicBrainz takes effect without a restart, and clear _logged_hints together with _url_mbids. Add a test where a missing link later becomes available and the next add keeps the two same-name artists apart. Work in a worktree from refs/remotes/pr/7124.",
-   "whats_new": "OzGav pushed 0f1358818 at 06:46Z fixing the MBID-leak CRITICAL, answered the thread and took the PR out of draft. Copilot's review of that head was a quota stub; re-requested as Marvin at 07:22Z (copilot_work_started 07:22:39Z). Reviewed again by Claude and GPT Sol.",
+   "prompt": "Server PR #7124 (https://github.com/music-assistant/server/pull/7124), head dd3d3d155, by OzGav. In music_assistant/controllers/music/media/artists.py, _confirm_library_candidate gates the same-name MusicBrainz check on _musicbrainz_link_provider(), which is None when 'link items via MusicBrainz' is off. Gate it on the MusicBrainz provider being loaded instead (add _musicbrainz_provider()), patch that in tests/controllers/music/test_artists_same_name.py, and add a regression with cross-service linking disabled. Also reword the missing-link hint so it covers a URL linked to several MusicBrainz artists. Work in a worktree from refs/remotes/pr/7124.",
+   "whats_new": "Copilot reviewed 0f1358818 at 07:27Z: 1 PROBLEM thread (stale lookups) plus two 'previously missed' findings in the review body only (CRITICAL cross-service gating, PROBLEM ambiguous hint). OzGav pushed dd3d3d155 at 07:42Z fixing the stale lookups, without replying on the thread. Copilot's review of dd3d3d155 was a quota stub; re-requested as Marvin 08:00Z, work started 08:01Z.",
    "reviewed_now": true,
-   "reviewed_at": "2026-10-21 09:30 CEST",
+   "reviewed_at": "2026-10-21 10:05 CEST",
    "auto_approved": null,
    "stacked": false,
    "related_prs": [
@@ -5901,9 +5921,9 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "Copilot",
-   "gpt_sol": "0 critical, 1 problem",
-   "changed_now": null
+   "waiting_on": "you: fix or post",
+   "gpt_sol": "1 crit, 2 problems",
+   "changed_now": "pushed"
   },
   {
    "repo": "server",
@@ -5950,7 +5970,7 @@
    "prompt": "Squash-merge music-assistant/server PR #7127 (dependabot certifi bump, CI green, workflow-approved). Nothing to post.",
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -5997,7 +6017,7 @@
    "prompt": "Squash-merge music-assistant/server PR #7128 (dependabot pillow 13.0.0, CI green, no removed API in use). Nothing to post.",
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -6177,7 +6197,7 @@
    "reviewed_now": false,
    "author_replied": null,
    "reporter_reply": null,
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -6283,7 +6303,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -6335,7 +6355,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -6387,7 +6407,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -6440,7 +6460,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -6492,7 +6512,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -6544,7 +6564,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": null
   },
   {
    "repo": "models",
@@ -6594,7 +6614,173 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": null
+  },
+  {
+   "repo": "server",
+   "number": 7133,
+   "state": "open",
+   "closed_at": null,
+   "title": "Keep Sonic Similarity's \"Inspired by recently played\" row separate per user",
+   "author": "MarvinSchenkel",
+   "url": "https://github.com/music-assistant/server/pull/7133",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "maintainer approval",
+   "gpt_sol": "0 critical, 1 problem",
+   "size": "S",
+   "code": 9,
+   "add": 7,
+   "del": 2,
+   "ci": "green on e07a4ec1b",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 6a96b509a; review required, no auto-merge",
+   "head_sha": "e07a4ec1b",
+   "core_touched": false,
+   "providers_touched": [
+    "sonic_similarity"
+   ],
+   "stacked": false,
+   "tldr": "Cache key now includes the calling user id (positional arg -> key part) No-user case keys on 'None', same as AudioMuse; no cross-user leak Refresh/flight tasks inherit the user context, so key and data match Test checks the wiring, and use_cache's keying gives the isolation",
+   "summary": "The 'Inspired by recently played' row was cached under a single key for all users even though it is built from the caller's recently played tracks. The PR passes get_current_user()'s id as a positional arg to the @use_cache-decorated builder, and use_cache folds positional args into the key, so each user (and the no-user/None case) gets its own entry and its own single-flight/refresh task id. The builder still reads recently_played from the ambient user context. Background refresh and flight tasks are created via mass.create_task, which copies the caller's context, so they rebuild for the same user the key names. This matches audiomuse_ai/provider.py on origin/dev line for line. The new test mocks the builder and asserts it is called with each user's id. It shows the wiring but does not exercise use_cache itself. That is acceptable because keying on positional args is the decorator's own contract, and the test mirrors the AudioMuse one. Ruff is clean, and the sonic_similarity suite (243) plus the audiomuse tests pass.",
+   "whats_new": "Your new PR, first card. Copilot recommends approval on the head; Claude finds only NITs.",
+   "blockers": [
+    "Yours, so it needs another maintainer's approval"
+   ],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "tests/providers/sonic_similarity/test_recommendations.py",
+     "line": 102,
+     "title": "Test proves the user id is passed, not that the cache separates users",
+     "detail": "The builder is replaced with an AsyncMock, so @use_cache never runs. Isolation depends on use_cache keying positional args, which is true today, and the test matches the AudioMuse one.",
+     "fix": "Optional: reuse the warm-cache test's fake cache store, call as user-a and then user-b, and assert recently_played is awaited twice (once per user key).",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "PROBLEM",
+     "file": "tests/providers/sonic_similarity/test_recommendations.py",
+     "line": 108,
+     "title": "Test bypasses the cache it should verify",
+     "detail": "The builder is an AsyncMock, so @use_cache never runs; the test proves argument forwarding, not isolation. Claude rates the same point a NIT since use_cache keys positional args today.",
+     "fix": "Keep the decorated builder, mock its backend, assert distinct cached rows for two users and a None user.",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7133#pullrequestreview",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on e07a4ec1b.",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": {
+    "rec": false,
+    "why": "Doesn't cherry-pick cleanly to origin/stable: the import block conflicts because stable lacks the `_parse_row` import. Stable does have the same unkeyed cached row, so a hand-resolved backport is trivial if wanted. AudioMuse (the related #7121 pattern) is not on stable."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "#7121"
+   ],
+   "reviewed_now": true,
+   "changed_now": "new",
+   "reviewed_at": "2026-10-21 10:05 CEST"
+  },
+  {
+   "repo": "server",
+   "number": 7134,
+   "state": "open",
+   "closed_at": null,
+   "title": "Fix Endless Mix not playing when seeded by a radio station",
+   "author": "MarvinSchenkel",
+   "url": "https://github.com/music-assistant/server/pull/7134",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "maintainer approval",
+   "gpt_sol": "diff only",
+   "size": "S",
+   "code": 16,
+   "add": 10,
+   "del": 6,
+   "ci": "green on afc9ab815",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 6a96b509a; review required, no auto-merge",
+   "head_sha": "afc9ab815",
+   "core_touched": true,
+   "providers_touched": [],
+   "stacked": false,
+   "tldr": "Dynamic radio now resolves to its next batch (available tracks only) Direct play/enqueue path untouched (guarded by is_finite_radio) Managed pool uses _fetch_dynamic for dynamic sources, so it is unaffected All get_dynamic_tracks callers already catch provider errors",
+   "summary": "Since #7021, Apple Music stations are dynamic Radio items, and get_tracks_for_playback returned [] for them, so an Endless Mix seeded by a station had no base tracks and raised 'No base tracks'. The PR routes a dynamic radio to mass.music.radio.dynamic_tracks and filters on availability, as the finite branch does. I grepped origin/dev for side effects. media_resolver._resolve_media_items only calls this method behind is_finite_radio, so playing or enqueuing a dynamic radio still takes the play-as-itself/dynamic-source path. managed_pool._fetch_tracks is only reached for non-dynamic sources. The controller wrapper is not an API command. The only new consumer is RadioPlaylistProvider.get_dynamic_tracks, and its callers all catch errors: radio_playlist.get_playlist_tracks catches MusicAssistantError, queue_loader autoplay suppresses or catches, music_quiz catches Exception, and smart_playlist catches MusicAssistantError. On station state: Apple's get_station_tracks is an uncached next-batch fetch, so each Endless Mix refill adds one Apple request. Pandora serves the current fragment's pending tracks and only fetches a new fragment when due. iHeart POSTs for a new batch and can raise 'out of songs', which the callers above absorb. The test replaces the old dynamic -> [] assertion (an intended behaviour change) with a dedicated case that checks availability filtering and the dynamic_tracks call. ruff and mypy are clean on the touched file, and tests/controllers/player_queues (866) plus radio_playlist pass.",
+   "whats_new": "Your new PR, first card. Copilot recommends approval on the head; Claude finds only NITs.",
+   "blockers": [
+    "Yours, so it needs another maintainer's approval"
+   ],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/controllers/player_queues/media_resolver.py",
+     "line": 160,
+     "title": "Autoplay similar mode and Music Quiz now also pull a station batch",
+     "detail": "Autoplay SIMILAR/AUTO and Music Quiz pass enqueued items as seeds to get_dynamic_tracks, so an enqueued dynamic radio now costs one live station fetch per refill instead of contributing nothing. In a multi-seed call, a raising station (e.g. iHeart 'out of songs') aborts the whole batch, the same as a failing album or playlist seed. Every caller already catches this, and it arguably improves behaviour. Flagged only so the wider reach is a conscious choice.",
+     "fix": "None needed. Optionally mention in the PR description that autoplay seeded by a station benefits too.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/controllers/player_queues/media_resolver.py",
+     "line": 161,
+     "title": "Same call already exists in get_dynamic_source_tracks",
+     "detail": "get_dynamic_source_tracks (same class) already maps a Radio to mass.music.radio.dynamic_tracks. The new branch repeats that call.",
+     "fix": "Optional: `radio_tracks = await self.get_dynamic_source_tracks(radio)` in the is_dynamic branch.",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7134#pullrequestreview",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on afc9ab815. GPT Sol had only the diff (no repo access) and could not check the other callers; Claude checked them all.",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": {
+    "rec": false,
+    "why": "Conflicts on origin/stable in both media_resolver.py and the test. Stable's get_tracks_for_playback has no RADIO branch at all, and the Apple Music stations-as-dynamic-radio change (#7021) that caused the regression is dev-only."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "#7021"
+   ],
+   "reviewed_now": true,
+   "changed_now": "new",
+   "reviewed_at": "2026-10-21 10:05 CEST"
   }
  ]
 }
