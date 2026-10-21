@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-21 07:38 CEST",
+ "last_run": "2026-10-21 09:11 CEST",
  "columns": [
   [
    "info",
@@ -95,7 +95,7 @@
   {
    "n": 6833,
    "title": "Home Assistant plugin stays in error after an HA restart ('search_control_entities is already registered')",
-   "col": "pr",
+   "col": "merged",
    "area": "server / providers/hass __init__.py handle_async_init (connect step cleanup)",
    "since": "2026-10-21 07:38",
    "last": "dunxd 2026-10-20 19:23",
@@ -107,15 +107,15 @@
     "pr_draft": false
    },
    "summary": "2.10.7 HA add-on on HA 2026.10.2 (also 2026.10.1). After an HA core restart the Home Assistant plugin goes into error and stays there. Repair and Reload both fail with 'Command hass/search_control_entities is already registered', only an MA add-on restart clears it. Log: two connection timeouts to ws://supervisor/core/api/websocket, then a third attempt hangs resolving 'supervisor' until 'Provider hass did not initialize within 300 seconds'; every retry after that hits the duplicate registration.",
-   "fix": "server#7131 (draft): if init is cancelled while connecting to Home Assistant (the 300 s setup timeout), the plugin cleans up its half-done setup and unregisters the search command before re-raising, so the next retry, Repair or Reload works again.",
+   "fix": "server#7131 (merged 10-21 06:41 UTC, backport-to-stable): if init is cancelled while connecting to Home Assistant (the 300 s setup timeout), the plugin cleans up its half-done setup and unregisters the search command before re-raising, so the next retry, Repair or Reload works again.",
    "checked": "Opus subagent on origin/dev (same on stable :263/:269-270, matches the reporter's traceback). hass/__init__.py:278 registers SEARCH_CONTROL_ENTITIES_COMMAND before connect; the try around hass.connect() (:283-288) only catches BaseHassClientError, so the CancelledError from the 300 s init timeout (mass.py:131, :183-200) skips _cleanup_failed_init (:1075) and the command is never unregistered (only _disconnect_hass at :1050 does that, unload isn't called on an init failure). The post-connect block (:291-303) already handles CancelledError. Hermetic repro: connect hangs, init cancelled by a timeout, unregister called 0 times on origin/dev; with the fix all 98 hass provider tests pass. No existing PR.",
-   "plan": "Wait for dunxd to test pr-7131, then ready + merge. Backport candidate: the bug and line numbers match 2.10.7.",
+   "plan": "Post the confirm reply, then wait for dunxd on 2.10.8.",
    "branch": "fix/hass-connect-cancel-cleanup @ 383dba618d, worktree server-worktrees/fix-6833",
    "diff": "",
    "prs": [
     {
      "url": "https://github.com/music-assistant/server/pull/7131",
-     "label": "server#7131 (ours, draft, CI green, Copilot clean)"
+     "label": "server#7131 (yours, merged 10-21 06:41 UTC, backport-to-stable, on backport/2.10.8)"
     }
    ],
    "badges": [
@@ -126,8 +126,8 @@
     ],
     [
      "ok",
-     "Draft PR green",
-     "green"
+     "FtbC + 2.10.8 booked",
+     "booked"
     ],
     [
      "muted",
@@ -135,13 +135,14 @@
      "assigned"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the log, it shows exactly what happens. While HA restarted, one connection attempt hung until the 300 second setup timeout hit. That timeout path didn't clean up, so the plugin kept a command registered that it then couldn't register again, and every retry, Repair or Reload failed with 'already registered' until a restart. We have a fix available in music-assistant/server#7131, could you please test it? This won't interfere with your existing installation of MA, as it is a completely isolated installation of MA.\n\n## HAOS\n- Go to 'Settings > Apps' and stop your current MA App\n- Click 'Install an app' and install the 'Music Assistant DEV SERVER'\n- Go to the configuration tab of the App\n- Type `pr-7131` for server_repo\n- Leave the frontend_repo blank\n- Start the app. This will take longer than you are used to\n- Test if the issue has been resolved\n\nTo test: set up the Home Assistant plugin in the DEV app, then restart Home Assistant (or update it). The plugin should reconnect by itself once HA is back, without the 'already registered' error. Until the fix ships, restarting the MA app after an HA restart is the workaround.",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the log, it shows exactly what happens. While HA restarted, one connection attempt hung until the 300 second setup timeout hit. That timeout path didn't clean up, so the plugin kept a command registered that it then couldn't register again, and every retry, Repair or Reload failed with 'already registered' until a restart. That's fixed in music-assistant/server#7131 and ships in 2.10.8. Until then, restarting the MA app after an HA restart is the workaround. Could you let us know once you're on 2.10.8 whether the plugin reconnects by itself after an HA restart?",
    "bookkeeping": [],
    "notes": [
     "10-21 07:38 run: new issue, reproduced hermetically by an Opus triage agent. A gogogo fix agent is building the draft PR (A/B, Copilot, you assigned).",
-    "10-21 07:38 run: gogogo agent opened draft server#7131 (fix/hass-connect-cancel-cleanup @ 383dba6, +3 lines: CancelledError cleanup around hass.connect()). One new test, no existing tests touched. A/B: fails without the fix (unregister called 0 times), passes with it; tests/providers/hass 150 passed. All hooks incl. mypy passed via a synced worktree venv. CI green, Copilot 0 comments. You're assigned. Reply is the DEV add-on ask (HAOS)."
+    "10-21 07:38 run: gogogo agent opened draft server#7131 (fix/hass-connect-cancel-cleanup @ 383dba6, +3 lines: CancelledError cleanup around hass.connect()). One new test, no existing tests touched. A/B: fails without the fix (unregister called 0 times), passes with it; tests/providers/hass 150 passed. All hooks incl. mypy passed via a synced worktree venv. CI green, Copilot 0 comments. You're assigned. Reply is the DEV add-on ask (HAOS).",
+    "10-21 09:11 run: you merged server#7131 at 06:41 UTC (backport-to-stable), already on backport/2.10.8. I set Fix to be Confirmed + milestone 2.10.8. The DEV test ask was never posted, so the draft is now a confirm-on-2.10.8 reply."
    ],
-   "action": "server#7131 is green and Copilot is clean. Post the DEV add-on test ask, and decide on backport-to-stable (same code on 2.10.7, 3-line fix)."
+   "action": "You merged server#7131 before dunxd tested it; I booked Fix to be Confirmed + 2.10.8 and swapped the DEV test ask for a confirm reply. Post it."
   },
   {
    "n": 6835,
@@ -185,18 +186,18 @@
    "col": "pr",
    "area": "server / controllers/streams/controller.py flow route chunk_size, helpers/ffmpeg.py, helpers/process.py",
    "since": "2026-10-21 07:38",
-   "last": "amodig 2026-10-20 17:47",
+   "last": "MarvinSchenkel 2026-10-21 06:35",
    "gh": {
-    "login": "amodig",
-    "team": false,
-    "at": "2026-10-20T17:47:09Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-21T06:35:59Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "Docker 2.11.0.dev2026100703, native HEOS group of two Denon Home 200s, Tidal, FLAC 44.1/24 output, ICY off, crossfade off. Playback stopped near 434 s of a 466 s track and every Play retried that position and failed with HEOS 'Unable to play media'. An MA restart didn't help, skipping to the next track did. Incident log, diagnostics and a standalone repro attached.",
    "fix": "server#7132 (draft): the flow route passes on whatever ffmpeg has encoded (read-any) when ICY is off, instead of waiting for a full second of encoded audio (~197 KB for FLAC). ICY framing unchanged. This restores the behaviour from before 4108ef5292 (Feb 2025, 'use static chunksize'); the single-item route already reads this way.",
    "checked": "Opus subagent on origin/dev 03ee9a6872 (stable the same). The flow route reads ffmpeg output with chunk_size = icy_meta_interval if ICY else calculate_content_length(output_format) (controller.py:1546), via iter_chunked -> readexactly (helpers/ffmpeg.py:512/565, process.py:255-279), so for FLAC nothing is written until ~197 KB of encoded audio builds up. NEAR_REALTIME pacing only bursts 3 s ahead (streams/constants.py:100), so a quiet tail starves the player. Hermetic pytest repro: exact chunk size gives the first byte after 17.3 s on 20 s of silence, read-any under 3 s. ICY is off by default, so HEOS takes this path. Chunk size dates from 4bd03c2483 (Apr 2026). No fix PR.",
-   "plan": "Wait for amodig to test pr-7132 on the HEOS group. Also ask #6835 to retest once it's in a nightly.",
+   "plan": "Wait for amodig to test pr-7132 on the HEOS group. Decide on backport-to-stable at merge (affects every non-ICY flow stream, maybe let it bake on 2.11). Also ask #6835 to retest once it is in a nightly.",
    "branch": "fix/flow-stream-chunk-latency @ 1c65220a1d, worktree server-worktrees/fix-6831",
    "diff": "",
    "prs": [
@@ -207,9 +208,9 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
+     "info",
+     "Waiting for user",
+     "waiting"
     ],
     [
      "ok",
@@ -222,13 +223,14 @@
      "assigned"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the detailed report and the repro, that made this easy to pin down. On the flow stream, FLAC output was held back until about a second's worth of encoded audio had built up, and on a quiet or silent part that can take well over 10 seconds, so HEOS gave up. We have a fix available in music-assistant/server#7132 that sends audio as soon as it's encoded, could you please test it? This won't interfere with your existing installation of MA, as it is a completely isolated installation of MA.\n\n## Docker installs\n- Make sure to use a different data dir to prevent running dev from interfering with your stable instance\n- Execute the following commands\n```\ngit clone https://github.com/music-assistant/home-assistant-addon\ncd home-assistant-addon/music_assistant_dev\ndocker build -t ma-dev .\n```\n```\nmkdir -p ma-data\necho '{\"server_repo\": \"pr-7132\"}' > ma-data/options.json\ndocker run --rm -it --network host -v \"$(pwd)/ma-data:/data\" ma-dev\n```\n\nTo test: play the same Tidal track to the HEOS group with FLAC output and let it run through the quiet ending, then pause and resume near the end. It should keep playing and resume without 'Unable to play media'.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-21 07:38 run: new issue, reproduced hermetically by an Opus triage agent. A gogogo fix agent is building the draft PR (A/B, Copilot, you assigned).",
-    "10-21 07:38 run: gogogo agent opened draft server#7132 (fix/flow-stream-chunk-latency @ 1c65220). Safety check: the static chunk size came from 4108ef5292 with no stated reason; Content-Length profile, pacing and seconds-streamed don't depend on it; single-item route already reads any. One new test, no existing tests touched. A/B ok; streams + audio + ffmpeg suites 1844 passed. CI green, Copilot 0 comments. You're assigned. Reply is the DEV Docker ask."
+    "10-21 07:38 run: gogogo agent opened draft server#7132 (fix/flow-stream-chunk-latency @ 1c65220). Safety check: the static chunk size came from 4108ef5292 with no stated reason; Content-Length profile, pacing and seconds-streamed don't depend on it; single-item route already reads any. One new test, no existing tests touched. A/B ok; streams + audio + ffmpeg suites 1844 passed. CI green, Copilot 0 comments. You're assigned. Reply is the DEV Docker ask.",
+    "10-21 09:11 run: you posted the DEV Docker test ask (06:35 UTC, https://github.com/music-assistant/support/issues/6831#issuecomment-6309724742). Waiting for amodig."
    ],
-   "action": "server#7132 is green and Copilot is clean. Post the DEV (Docker) test ask, and decide on backport-to-stable (same code on 2.10.7, affects every non-ICY flow stream, so maybe let it bake on 2.11 first)."
+   "action": ""
   },
   {
    "n": 6821,
@@ -274,18 +276,18 @@
    "col": "norepro",
    "area": "server / controllers/players/controller.py signal_player_state_update (pre-registration events) + HA core music_assistant/__init__.py handle_player_config_updated",
    "since": "2026-10-20 07:38",
-   "last": "OzGav 2026-10-20 15:00",
+   "last": "maisun 2026-10-21 06:11",
    "gh": {
-    "login": "OzGav",
-    "team": true,
-    "at": "2026-10-20T15:00:48Z",
+    "login": "maisun",
+    "team": false,
+    "at": "2026-10-21T06:11:35Z",
     "pr_open": false,
     "pr_draft": false
    },
-   "summary": "2.10.7 HA add-on. Web players from Safari on macOS and a browser on iOS appear as Home Assistant entities although 'expose to Home Assistant' is off for them. Reporter suspects a recent regression. Diagnostics show 9x SetupFailedError 502 from MA's hass plugin (HA core restarts, unrelated). Update 10-20: maisun never enabled exposure. Deleting the HA device doesn't stick: the entities come back online whenever MA is opened in Safari and go unavailable when it's closed, so they're live, not leftovers.",
+   "summary": "2.10.7 HA add-on. Web players from Safari on macOS and a browser on iOS appear as Home Assistant entities although 'expose to Home Assistant' is off for them. Reporter suspects a recent regression. Diagnostics show 9x SetupFailedError 502 from MA's hass plugin (HA core restarts, unrelated). Update 10-20: maisun never enabled exposure. Deleting the HA device doesn't stick: the entities come back online whenever MA is opened in Safari and go unavailable when it's closed, so they're live, not leftovers. Update 10-21: turning off Sendspin for web players stops it (workaround, they want Sendspin). Deterministic steps: expose off, delete the HA device, open MA, the device comes back with live entities; close MA, they go unavailable; reopen, live again. Their real wish: no unavailable leftovers and no _2/_3 entity ids when a web player comes back.",
    "fix": "",
    "checked": "Re-triage (Opus subagent, code read on origin/dev + 2.10.7, HA core dev/master). Sendspin classifies Safari as a web player like Chrome (frontend sends productName 'Web Player', sendspin/player.py:2050-2083), so not exposed. Likely leak: a new Player starts with an empty base config (models/player.py:490, config/players.py:494-507); the real config only lands at players/controller.py:1685 after get_player_config. Sendspin callbacks are live before that, and any update_state in the gap goes through signal_player_state_update with no registration gate: PLAYER_UPDATED (the client upserts the player) plus the HA-compat PLAYER_CONFIG_UPDATED with the empty config (controller.py:2166-2177). HA core handle_player_config_updated reads get_value(expose_player_to_ha, True), so the missing key means exposed and add_player runs; the later PLAYER_ADDED then returns early because the id is already discovered. Same code on 2.10.7. Not reproduced: the throwaway server start was declined in this unattended run (ports 8927/8296 held by other verify servers). Why Safari specifically is not explained, Chrome should race too when a feature change lands early. Earlier 'stale leftovers' theory is wrong.",
-   "plan": "Repro with a throwaway MA: open the web player in Safari, subscribe to the event stream like HA does, look for PLAYER_UPDATED + PLAYER_CONFIG_UPDATED with empty values before PLAYER_ADDED. If confirmed: server fix in signal_player_state_update, skip players whose registration hasn't finished (register() already ends with an update and PLAYER_ADDED). HA core hardening: default the missing key to the client player's expose_to_ha instead of True.",
+   "plan": "Repro with a throwaway MA: open the web player in Safari, subscribe to the event stream like HA does, look for PLAYER_UPDATED + PLAYER_CONFIG_UPDATED with empty values before PLAYER_ADDED. If confirmed: server fix in signal_player_state_update, skip players whose registration hasn't finished (register() already ends with an update and PLAYER_ADDED). HA core hardening: default the missing key to the client player's expose_to_ha instead of True. The Sendspin toggle result and maisun's steps make a WebKit (Playwright) run against a throwaway MA a solid repro path.",
    "branch": "",
    "diff": "",
    "prs": [],
@@ -296,16 +298,17 @@
      "needs attention"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nYou're using it the way it's meant to work: the web player stays in MA, and with 'expose to Home Assistant' off it should never show up in HA. So this is a bug on our side. It looks like a race when the web player connects: before its settings are fully loaded, MA sends a config update without the expose value, and the Home Assistant integration treats a missing value as exposed. That would explain why the device comes back every time you open MA in Safari, even after you delete it. We're working on a fix. If you can, please attach an MA debug log taken while opening MA in Safari, plus your Home Assistant version, so we can confirm.",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, those steps match what we think happens, and the fact that turning off Sendspin for web players makes it go away points the same way. When a web player connects over Sendspin, MA briefly reports it before its settings have loaded, and the Home Assistant integration reads the missing 'expose' value as on. We're working on a fix for that, so you can keep Sendspin on. The unavailable leftovers and the _2, _3 entity ids are a separate request, we've noted it.",
    "bookkeeping": [],
    "notes": [
     "10-20 07:38 run: new issue. No MA bug found: web players default to unexposed and the HA integration removes devices when the flag flips. Likely stale HA devices that setup cleanup never removes. Reply asks unavailable vs live + ids.",
     "10-20 14:38 run: you posted the reply (11:43 UTC). Waiting for maisun: unavailable leftovers or live, plus ids.",
     "10-20 15:38 run: maisun (12:49 UTC): never enabled exposure; entities come back online whenever MA opens in Safari, so not stale devices. OzGav (13:00) pointed at the UI web player toggle. Re-triaged: likely an MA event race plus HA's exposed-by-default read of a missing key (see checked). Not reproduced, moved to Cannot reproduce with the repro plan.",
     "10-20 16:38 run: maisun (13:59 UTC) declined OzGav's UI web player toggle since it hides the web players from MA too; they want them in MA with only 'expose to Home Assistant' off. That's the intended use, so the bug stands. Reply drops the toggle workaround.",
-    "10-20 17:38 run: OzGav (15:00 UTC) tried it and leans to the stale entity theory: check whether the HA entity is unavailable, tick and untick 'expose to Home Assistant', and confirm it's gone. That doesn't match maisun's 12:49 report (the entity goes online whenever MA is open in Safari), so the pre-registration race is still the better fit. Our reply hasn't been posted yet."
+    "10-20 17:38 run: OzGav (15:00 UTC) tried it and leans to the stale entity theory: check whether the HA entity is unavailable, tick and untick 'expose to Home Assistant', and confirm it's gone. That doesn't match maisun's 12:49 report (the entity goes online whenever MA is open in Safari), so the pre-registration race is still the better fit. Our reply hasn't been posted yet.",
+    "10-21 09:11 run: maisun (06:11 UTC) disabled Sendspin for web players and the entities stopped coming back (a workaround, they want Sendspin), and listed exact steps. They don't mind web player devices in HA, they mind unavailable leftovers and _2/_3 entity ids. Reply redrafted: drops the debug log ask, notes the leftover request as separate."
    ],
-   "action": "maisun wants web players in MA with only HA exposure off (intended use); OzGav (15:00) now suggests a stale entity plus a toggle cycle. Let maisun try OzGav's toggle first, or OK a repro run + server fix (skip pre-registration events in signal_player_state_update) and post the updated reply."
+   "action": "maisun gave deterministic steps and found that turning off Sendspin for web players stops it, which fits the pre-registration race. Post the updated reply (it no longer asks for a debug log) and decide whether to start a fix session."
   },
   {
    "n": 6819,
@@ -2271,7 +2274,7 @@
   {
    "n": 6752,
    "title": "Spotify (Soloist): pausing in the Spotify app skips to the next track after 20 s",
-   "col": "pr",
+   "col": "merged",
    "area": "server / providers/spotify/backends/soloist.py _SingleTrackRun._handle_event",
    "since": "2026-10-15 10:15",
    "last": "moodwrench 2026-10-20 17:43",
@@ -2283,15 +2286,15 @@
     "pr_draft": false
    },
    "summary": "2.10.6, Spotify provider on the Soloist backend. Pausing the session from the Spotify app or HA's Spotify card stops the engine's audio, but the stream never ends, so after 20 s the stall watchdog raises 'Source stalled: no audio for 20s' and the queue skips the track. The reporter attached an AI-made patch with tests.",
-   "fix": "server#7117 (draft): on a pause from the Spotify app on a playing Soloist stream, MA stops the player like the Spotify Connect provider does, so the stall watchdog no longer skips the track. Resume from MA continues where it paused; play from the Spotify app does not resume yet.",
+   "fix": "server#7117 (merged 10-21 06:26 UTC, backport-to-stable): on a pause from the Spotify app on a playing Soloist stream, MA stops the player like the Spotify Connect provider does, so the stall watchdog no longer skips the track. Resume from MA continues where it paused; play from the Spotify app does not resume yet.",
    "checked": "Opus subagent on origin/dev d3258305b7. soloist.py:1212-1223 only records _engine_playing=False and suspends the capture sink on status 'paused', nothing pauses the queue, so audio.py:4488 + STREAM_STALL_TIMEOUT=20 (constants.py:950) skip it. #5943 handled app pauses on the old stitched backend, the single-track run lost it. spotify_connect already stops on PAUSED (spotify_connect/provider.py:1066). A full cushion suspends the sink without the engine reporting paused, so only an outside pause triggers this. Unit repro: a playing then paused SoloistPlaybackState never pauses the queue. A/B: 1 failed without the fix, 58 pass with it, spotify + spotify_connect 532 passed, ruff and mypy clean. Not tried on a real engine.",
-   "plan": "Merge server#7117. moodwrench reproduced the skip on 2.10.7, so it's a backport candidate.",
+   "plan": "Post the reply. moodwrench already tested the PR, so the card can go once the issue closes.",
    "branch": "fix/soloist-external-pause @ 347de6ac51, worktree server-worktrees/triage-6752 (not pushed)",
    "diff": "commit 347de6ac51116012a707fe2b50e6f480eed54331\nAuthor: Marvin Schenkel <marvinschenkel@gmail.com>\nDate:   Thu Oct 15 10:19:41 2026 +0200\n\n    fix(spotify): pause the queue when Spotify pauses a Soloist track\n    \n    A pause from the Spotify app or Web API stopped the Soloist engine without\n    ending the stream, so the stall watchdog failed the item after 20s and the\n    queue skipped to the next track.\n\ndiff --git a/music_assistant/providers/spotify/README.md b/music_assistant/providers/spotify/README.md\nindex 997dd5995b..542ffccadf 100644\n--- a/music_assistant/providers/spotify/README.md\n+++ b/music_assistant/providers/spotify/README.md\n@@ -103,9 +103,10 @@ audio prefs, wire models) is shared infrastructure owned by the Spotify Connect\n   taking the run back.\n - **The Spotify app cannot reach in.** Single-track mode advertises no Connect device\n   and disables remote control and transfer for its playback context, so there is\n-  nothing for the app to move, pause or take over. Playing on the account from another\n+  nothing for the app to move or take over. Playing on the account from another\n   device can still kill the stream Spotify-side; that ends the run as an incomplete\n-  delivery and the queue moves on.\n+  delivery and the queue moves on. A pause from the app or Web API still reaches the\n+  engine; the run pauses the queue on it rather than letting the item stall out.\n - **The engine never crossfades**: its own crossfade is written off in the prefs before\n   every spawn, so each track's audio arrives clean from its first sample. Music Assistant\n   mixes the boundary itself from the tail it holds back, which is what keeps waveforms,\ndiff --git a/music_assistant/providers/spotify/backends/soloist.py b/music_assistant/providers/spotify/backends/soloist.py\nindex bb33fdab6d..9e74dd791e 100644\n--- a/music_assistant/providers/spotify/backends/soloist.py\n+++ b/music_assistant/providers/spotify/backends/soloist.py\n@@ -1215,7 +1215,10 @@ class _SingleTrackRun:\n             if data.position is not None:\n                 self._observe_position(data.position.position_ms)\n             playing = data.status == \"playing\"\n-            self._engine_playing = playing\n+            was_playing, self._engine_playing = self._engine_playing, playing\n+            # the engine repeats a pause across events: act on the transition only\n+            if was_playing and data.status == \"paused\":\n+                self._observe_external_pause()\n             if self._started.is_set() and self._reader is not None:\n                 # pause silence stays out of the delivered PCM; the cushion gate\n                 # takes priority over resuming\n@@ -1261,6 +1264,23 @@ class _SingleTrackRun:\n             \"can only play in one place at a time\"\n         )\n \n+    def _observe_external_pause(self) -> None:\n+        \"\"\"Pause the queue when Spotify paused this run's item from outside Music Assistant.\"\"\"\n+        if (\n+            self.queue_id is None\n+            # still starting up (or seeking): no audio has been released yet\n+            or self._reader is None\n+            or self._stopped\n+            or self._item_over\n+            or self._engine_exited\n+            or self._delivery_done\n+            or self._error is not None\n+        ):\n+            return\n+        # only the Spotify app or Web API pauses the engine; unhandled, the item stalls and skips\n+        self.logger.info(\"Spotify paused %s, pausing queue %s\", self.spotify_uri, self.queue_id)\n+        self.mass.create_task(self.mass.players.cmd_pause(self.queue_id))\n+\n     def _observe_position(self, position_ms: int) -> None:\n         \"\"\"Confirm an armed seek once the engine reports at (or past) its target.\"\"\"\n         self._position_ms = position_ms\n",
    "prs": [
     {
      "url": "https://github.com/music-assistant/server/pull/7117",
-     "label": "server#7117 (ours, out of draft since OzGav 10-20 22:33 UTC, Verify red on the unticked tested box, Copilot clean)"
+     "label": "server#7117 (yours, merged 10-21 06:26 UTC, backport-to-stable, on backport/2.10.8)"
     }
    ],
    "badges": [
@@ -2302,16 +2305,21 @@
     ],
     [
      "ok",
-     "Draft PR green",
-     "green"
+     "FtbC + 2.10.8 booked",
+     "booked"
     ],
     [
      "ok",
      "Reporter confirmed",
      "confirmed"
+    ],
+    [
+     "muted",
+     "Assigned to you",
+     "assigned"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks Jon, that's a really thorough test, including the seek and natural track change checks. We'll get music-assistant/server#7117 merged and let you know which release it lands in.",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks Jon, that's a really thorough test, including the seek and natural track change checks. music-assistant/server#7117 is merged and ships in 2.10.8.",
    "bookkeeping": [],
    "notes": [
     "10-15 10:15 run: new issue. Reproduced with a unit test, fixed on a local branch from the reporter's patch, A/B confirmed. Not pushed: Soloist is Marcel's, and my push for #6749 was blocked by the classifier anyway.",
@@ -2319,9 +2327,10 @@
     "10-20 14:38 run: the chip opened draft server#7117 (CI green; Copilot's 2 findings fixed, re-review clean) and you posted the pr-7117 DEV test ask (12:02 UTC). Waiting for moodwrench.",
     "10-20 16:38 run: server#7117's Verify check is red from two 12:01 UTC runs, while the PR-checks comment says the description is fine. A re-run replays the old event payload and failed again, so it needs a fresh PR edit event (any body or title edit) to go green.",
     "10-20 17:38 run: the Verify re-run (14:39 UTC) failed for a real reason: the template box 'The code change is tested and works locally' isn't ticked. Tick it once tylernolf confirms pr-7117, which also clears Verify.",
-    "10-21 07:38 run: moodwrench (17:43 UTC) tested pr-7117 on Docker with the Soloist backend and Satellite1 speakers on Sendspin: 2.10.7 still skips after 'Source stalled: no audio for 20s'; with the PR, pausing from HA's Spotify card or the phone app stops the queue within 0.6 s, resume from MA continues at the same spot, seek near the end and a natural next track don't trigger it. OzGav marked server#7117 ready for review at 22:33 UTC; Verify is still red on the unticked tested box."
+    "10-21 07:38 run: moodwrench (17:43 UTC) tested pr-7117 on Docker with the Soloist backend and Satellite1 speakers on Sendspin: 2.10.7 still skips after 'Source stalled: no audio for 20s'; with the PR, pausing from HA's Spotify card or the phone app stops the queue within 0.6 s, resume from MA continues at the same spot, seek near the end and a natural next track don't trigger it. OzGav marked server#7117 ready for review at 22:33 UTC; Verify is still red on the unticked tested box.",
+    "10-21 09:11 run: you merged server#7117 at 06:26 UTC (backport-to-stable), already on backport/2.10.8. I set Fix to be Confirmed + milestone 2.10.8 and updated the reply to name the release."
    ],
-   "action": "moodwrench confirmed pr-7117 works (pause from HA and the Spotify app stop the queue, resume continues, no side effects). Tick 'tested and works locally' in server#7117 to clear Verify, merge, and decide on backport-to-stable (Soloist is on 2.10.7)."
+   "action": "server#7117 merged (backport-to-stable); I booked Fix to be Confirmed + 2.10.8. Post the reply. moodwrench already confirmed the PR, so you can close the issue with it."
   },
   {
    "n": 6751,
@@ -2842,35 +2851,36 @@
    "col": "info",
    "area": "server providers/squeezelite + aioslimproto",
    "since": "2026-10-19 07:38",
-   "last": "MarvinSchenkel 2026-10-20 14:41",
+   "last": "Vivi92821 2026-10-21 06:17",
    "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-20T14:41:29Z",
+    "login": "Vivi92821",
+    "team": false,
+    "at": "2026-10-21T06:17:56Z",
     "pr_open": false,
     "pr_draft": false
    },
-   "summary": "Eversolo T8 and DMP-A6 using built-in Squeeze Connect drop and reconnect to MA's slimproto server about every 130 seconds, which interrupts playback. It still happens on 2.10.7 (Docker on a Pi 5, host networking). LMS is stable with the same devices. The reporter's captures show RSTs from the Eversolo side and CLOSE-WAIT sockets piling up on the MA side.",
+   "summary": "Eversolo T8 and DMP-A6 using built-in Squeeze Connect drop and reconnect to MA's slimproto server about every 130 seconds, which interrupts playback. It still happens on 2.10.7 (Docker on a Pi 5, host networking). LMS is stable with the same devices. The reporter's captures show RSTs from the Eversolo side and CLOSE-WAIT sockets piling up on the MA side. Update 10-21: firmware 1.6.15 on both; idle tests on 2.10.7 show the cycle with both players, T8 alone (130.28 s) and DMP-A6 alone (127.28 s). Offers a tcpdump on port 3483.",
    "fix": "",
-   "checked": "Attached log: the DMP-A6 cycles 'Player unavailable' then 'connected' every 129-131 s from 08:30 on. It starts right after the provider loads and while nothing plays, so it is not playback related. The T8 does not cycle in this log. aioslimproto (3.2.3 on stable, 3.3.0 on dev) sends strm 't' every 5 s (client.py _send_heartbeat, HEARTBEAT_INTERVAL=5 in const.py). After each heartbeat it calls _render_display, which sends display/brightness frames unless the player reported a 0x0 display. The socket reader drops the client after 10 s of silence (client.py _socket_reader, timeout HEARTBEAT_INTERVAL*2). Nothing in the code gives a 130 s period, and the log is INFO only, so we can't see which side closes or why. One guess, not verified: the display frames sent every 5 s to a squeezeplay-type device with no display. The CLOSE-WAIT buildup points to a possible missed close in aioslimproto disconnect(), but I could not tie it to the cycle.",
-   "plan": "Need a debug log of the Squeezelite provider over 5 minutes idle, which shows the 'Socket disconnected' reason and the HELO/display setup frames, plus the Eversolo firmware versions. Then compare LMS's per-device behaviour, for example display frames or heartbeat cadence.",
+   "checked": "Attached log: the DMP-A6 cycles 'Player unavailable' then 'connected' every 129-131 s from 08:30 on. It starts right after the provider loads and while nothing plays, so it is not playback related. The T8 does not cycle in this log. aioslimproto (3.2.3 on stable, 3.3.0 on dev) sends strm 't' every 5 s (client.py _send_heartbeat, HEARTBEAT_INTERVAL=5 in const.py). After each heartbeat it calls _render_display, which sends display/brightness frames unless the player reported a 0x0 display. The socket reader drops the client after 10 s of silence (client.py _socket_reader, timeout HEARTBEAT_INTERVAL*2). Nothing in the code gives a 130 s period, and the log is INFO only, so we can't see which side closes or why. One guess, not verified: the display frames sent every 5 s to a squeezeplay-type device with no display. The CLOSE-WAIT buildup points to a possible missed close in aioslimproto disconnect(), but I could not tie it to the cycle. 10-21: the three Verbose logs hold no aioslimproto lines at all. Log-level-only config changes skip the provider reload (models/provider.py:136), and the Squeezelite provider sets the aioslimproto logger level only in handle_async_init (squeezelite/provider.py:69-73), so it stayed at WARNING. All three logs come from the same 05:24 boot with Verbose set at 05:37. Same code on stable. Reconnect lands 140-170 ms after 'unavailable' each time, so the device redials immediately; which side closes is still unknown.",
+   "plan": "Get a Verbose log taken after a restart (so aioslimproto logs at DEBUG) plus the tcpdump the reporter offered; then compare with LMS.",
    "branch": "",
    "diff": "",
    "prs": [],
    "badges": [
     [
-     "info",
-     "Waiting for user",
-     "waiting"
+     "bad",
+     "Needs your action",
+     "needs attention"
     ]
    ],
-   "reply": "",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for running all three tests, that rules out an interaction between the two players. The verbose log didn't capture the slimproto details though, and that's on us: changing the log level only reaches the slimproto library after Music Assistant restarts. Could you restart the container with the Squeezelite provider still on Verbose, leave one player idle for about 5 minutes and attach that log? A packet capture on port 3483 over the same window would help too, for example `sudo tcpdump -i any -w slimproto.pcap port 3483`, since it shows which side closes the connection first.",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Not enough info, reply asks for what's missing.",
-    "10-20 17:38 run: you posted the verbose Squeezelite log ask (14:41 UTC). Waiting for Vivi92821."
+    "10-20 17:38 run: you posted the verbose Squeezelite log ask (14:41 UTC). Waiting for Vivi92821.",
+    "10-21 09:11 run: Vivi92821 (06:02 + 06:17 UTC) sent firmware 1.6.15 and Verbose idle logs for both players, T8 alone and DMP-A6 alone; all cycle at ~127-130 s. The logs have no aioslimproto output because Verbose was set at runtime without a restart. Reply redrafted to ask for a log after restart plus a tcpdump."
    ],
-   "action": ""
+   "action": "Vivi92821 ran the Verbose idle tests, but the logs are empty for slimproto because a runtime log level change never reaches aioslimproto (our bug). Post the redrafted ask: restart with Verbose on, plus the tcpdump they offered."
   },
   {
    "n": 6791,
@@ -3765,7 +3775,9 @@
   "Local files logs 'Error processing <file> - ' with an empty message when the exception has no text (AssertionError in #6815). Logging the exception type would make these diagnosable at INFO level.",
   "server#6706 (Cast artwork in a Universal Group, draft) lost its issue: #6102 was auto-closed. voc0der replied after the close (10-20 09:55 UTC) that they won't test without a docker image. Keep it as a standalone fix or close it.",
   "#6668 (closed by you 10-20 as a tagging issue): the get_album_dir exact-tier bug for self-titled album folders still has a clean unit repro and no fix. Worth a small PR if you want it.",
-  "HA core music_assistant handle_player_config_updated defaults a missing expose_player_to_ha to True (#6822). Small HA core PR: fall back to the client player's expose_to_ha."
+  "HA core music_assistant handle_player_config_updated defaults a missing expose_player_to_ha to True (#6822). Small HA core PR: fall back to the client player's expose_to_ha.",
+  "#6822: maisun wants web player devices in HA cleaned up when the player goes away, without _2/_3 entity ids when it returns. HA integration side, separate from the expose race.",
+  "Squeezelite: setting the provider log level to Verbose at runtime never reaches the aioslimproto logger (set only in handle_async_init, log-level changes skip the reload). Override update_config to re-apply the level. Found on #6800, same on stable."
  ],
  "milestones": {
   "2.10.5": 34,
@@ -3787,7 +3799,7 @@
     "2.10.8 batch",
     "backport/2.10.8",
     "**Queued**",
-    "On the branch: server#7098 (#6808), #7090 (Tidal multi-disc, no issue). Auto backport failed: #7094, #7096, #7099 and #7102 resolve by hand (patches in the triage scratchpad, tests pass on a stable venv at server-worktrees/bp-stable-venv), #7035 needs 2.11 code. Also merged 10-18: server#7060, #7059 (Sendspin). I created the 2.10.8 milestone in support. 10-20 17:38: backport PR server#7101 is out of draft and now carries #7090, #7098, #7074, #7022, #7082 and #7120 (#6748). 10-21 07:38: server#7118 (#6774, backport-to-stable, merged 02:08 UTC) is not on server#7101 yet, cherry-picks cleanly onto stable."
+    "On the branch: server#7098 (#6808), #7090 (Tidal multi-disc, no issue). Auto backport failed: #7094, #7096, #7099 and #7102 resolve by hand (patches in the triage scratchpad, tests pass on a stable venv at server-worktrees/bp-stable-venv), #7035 needs 2.11 code. Also merged 10-18: server#7060, #7059 (Sendspin). I created the 2.10.8 milestone in support. 10-20 17:38: backport PR server#7101 is out of draft and now carries #7090, #7098, #7074, #7022, #7082 and #7120 (#6748). 10-21 07:38: server#7118 (#6774, backport-to-stable, merged 02:08 UTC) is not on server#7101 yet, cherry-picks cleanly onto stable. 10-21 09:11: server#7131 (#6833) and server#7117 (#6752) auto-backported onto backport/2.10.8; server#7118 (#6774) still not on it."
    ]
   ]
  },
