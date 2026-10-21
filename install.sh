@@ -27,4 +27,13 @@ link "$DOTFILES/skills"                  "$HOME/.copilot/skills"
 link "$DOTFILES/copilot-instructions.md" "$HOME/.copilot/copilot-instructions.md"
 link "$DOTFILES/copilot-instructions.md" "$HOME/.claude/CLAUDE.md"
 
+# Second Claude config dir (team seat used for routines); shares everything but plugins and settings.
+TEAMB="$HOME/.claude-teamB"
+if [ -d "$TEAMB" ]; then
+  link "$DOTFILES/skills"                  "$TEAMB/skills"
+  link "$DOTFILES/copilot-instructions.md" "$TEAMB/CLAUDE.md"
+  link "$HOME/.claude/output-styles"       "$TEAMB/output-styles"
+  link "$HOME/.claude/projects"            "$TEAMB/projects"
+fi
+
 echo "Done."
