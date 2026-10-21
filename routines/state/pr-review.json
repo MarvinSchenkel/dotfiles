@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-21T16:10:00+02:00",
+ "last_run": "2026-10-21T17:15:00+02:00",
  "dev": "86a6e84fc",
- "run_note": "#7138 merged from the queue. Four PRs came back clean this hour: #7124 (OzGav), #7123 (mnestrud, backport) and #7079 (Simanias) are ready for your approve; #7079 would qualify for auto-approve but Copilot asks for a final human look at the zone reconciliation, so I left it to you. #6779 (Sonos) resolved all three Copilot threads, but our 'user play still preparing' PROBLEM stands; a validated patch is ready. Your new draft models#442 is carded.",
+ "run_note": "#5700 rebased cleanly with DB schema 71 and the podcast fix, but still needs API schema 100 and the diagnostics hook (patch ready), and Copilot opened a CRITICAL about plays credited to every linked album; dev's played-from album attribution (#7073) looks like the fix. #6901's thread fixes check out, but Copilot raised a body-only CRITICAL (paid AI request after unload) and your AI_QUERY design call is still open. OzGav found a real gap on #7079 (zone watcher dies silently), so it's back on Simanias. Your models#442 is ready for another maintainer.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -130,7 +130,7 @@
     "rec": false,
     "why": "L-sized Sonos behaviour change that needs the aiosonos 0.1.15 bump (stable pins 0.1.13); ship in the next minor."
    },
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-21 16:10 CEST",
    "auto_approved": null,
    "stacked": false,
@@ -142,7 +142,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: fix or post",
-   "changed_now": "ready for review",
+   "changed_now": null,
    "gpt_sol": "0 critical, 3 problems"
   },
   {
@@ -1448,33 +1448,33 @@
    "assessment": "comment",
    "status": "attention",
    "size": "XL",
-   "code": 1246,
-   "add": 1230,
-   "del": 16,
+   "code": 1715,
+   "add": 3276,
+   "del": 21,
    "ci_fail": false,
-   "ci": "green on 94553624f",
+   "ci": "green on 8071325c1",
    "core_touched": true,
    "providers_touched": [
     "fastmcp_server"
    ],
-   "merge_state": "CONFLICT with origin/dev 86a6e84fc in controllers/music/migrations.py; review required, no auto-merge",
-   "head_sha": "94553624f",
-   "tldr": "dmoo500 did what you asked: the statistics cache and its hooks are gone, and the rewrites plus one covering index are in. Claude checked 1030 old-vs-new cases (5 periods, 5 timezones): identical results. Left: it now conflicts with dev in migrations.py and needs DB schema 71 (block <= 70) and API schema 100, default history still hides podcast episodes (Copilot, body only), and the diagnostics hook is still dead. A validated patch covers all but the hand-resolved conflict.",
-   "summary": "I ran 7708abc0b (old queries) and 94553624f (new queries) against the same seeded dataset in throwaway worktrees and compared the output. The dataset had 4000 play_history rows: library, instance, domain and unmapped providers, a domain id shared by two library tracks, alias artist credits, fractional timestamps, plays around DST changes and a second user. The comparison covered top_items for 7 media types, genre/decade distribution, listening_time by artist and genre, plays_over_time hour/day/week/month, listening_activity and 519 play_count probes, across today/week/month/year/all_time and UTC, Amsterdam, New York, Kathmandu (+5:45) and Lord Howe (30-minute DST). All 1030 cases matched exactly. The week start `((bucket + 3) / 7 * 7 - 3)` and weekday `(bucket / 24 + 3) % 7` give Monday-start weeks and 0=Monday for epoch-day buckets. The 900 s non-UTC bucketing matched per-play conversion in every zone I tested. Dropping DISTINCT from the album and genre CTEs is safe because album_tracks, genre_media_item_mapping and provider_mappings all have unique constraints. EXPLAIN shows the time-series and played_pairs scans run as a covering-index SEARCH. No cache_statistics, use_cache, invalidate_statistics_cache, generation dict or merge/playlog hook is left. Only some 'cache' wording remains in the dev benchmark script, and that script only checks that repeated calls agree, not old vs new.\n\nMigration: origin/dev is already at DB_SCHEMA_VERSION 70 with its own `prev_version <= 69` block (#7021 Apple Music stations), so `git merge-tree` reports a content conflict in migrations.py. Resolving it by keeping both blocks under `<= 69` would skip the index swap for anyone already on 70. The old indexes would stay alongside the covering index that `__create_database_indexes` adds, and nothing would fail. The fix is DB_SCHEMA_VERSION 71 with the PR's block as `if prev_version <= 70:`, and prev_version=70 in the migration test. API_SCHEMA_VERSION has the same problem: both sides bumped 98 to 99, so the merge silently stays at 99 even though the PR adds 8 new statistics/* commands, which per the constants.py comment needs 100. Podcast episodes are confirmed missing: MediaType.ALL in models 1.1.225 and 1.1.226 has no PODCAST_EPISODE. The playlog writer only skips sound effects, audio sources and builtin one-offs, so completed queue episodes do reach play_history (the PR's own PLAY_HISTORY_EVENT_TYPES includes them), but default history hides them. 'statistics' is still missing from CORE_CONTROLLER_ATTRS, so get_diagnostics is dead code. _get_period_cutoff already sits on _StatisticsBase in statistics/base.py, so not moving it further is fine.",
+   "merge_state": "merge-tree clean on origin/dev 86a6e84fc; review required, no auto-merge",
+   "head_sha": "8071325c1",
+   "tldr": "dmoo500 rebased onto dev: DB schema 71 with the migration under <= 70, podcast episodes in the default history, and Copilot's availability CRITICAL fixed. Still open: API_SCHEMA_VERSION 100 and the diagnostics hook (validated patch ready). Copilot's 15:15Z review adds a CRITICAL thread: a play is credited to every album its track is linked to. Dev already knows which album a play came from (#6872/#7073), which looks like the cheap fix.",
+   "summary": "Head 8071325c1 merges dev cleanly (merge-tree clean, dev is an ancestor). The merge commit also carries real changes: DB_SCHEMA_VERSION 71, the play-history index migration moved under `prev_version <= 70` with dev's `<= 69` Apple Music block kept, and a new provider-mapping pass in `_set_library_item_availability`. That pass answers Copilot's 'previously missed' critical: provider-keyed history and ranking rows now go unavailable when their exact-instance mapping is unavailable, or when none of their domain mappings is available on a loaded instance. Same rule as dev's `_summary_available`/MediaItem.available. A933be9bd adds PODCAST_EPISODE to the default history types, with a test. Still open: API_SCHEMA_VERSION is 99 even though the PR adds 8 statistics/* API commands (also exposed through the MCP policy), and StatisticsController.get_diagnostics is never collected because 'statistics' is not in CORE_CONTROLLER_ATTRS. Minor: the new provider-mapping lookup filters only on media_type plus provider_item_id, so it scans every mapping of that media type per history page. The migration test still passes prev_version=69, and its docstring says 'Schema 70'.",
    "blockers": [
-    "Conflicts with dev in migrations.py: needs DB_SCHEMA_VERSION 71 with the play-history block at `<= 70`, and API_SCHEMA_VERSION 100",
-    "Default play history hides podcast episodes (Copilot, review body only) and 'statistics' is still missing from CORE_CONTROLLER_ATTRS",
-    "`fix 5700` pushes the validated patch for all of it except the migrations.py conflict, which needs a rebase; or post the findings"
+    "Copilot CRITICAL r4338544556: plays are credited to every linked album. Decide whether he should use dev's played-from album attribution (#7073) instead",
+    "API_SCHEMA_VERSION still 99 (needs 100) and 'statistics' missing from CORE_CONTROLLER_ATTRS: `fix 5700` pushes the validated patch, or post it",
+    "Merges cleanly onto dev now; the critical gate will draft it over r4338544556"
    ],
    "findings": [
     {
-     "model": "Claude",
-     "severity": "PROBLEM",
-     "file": "music_assistant/controllers/music/migrations.py",
-     "line": 1401,
-     "title": "Migration block collides with dev's schema 70",
-     "detail": "origin/dev already has DB_SCHEMA_VERSION 70 and `if prev_version <= 69:` (Apple Music stations to radios), and merge-tree reports a content conflict. If both blocks are kept under `<= 69` at version 70, installs already on 70 never drop the two old play_history indexes.",
-     "fix": "Rebase, keep dev's `<= 69` block, set DB_SCHEMA_VERSION = 71 and put the index swap under `if prev_version <= 70:`; update test_migration_replaces_play_history_indexes to prev_version=70.",
+     "model": "Copilot",
+     "severity": "CRITICAL",
+     "file": "music_assistant/controllers/statistics/queries.py",
+     "line": 85,
+     "title": "A play is credited to every album its track is linked to (r4338544556)",
+     "detail": "Tracks can belong to several albums, so one play increments both the original release and a linked compilation in top_items and play_count. Copilot asks to record the played album with new history events. Context: dev already records where each queue item was played from (#6872) and credits album plays from that (#7073), so album aggregation could use that attribution instead of the track-album join.",
+     "fix": "Aggregate album stats from the album the play came from (dev's #6872/#7073 attribution) rather than all current links; legacy rows stay unassigned.",
      "posted": null
     },
     {
@@ -1482,29 +1482,9 @@
      "severity": "PROBLEM",
      "file": "music_assistant/constants.py",
      "line": 57,
-     "title": "API_SCHEMA_VERSION needs 100",
-     "detail": "The PR's 98->99 bump matches dev's own 98->99, so the merge resolves to 99 without a conflict even though 8 new statistics/* API commands are added.",
+     "title": "API_SCHEMA_VERSION not bumped",
+     "detail": "Dev is at 99 and the PR adds 8 new statistics/* API commands that third-party clients and MCP can use. By the comment above the constant, that needs 100.",
      "fix": "API_SCHEMA_VERSION: Final[int] = 100",
-     "posted": null
-    },
-    {
-     "model": "Copilot",
-     "severity": "CRITICAL",
-     "file": "music_assistant/controllers/statistics/history.py",
-     "line": 58,
-     "title": "Default play history omits podcast episodes (previously missed)",
-     "detail": "Copilot 'previously missed' CRITICAL in its 12:52Z review body, no thread: MediaType.ALL has no PODCAST_EPISODE, so history without media_types hides completed episode listens. Claude and GPT Sol confirm.",
-     "fix": "Include PODCAST_EPISODE in the default (in the prepared patch).",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "PROBLEM",
-     "file": "music_assistant/controllers/statistics/history.py",
-     "line": 58,
-     "title": "Default play history omits podcast episodes",
-     "detail": "MediaType.ALL (models 1.1.225/1.1.226) has no PODCAST_EPISODE. mark_item_played writes completed queue episodes to play_history and the PR counts them in PLAY_HISTORY_EVENT_TYPES, but get_play_history() with no media_types hides them.",
-     "fix": "media_types = [*MediaType.ALL, MediaType.PODCAST_EPISODE] plus a regression test.",
      "posted": null
     },
     {
@@ -1513,28 +1493,48 @@
      "file": "music_assistant/controllers/diagnostics/__init__.py",
      "line": 55,
      "title": "Statistics diagnostics hook never collected",
-     "detail": "The diagnostics controller only walks CORE_CONTROLLER_ATTRS, and 'statistics' is not in it, so StatisticsController.get_diagnostics is dead code.",
-     "fix": "Add \"statistics\" to CORE_CONTROLLER_ATTRS, or drop get_diagnostics.",
+     "detail": "_collect iterates CORE_CONTROLLER_ATTRS only. 'statistics' is missing, so StatisticsController.get_diagnostics (playlog_entries) is dead code.",
+     "fix": "Add \"statistics\" to CORE_CONTROLLER_ATTRS (alphabetical, after \"players\").",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/controllers/statistics/base.py",
+     "line": 85,
+     "title": "Provider-mapping availability lookup scans the media type",
+     "detail": "WHERE media_type = ? AND provider_item_id IN (...) can only use the media_type prefix of the existing indexes, because provider_item_id is the third column in both (media_type,provider_instance,provider_item_id) and (media_type,provider_domain,provider_item_id). EXPLAIN shows SEARCH (media_type=?) plus a temp B-tree, so each history or ranking call reads every track mapping. Adding the history providers as a filter, as a UNION of an instance branch and a domain branch, gets full seeks on both existing indexes.",
+     "fix": "Constrain by the reference providers: `... AND provider_instance IN (:p...) UNION ... AND provider_domain IN (:p...)`, or defer to the planned provider_mappings index follow-up.",
      "posted": null
     },
     {
      "model": "Claude",
      "severity": "NIT",
-     "file": "scripts/perf/statistics_query_benchmark.py",
-     "line": 274,
-     "title": "Cache wording left in the renamed benchmark",
-     "detail": "Error text 'statistics cache benchmark failed', temp dir prefix 'ma-statistics-cache-' and the _run docstring still mention the cache. The script compares repeated runs of the same code, so it shows determinism, not old-vs-new equivalence.",
-     "fix": "Rename to 'query benchmark' / 'ma-statistics-query-'.",
+     "file": "tests/controllers/music/test_music_migrations.py",
+     "line": 1328,
+     "title": "Migration test still at prev_version=69",
+     "detail": "The block is `<= 70`, so 69 still exercises it but also runs dev's `<= 69` Apple Music migration. The docstring says 'Schema 70'.",
+     "fix": "Docstring 'Schema 71', prev_version=70.",
      "posted": null
     },
     {
      "model": "Claude",
      "severity": "NIT",
-     "file": "music_assistant/controllers/statistics/rankings.py",
-     "line": 374,
-     "title": "Misindented GROUP BY in play_count normalized_history",
-     "detail": "The GROUP BY sits 32 spaces deep inside the f-string after the PROVIDER_MAPPING_JOIN block. It is only cosmetic but hard to read.",
-     "fix": "Align it with the FROM/LEFT JOIN lines.",
+     "file": "music_assistant/controllers/statistics/base.py",
+     "line": 75,
+     "title": "History keyed on a dead instance mapping says unavailable while rankings say available",
+     "detail": "Rankings normalize a provider row with a library mapping to 'library', so availability means any mapping. History keeps the original instance key and requires that exact mapping. The parametrized test asserts this on purpose (test-provider -> False). It is the opposite of Copilot's concern and defensible, noted for awareness only.",
+     "fix": null,
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/controllers/statistics/base.py",
+     "line": 36,
+     "title": "Review-fix code landed inside the merge commit",
+     "detail": "The schema 71 bump, the migration move and the provider-mapping availability pass are only in merge commit 8071325c1 (git show --remerge-diff), not in a regular commit. Squash merge makes this moot, but it is easy to miss when reviewing per commit.",
+     "fix": null,
      "posted": null
     }
    ],
@@ -1559,36 +1559,36 @@
    ],
    "copilot": {
     "green": false,
-    "comments": 0,
+    "comments": 1,
     "findings": 1,
-    "review_url": "https://github.com/music-assistant/server/pull/5700",
+    "review_url": "https://github.com/music-assistant/server/pull/5700#discussion_r4338544556",
     "titles": [
-     "[CRITICAL] Include podcast episodes in default media type filter (previously missed, body only)"
+     "[CRITICAL] Prevent plays from being credited to every linked album (r4338544556)"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "12:52Z review on 94553624f (dmoo500's request): no open threads, cache thread resolved, 1 'previously missed' CRITICAL in the body.",
+   "copilot_note": "15:15Z on 8071325c1 (dmoo500's request, 28 min): Changes recommended, 1 new CRITICAL thread. The 14:30Z availability CRITICAL (body only) is fixed.",
    "suggested_fix": {
-    "description": "Against PR head 94553624f: DB schema 71 with the block as `<= 70` (plus a short comment), API schema 100, PODCAST_EPISODE in the default history types with a regression test, 'statistics' in CORE_CONTROLLER_ATTRS, and the migration test at prev_version=70. `git apply --check` is clean on the PR head. The migrations.py conflict with dev still has to be resolved by hand when rebasing (keep dev's `<= 69` Apple Music block above this one). With the patch, tests/controllers/statistics, test_music_migrations.py and tests/core/test_diagnostics.py pass (118), and the new test fails without the history.py change.",
-    "patch": "diff --git a/music_assistant/constants.py b/music_assistant/constants.py\nindex dce375c5f5..7360f23a1a 100644\n--- a/music_assistant/constants.py\n+++ b/music_assistant/constants.py\n@@ -54,7 +54,7 @@ PLAYLIST_MEDIA_TYPES: Final[tuple[MediaType, ...]] = (\n # a new enum value or error code, a change in what an existing field holds, or a command that\n # only the bundled frontend uses: the frontend ships in lockstep with the server and never\n # gates on this.\n-API_SCHEMA_VERSION: Final[int] = 99\n+API_SCHEMA_VERSION: Final[int] = 100\n \n # MIN_SCHEMA_VERSION is the minimum API schema version that the current server\n # version can work with. Only bump when there are breaking changes to existing\ndiff --git a/music_assistant/controllers/diagnostics/__init__.py b/music_assistant/controllers/diagnostics/__init__.py\nindex 031d0f8991..228051ba6a 100644\n--- a/music_assistant/controllers/diagnostics/__init__.py\n+++ b/music_assistant/controllers/diagnostics/__init__.py\n@@ -59,6 +59,7 @@ CORE_CONTROLLER_ATTRS = (\n     \"music\",\n     \"player_queues\",\n     \"players\",\n+    \"statistics\",\n     \"storage\",\n     \"streams\",\n     \"tasks\",\ndiff --git a/music_assistant/controllers/music/constants.py b/music_assistant/controllers/music/constants.py\nindex f52a52b5cf..b7c997cfc4 100644\n--- a/music_assistant/controllers/music/constants.py\n+++ b/music_assistant/controllers/music/constants.py\n@@ -12,7 +12,7 @@ CONF_SYNC_INTERVAL = \"sync_interval\"\n CONF_DELETED_PROVIDERS = \"deleted_providers\"\n CONF_KEEP_REMASTERS_APART: Final[str] = \"keep_remasters_apart\"\n \n-DB_SCHEMA_VERSION: Final[int] = 70\n+DB_SCHEMA_VERSION: Final[int] = 71\n \n # tracks longer that this will not be included in radio mode\n RADIO_TRACK_MAX_DURATION_SECS: Final[int] = 20 * 60\ndiff --git a/music_assistant/controllers/music/migrations.py b/music_assistant/controllers/music/migrations.py\nindex d7ae0f9e3f..43019d97d8 100644\n--- a/music_assistant/controllers/music/migrations.py\n+++ b/music_assistant/controllers/music/migrations.py\n@@ -1398,7 +1398,8 @@ async def migrate_database(  # noqa: C901, PLR0912, PLR0915\n         # belong to, and the words for classical and chamber music in other languages join\n         await _move_more_classical_genre_aliases(database, logger)\n \n-    if prev_version <= 69:\n+    if prev_version <= 70:\n+        # one covering index replaces the two play history indexes\n         if await database.get_row(\n             \"sqlite_master\", {\"type\": \"table\", \"name\": DB_TABLE_PLAY_HISTORY}\n         ):\ndiff --git a/music_assistant/controllers/statistics/history.py b/music_assistant/controllers/statistics/history.py\nindex bb213f4b9e..337fe59271 100644\n--- a/music_assistant/controllers/statistics/history.py\n+++ b/music_assistant/controllers/statistics/history.py\n@@ -55,7 +55,8 @@ class HistoryMixin(_StatisticsBase):\n         limit = min(limit, MAX_STATISTICS_RESULT_LIMIT)\n \n         if media_types is None:\n-            media_types = MediaType.ALL\n+            # MediaType.ALL leaves out podcast episodes, which are completed plays too\n+            media_types = [*MediaType.ALL, MediaType.PODCAST_EPISODE]\n         media_types_str = \"(\" + \",\".join(f'\"{x.value}\"' for x in media_types) + \")\"\n \n         query = f\"\"\"\ndiff --git a/tests/controllers/music/test_music_migrations.py b/tests/controllers/music/test_music_migrations.py\nindex bcf3bfad47..c22396fb12 100644\n--- a/tests/controllers/music/test_music_migrations.py\n+++ b/tests/controllers/music/test_music_migrations.py\n@@ -1325,7 +1325,7 @@ async def test_migration_adds_is_endless_column_to_radios(\n \n \n async def test_migration_replaces_play_history_indexes(database: DatabaseConnection) -> None:\n-    \"\"\"Schema 70 replaces the two play-history indexes with its covering index.\"\"\"\n+    \"\"\"Schema 71 replaces the two play-history indexes with its covering index.\"\"\"\n     await database.execute(\n         f\"\"\"CREATE TABLE {DB_TABLE_PLAY_HISTORY}(\n             userid TEXT, timestamp REAL, media_type TEXT, provider TEXT, item_id TEXT\n@@ -1348,7 +1348,7 @@ async def test_migration_replaces_play_history_indexes(database: DatabaseConnect\n             mass,\n             database,\n             MagicMock(),\n-            prev_version=69,\n+            prev_version=70,\n             create_tables=AsyncMock(),\n         )\n \ndiff --git a/tests/controllers/statistics/test_controller.py b/tests/controllers/statistics/test_controller.py\nindex e91cdd920c..5cc0a9825e 100644\n--- a/tests/controllers/statistics/test_controller.py\n+++ b/tests/controllers/statistics/test_controller.py\n@@ -777,6 +777,27 @@ async def test_play_history_supports_stable_offset_pagination(mass: MusicAssista\n     assert [result.item_id for result in results] == [\"track-2\", \"track-1\"]\n \n \n+async def test_play_history_includes_podcast_episodes_by_default(mass: MusicAssistant) -> None:\n+    \"\"\"Default history includes completed podcast episode plays.\"\"\"\n+    user = await mass.webserver.auth.create_user(\"statistics-podcast-history\")\n+    await mass.music.database.insert(\n+        DB_TABLE_PLAY_HISTORY,\n+        {\n+            \"item_id\": \"episode-1\",\n+            \"provider\": \"test-provider\",\n+            \"media_type\": MediaType.PODCAST_EPISODE.value,\n+            \"userid\": user.user_id,\n+            \"name\": \"Episode\",\n+            \"timestamp\": 1_000,\n+        },\n+    )\n+\n+    with _as_user(user):\n+        results = await mass.statistics.get_play_history()\n+\n+    assert [result.item_id for result in results] == [\"episode-1\"]\n+\n+\n async def test_play_history_validates_and_caps_pagination(mass: MusicAssistant) -> None:\n     \"\"\"Reject invalid pagination and cap the requested page size.\"\"\"\n     user = await mass.webserver.auth.create_user(\"statistics-page-limits\")\n",
+    "description": "Bump API_SCHEMA_VERSION to 100, add 'statistics' to CORE_CONTROLLER_ATTRS, and run the migration test from schema 70. git apply --check OK on 8071325c1; the touched tests pass.",
+    "patch": "diff --git a/music_assistant/constants.py b/music_assistant/constants.py\nindex dce375c5f5..7360f23a1a 100644\n--- a/music_assistant/constants.py\n+++ b/music_assistant/constants.py\n@@ -54,7 +54,7 @@ PLAYLIST_MEDIA_TYPES: Final[tuple[MediaType, ...]] = (\n # a new enum value or error code, a change in what an existing field holds, or a command that\n # only the bundled frontend uses: the frontend ships in lockstep with the server and never\n # gates on this.\n-API_SCHEMA_VERSION: Final[int] = 99\n+API_SCHEMA_VERSION: Final[int] = 100\n \n # MIN_SCHEMA_VERSION is the minimum API schema version that the current server\n # version can work with. Only bump when there are breaking changes to existing\ndiff --git a/music_assistant/controllers/diagnostics/__init__.py b/music_assistant/controllers/diagnostics/__init__.py\nindex 031d0f8991..228051ba6a 100644\n--- a/music_assistant/controllers/diagnostics/__init__.py\n+++ b/music_assistant/controllers/diagnostics/__init__.py\n@@ -59,6 +59,7 @@ CORE_CONTROLLER_ATTRS = (\n     \"music\",\n     \"player_queues\",\n     \"players\",\n+    \"statistics\",\n     \"storage\",\n     \"streams\",\n     \"tasks\",\ndiff --git a/tests/controllers/music/test_music_migrations.py b/tests/controllers/music/test_music_migrations.py\nindex e16e23175f..bf0bdf72cf 100644\n--- a/tests/controllers/music/test_music_migrations.py\n+++ b/tests/controllers/music/test_music_migrations.py\n@@ -1325,7 +1325,7 @@ async def test_migration_adds_is_endless_column_to_radios(\n \n \n async def test_migration_replaces_play_history_indexes(database: DatabaseConnection) -> None:\n-    \"\"\"Schema 70 replaces the two play-history indexes with its covering index.\"\"\"\n+    \"\"\"Schema 71 replaces the two play-history indexes with its covering index.\"\"\"\n     await database.execute(\n         f\"\"\"CREATE TABLE {DB_TABLE_PLAY_HISTORY}(\n             userid TEXT, timestamp REAL, media_type TEXT, provider TEXT, item_id TEXT\n@@ -1348,7 +1348,7 @@ async def test_migration_replaces_play_history_indexes(database: DatabaseConnect\n             mass,\n             database,\n             MagicMock(),\n-            prev_version=69,\n+            prev_version=70,\n             create_tables=AsyncMock(),\n         )\n \n",
     "pushed": null
    },
-   "prompt": "Server PR #5700 (https://github.com/music-assistant/server/pull/5700), head 94553624f, by dmoo500. Rebase on origin/dev and resolve controllers/music/migrations.py: keep dev's `prev_version <= 69` block, bump DB_SCHEMA_VERSION to 71 and run the play-history index replacement under `if prev_version <= 70:` (test at prev_version=70). Bump API_SCHEMA_VERSION to 100. Include MediaType.PODCAST_EPISODE in the default play-history media types with a regression test, and add 'statistics' to CORE_CONTROLLER_ATTRS in controllers/diagnostics/__init__.py. Work in a worktree from refs/remotes/pr/5700.",
-   "whats_new": "dmoo500 pushed 94553624f and replied on both cache threads at 12:49Z: cache removed, your query rewrites and covering index applied with a migration, benchmark now measures query latency. Copilot (his request) reviewed at 12:52Z: no open threads, 1 'previously missed' CRITICAL in the body (podcast episodes).",
+   "prompt": "Server PR #5700 (https://github.com/music-assistant/server/pull/5700), head 8071325c1, by dmoo500. Bump API_SCHEMA_VERSION to 100 in music_assistant/constants.py, add 'statistics' to CORE_CONTROLLER_ATTRS in controllers/diagnostics/__init__.py, and run the play-history migration test from prev_version=70. Separately, Copilot r4338544556: album top_items/play_count credit every album a track is linked to; consider aggregating from the album a play came from (queue item origin, #6872/#7073) instead. Work in a worktree from refs/remotes/pr/5700.",
+   "whats_new": "dmoo500 pushed a933be9bd (podcast episodes) and merge commit 8071325c1 (rebase on dev, DB 71, availability fix) by 14:49Z. Copilot on a933be9bd (14:30Z): 1 previously-missed CRITICAL (availability), fixed in 8071325c1. Copilot on 8071325c1 (15:15Z, his request): Changes recommended, 1 new CRITICAL thread. The critical gate will draft it.",
    "backport": {
     "rec": false,
-    "why": "New core feature with a frontend counterpart; rides the next release."
+    "why": "New feature with a DB schema bump and new API; ships in the next minor."
    },
    "draft": false,
    "stacked": false,
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-21 15:15 CEST",
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-21 17:15 CEST",
    "auto_approved": null,
-   "attention_since": "2026-10-21T12:49:40Z",
+   "attention_since": "2026-10-21T14:49:00Z",
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you: fix or post",
-   "changed_now": null,
+   "waiting_on": "you: decide f1, fix",
+   "changed_now": "pushed",
    "fix_thread": "[Cache benchmark discussion](t3-thread://v1/mcp:86e76b02-68f1-4956-9579-2147ce8dc226), started 10-21: cache-DB hit vs uncached instead of warm memory",
    "gpt_sol": "0 critical, 2 problems"
   },
@@ -2552,53 +2552,69 @@
    "draft": false,
    "verdict": "almost",
    "assessment": "comment",
-   "status": "waiting",
-   "attention_since": "2026-10-20T14:53:28Z",
+   "status": "attention",
+   "attention_since": "2026-10-21T14:37:11Z",
    "size": "XL",
-   "code": 2774,
-   "add": 5544,
-   "del": 95,
+   "code": 2997,
+   "add": 5575,
+   "del": 97,
    "ci_fail": false,
-   "ci": "Green on afccae4a2: lint, pytest 1/3, 2/3, 3/3, test, audit, CodSpeed all pass.",
+   "ci": "green on 30be26299",
    "core_touched": true,
    "providers_touched": [
     "playlist_metadata",
-    "hass",
-    "openai_compatible"
+    "openai_compatible",
+    "hass"
    ],
    "merge_state": "merge-tree clean on origin/dev 86a6e84fc; no decision, no auto-merge",
-   "head_sha": "afccae4a2",
-   "tldr": "Out of draft. The link download is now limited to the configured endpoint's own scheme, host and port, with no redirects, and the endpoint is asked for inline images first. We checked the guard and it holds. tracks.py change is dropped. Copilot's Lite review at 05:32Z left 2 new findings: one we judge invalid, one test nit. Both need a reply from the author.",
-   "summary": "Reviewed cb4978be4..afccae4a2 (one commit, 3 files, +184/-527). (1) Images endpoint first asks response_format b64_json. A 400 whose detail names response_format adds the model to a per-provider set and retries plainly; 401/403, 429 and 5xx still propagate. (2) _download only fetches a link whose (scheme, raw_host lowercased, port) equals base_url's. yarl fills default ports (http://h equals http://h:80, 0080 is 80), lowercases the host, and userinfo or IPv6 brackets do not change the host. aiohttp parses with the same yarl, so the check and the connection agree. allow_redirects=False and any status >= 300 is refused. DNS and trust_env proxies are the same as for the generation request, which already goes to that host with the API key, so no new trust is added. This removes the custom resolver, so the earlier proxy-scheme gap, the mDNS gap and our proxied-name suggestion are gone. Trade-off the author names: LiteLLM in front of BFL or fal.ai, which always link to their CDN, now gets a clear error. (3) tracks.py most_played_by_artists is dropped from the PR (author 10-20 15:00Z, waits for #5700). Your thread is still unresolved, so you can resolve it. (4) Copilot 05:32Z (Lite review, full agentic run timed out): HIGH says the AI cover mutates playlist.metadata.images without returning it, so it may not be saved. Invalid: enrichment.py _update_playlist_metadata calls update_item_in_library(playlist, overwrite=True) after the provider loop, so the in-place change is stored, and the code comment explains why it is set directly. MEDIUM: _json_response read mock toggles body and EOF. That is deliberate so one mock response can be read for several requests; a test NIT. Tests: openai_compatible 77/77 and hass 160/160 pass on the head. test_ai.py fails 63 in the shared venv on the same missing-loop issue as last time; CI is green, so not a PR issue. Unchanged: hass connect timeout logs the signed URL (patch in suggested_fix), AI_QUERY gating.",
+   "head_sha": "30be26299",
+   "tldr": "ryanmac8 fixed both Copilot threads: the AI cover now comes back in the metadata and stays first, and the fake test reply behaves like an exhausted stream; Claude and GPT Sol confirm. Copilot's 15:09Z review adds a 'previously missed' CRITICAL in its body only: a preview description can start a paid AI request after unload. Your design call (image engines gated on AI_QUERY) is still open, and the test fixture breaks 64 tests on Python 3.14.4 (one-line patch).",
+   "summary": "Delta afccae4a2..30be26299. get_playlist_metadata now keeps ai_cover local and returns metadata.images = UniqueList([ai_cover, *playlist.metadata.images, *generated_images]) after the in-place THUMB/FANART cleanup. Enrichment calls playlist.metadata.update(prov_metadata). merge_lists(cur, new) keeps only current images that are missing from new, which is none here, then appends new, so the order is exactly cover, other images, generated fanart. UniqueList drops a repeat of an already present cover, so nothing duplicates. update_item_in_library(overwrite=True) persists it. Our earlier view still holds: the old in-place version also worked for enrichment, so r4333367372 was not a real bug, but the new shape does not depend on in-place mutation and is fine. The test helper _metadata now merges the returned metadata like enrichment does, and test_the_cover_is_returned_in_front_of_the_other_images proves the order. The r4333367422 fake read now returns the body once, then b\"\". The collage-only path still returns the generated thumb alone, so merging puts it behind any non-own THUMB. That is unchanged from dev and out of scope. Image engines are still discovered through ProviderFeature.AI_QUERY (helpers/plugin_engines.py:62), so Marvin's call on a dedicated feature (a models change) is still open. CI is green. Locally on Python 3.14.4 the fixture's asyncio.Task(coro, eager_start=True) fails 64 tests, and passing loop=asyncio.get_running_loop() like other test suites do fixes it.",
    "blockers": [
-    "Copilot 05:32Z r4333367372 (HIGH): AI cover is not returned in metadata. We judge it invalid because enrichment saves the mutated playlist, but it needs a reply on the thread.",
-    "Copilot 05:32Z r4333367422 (MEDIUM): test read mock toggles body and EOF. Deliberate, needs a reply or a one-line mock change.",
-    "Design call for Marvin: image engines gated on AI_QUERY instead of a dedicated ProviderFeature (never posted)."
+    "Copilot CRITICAL f1 (review body only): a preview description can start a paid AI request after unload. Post it so ryanmac8 sees it",
+    "Your design call: keep image engines under AI_QUERY or add a dedicated ProviderFeature (needs a models release)",
+    "Test fixture breaks 64 tests on Python 3.14.4: `fix 6901` pushes the one-line loop= patch"
    ],
    "findings": [
     {
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/hass/__init__.py",
-     "line": 726,
-     "title": "Connect timeout still leaks the signed image URL",
-     "detail": "Unchanged. Only ClientResponseError is caught around _fetch_image. A ClientConnectorError or ConnectionTimeoutError message names the full URL with authSig, and it lands in the worker's warning log.",
-     "fix": "Also catch (ClientError, TimeoutError) and raise ProviderUnavailableError without the URL, from None (patch in suggested_fix)."
+     "model": "Copilot",
+     "severity": "CRITICAL",
+     "file": "music_assistant/providers/playlist_metadata/ai.py",
+     "line": 1092,
+     "title": "Preview description can start a paid request after unload",
+     "detail": "Copilot 'previously missed' finding in its 15:09Z review body, no thread: the preview description isn't among the image tasks stop() cancels, so if the provider unloads while _record() awaits cache persistence, it can start a paid text request after unload.",
+     "fix": "Check _stopped after the reservation and return without calling the text engine.",
+     "posted": null
     },
     {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "tests/providers/playlist_metadata/test_ai.py",
+     "line": 1824,
+     "title": "Fixture task creation breaks on Python 3.14.4",
+     "detail": "asyncio.Task(coro, eager_start=True) without loop= raises AttributeError ('NoneType' object has no attribute 'is_running') on 3.14.4, which requires-python >=3.14 allows. 64 of 195 tests fail locally while CI passes. Other suites pass loop=asyncio.get_running_loop().",
+     "fix": "asyncio.Task(coro, loop=asyncio.get_running_loop(), eager_start=True)",
+     "posted": null
+    },
+    {
+     "model": "Claude",
      "severity": "SUGGESTION",
      "file": "music_assistant/helpers/plugin_engines.py",
      "line": 62,
-     "title": "Image engines piggyback on AI_QUERY",
-     "detail": "Unchanged. A dedicated feature needs a models release and schema bump.",
-     "fix": "Decide: accept for now, or ask for IMAGE_GENERATION in music-assistant/models first."
+     "title": "Image engines gated on AI_QUERY",
+     "detail": "Any AI plugin is queried for image engines, and the capability has no feature flag of its own. A dedicated ProviderFeature would need a models release. Open design call for Marvin.",
+     "fix": null,
+     "posted": null
     },
     {
+     "model": "Claude",
      "severity": "NIT",
-     "file": "music_assistant/providers/openai_compatible/helpers.py",
-     "line": 218,
-     "title": "response_format fallback matches on error text",
-     "detail": "The plain retry only runs when the 400 detail contains 'response_format'. A service that rejects the field with a generic message fails instead of retrying. The common ones (OpenAI gpt-image) name the field, so this is fine in practice.",
-     "fix": "None needed."
+     "file": "music_assistant/providers/playlist_metadata/__init__.py",
+     "line": 267,
+     "title": "Collage path still returns its thumb alone",
+     "detail": "When there is no AI cover, the generated collage thumb is returned alone, so merge_lists appends it behind any non-own THUMB still on the playlist. That is the reason the AI path now returns the full list. Same behavior as dev, so not a regression.",
+     "fix": null,
+     "posted": null
     }
    ],
    "unaddressed_comments": [
@@ -2623,25 +2639,25 @@
    ],
    "copilot": {
     "green": false,
-    "comments": 2,
-    "findings": 2,
-    "review_url": "https://github.com/music-assistant/server/pull/6901#pullrequestreview-5595351897",
+    "comments": 0,
+    "findings": 1,
+    "review_url": "https://github.com/music-assistant/server/pull/6901",
     "titles": [
-     "HIGH: AI cover mutates playlist.metadata.images without returning it (invalid)",
-     "MEDIUM: test read mock toggles body and EOF"
+     "[CRITICAL] Preview description can trigger paid request after provider unload (previously missed, body only)"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "05:32Z Lite review on afccae4a2 (full agentic run timed out waiting for a runner). 2 open, 3 earlier ones marked resolved.",
+   "copilot_note": "15:09Z on 30be26299 (requested as Marvin 15:01Z): 'Needs a closer look', no open threads, 2 resolved, 1 previously-missed CRITICAL in the body.",
    "suggested_fix": {
-    "description": "Keep the signed AI Task image URL out of error messages on connection errors and timeouts too. Checked with git apply --check on the PR head; hass tests pass 160/160 with it.",
-    "patch": "--- a/music_assistant/providers/hass/__init__.py\n+++ b/music_assistant/providers/hass/__init__.py\n@@ -20,7 +20,7 @@\n from typing import TYPE_CHECKING, Any, Final, NamedTuple, TypedDict, cast\n from urllib.parse import unquote, urlsplit\n \n-from aiohttp import ClientResponseError\n+from aiohttp import ClientError, ClientResponseError\n from hass_client import HomeAssistantClient\n from hass_client.exceptions import (\n     BaseHassClientError,\n@@ -727,6 +727,10 @@\n             # its message names the full (signed) URL\n             msg = f\"Home Assistant answered the image request with {err.status}\"\n             raise MusicAssistantError(msg) from None\n+        except (ClientError, TimeoutError) as err:\n+            # its message can name the full (signed) URL too\n+            msg = f\"Could not fetch the image from Home Assistant ({type(err).__name__})\"\n+            raise ProviderUnavailableError(msg) from None\n \n     async def play_announcement_on_entity(self, entity_id: str, announcement: PlayerMedia) -> None:\n         \"\"\"\n"
+    "description": "Pass the running loop to asyncio.Task in the playlist_metadata test fixture so the suite passes on every supported 3.14 patch. git apply --check OK on 30be26299; with it, 355 tests pass across playlist_metadata, openai_compatible and hass.",
+    "patch": "diff --git a/tests/providers/playlist_metadata/test_ai.py b/tests/providers/playlist_metadata/test_ai.py\nindex 4b33297217..410a41057d 100644\n--- a/tests/providers/playlist_metadata/test_ai.py\n+++ b/tests/providers/playlist_metadata/test_ai.py\n@@ -1821,7 +1821,7 @@ def _add_worker_fakes(provider: PlaylistMetadataProvider) -> None:\n         if task_id and (existing := tasks.get(task_id)) and not existing.done():\n             coro.close()\n             return existing\n-        task = asyncio.Task(coro, eager_start=True)\n+        task = asyncio.Task(coro, loop=asyncio.get_running_loop(), eager_start=True)\n         tasks[task_id or str(id(task))] = task\n         return task\n \n",
+    "pushed": null
    },
    "backport": null,
-   "prompt": "Follow-up for music-assistant/server PR #6901 (ryanmac8, AI covers in the Playlist Metadata provider, head afccae4a2, ready for review, CI green, mergeable). Post nothing on GitHub without Marvin's OK. Fetch with `git fetch origin +pull/6901/head:refs/prreview/6901` and work read-only or in a worktree. State: afccae4a2 asks the images endpoint for b64_json and only downloads a link with the endpoint's exact scheme, host and port, no redirects. We verified that guard. tracks.py change is dropped. Open: (1) Copilot 05:32Z r4333367372 HIGH says the AI cover set in place on playlist.metadata.images is not returned and may not be saved. We think it is invalid: controllers/metadata/enrichment.py _update_playlist_metadata calls update_item_in_library(playlist, overwrite=True) after the provider loop. Confirm, then the author should answer it. (2) Copilot r4333367422 MEDIUM on the test read mock that toggles body and EOF; deliberate for reused responses, a reply is enough. (3) hass/__init__.py ~726 only catches ClientResponseError around _fetch_image, so a connect error or timeout logs the signed authSig URL; a 4-line patch is in the card's suggested_fix. (4) Marvin's calls: resolve his tracks.py thread r4255450250, and whether AI_QUERY gating for image engines is fine. Draft one short PR comment for (3), starting with '> [!NOTE] This comment was written by Claude on Marvin's behalf', 3-4 sentences, and show it to Marvin before posting.",
-   "whats_new": "chrisuthe asked at 12:47Z whether to also use HA's per-integration AI provider option (as Frigate does). Still waiting on ryanmac8.",
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-21 07:45 CEST",
+   "prompt": "Server PR #6901 (https://github.com/music-assistant/server/pull/6901), head 30be26299, by ryanmac8. In music_assistant/providers/playlist_metadata/ai.py (~1092), check _stopped after the reservation so a preview description can't start a paid text request after the provider unloads, with a test. In tests/providers/playlist_metadata/test_ai.py pass loop=asyncio.get_running_loop() to the fixture's asyncio.Task so the suite passes on Python 3.14.4. Work in a worktree from refs/remotes/pr/6901.",
+   "whats_new": "ryanmac8 answered chrisuthe at 14:37Z and pushed 4aa73197f + 30be26299, replying on both Copilot threads at 14:48-14:52Z. Copilot requested as Marvin 15:01Z, landed 15:09Z: 2 resolved, no open threads, 1 previously-missed CRITICAL in the body.",
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-21 17:15 CEST",
    "auto_approved": null,
    "stacked": false,
    "related_prs": [
@@ -2649,8 +2665,9 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "author",
-   "changed_now": null
+   "waiting_on": "you: post f1, design",
+   "changed_now": "pushed",
+   "gpt_sol": "clean"
   },
   {
    "repo": "server",
@@ -5198,10 +5215,10 @@
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7079",
    "draft": false,
-   "verdict": "ready",
+   "verdict": "almost",
    "assessment": "approve",
-   "status": "attention",
-   "attention_since": "2026-10-21T13:13:13Z",
+   "status": "waiting",
+   "attention_since": null,
    "size": "L",
    "code": 636,
    "add": 540,
@@ -5217,10 +5234,20 @@
    "tldr": "_poll_zone now drops readings when the room's zone changed during the reads, so a split no longer marks a playing room idle. _sync_groups clears the queued next item of every follower when mirroring zones, so a follower that goes solo cannot start an abandoned track. Followers could never advance anyway, so nothing needed is dropped. Ready, zero open CRITICAL/PROBLEM. Copilot has no open issues but rates it 'Needs a closer look' and asks for final human review of the zone reconciliation, so the routine left the approve to you although the rules would allow auto-approval.",
    "summary": "r4337196254: after the gather, _poll_zone checks _active_zone() != zone and returns before applying transport/position. get_zone_for_room returns host.get_zones() lists, which are sorted, so list equality is stable and an unchanged zone never drops a read. A transient roomlst_to_zoneudn miss only skips one poll. The only await left after the check is _read_zone_actions in _update_zone_source. That only runs for non-MA (external) sources, where no auto-advance is armed, so there is no new stale-advance window. r4337196341: _sync_groups builds the follower set from groups[leader][1:] and calls drop_next_item(), which clears _advance_armed/_next_media and cancels the end-watch timer. Dropping cannot lose a needed item, for three reasons. First, a follower already short-circuits in poll() (synced_to) and in _watch_for_track_end (_follows_or_held clears next), so it could never have advanced. Second, a claimant passed over when owners are unresolved becomes a follower whose queue MA no longer shows. Third, the real leader is never in the follower set. An end watch in flight re-checks _follows_or_held after its await and returns. MA-initiated grouping (set_members) still relies on core stopping the child queue and on _follows_or_held, as before. Tests cover both scenarios.",
    "blockers": [
-    "Copilot asks for a final human review of the concurrent zone reconciliation and hand-overs; `approve 7079` if you're happy",
-    "GPT Sol's earlier note (inconclusive ownership after the settle time isn't revisited) is still open as a suggestion"
+    "OzGav's review comment (r4338158196): any non-host exception in _follow_zones() ends the zone watcher for good; restart it from _supervise() or catch inside the loop",
+    "Copilot asked for a final human review of the zone reconciliation (no open findings)"
    ],
    "findings": [
+    {
+     "model": "OzGav",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/raumfeld/provider.py",
+     "line": 361,
+     "title": "Zone watcher dies on any non-host exception (r4338158196)",
+     "detail": "_watch_zones only catches HOST_ERRORS and nothing restarts it, so an exception from the handover path, mass.players or a PlayerCommandFailed ends it for good, silently, until the host reconnects.",
+     "fix": "Recreate the task from _supervise() when done, or catch Exception inside the loop and log it (keeps _pending_zones/_undecided_since).",
+     "posted": null
+    },
     {
      "model": "GPT Sol",
      "severity": "SUGGESTION",
@@ -5267,16 +5294,16 @@
     "why": "Enhancement, and the Raumfeld provider is not on stable."
    },
    "prompt": "",
-   "whats_new": "Simanias pushed 2cf720d8e and answered both 13:10Z CRITICALs at 13:13Z (both fixed). Copilot requested as Marvin 14:01Z, landed 14:07Z: both resolved, no open issues, 'Needs a closer look'. GPT Sol refused to review without shell access.",
-   "reviewed_now": true,
+   "whats_new": "OzGav reviewed at 14:36Z: the zone watcher only catches HOST_ERRORS and nothing restarts it, so any other exception in _follow_zones() silently stops group following until the host reconnects. He suggests a _supervise() restart guard or catching everything inside the loop.",
+   "reviewed_now": false,
    "reviewed_at": "2026-10-21 16:10 CEST",
    "auto_approved": null,
    "stacked": null,
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you: approve",
-   "changed_now": "ready",
+   "waiting_on": "Simanias",
+   "changed_now": "review comment",
    "gpt_sol": "not reviewed"
   },
   {
@@ -5736,7 +5763,7 @@
    },
    "prompt": "",
    "whats_new": "mnestrud pushed b22cc7e1d, answered the CRITICAL at 13:25Z and marked it ready. Copilot requested as Marvin 14:01Z, landed 14:04Z: Approval recommended, 1 resolved.",
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-21 16:10 CEST",
    "auto_approved": null,
    "stacked": null,
@@ -5751,7 +5778,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: approve",
-   "changed_now": "ready for review",
+   "changed_now": null,
    "gpt_sol": "clean"
   },
   {
@@ -5820,7 +5847,7 @@
    },
    "prompt": "",
    "whats_new": "OzGav declined r4337197972 at 13:14Z (needs three rare conditions at once) and pushed 4a6423e5a + 3ac44a43d deleting the settled MusicBrainz entry when a refresh finds the URL unsettled. His Copilot requests hit the quota; requested as Marvin 14:01Z, landed 14:05Z: Approval recommended, no open issues. GPT Sol refused to review without shell access.",
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-21 16:10 CEST",
    "auto_approved": null,
    "stacked": false,
@@ -5833,7 +5860,7 @@
    "reporter_reply": null,
    "waiting_on": "you: approve",
    "gpt_sol": "not reviewed",
-   "changed_now": "ready"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -6784,7 +6811,7 @@
    "stacked": false,
    "tldr": "Stops _cleanup_queue_audio_data (and the stale sweep) set streamdetails.buffer to None before clear(), so the writeback took the cut-off stream for a clean source and shortened the track. The PR keeps the buffer reference from the first chunk in both the single-item and the flow path. Radio and unbuffered sources fall back to the old check unchanged. Both new cases fail on dev and pass here.",
    "summary": "Every release path detaches before clearing: stream_feeder _cleanup_queue_audio_data, the stale-buffer sweep, the prepare_next orphan, and get_audio_buffer's invalid-buffer reuse. AudioBuffer.clear() always sets _cancelled. The old writeback read streamdetails.buffer after the stream ended, found None, and wrote the truncated stream length as the item's duration, for example when a queue is transferred to another player. Now source_buffer is the buffer of the first chunk (a capacity reselection happens before the first yield, so that is the buffer the item really plays from), with streamdetails.buffer as fallback. Other paths: radio, realtime and unbuffered items have no buffer and behave as before. Flow mode resets source_buffer per track inside the loop. The crossfade tail accounting is unchanged. A consumer that leaves (GeneratorExit) never reaches the writeback. get_media_stream's producer-side writeback only runs when the stream finished. Players that report their own duration do not go through this code. The one theoretical change: a fully played buffer that gets cleared before the writeback runs now keeps the provider's duration instead of the measured one. That is harmless. On tests: the flow test gains a released_by_stop case, a new single-path test was added, and an existing SimpleNamespace fixture got buffer=None so the first-chunk read works; no assertion got weaker. Both new cases fail against origin/dev audio.py. Ruff and mypy are clean.",
-   "whats_new": "New PR, first card.",
+   "whats_new": "mnestrud noted at 14:45Z that this is a different bug from #7123. Still ready for your approve.",
    "blockers": [
     "Touches core (controllers/streams/audio.py), so it needs your approve"
    ],
@@ -6823,7 +6850,7 @@
    "fix_thread": null,
    "related_prs": [],
    "reviewed_now": false,
-   "changed_now": null,
+   "changed_now": "comment",
    "reviewed_at": "2026-10-21 15:15 CEST"
   },
   {
@@ -6896,7 +6923,7 @@
    "fix_thread": null,
    "related_prs": [],
    "reviewed_now": false,
-   "changed_now": "merged",
+   "changed_now": null,
    "reviewed_at": "2026-10-21 15:15 CEST"
   },
   {
@@ -6957,47 +6984,67 @@
    "title": "Fix stringified false turning boolean config values on",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/models/pull/442",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "your draft",
-   "gpt_sol": "not run",
+   "waiting_on": "maintainer approval",
+   "gpt_sol": "diff only",
    "size": "S",
-   "code": null,
+   "code": 14,
    "add": 46,
    "del": 1,
-   "ci": "not checked (draft)",
+   "ci": "green on 9c8bbf1d2",
    "ci_fail": false,
-   "merge_state": "not checked (draft)",
+   "merge_state": "clean",
    "head_sha": "9c8bbf1d2",
    "core_touched": false,
    "providers_touched": [],
    "stacked": false,
-   "tldr": "Your draft: ConfigEntry.parse_value turned 'false', '0' and 'off' into True via bool(value); it now maps true/1/on/yes and false/0/off/no and rejects other strings. Not reviewed while it is a draft.",
-   "summary": "",
-   "whats_new": "Your new draft, first card.",
+   "tldr": "Correct and minimal: stringified booleans parse by meaning, and ints/bools/None behave as before. Stored 'True'/'False' are fine. A stored '' or junk string now falls back to the default instead of False/True, which is unlikely to be reachable. Tests cover it, 52 pass. Copilot recommends approval. Yours, so it needs another maintainer's approval.",
+   "summary": "convert_value now sends BOOLEAN strings to _parse_bool_string and keeps bool() for ints, which covers bools as an int subclass. None never reaches conversion, because parse_value swaps in default_value first. Floats are returned unchanged, as before. The server calls ConfigEntry.parse_value directly only in models/setup_flow.py:449, which catches ValueError. InvalidConfigValueError subclasses InvalidDataError and ValueError, so an unknown string there shows up as 'invalid_value', and '' as 'required'. Everything else goes through models' Config.parse (raise_on_error=False, so unknown strings load as the default), Config.update (raise, so a bad API string is rejected instead of silently enabling) and Config.validate. Config.to_raw stores parsed values, so persisted booleans are real bools. Old values written as str(bool) ('True'/'False') parse correctly. The one silent change is a stored '' for a default-True entry, which loads True where it used to load False. I found no writer that produces this. The bug goes back to eb06850 and is present in the 1.1.205 models pinned on stable.",
+   "whats_new": "You took it out of draft. Copilot (14:02Z) recommends approval; Claude finds it ready.",
    "blockers": [
-    "Draft."
+    "Yours, so it needs another maintainer's approval"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant_models/config_entries.py",
+     "line": 411,
+     "title": "Empty string no longer means False",
+     "detail": "bool('') was False. Now '' raises (InvalidConfigValueError on update) or loads as the default in Config.parse, so a default-True entry with a stored '' would flip to True. I found no writer, so this is only worth a mention.",
+     "fix": null,
+     "posted": null
+    }
+   ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "",
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/models/pull/442",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on 9c8bbf1d2 (14:02Z).",
    "suggested_fix": null,
    "prompt": "",
-   "backport": null,
+   "backport": {
+    "rec": false,
+    "why": "Long-standing behavior (present in models 1.1.205 on stable). A backport would need a models release on the stable line plus a pin bump, for a bug that only untyped API clients hit."
+   },
    "auto_approved": null,
    "author_replied": null,
    "reporter_reply": null,
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": false,
-   "changed_now": "new",
-   "reviewed_at": null
+   "reviewed_now": true,
+   "changed_now": "ready for review",
+   "reviewed_at": "2026-10-21 17:15 CEST"
   }
  ]
 }
