@@ -24,8 +24,11 @@ message `triage-ma-nightly: run <YYYY-MM-DD>`. Never push.
 2. `logging/get` for the current session log. MA rotates the log on every start and on size, and the
    nightly add-on updates around 06:57 CEST, so this only covers the current session.
 3. If the log does not reach back to `last_run_end`, SSH to the HA box (`ssh -i ~/.ssh/claude_ha_ed25519
-   marvin@192.168.1.80`) and run `sudo docker logs --since <window start> addon_<music assistant slug>`.
-   Record in the state file whether that worked so later runs know.
+   marvin@192.168.1.80`). The container is `app_d5369777_music_assistant_nightly`; the add-on update
+   recreates it, so `docker logs` only covers the current session too. The log from before the restart is
+   `sudo docker exec app_d5369777_music_assistant_nightly cat /data/musicassistant.log.1`. Keep
+   `log_sources` in the state file current when something changes.
+4. `ma_ws.py` next to this file is the stdlib websocket client for the API; run it with `/usr/bin/python3`.
 
 ## Analyse
 
