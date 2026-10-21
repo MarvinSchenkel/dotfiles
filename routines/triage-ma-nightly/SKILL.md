@@ -68,9 +68,12 @@ worse, what you recommend Marvin looks at first.
 
 ## Replies
 
-- `fix <id>`: launch a thread with `t3_thread_launch` in the server repo on a new worktree branch
-  `fix/<short-slug>` off `dev`, title "Fix: <finding title>", message containing the finding details,
-  the log excerpt and the instruction to start with the gogogo skill. Link the thread in your reply.
+- `fix <id>`: launch a thread with `t3_thread_launch`, workspaceStrategy `{"type":"root"}`, title
+  "Fix: <finding title>". T3 cannot make worktrees for this project because the workspace root is not a
+  git repo, so the message tells the new thread to work inside `/Users/marvin/git/music-assistant/server`,
+  create a Claude worktree there (`EnterWorktree`, or `git worktree add .claude/worktrees/<slug> -b
+  fix/<slug> origin/dev`), start with the gogogo skill, and it carries the finding details and the log
+  excerpt. Link the thread in your reply.
 - `mute <id>`: add the fingerprint to `muted` in the state file and commit.
 - Anything else: answer from the data you already have, re-query MA if needed.
 
