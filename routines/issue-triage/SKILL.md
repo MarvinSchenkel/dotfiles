@@ -48,7 +48,8 @@ Do these before building the board, on every card, not only on issues updated in
    (`musicassistant-bot`, `github-actions`, anything ending in `[bot]`) don't count. A teammate is an author
    whose comment `authorAssociation` is MEMBER, OWNER or COLLABORATOR, or who is listed in `codeowners` of
    any `music_assistant/providers/*/manifest.json` on server `origin/dev`; provider maintainers like
-   Tommatheussen show as NONE on the support repo, so the manifests are needed. Compare with the card:
+   Tommatheussen show as NONE on the support repo, so the manifests are needed. The issue's own author is
+   never a teammate on that issue, even when they are a codeowner (iVolt1, Simanias, xiasi0 report too). Compare with the card:
    - Marvin or a teammate commented after the stored `gh.at`: read that comment. If it covers the draft,
      drop the draft, `action` and the attention badges and add a note with the comment URL; otherwise
      redraft. A card never stays on Marvin's list for a reply he already gave.

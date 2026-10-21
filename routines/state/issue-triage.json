@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-21 12:30 CEST",
+ "last_run": "2026-10-21 13:30 CEST",
  "columns": [
   [
    "info",
@@ -64,7 +64,7 @@
    "gh": {
     "login": "MarvinSchenkel",
     "team": true,
-    "at": "2026-10-21T10:43:10Z",
+    "at": "2026-10-21T10:43:09Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -192,7 +192,7 @@
    "gh": {
     "login": "MarvinSchenkel",
     "team": true,
-    "at": "2026-10-21T09:33:40Z",
+    "at": "2026-10-21T09:33:39Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -274,11 +274,11 @@
    "col": "info",
    "area": "server / providers/heos player.py, player_queues/queue_loader.py, Spotify Soloist single stream slot",
    "since": "2026-10-21 07:38",
-   "last": "Cyberlytical-LLC 2026-10-20 22:28",
+   "last": "MarvinSchenkel 2026-10-21 11:33",
    "gh": {
-    "login": "Cyberlytical-LLC",
-    "team": false,
-    "at": "2026-10-20T22:28:20Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-21T11:33:10Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -291,20 +291,20 @@
    "prs": [],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
+     "info",
+     "Waiting for user",
+     "waiting"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nCould you capture one failed manual skip with debug logging? In Music Assistant, open Settings, then the HEOS and Spotify provider settings. For each provider, enable \"Show advanced settings\", set \"Log level\" to Debug and save. Keep other devices using the same Spotify account idle during the capture. Start Spotify playback on the Denon, manually skip a track and, if it goes silent, wait until playback stops. Then use Settings > System > Diagnostics > \"Download logfile\" and attach the full log with the time of the failed skip and the output codec used.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-21 07:38 run: new issue. Not enough info: diagnostics only, HEOS 'Unsupported format' + Spotify slot errors, needs a debug log of one stalled skip. Related to #6831 (same speaker family, flow URL not delivering audio fast enough) but a different trigger.",
     "10-21 07:38 run: server#7132 (flow stream read-any, for #6831) may also shorten the time to first bytes after a skip here. Worth a retest once it's in a nightly.",
-    "10-21 13:05 dry run of autonomous info asks: GPT Sol revised twice (old Settings path was wrong, the separate Spotify-account question became a capture condition). Agreed text stored as the draft; the next run may post it under the new rules."
+    "10-21 13:05 dry run of autonomous info asks: GPT Sol revised twice (old Settings path was wrong, the separate Spotify-account question became a capture condition). Agreed text stored as the draft; the next run may post it under the new rules.",
+    "10-21 13:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6835#issuecomment-6314882453), GPT: post, the diagnostics lack a debug trace of a failed skip and nobody asked for it yet; steps verified, Spotify contention handled as a capture condition."
    ],
-   "action": "Post the debug log ask (and the 'Spotify streaming somewhere else' hint).",
-   "ask": "reply-info"
+   "action": ""
   },
   {
    "n": 6831,
@@ -373,7 +373,7 @@
    "last": "Simanias 2026-10-20 11:49",
    "gh": {
     "login": "Simanias",
-    "team": false,
+    "team": true,
     "at": "2026-10-20T11:49:04Z",
     "pr_open": false,
     "pr_draft": false
@@ -446,7 +446,7 @@
   {
    "n": 6819,
    "title": "Automatic streaming mode fails for a shairport-sync AirPlay 2 player on the MA host",
-   "col": "user",
+   "col": "pr",
    "area": "server / providers/airplay player.py protocol + streaming_mode (auto lane), provider.py _is_own_airplay_receiver",
    "since": "2026-10-19 16:38",
    "last": "iVolt1 2026-10-19 15:16",
@@ -458,12 +458,17 @@
     "pr_draft": false
    },
    "summary": "2.10.7 and the pr-7100 DEV add-on, HAOS. Players from the AirPlay2 Multiroom Audio add-on (shairport-sync) run on the same host as MA. On Automatic, playback errors and nothing plays. AirPlay 2 compatibility mode works. The reporter asks MA to pick compatibility mode itself. OzGav called it a feature request, the bot quoted the docs.",
-   "fix": "",
+   "fix": "server#7135 (draft): in Automatic streaming mode, a ShairportSync receiver advertised from the MA host uses AirPlay 2 compatibility mode, reusing the host-address check from _is_own_airplay_receiver. A streaming mode set by hand still wins.",
    "checked": "Code read on origin/dev, no repro (needs a second PTP stack on the MA host). Known limitation: shairport-sync's nqptp and MA's PTP engine both need UDP 319/320, and the docs say a shairport device on the MA host must use RAOP or compatibility mode. player.py protocol picks AIRPLAY2 for every capable device unless RAOP is pinned, and Automatic never switches lanes after a failure. provider.py _is_own_airplay_receiver already matches a ShairportSync advertisement against this host's addresses, but only to hide MA's own AirPlay Receiver instances, not third-party add-ons on the same host.",
-   "plan": "Option A chosen 10-21: Automatic picks compatibility mode for ShairportSync players advertised from this host. Fix session running; local branch first, PR after your OK.",
+   "plan": "Wait for CI and Copilot on server#7135, then the DEV add-on test ask for iVolt1. The pending reply tells them it is being picked up.",
    "branch": "",
    "diff": "",
-   "prs": [],
+   "prs": [
+    {
+     "url": "https://github.com/music-assistant/server/pull/7135",
+     "label": "server#7135 (yours via the fix session, draft, opened 10-21 11:15 UTC)"
+    }
+   ],
    "badges": [
     [
      "bad",
@@ -471,14 +476,15 @@
      "needs attention"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nFair point. Music Assistant already checks whether a shairport player is advertised from its own host (it uses that to hide its own AirPlay Receiver), so Automatic can use the same check and pick compatibility mode for those players. That only needs a small change in the AirPlay provider, so we'll pick it up. Until it ships, setting the streaming mode by hand per player is the workaround.",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nFair point. Music Assistant already checks whether a shairport player is advertised from its own host (it uses that to hide its own AirPlay Receiver), so Automatic can use the same check and pick compatibility mode for those players. That only needs a small change in the AirPlay provider, so we're picking it up in music-assistant/server#7135. Until it ships, setting the streaming mode by hand per player is the workaround.",
    "bookkeeping": [],
    "notes": [
     "10-19 16:38 run: new issue. Documented limitation (shared PTP ports with nqptp). Auto-selecting compatibility mode for same-host ShairportSync devices is a small enhancement, design call. Same reporter as #6807 (they ran pr-7100).",
     "10-19 17:38 run: iVolt1 (15:16 UTC) disagrees with the feature request label: Automatic fails while MA already has the info that the AirPlay 2 instance shares its IP, and the manual fix isn't obvious for add-on/Docker users. Reply rewritten to meet that halfway; still your call on option A.",
-    "10-21 12:25: you chose option A and asked for a fix. Fix session launched (fix/airplay-same-host-shairport off origin/dev). Design row removed."
+    "10-21 12:25: you chose option A and asked for a fix. Fix session launched (fix/airplay-same-host-shairport off origin/dev). Design row removed.",
+    "10-21 13:30 run: the fix session opened draft server#7135 (11:15 UTC). Card moved to Reproduced + fixed; reply now links the PR."
    ],
-   "action": "You picked option A and a fix session is running. The drafted reply already says we will pick it up; post it.",
+   "action": "server#7135 is open as a draft. Post the reply that we are picking it up (it now links the PR); the DEV test ask follows once the PR is green.",
    "ask": "reply-answer",
    "fix_thread": {
     "id": "mcp:1a31e149-73ab-4c4b-9bbd-6a38988b54b1",
@@ -606,11 +612,11 @@
    "col": "cantfix",
    "area": "server / providers/airplay/stream.py send_metadata (artwork dedup)",
    "since": "2026-10-12 07:40",
-   "last": "MarvinSchenkel 2026-10-13 13:58",
+   "last": "bdeprez 2026-10-13 20:17",
    "gh": {
     "login": "bdeprez",
     "team": false,
-    "at": "2026-10-12T20:16:12Z",
+    "at": "2026-10-13T20:17:14Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -776,7 +782,7 @@
    "gh": {
     "login": "ChrisB85",
     "team": false,
-    "at": "2026-10-10T16:01:00Z",
+    "at": "2026-10-10T16:01:24Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -790,9 +796,9 @@
    "since": "2026-10-09 15:40",
    "last": "MarvinSchenkel 2026-10-19 07:54",
    "gh": {
-    "login": "rocklobster42195",
-    "team": false,
-    "at": "2026-10-09T17:26:00Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-19T07:54:30Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -941,11 +947,11 @@
    "col": "merged",
    "area": "server / controllers/music/media/playlists.py add_playlist_tracks (background task)",
    "since": "2026-10-09 07:40",
-   "last": "kiwipaulrob 2026-10-11 19:08",
+   "last": "kiwipaulrob 2026-10-17 22:19",
    "gh": {
     "login": "kiwipaulrob",
     "team": false,
-    "at": "2026-10-11T19:08:00Z",
+    "at": "2026-10-17T22:19:56Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -1040,11 +1046,11 @@
    "col": "merged",
    "area": "server / providers/apple_music + helpers/throttle_retry",
    "since": "2026-10-06 08:00",
-   "last": "MarvinSchenkel 2026-10-13 14:01",
+   "last": "MarvinSchenkel 2026-10-18 05:28",
    "gh": {
-    "login": "slackstarr",
-    "team": false,
-    "at": "2026-10-11T16:24:00Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-18T05:28:39Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -1258,7 +1264,7 @@
    "gh": {
     "login": "CDrummond",
     "team": false,
-    "at": "2026-10-10T06:44:00Z",
+    "at": "2026-10-10T06:44:22Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -1271,11 +1277,11 @@
    "col": "merged",
    "area": "aiosxm 0.3.0 (MizterB) stream.py get_proxied_playlist + server providers/siriusxm/streaming.py",
    "since": "2026-10-12 07:40",
-   "last": "MarvinSchenkel (server#7001 merged) 2026-10-14 15:20",
+   "last": "davidfi01 2026-10-14 14:12",
    "gh": {
-    "login": "MizterB",
+    "login": "davidfi01",
     "team": false,
-    "at": "2026-10-14T13:04:17Z",
+    "at": "2026-10-14T14:12:59Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -1322,9 +1328,9 @@
    "since": "2026-10-12 15:40",
    "last": "MarvinSchenkel 2026-10-12 13:38",
    "gh": {
-    "login": "array89",
-    "team": false,
-    "at": "2026-10-09T16:40:00Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-12T13:38:14Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -1342,14 +1348,14 @@
      "waiting"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the detailed report and logs, the bridge itself is created and linked fine. I think the WiiM is hiding itself from the picker because of what it is playing. While a WiiM is playing or paused on a source that Music Assistant did not start (optical, line-in, Bluetooth, or something from the WiiM Home app), grouping over the linked protocols like Sendspin is turned off, and then the WiiM drops out of the member list. Could you stop playback on the WiiM, or switch it back to the WiFi input with nothing playing, check that its player card shows no external source, and open the Sync Group dialog again? If it is still missing with the WiiM fully idle, please attach a diagnostics file taken at that moment.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-12 07:40 run: new issue. Likely the external-source guard in __final_can_group_with (reproduced with mock players), not confirmed for the reporter. Reply asks them to idle the WiiM.",
-    "10-12 15:40 run: you posted the reply from the board (13:38 UTC). Waiting for the reporter."
+    "10-12 15:40 run: you posted the reply from the board (13:38 UTC). Waiting for the reporter.",
+    "10-21 13:30 run: last comment sweep: the draft was already posted by you (MarvinSchenkel 2026-10-12 13:38), so it is dropped."
    ],
-   "action": "",
-   "ask": "reply-answer"
+   "action": ""
   },
   {
    "n": 6672,
@@ -1398,9 +1404,10 @@
     "10-14 11:40 run: airplay-cli#91 is out of draft, CI green, Copilot clean. Moved to Reproduced + fixed and assigned you. The compat-mode workaround reply was already posted.",
     "10-15 10:15 run: airplay-cli#91 got a reworked pause shape (force-push 07:17, extra commit 08:03 'Record the paused frame after the rate-0 round trip'). Copilot had 2 findings on the first push, both resolved on the second review: 0 open findings, CI green at 4e753f0a55. Still needs the one WiiM Keuken retest of the new shape before merge.",
     "10-15 11:40 run: You reverted Copilot's post-response sample in f43c73a after the WiiM Amp retest (every SETRATEANCHORTIME takes ~207 ms, so a post-response sample anchored resumes 207 ms late). Copilot re-reviewed f43c73a at 08:38 UTC: approval recommended, 0 open findings, CI green. No reply until the fix is in a dev build.",
-    "10-21 13:35: you merged airplay-cli#91 at 11:08 UTC. Next is the airplay-cli release and pin bump."
+    "10-21 13:35: you merged airplay-cli#91 at 11:08 UTC. Next is the airplay-cli release and pin bump.",
+    "10-21 13:30 run: you merged airplay-cli#91 (11:08/11:15 UTC). Next: one airplay-cli release covers #6672 and #6812, then the pin bump."
    ],
-   "action": "You merged airplay-cli#91. Cut an airplay-cli release (latest is v0.5.8 from 10-14) so the bot bumps the server pin, then the DEV add-on test ask for PipTheBirb can go out.",
+   "action": "airplay-cli#91 (#6672) and airplay-cli#95 (#6812) are both merged. Cut one airplay-cli release (latest is v0.5.8 from 10-14) so the bot bumps the server pin; the reporters get a DEV test ask after that.",
    "ask": "merge"
   },
   {
@@ -1523,11 +1530,11 @@
     "10-05 07:40 run: OzGav asked Diskreet001 (10-02 23:11 UTC) to test on a beta server.",
     "10-12 15:40 run: OzGav (13:2x UTC) posted \"This will be closed soon assuming fixed.\""
    ],
-   "last": "MarvinSchenkel 2026-09-28 13:19",
+   "last": "OzGav 2026-10-12 13:20",
    "gh": {
-    "login": "MarvinSchenkel",
+    "login": "OzGav",
     "team": true,
-    "at": "2026-09-28T13:19:15Z",
+    "at": "2026-10-12T13:20:45Z",
     "pr_open": false,
     "pr_draft": false
    }
@@ -1596,11 +1603,11 @@
    "notes": [
     "10-12 15:40 run: OzGav (13:19 UTC) asked beta users to confirm the fix."
    ],
-   "last": "MarvinSchenkel 2026-09-28 13:19",
+   "last": "OzGav 2026-10-12 13:19",
    "gh": {
-    "login": "MarvinSchenkel",
+    "login": "OzGav",
     "team": true,
-    "at": "2026-09-28T13:19:13Z",
+    "at": "2026-10-12T13:19:58Z",
     "pr_open": false,
     "pr_draft": false
    }
@@ -1635,11 +1642,11 @@
    "notes": [
     "10-19 07:38 run: Dragon-Creature (10-18 02:31 UTC): clearing the queue in Music Assistant didn't help, clearing the HEOS queue on the speaker itself did. That matches the root cause (stale entries in the HEOS device queue that MA never clears, all pointing at the same announcement URL) and supports option 2 (clear the HEOS queue when MA playback stops). Nothing else new."
    ],
-   "last": "MrHollowX 2026-09-15 14:20",
+   "last": "Dragon-Creature 2026-10-18 02:31",
    "gh": {
-    "login": "MrHollowX",
+    "login": "Dragon-Creature",
     "team": false,
-    "at": "2026-09-15T14:20:48Z",
+    "at": "2026-10-18T02:31:00Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -1666,7 +1673,7 @@
      "waiting"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, that dump is clear. Music Assistant's clock packets reach the Mac with the right clock id (the 0x9ac8... one the Mac log asks for), but the Mac never sends anything back. The empty lsof also means AirServer isn't holding those ports, so that's ruled out. It looks like the Mac's timing service won't answer a VirtualBox VM running on the same machine, and we can't fix that from our side. Could you set this player's Streaming mode to \"AirPlay 2 - compatibility mode\" (or \"AirPlay 1 (RAOP)\" if it's listed) and try again? Running MA on another machine would avoid the problem too.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "Your queued reply was posted 2026-09-29 15:45.",
@@ -1675,13 +1682,14 @@
     "10-06 14:50: you posted the tcpdump/lsof ask on 10-05 at 06:22 UTC. Waiting on pianos101.",
     "10-07 07:40 run: pianos101 (03:47 UTC) attached the tcpdump (sudo tcpdump -ni any host .62 udp 319-320, 20:43:56-20:44:36 local, 2380 packets) and says lsof is blank. Every packet comes from .62: unicast Announce, Signalling, Sync/Follow_Up at ~7-8/s to .21 (and to a second receiver .149), clock and grandmaster id 0x9ac805482bba433b, which is exactly the id the Mac log wants, priority1 128 class 6. Each packet appears twice (bridge + NIC). Zero packets from the Mac back, no Delay_Req. Empty sudo lsof rules out AirServer holding 319/320. So MA's timing reaches the Mac's network stack and the Mac's timing service never answers the VM over the VirtualBox bridge. Not an MA bug. Workaround on dev: per-player Streaming mode 'AirPlay 2 - compatibility mode' or 'AirPlay 1 (RAOP)' (providers/airplay/player.py:199-203).",
     "10-07 08:40 run: you posted the compatibility mode / RAOP reply at 06:33 UTC. Waiting on pianos101.",
-    "10-15 10:15 run: only a bot reminder (03:31 UTC), nothing new."
+    "10-15 10:15 run: only a bot reminder (03:31 UTC), nothing new.",
+    "10-21 13:30 run: last comment sweep: the draft was already posted by you (MarvinSchenkel 2026-10-07 06:33), so it is dropped."
    ],
    "last": "MarvinSchenkel 2026-10-07 06:33",
    "gh": {
     "login": "MarvinSchenkel",
     "team": true,
-    "at": "2026-10-05T06:22:15Z",
+    "at": "2026-10-07T06:33:43Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -1801,11 +1809,11 @@
     "10-06 08:00 run: you set milestone 2.11.0 at 17:45 UTC, so the backport call is resolved.",
     "10-12 15:40 run: OzGav (13:2x UTC) posted \"This will be closed soon assuming fixed.\""
    ],
-   "last": "seadowg 2026-09-16 09:08",
+   "last": "OzGav 2026-10-12 13:19",
    "gh": {
-    "login": "seadowg",
-    "team": false,
-    "at": "2026-09-16T09:08:06Z",
+    "login": "OzGav",
+    "team": true,
+    "at": "2026-10-12T13:19:23Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -1818,7 +1826,7 @@
    "col": "info",
    "area": "server / playlists controller + models ProviderFeature (feature request)",
    "since": "2026-10-01 14:40",
-   "last": "MarvinSchenkel 2026-10-06 13:51",
+   "last": "dentedbread 2026-10-02 18:09",
    "summary": "A feature-request discussion, not a bug. You adopted it on 09-15 for the playlist-reordering item on the dev board. pcc0x (author of the merged server#6212 and #6200) offers to build the server side: a move command on the playlist controller, a new provider feature so only backends that can store an order advertise it, builtin and OpenSubsonic first, models PR first, then a draft. They asked twice (09-19, 09-29) whether that shape is right and got no answer. OzGav tagged you at 11:36 UTC to answer it.",
    "fix": "",
    "plan": "",
@@ -1841,9 +1849,9 @@
     "10-06 16:40 run: you answered pcc0x at 13:51 UTC with backlog#221 and tasks #222/#223/#225. The decision is made, waiting on pcc0x to pick them up."
    ],
    "gh": {
-    "login": "OzGav",
-    "team": true,
-    "at": "2026-10-01T11:36:46Z",
+    "login": "dentedbread",
+    "team": false,
+    "at": "2026-10-02T18:09:53Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -1889,7 +1897,7 @@
    "col": "merged",
    "area": "frontend / PlayerFullscreen + queue",
    "since": "2026-10-12 15:40",
-   "last": "MarvinSchenkel 2026-10-06 11:28",
+   "last": "OzGav 2026-10-12 13:18",
    "summary": "With a blue cover the theme blue accent sat on a near identical background, so the playing row, queue banner links and active toggles disappeared. Frontend#2762 (merged 09-15) links this issue and replaces the blue accents on the now playing screen with gray overlay styles. It is in frontend 2.17.310+, so it shipped in server 2.11.0b3 (frontend 2.17.323). It is not in stable 2.10.5 (frontend 2.17.297). Kepstin's other points (bottom bar active state, backend palette picking too dark a light-mode background) are not covered by #2762. The bot will auto-close the issue around 10-15.",
    "fix": "frontend#2762: gray overlay button style and gray queue row wash instead of the blue accent on the now playing screen.",
    "checked": "git tag --contains 3293641d7 starts at frontend 2.17.310. pyproject pins: 2.11.0b3 = 2.17.323, 2.10.5 = 2.17.297.",
@@ -1909,18 +1917,19 @@
      "waiting"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThe changes from the linked PR are in 2.11.0 beta 3. The now playing screen no longer uses the blue accent on top of the artwork colours, it uses gray tones instead. Could you give the beta a try with the same album and let us know if the contrast is fine now? The bottom bar and the colour picking itself were not part of this change, so tell us if those still bother you.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "2026-10-02: fixed by frontend#2762, shipped in server 2.11.0b3, not in 2.10.x.",
     "Old local branch fix/fullscreen-accent-contrast (frontend-worktrees/fix-fullscreen-accent-contrast) is superseded by #2762 and can be removed, along with the now-playing-gray-accents worktree.",
     "10-06 13:40 run: you posted the beta 3 ask at 11:28 UTC. Set Fix to be Confirmed + milestone 2.11.0.",
-    "10-12 15:40 run: OzGav (13:2x UTC) posted \"This will be closed soon assuming fixed.\""
+    "10-12 15:40 run: OzGav (13:2x UTC) posted \"This will be closed soon assuming fixed.\"",
+    "10-21 13:30 run: last comment sweep: you posted this draft on 10-06 11:28 UTC (OzGav commented after), so it is dropped."
    ],
    "gh": {
-    "login": "MarvinSchenkel",
+    "login": "OzGav",
     "team": true,
-    "at": "2026-10-06T11:28:00Z",
+    "at": "2026-10-12T13:18:47Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -2045,9 +2054,9 @@
     "10-09 13:40 run: xiasi0's server#6737 merged 11:04 UTC (qqmusic-api-python 0.8.2, the get_cdn_dispatch + get_song_urls flow they tested). It doesn't link this issue and keeps VKey, so it doesn't claim to fix 104003. No backport label, so it reaches skyng22003 via nightly/2.11 only. Still waiting on the reporter, nothing for you."
    ],
    "gh": {
-    "login": null,
-    "team": false,
-    "at": null,
+    "login": "xiasi0",
+    "team": true,
+    "at": "2026-10-06T18:49:41Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -2064,9 +2073,9 @@
    "since": "2026-10-13 07:40",
    "last": "Tommatheussen 2026-10-15 08:41",
    "gh": {
-    "login": "IMnotWalter",
-    "team": false,
-    "at": "2026-10-12T21:04:08Z",
+    "login": "Tommatheussen",
+    "team": true,
+    "at": "2026-10-15T08:41:56Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -2242,11 +2251,11 @@
    "col": "info",
    "area": "server / providers/airplay + airplay-cli (device-side RTSP reset), universal_player bridge protocol choice",
    "since": "2026-10-14 13:40",
-   "last": "musicassistant-bot 2026-10-14 11:14",
+   "last": "MarvinSchenkel 2026-10-15 08:23",
    "gh": {
-    "login": "flibustier",
-    "team": false,
-    "at": "2026-10-14T11:11:26Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-15T08:23:30Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -2278,11 +2287,11 @@
    "col": "merged",
    "area": "server / providers/chromecast (HTTP profile 3, forced Content-Length) + controllers/streams",
    "since": "2026-10-15 10:15",
-   "last": "MarvinSchenkel 2026-10-20 15:38",
+   "last": "olifoss 2026-10-17 21:13",
    "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-20T15:38:53Z",
+    "login": "olifoss",
+    "team": false,
+    "at": "2026-10-17T21:13:56Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -2334,11 +2343,11 @@
    "col": "merged",
    "area": "server / controllers/player_queues/controller.py on_player_elapsed_time_corrected",
    "since": "2026-10-15 10:15",
-   "last": "MarvinSchenkel 2026-10-19 11:1x",
+   "last": "MarvinSchenkel 2026-10-19 11:12",
    "gh": {
-    "login": "riskywhat",
-    "team": false,
-    "at": "2026-10-14T17:46:04Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-19T11:12:58Z",
     "pr_open": true,
     "pr_draft": true
    },
@@ -2457,7 +2466,7 @@
    "gh": {
     "login": "mnestrud",
     "team": false,
-    "at": "2026-10-14T20:09:14Z",
+    "at": "2026-10-15T14:12:24Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -2872,7 +2881,7 @@
     "login": "patrick131",
     "team": false,
     "at": "2026-10-19T01:09:06Z",
-    "pr_open": true,
+    "pr_open": false,
     "pr_draft": false
    },
    "summary": "On 2.10.7 (HA add-on, 57 players), AirPlay 2 sync groups go playing then idle, and one member logs that it has not answered the PTP clock. Groups with 9 or more AirPlay members always fail. A smaller group fails after a different group was used first, and works again after an MA restart or an AirPlay provider reload. The reporter's packet captures show the daemon sending Sync only to 7 or 8 peers, including a speaker from the previous group.",
@@ -2884,7 +2893,7 @@
    "prs": [
     {
      "url": "https://github.com/music-assistant/airplay-cli/pull/95",
-     "label": "airplay-cli#95 (ours, ready for review, CI green, Copilot threads resolved)"
+     "label": "airplay-cli#95 (merged by you 10-21 11:15 UTC, not released yet)"
     }
    ],
    "badges": [
@@ -2906,9 +2915,10 @@
     "10-20 14:30 (on request): investigation chip queued. It confirms the cause with a build and hermetic repro and implements the recommended airplay-cli fix on a local branch with A/B. No PR or GitHub comments until you've reviewed it.",
     "10-20 14:38 run: the chip opened draft airplay-cli#95 (all builds and sanitizer tests green). Copilot (12:37 UTC) left 3 open findings: the shared-memory object isn't resized when a new daemon reuses an older, smaller one; tests use the production shm name and control port; no-pid registrations take one slot each and get rejected after 128 while still answering OK.",
     "10-20 15:38 run: airplay-cli#95 is out of draft, CI green, 0 unresolved threads after 4 Copilot rounds (shm recreate when too small, isolated test shm name and port, ownerless regs counted, reap-and-retry on a full table). Waiting for your merge.",
-    "10-21 13:35: PR state refreshed (airplay-cli#95 open, ready for review)."
+    "10-21 13:35: PR state refreshed (airplay-cli#95 open, ready for review).",
+    "10-21 13:30 run: you merged airplay-cli#95 (11:08/11:15 UTC). Next: one airplay-cli release covers #6672 and #6812, then the pin bump."
    ],
-   "action": "Merge airplay-cli#95 (ready for review, CI green, all Copilot threads resolved, AirPlay is excluded from auto-merge). Then cut a cliairplay release and bump the server pin before replying to patrick131.",
+   "action": "airplay-cli#91 (#6672) and airplay-cli#95 (#6812) are both merged. Cut one airplay-cli release (latest is v0.5.8 from 10-14) so the bot bumps the server pin; the reporters get a DEV test ask after that.",
    "ask": "merge"
   },
   {
@@ -2917,11 +2927,11 @@
    "col": "merged",
    "area": "server controllers/players/protocol_linking.py",
    "since": "2026-10-19 07:38",
-   "last": "iVolt1 2026-10-18 20:58",
+   "last": "MarvinSchenkel 2026-10-19 07:10",
    "gh": {
-    "login": "iVolt1",
-    "team": false,
-    "at": "2026-10-18T20:58:08Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-19T07:10:09Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -3527,11 +3537,11 @@
    "col": "merged",
    "area": "server / providers/ard_audiothek/__init__.py",
    "since": "2026-10-19 07:38",
-   "last": "MarvinSchenkel 2026-10-21 02:08",
+   "last": "MarvinSchenkel 2026-10-20 13:47",
    "gh": {
     "login": "MarvinSchenkel",
     "team": true,
-    "at": "2026-10-21T02:08:13Z",
+    "at": "2026-10-20T13:47:03Z",
     "pr_open": false,
     "pr_draft": false
    },
