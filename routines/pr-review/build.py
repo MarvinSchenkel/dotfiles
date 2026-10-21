@@ -209,8 +209,8 @@ def main() -> None:
         _write(args.full, _page(state, now), FULL_LIMIT, "full")
     if args.digest:
         html = ""
-        for title_len, fold in ((70, False), (48, False), (48, True), (32, True)):
-            html = _digest(state, now, title_len, fold)
+        for title_len in (70, 48, 32):
+            html = _digest(state, now, title_len)
             if len(html) <= DIGEST_LIMIT:
                 break
         _write(args.digest, html, DIGEST_LIMIT, "digest")
@@ -287,67 +287,49 @@ def _page(state: dict, now: datetime) -> str:
     )
 
 
-def _digest(state: dict, now: datetime, title_len: int, fold: bool) -> str:
-    """Build the compact page for html_render: no finding bodies, prompts or patches."""
+def _digest(state: dict, now: datetime, title_len: int) -> str:
+    """Build the compact page for html_render: tallies plus only the PRs this run changed."""
     prs = _matrix_prs(state, now)
     open_prs = [p for p in prs if not _recent_auto(p, now)]
     autos = [p for p in prs if _recent_auto(p, now)]
-    groups = []
-    for r, rlabel, _ in ROWS:
-        for c, clabel, var in COLS[:3]:
-            items = [p for p in open_prs if _col(p, now) == c and (p.get("status") == r or (r == "attention" and p.get("status") not in ("attention", "waiting")))]
-            items.sort(key=lambda p: (-(_wait_days(p, now) or 0), bool(p.get("draft")), -int(p["number"])))
-            if items:
-                groups.append((f"{rlabel}, {clabel.lower()}", var, items))
-    tallies = "".join(
-        f'<span style="--c:var(--{v})">{sum(1 for p in open_prs if _col(p, now) == c)} {escape(label.lower())}</span>'
-        for c, label, v in COLS[:3]
-    ) + f'<span style="--c:var(--info)">{len(autos)} auto-approved this week</span>'
+    tallies = ""
+    for c, label, v in COLS[:3]:
+        col = [p for p in open_prs if _col(p, now) == c]
+        mine = sum(1 for p in col if p.get("status") == "attention")
+        tallies += f'<span style="--c:var(--{v})">{len(col)} {escape(label.lower())}, {mine} need you</span>'
+    tallies += f'<span style="--c:var(--info)">{len(autos)} auto-approved this week</span>'
     late = sum(1 for p in open_prs if (_wait_days(p, now) or 0) >= 7)
     if late:
         tallies += f'<span style="--c:var(--destructive)">{late} over the 1 week SLA</span>'
-    rows = []
-    for label, var, items in groups:
-        shown = items
-        folded = []
-        if fold and "Waiting" in label:
-            folded = [p for p in items if p.get("draft") and p.get("author") != "MarvinSchenkel"]
-            shown = [p for p in items if p not in folded]
-        rows.append(f'<tr class="g" style="--c:var(--{var})"><th colspan="7">{escape(label)} ({len(items)})</th></tr>')
-        rows.extend(_digest_row(p, now, title_len) for p in shown)
-        if folded:
-            nums = ", ".join(_label(p) for p in folded)
-            rows.append(f'<tr><td></td><td class="t muted" colspan="6">{len(folded)} drafts by others: {escape(nums)}</td></tr>')
-    table = (
-        '<div class="sc"><table><thead><tr><th>PR</th><th>Title, author</th><th>Size</th><th>State</th>'
-        f'<th>Copilot</th><th>GPT Sol</th><th>Waits on</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div>'
-    )
+    changed = [p for p in open_prs if p.get("changed_now") or p.get("reviewed_now")]
+    changed.sort(key=lambda p: (p.get("status") != "attention", -(_wait_days(p, now) or 0), -int(p["number"])))
+    if changed:
+        rows = "".join(_digest_row(p, now, title_len) for p in changed)
+        table = (
+            '<div class="sc"><table><thead><tr><th>PR</th><th>Title, author</th><th>Size</th><th>State</th>'
+            f'<th>Copilot</th><th>GPT Sol</th><th>Waits on</th></tr></thead><tbody>{rows}</tbody></table></div>'
+        )
+    else:
+        table = '<p class="muted">No open PR changed this run.</p>'
     short = []
-    for p in sorted(autos, key=lambda p: _ts(p["auto_approved"].get("at")), reverse=True):
-        st = p.get("state", "open")
-        tail = f", {st} {_fmt(p.get('closed_at'), date_only=True)[5:]}" if st != "open" else ", open"
+    for p in state.get("prs", []):
+        if not p.get("changed_now") or p in changed:
+            continue
+        what = p.get("state", "open")
+        if p.get("auto_approved"):
+            what = f"auto-approved, {what}"
         short.append(
             f'<li><a href="{escape(p.get("url", ""))}">{escape(_label(p))}</a> {escape(_cut(p.get("title", ""), title_len))}, '
-            f'auto-approved {escape(str(p["auto_approved"].get("at", ""))[5:10])}{escape(tail)}</li>'
+            f'{escape(what)}</li>'
         )
-    week = [
-        p for p in state.get("prs", [])
-        if p.get("state", "open") != "open" and not _recent_auto(p, now)
-        and (_ts(p.get("closed_at")) or now - 2 * WEEK) >= now - WEEK
-    ]
-    for p in week:
-        short.append(
-            f'<li><a href="{escape(p.get("url", ""))}">{escape(_label(p))}</a> {escape(_cut(p.get("title", ""), title_len))}, '
-            f'{escape(p.get("state", ""))} {escape(_fmt(p.get("closed_at"), date_only=True)[5:])}</li>'
-        )
-    short_html = f'<div><b class="i">Auto-approved and closed this week</b><ul>{"".join(short)}</ul></div>' if short else ""
+    short_html = f'<div><b class="i">Merged, closed or auto-approved this run</b><ul>{"".join(short)}</ul></div>' if short else ""
     head = (
         f'<div><h1>PR backlog</h1><div class="sub">Run {escape(_fmt(state.get("last_run")))}, dev <code>'
-        f'{escape(str(state.get("dev", "")))}</code>, {len(open_prs)} open PRs</div></div>'
+        f'{escape(str(state.get("dev", "")))}</code>, {len(open_prs)} open PRs, {len(changed)} changed</div></div>'
     )
     note = f'<p class="note">{_md(state.get("run_note"))}</p>' if state.get("run_note") else ""
     footer = (
-        f'<div class="ft">Full report with every review in the side panel, or <code>open {FULL_REPORT}</code>. Replies: <code>post &lt;pr&gt; f&lt;n&gt;</code>, '
+        f'<div class="ft">Full matrix with every review in the side panel, or <code>open {FULL_REPORT}</code>. Replies: <code>post &lt;pr&gt; f&lt;n&gt;</code>, '
         "<code>fix &lt;pr&gt;</code>, <code>approve &lt;pr&gt;</code>, <code>chip &lt;pr&gt;</code>, <code>prompt &lt;pr&gt;</code>, "
         "<code>show &lt;pr&gt;</code>, <code>review &lt;pr&gt;</code>, <code>skip &lt;pr&gt;</code>, <code>render</code>; "
         "&lt;pr&gt; is 7045 or models#438.</div>"
@@ -363,6 +345,9 @@ def _digest_row(p: dict, now: datetime, title_len: int) -> str:
     age = _wait_days(p, now)
     text, cls = VERDICT_SHORT.get(p.get("verdict"), ("not ready", "x"))
     state = f'<b class="{cls}">{text}</b>' + (" <b>draft</b>" if p.get("draft") else "")
+    change = p.get("changed_now") or ("reviewed" if p.get("reviewed_now") else "")
+    if change:
+        state += f' <b class="i">{escape(_cut(str(change), 20))}</b>'
     cp, cp_cls = _copilot_short(p)
     gs, gs_cls = _gpt_short(p)
     waiting = p.get("waiting_on") or ("you" if p.get("status") == "attention" else "author")

@@ -231,12 +231,19 @@ The full report shows:
   copy button.
 - Merged and closed PRs as one compact row each.
 
-The digest shows the run time, dev sha and run note, then the same matrix as one compact row per open PR:
-the number linked to GitHub, title and author, size, state, the Copilot and GPT Sol verdicts, who it waits
-on, and red rows past the SLA. Auto-approved PRs from the last week and PRs closed this week follow as a
-short list. The footer has the full report path and the reply grammar. No finding bodies, prompts or
-patches; Marvin gets those from the full report or with `show <pr>` and `prompt <pr>`. Fill `gpt_sol` and
-`waiting_on` on every PR so the digest columns say something useful.
+The digest shows the run time, dev sha and run note, then per column how many PRs it holds and how many
+need Marvin, and the count past the SLA. Below that, only the open PRs this run changed, one compact row
+each: the number linked to GitHub, title and author, size, state with the `changed_now` mark, the Copilot
+and GPT Sol verdicts, who it waits on, and red rows past the SLA. Attention rows come first. PRs merged,
+closed or auto-approved this run follow as a short list. The footer points at the side panel and the
+`open` command, plus the reply grammar. No finding bodies, prompts or patches; Marvin gets those from the
+side panel or with `show <pr>` and `prompt <pr>`. Fill `gpt_sol` and `waiting_on` on every PR so the
+digest columns say something useful.
+
+Set `changed_now` on every PR this run touched, as a short reason: `new`, `reviewed`, `pushed`, `merged`,
+`closed`, `auto-approved`, `reporter replied`, `author replied`, `drafted`, `ready for review`,
+`conflict`, `CI failing`. Clear it on the rest at the start of the run. A reviewed PR may leave it empty;
+`reviewed_now` marks it.
 
 The report must always be up to date and combined with the previous runs. If an earlier run tagged a PR
 almost ready and Marvin hasn't acted on it, it stays. A PR only leaves the matrix when it is merged or
@@ -329,7 +336,7 @@ A reply that changes the state writes it back and commits it the same way, with 
       "support": [ { "issue": "support#6731", "my_last_comment_at": "", "test_asked_at": "" } ],
       "fix_thread": "link to the launched thread",
       "related_prs": ["#6801 merged base"],
-      "reviewed_now": false, "reviewed_at": "2026-10-21 07:45 CEST"
+      "reviewed_now": false, "changed_now": "pushed", "reviewed_at": "2026-10-21 07:45 CEST"
     }
   ]
 }
