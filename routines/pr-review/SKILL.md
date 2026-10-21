@@ -197,9 +197,16 @@ python3 ~/git/dotfiles/routines/pr-review/build.py ~/git/dotfiles/routines/state
   --full ~/.claude-teamB/routine-reports/pr-review.html --digest <tmp>/pr-review-digest.html
 ```
 
-- The full report goes to `~/.claude-teamB/routine-reports/pr-review.html`, outside git on purpose. It is
-  for a browser and holds every review untrimmed. Marvin opens it with
-  `open ~/.claude-teamB/routine-reports/pr-review.html`.
+- The full report goes to `~/.claude-teamB/routine-reports/pr-review.html`, outside git on purpose. It
+  holds every review untrimmed. The `local.routine-reports` LaunchAgent (`routines/launchd/`, installed by
+  `install.sh`) serves that folder on `http://127.0.0.1:8765`, and the report stays open in this thread's
+  side panel. Marvin can also run `open ~/.claude-teamB/routine-reports/pr-review.html`.
+- After the build, refresh the side panel: `t3_preview_list`, then `preview_navigate` the tab whose URL
+  starts with `http://127.0.0.1:8765/pr-review.html` to `http://127.0.0.1:8765/pr-review.html?run=<YYYYMMDDHHMM>`
+  with the run time; the query keeps the panel from showing the cached previous report. With no such tab,
+  `preview_open` that URL. If the URL doesn't answer, run
+  `launchctl kickstart -k gui/$(id -u)/local.routine-reports` and retry once; if it still fails, say so in
+  the chat summary. A `render` reply refreshes the panel the same way.
 - The digest is what this thread shows. Render it with `html_render`. Preview it with `html_preview` first
   only when `build.py` changed since the last run; otherwise render it directly. The digest stays under
   40,000 characters because `html_render` takes the page as a tool argument and this runs 11 times a day.

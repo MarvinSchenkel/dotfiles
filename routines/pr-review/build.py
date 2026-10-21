@@ -347,7 +347,7 @@ def _digest(state: dict, now: datetime, title_len: int, fold: bool) -> str:
     )
     note = f'<p class="note">{_md(state.get("run_note"))}</p>' if state.get("run_note") else ""
     footer = (
-        f'<div class="ft">Full report: <code>open {FULL_REPORT}</code>. Replies: <code>post &lt;pr&gt; f&lt;n&gt;</code>, '
+        f'<div class="ft">Full report with every review in the side panel, or <code>open {FULL_REPORT}</code>. Replies: <code>post &lt;pr&gt; f&lt;n&gt;</code>, '
         "<code>fix &lt;pr&gt;</code>, <code>approve &lt;pr&gt;</code>, <code>chip &lt;pr&gt;</code>, <code>prompt &lt;pr&gt;</code>, "
         "<code>show &lt;pr&gt;</code>, <code>review &lt;pr&gt;</code>, <code>skip &lt;pr&gt;</code>, <code>render</code>; "
         "&lt;pr&gt; is 7045 or models#438.</div>"
