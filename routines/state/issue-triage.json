@@ -2554,6 +2554,11 @@
      "bad",
      "Needs your action",
      "needs attention"
+    ],
+    [
+     "warn",
+     "Auto-post held: repro session running",
+     "auto held"
     ]
    ],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the log. It shows the album starting and both Next presses, but nothing about shuffle either way, because the shuffle step doesn't log at that level. It also shows no error, so the server didn't refuse anything it received. Could you set the Web Server log level to Verbose (Settings, Core, Web Server), repeat the exact same test in the browser and attach that log? That shows whether the shuffle click actually reaches the server. Please also tell us whether a popup or error appears when you click shuffle, whether the queue list reorders at all, and whether you're logged in to Music Assistant as an admin or as a regular user.",
@@ -2563,9 +2568,10 @@
     "10-16 16:38 run: reporter suspects Plex after mnestrud's Tidal non-repro. Shuffle path is provider-agnostic; reply updated to still ask the debug log, plus a non-Plex comparison.",
     "10-20 16:38 run: you posted the Player Queues debug log + non-Plex comparison ask (14:37 UTC). Waiting for the reporter.",
     "10-21 07:38 run: zosopage1963 (16:12 UTC) reproduced on the Chrome web player with Plex on 2.10.7 and attached a Player Queues DEBUG log. The log has no shuffle trace at all (that path doesn't log) and no refused command. Next step is a Verbose Web Server log plus the user role.",
-    "10-21 12:15: repro session started at your request against your local Plex server (Plex album/playlist on This device, Tidal comparison, dev then 2.10.7). Draft reply on hold until it reports."
+    "10-21 12:15: repro session started at your request against your local Plex server (Plex album/playlist on This device, Tidal comparison, dev then 2.10.7). Draft reply on hold until it reports.",
+    "10-21 13:20: info ask held from auto-posting while the repro session works the card."
    ],
-   "action": "Post the reply asking for a Verbose Web Server log plus admin vs regular user; the Player Queues log can't show the shuffle step.",
+   "action": "Auto-post held: the Plex repro session is still running. Wait for its result before posting the Verbose Web Server log ask. Post the reply asking for a Verbose Web Server log plus admin vs regular user; the Player Queues log can't show the shuffle step.",
    "ask": "reply-info",
    "fix_thread": {
     "id": "mcp:b947aee9-eba6-476a-94ac-10fa0c05a450",

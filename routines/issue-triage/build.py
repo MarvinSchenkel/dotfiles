@@ -34,11 +34,11 @@ COL_COLOR = {
 }
 TONES = {"ok", "warn", "info", "bad"}
 # Badges worth showing on the board itself; the card body shows all of them.
-KEEP = {"booked", "still broken", "backport?", "test asked", "tested"}
+KEEP = {"booked", "still broken", "backport?", "test asked", "tested", "auto held"}
 # Badge kinds that put a card on Marvin's list.
 ACT = {
     "needs attention", "review", "decide", "local fix", "local fix · hw", "verify red",
-    "still broken", "retest", "not on stable",
+    "still broken", "retest", "not on stable", "auto held",
 }
 REF = re.compile(
     r"(https://github\.com/[\w.\-/#]+|\b(?:home-assistant/core|music-assistant/[\w-]+|server|frontend|models"
@@ -337,7 +337,7 @@ def render_full(state: dict) -> str:
 
 
 def render_digest(state: dict, board_path: str | None, status_len: int) -> str:
-    """Render the compact inline digest: lane counts and the cards that are new or changed this run."""
+    """Render the compact inline digest: lane counts, info asks held for Marvin, and cards changed this run."""
     run = state.get("last_run") or ""
     run_at = _run_time(run)
     cards = sorted(state["cards"], key=_last_at, reverse=True)
@@ -352,10 +352,14 @@ def render_digest(state: dict, board_path: str | None, status_len: int) -> str:
             f'<div class="v">{len(in_col)}</div><div class="s">{f"{due} need you" if due else "&nbsp;"}</div></div>'
         )
     changed = [c for c in cards if _new(c, run) or _changed(c, run)]
+    held = [c for c in cards if any(_kind(b) == "auto held" for b in c["badges"])]
     board = escape((board_path or "~/.claude-teamB/routine-reports/issue-triage.html").replace(os.path.expanduser("~"), "~", 1))
     parts = [
         f'<div><h1>Support issue triage</h1><div class="sub">Last run {escape(run or "never")}</div></div>',
         '<div class="lanes">' + "".join(lanes) + "</div>",
+        (f"<section><h2>Info asks held for you ({len(held)})</h2>"
+         + '<div class="rows">' + "".join(_row(c, names, run, run_at, status_len) for c in held) + "</div></section>"
+         if held else ""),
         f"<section><h2>Changed this run ({len(changed)})</h2>"
         + ('<div class="rows">' + "".join(_row(c, names, run, run_at, status_len) for c in changed) + "</div>"
            if changed else '<div class="sub">Nothing changed this run.</div>')

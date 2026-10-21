@@ -225,6 +225,16 @@ improved ask for `revise`. Weigh each verdict yourself:
   back (GPT rewrote it to "written by Copilot" in the dry run).
 - `marvin`, or any disagreement left: the card stays on Marvin's list with both versions and GPT's
   objection in the card's notes.
+
+Held asks. Whenever a card with an `info` draft (`ask` `reply-info`) does not go out on its own, give it the
+badge `["warn", "Auto-post held: <short reason>", "auto held"]` and start its `action` with
+`Auto-post held: <reason>.` Reasons: GPT disagreement after the recheck, a `fix_thread` session on the card,
+an earlier ask of ours still unanswered, a repeat of something already asked, a discussion, an HA core issue,
+assigned to someone else, or `auto_post.enabled` false. A card without a draft, or where Marvin or a
+teammate spoke last, gets no badge: there is nothing to post. Drop the badge when the ask goes out, when the
+draft is cleared, or when the reason no longer holds. The digest lists these cards under "Info asks held
+for you", and the chat summary puts them right after "Posted on your behalf" under "Held for you", one line
+each with the issue, the reason and what Marvin should do.
 There is no cap per run. Post with `gh issue comment <n> -R <repo> --body-file -`, then treat it like a
 `reply <n>`: clear `reply`, `action` and the attention badges, add the waiting badge, refresh `gh`, and add a
 note `<MM-DD HH:MM> run: posted on your behalf (<url>), GPT: <verdict>, <one-line reason>`.
