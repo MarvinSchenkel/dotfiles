@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-21T13:05:00+02:00",
+ "last_run": "2026-10-21T14:10:00+02:00",
  "dev": "53c876f91",
- "run_note": "Quiet hour. Your reply on #5700 asks dmoo500 to drop the statistics cache for query rewrites, so it now waits on him. The critical gate drafted #6940 over Copilot's Smart Shuffle CRITICAL; szsolt hasn't answered. #7124 still waits on your post or approve. No merges, no new PRs, no reporter replies.",
+ "run_note": "Simanias fixed and answered all three #7079 threads and took it out of draft, but Copilot's re-review opened two new CRITICALs on queue handover, so it goes back to him (it can be auto-approved once Copilot is clean). #7068's fixes landed and Copilot has no open threads; its one leftover needs a core change and is your call to decline, the login cleanup is still too narrow (patch ready), and OzGav still has to re-review. Your new draft #7135 is carded.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -1586,7 +1586,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "dmoo500",
-   "changed_now": "you replied",
+   "changed_now": null,
    "fix_thread": "[Cache benchmark discussion](t3-thread://v1/mcp:86e76b02-68f1-4956-9579-2147ce8dc226), started 10-21: cache-DB hit vs uncached instead of warm memory"
   },
   {
@@ -2931,7 +2931,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "szsolt",
-   "changed_now": "drafted",
+   "changed_now": null,
    "gpt_sol": "clean"
   },
   {
@@ -4718,51 +4718,57 @@
    "draft": false,
    "verdict": "almost",
    "assessment": "comment",
-   "status": "waiting",
-   "attention_since": "2026-10-16T20:46:38Z",
+   "status": "attention",
+   "attention_since": "2026-10-21T11:19:41Z",
    "size": "M",
-   "code": 267,
-   "add": 1126,
-   "del": 33,
+   "code": 276,
+   "add": 248,
+   "del": 28,
    "ci_fail": false,
-   "ci": "green on 4bb2edc0c (lint, pytest, provider-scope, test, dependency review)",
+   "ci": "green on f7acc5c62",
    "core_touched": false,
    "providers_touched": [
     "pandora"
    ],
    "merge_state": "merge-tree clean on origin/dev 53c876f91; changes requested, no auto-merge",
-   "head_sha": "4bb2edc0c",
-   "tldr": "Both earlier blockers are fixed: no close() is left outside unload(), and stationless answers no longer replace each other. Copilot reviewed the head at 05:22Z and opened 2 smaller PROBLEMs: a failed first login now leaks the SOCKS session, and _clear_feedback catches Exception too broadly. Both fit in one small commit (patch ready). OzGav still needs to re-review.",
-   "summary": "Delta 3bd9f7c76..4bb2edc0c, 2 commits. b0c0bc079: _remember_feedback only replaces a kept entry when the new answer names a station, with a regression test for two stationless answers. Fixed. 4bb2edc0c: the close() calls left in _authenticate() and in the not-logged-in guard of _api_request() are gone, so close() only runs in unload(). Tests cover dropped connections, unreadable bodies, a request before login and failed logins, all asserting the proxy session stays open. Fixed. drawsmcgraw answered OzGav's thread r4325283202 and both Copilot CRITICALs (15:29Z, 15:47Z, 15:48Z). 140 Pandora tests pass on a git-archive copy.\n\nNew side effect: before, a failed login in handle_async_init closed the proxy session. Now nothing does, because mass.py does not call unload() when handle_async_init fails, and the retry builds a new instance with a new session. Each failed load with the SOCKS setting leaves an unclosed aiohttp session. Small (GC warning, one session per retry), but real. Copilot r4333311814 (PROBLEM, 05:22Z) says the same.\n\nCopilot 05:22Z on 4bb2edc0c: 'Changes recommended', both earlier CRITICALs resolved, 1 open PROBLEM (the leak above) and 1 'previously missed' PROBLEM: _clear_feedback catches Exception, so a programming error keeps going with more remote deletes before it is raised. Valid per the project's exception rule; narrowing to MusicAssistantError and TimeoutError keeps every expected case (_api_request maps aiohttp errors to ProviderUnavailableError).\n\nGPT Sol: confirms no close() is left outside unload(), the stationId change is correct and _clear_feedback still deletes stationless entries by id. Its only finding is the same init leak (LOW).\n\nOzGav's thread r4325283202 is answered but not resolved, and his CHANGES_REQUESTED review still stands. chrisuthe is still a pending reviewer.",
+   "head_sha": "f7acc5c62",
+   "tldr": "drawsmcgraw fixed both Copilot PROBLEMs (SOCKS session on a failed first login, narrow _clear_feedback catch) and Copilot now has no open threads. Its one leftover, in the review body, needs a core change to clean up persistent rows of a removed disabled instance, so that's your call to decline. GPT Sol and Claude also find the login cleanup too narrow (bad JSON, cancellation); a validated patch is ready. OzGav's CHANGES_REQUESTED still stands, though his points look addressed.",
+   "summary": "Delta 4bb2edc0c..f7acc5c62. handle_async_init wraps the first _authenticate in try/except (MusicAssistantError, TimeoutError): close(); raise. Tests cover 403, a dropped connection and a timeout. Runtime re-auth from _api_request's 401 path no longer closes anything, and close() is now called only from unload() and the failed-init path. The shared mass.http_session is never closed (_socks_proxy guard). _clear_feedback now catches (MusicAssistantError, TimeoutError), the same as our patch. _api_request maps aiohttp.ClientError, ValueError and KeyError to MA errors, and a raw ClientTimeout arrives as TimeoutError, so every expected failure is still kept for a retry. A real bug, such as a KeyError on a malformed kept entry, now propagates at once without rewriting the cache. That is fine: ids already deleted stay kept and are dropped by the next clear's not-found path, and _remember_feedback never writes a malformed entry.\n\nDifference from our patch: the init catch is narrow, so a 200 login body with invalid JSON (json.JSONDecodeError, which _authenticate does not map) or a CancelledError (shutdown, or the core's 300 s init timeout) leaks the proxy session. test_a_bug_during_the_first_login_is_not_caught asserts that leak. Cleanup-and-reraise is not swallowing, so BaseException is the right catch (patch below, validated). Copilot re-reviewed f7acc5c62 at 12:06Z: no open issues, but one new 'previously missed' PROBLEM. Removing a disabled instance skips unload(), so the persistent feedback rows (10-year expiry) stay behind. That is valid, but it is a core gap (tidal and filesystem_local also use persistent cache) and the rows are tiny and never read again, so a core follow-up for Marvin to decide, not this PR. The 404-on-deleteFeedback NIT is still there. 146 Pandora tests, ruff and mypy are clean.",
    "blockers": [
-    "Copilot PROBLEM r4333311814 (05:22Z on 4bb2edc0c): a failed first login leaves the SOCKS session open. Patch in suggested_fix.",
-    "Copilot 'previously missed' PROBLEM (provider.py:724): _clear_feedback catches Exception. Patch in suggested_fix.",
-    "OzGav's CHANGES_REQUESTED review still stands and needs a re-review."
+    "Copilot PROBLEM f1 (body only) needs a core fix: decline it as out of scope or ask for a core follow-up",
+    "First-login cleanup still leaks on bad JSON or cancellation (f2): `fix 7068` pushes the validated patch, or post it",
+    "OzGav's CHANGES_REQUESTED still stands; his points look addressed, so he needs to re-review"
    ],
    "findings": [
     {
+     "model": "Copilot",
      "severity": "PROBLEM",
      "file": "music_assistant/providers/pandora/provider.py",
-     "line": 174,
-     "title": "A failed first login leaks the SOCKS proxy session (Copilot r4333311814)",
-     "detail": "_authenticate no longer closes the session, and mass.py does not call unload() when handle_async_init fails. With the SOCKS setting each failed load (wrong password, proxy down, init timeout) leaves an unclosed aiohttp session, and the retry makes another one.",
-     "fix": "Wrap the initial _authenticate call in handle_async_init: close() and re-raise on any failure. Runtime re-auth stays non-closing."
+     "line": 190,
+     "title": "Removing a disabled instance leaves its persistent feedback rows",
+     "detail": "Copilot 'previously missed' finding in its 12:06Z review body, no thread: the cache delete runs in unload(is_removed=True), which mass.unload_provider only calls for loaded instances, and cleanup_provider's cache.clear() keeps persistent rows. The fix Copilot asks for is in core's removal path. Claude rates it a SUGGESTION: the rows can't be read by another instance and the same gap exists for any provider with persistent cache rows.",
+     "fix": "Decline as out of scope (core gap, not this PR's), or fix in core separately.",
+     "posted": null
     },
     {
+     "model": "GPT Sol",
      "severity": "PROBLEM",
      "file": "music_assistant/providers/pandora/provider.py",
-     "line": 724,
-     "title": "_clear_feedback catches Exception (Copilot, previously missed)",
-     "detail": "A programming error is kept as a 'failure', more deletes are sent, then it is raised. The project rule asks for narrow handlers. _api_request already maps transport errors to MusicAssistantError subclasses; only a total timeout arrives as TimeoutError.",
-     "fix": "Catch (MusicAssistantError, TimeoutError) instead."
+     "line": 177,
+     "title": "First-login cleanup misses bad-JSON and cancelled inits",
+     "detail": "The new handler only closes the SOCKS session for MusicAssistantError and TimeoutError; a json.JSONDecodeError from a 200 login body, any bug, or a CancelledError (shutdown or PROVIDER_ASYNC_INIT_TIMEOUT) still leaks it. Claude agrees (SUGGESTION) and has a validated patch.",
+     "fix": "Close the session on any failure of the first login (except BaseException, re-raise), in handle_async_init so failed re-logins keep existing sessions.",
+     "posted": null
     },
     {
+     "model": "Claude",
      "severity": "NIT",
      "file": "music_assistant/providers/pandora/provider.py",
-     "line": 516,
+     "line": 499,
      "title": "A 404 on deleteFeedback is read as 'thumb gone'",
-     "detail": "The 404 branch raises MediaNotFoundError, which _clear_feedback treats as already removed and drops the id. Only matters if Pandora answers 404 for this endpoint.",
-     "fix": "Optional: raise a different error for 404, or leave it."
+     "detail": "The generic 404 branch raises MediaNotFoundError, which _clear_feedback (line 723) treats as already removed and drops the id. The FEEDBACK_NOT_FOUND_ERROR body check already covers the real not-found case. This only matters if Pandora returns 404 for this endpoint.",
+     "fix": "Optional: map a bare 404 on DELETE_FEEDBACK_ENDPOINT to a retryable error, or leave it.",
+     "posted": null
     }
    ],
    "unaddressed_comments": [
@@ -4781,32 +4787,36 @@
    ],
    "copilot": {
     "green": false,
-    "comments": 1,
-    "findings": 2,
-    "review_url": "https://github.com/music-assistant/server/pull/7068#pullrequestreview-5595287310",
+    "comments": 0,
+    "findings": 1,
+    "review_url": "https://github.com/music-assistant/server/pull/7068",
     "titles": [
-     "[PROBLEM] Clean up SOCKS session when initial authentication fails (provider.py:421)",
-     "[PROBLEM] Narrow exception handling to expected provider and transport errors (provider.py:724, previously missed)"
+     "[PROBLEM] Removing disabled Pandora instances leaves persistent feedback records (previously missed, body only)"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "Requested 05:15Z, landed 05:22Z on 4bb2edc0c: 'Changes recommended'. Both earlier CRITICALs resolved, 1 new PROBLEM inline plus 1 previously missed PROBLEM in the body.",
+   "copilot_note": "12:06Z review on f7acc5c62 (requested 12:01Z): no open threads, SOCKS thread resolved, 1 'previously missed' PROBLEM in the body (core removal path).",
    "suggested_fix": {
-    "description": "providers/pandora/provider.py: handle_async_init closes the proxy session and re-raises when the first login fails or times out; _clear_feedback catches (MusicAssistantError, TimeoutError) instead of Exception. Checked with git apply --check on 4bb2edc0c, ruff check, ruff format, mypy and all 140 Pandora tests. Copilot also asks for a failed-init test; not included.",
-    "patch": "diff --git a/music_assistant/providers/pandora/provider.py b/music_assistant/providers/pandora/provider.py\nindex 86e57bf..3b0778d 100644\n--- a/music_assistant/providers/pandora/provider.py\n+++ b/music_assistant/providers/pandora/provider.py\n@@ -24,6 +24,7 @@ from music_assistant_models.errors import (\n     InvalidDataError,\n     LoginFailed,\n     MediaNotFoundError,\n+    MusicAssistantError,\n     ProviderUnavailableError,\n )\n from music_assistant_models.media_items import (\n@@ -171,7 +172,12 @@ class PandoraProvider(MusicProvider):\n             self._socks_proxy = True\n         else:\n             self.http_session = self.mass.http_session\n-        await self._authenticate(username, password)\n+        try:\n+            await self._authenticate(username, password)\n+        except BaseException:\n+            # a failed or timed out load is not unloaded, so the proxy session would stay open\n+            await self.close()\n+            raise\n \n     async def unload(self, is_removed: bool = False) -> None:\n         \"\"\"Handle unload/close of the provider.\"\"\"\n@@ -703,7 +709,7 @@ class PandoraProvider(MusicProvider):\n             return\n         # every entry is tried, so one that fails does not leave the others on Pandora\n         remaining: list[dict[str, Any]] = []\n-        failure: Exception | None = None\n+        failure: MusicAssistantError | TimeoutError | None = None\n         for entry in kept:\n             try:\n                 # Pandora deletes by id whatever isPositive says, so a thumb flipped in the\n@@ -721,7 +727,7 @@ class PandoraProvider(MusicProvider):\n                     entry[\"feedbackId\"],\n                     prov_track_id,\n                 )\n-            except Exception as err:\n+            except (MusicAssistantError, TimeoutError) as err:\n                 # keep what may still be on Pandora, so another clear can retry it\n                 remaining.append(entry)\n                 failure = failure or err\n"
+    "description": "providers/pandora/provider.py: close the proxy session on any failure of the first login (except BaseException, then re-raise). tests/providers/pandora/test_favorite.py: the bug-during-login test now asserts the session is closed (changes the author's test). Validated with git apply --check on f7acc5c62, 146 Pandora tests, ruff check and ruff format. Note: it also changes the author's bug-during-login test assertion.",
+    "patch": "diff --git a/music_assistant/providers/pandora/provider.py b/music_assistant/providers/pandora/provider.py\nindex de2ac7ca10..6a254246bd 100644\n--- a/music_assistant/providers/pandora/provider.py\n+++ b/music_assistant/providers/pandora/provider.py\n@@ -174,7 +174,7 @@ class PandoraProvider(MusicProvider):\n             self.http_session = self.mass.http_session\n         try:\n             await self._authenticate(username, password)\n-        except MusicAssistantError, TimeoutError:\n+        except BaseException:\n             # a provider that fails to initialize is never registered, so unload() will not\n             # run to close the proxy session created above\n             await self.close()\ndiff --git a/tests/providers/pandora/test_favorite.py b/tests/providers/pandora/test_favorite.py\nindex c34e71caf8..60e1b413f8 100644\n--- a/tests/providers/pandora/test_favorite.py\n+++ b/tests/providers/pandora/test_favorite.py\n@@ -729,10 +729,10 @@ async def test_a_failed_first_login_closes_the_socks_proxy_session(\n     assert session.closed\n \n \n-async def test_a_bug_during_the_first_login_is_not_caught(\n+async def test_a_bug_during_the_first_login_still_closes_the_socks_proxy_session(\n     monkeypatch: pytest.MonkeyPatch,\n ) -> None:\n-    \"\"\"An error that is not a failed login reaches the loader untouched, without the cleanup.\"\"\"\n+    \"\"\"An error that is not a failed login reaches the loader untouched, the session closed.\"\"\"\n     provider = _real_provider([], _CountingThrottler())\n     session = _ProxySession([])\n     provider.mass = Mock()\n@@ -742,7 +742,7 @@ async def test_a_bug_during_the_first_login_is_not_caught(\n     monkeypatch.setattr(provider_module, \"get_csrf_token\", AsyncMock(side_effect=RuntimeError))\n     with pytest.raises(RuntimeError):\n         await provider.handle_async_init()\n-    assert not session.closed\n+    assert session.closed\n \n \n async def test_unloading_closes_the_socks_proxy_session() -> None:\n",
+    "pushed": null
    },
-   "backport": null,
-   "prompt": "PR music-assistant/server#7068 (Pandora thumbs up/down, author drawsmcgraw, head 4bb2edc0c, not a draft, CI green). The author fixed both earlier blockers: close() now only runs in unload(), and stationless feedback answers are kept side by side. Copilot 05:22Z left 2 PROBLEMs: r4333311814, a failed first login in handle_async_init now leaks the SOCKS session (mass.py never unloads a provider whose init failed), and a previously missed one, _clear_feedback catches Exception (provider.py:724). GPT Sol found the same leak and nothing else. OzGav's CHANGES_REQUESTED still stands; chrisuthe is a pending reviewer. Work read-only in /Users/marvin/git/music-assistant/server (PR head refs/remotes/pr/7068, compare to origin/dev). The card's suggested_fix has a verified patch for both points. If Marvin wants to nudge the author, a draft: '> [!NOTE] This comment was written by Claude on Marvin's behalf\\n\\nThanks, the close() cleanup looks good. Two small ones from Copilot: close the proxy session when the first login in handle_async_init fails (a failed load is never unloaded), and catch (MusicAssistantError, TimeoutError) instead of Exception in _clear_feedback.' Post nothing on GitHub without Marvin's explicit OK.",
-   "whats_new": "drawsmcgraw pushed 2 commits and left the draft state. Stationless feedback answers are now kept side by side (Copilot CRITICAL fixed), and the last close() calls in _authenticate() are gone, so only unload() closes the session (OzGav's point fixed, new tests). Copilot re-reviewed at 05:22Z: earlier CRITICALs resolved, 2 smaller PROBLEMs left (session leak on a failed first login, broad except in _clear_feedback); patch ready. OzGav still has to re-review.",
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-21 07:45 CEST",
+   "backport": {
+    "rec": false,
+    "why": "New feature (label new-feature), not a bugfix."
+   },
+   "prompt": "Server PR #7068 (https://github.com/music-assistant/server/pull/7068), head f7acc5c62, by drawsmcgraw. In music_assistant/providers/pandora/provider.py handle_async_init, close the SOCKS proxy session on any failure of the first login (except BaseException, then re-raise) so bad-JSON login bodies and cancelled inits don't leak it; failed re-logins must keep existing sessions. Update the bug-during-login test in tests/providers/pandora/test_favorite.py to assert the session is closed. Work in a worktree from refs/remotes/pr/7068.",
+   "whats_new": "drawsmcgraw pushed 0a4f1e059 (close the proxy session if the first login fails) and f7acc5c62 (catch MA errors), replied on r4333311814 at 11:19Z. Copilot requested as Marvin at 12:01Z, landed 12:06Z: no open threads, 1 resolved, 1 'previously missed' PROBLEM in the body.",
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-21 14:10 CEST",
    "auto_approved": null,
    "stacked": false,
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "author",
-   "changed_now": null
+   "waiting_on": "you: decide f1, OzGav",
+   "changed_now": "pushed",
+   "gpt_sol": "0 critical, 1 problem"
   },
   {
    "repo": "server",
@@ -5184,52 +5194,80 @@
    "title": "Follow Raumfeld zone changes and speed up regrouping",
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7079",
-   "draft": true,
+   "draft": false,
    "verdict": "almost",
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
    "size": "L",
-   "code": 427,
-   "add": 850,
-   "del": 113,
+   "code": 623,
+   "add": 527,
+   "del": 96,
    "ci_fail": false,
-   "ci": "All green on 062801f46 (lint, test, Verify, Apply, provider-scope).",
+   "ci": "green on 7eb892f52",
    "core_touched": false,
    "providers_touched": [
     "raumfeld"
    ],
    "merge_state": "GitHub MERGEABLE, BLOCKED (no approving review). Merges cleanly with origin/dev d941b89db. Only touches providers/raumfeld and its tests.",
    "head_sha": "7eb892f52",
-   "tldr": "Two pushes this hour. 3d6298615 took our stop() patch and fixed both 19:20Z CRITICALs. 5195bbf91 (20:24Z) then fixed Copilot's 20:21Z pair: a follower drops its own next item in the end-watch (same as the check we drafted), and a merge of two MA-playing zones now picks the leader by the stream the zone plays. Copilot 20:32Z (6 min) raised 3 more CRITICALs. One is real and a one-liner: _poll_zone still checks only _held_for_watcher() after its reads, so a room that turned follower mid-read can start its stale next item. The two ownership-probe races are rare. GPT Sol (on 3d6298615): _leave_zone's 6 s wait runs inside the core's serial poll loop.",
-   "summary": "Reviewed 062801f46..5195bbf91. stop() clears the next item before the handover check, the leader's own zone is matched with _zone_plays_queue, the end-watch holds while _follows_or_held(), and _queue_owners() reads the merged zone's stream only when two or more rooms claim it. The poll() power-off branch only fires on a host-reported change, since MA's own power(False) sets _attr_powered itself. Copilot r4308619957 is valid: followers return from poll() before _poll_zone, so a follower check after the reads is safe and closes the stale STOPPED path. r4308619970 (playback starts on another claimant during an ownership read) and r4308619981 (a failed read commits the first claimant) need a merge in the Raumfeld app plus a race or a host error in the same seconds; worth an answer on the thread, not a blocker in practice. GPT Sol (3d6298615): PlayerController awaits player.poll() one by one, so _leave_zone's bounded wait delays other players' polls by up to 6 s, confirmed against origin/dev.",
+   "tldr": "Simanias fixed and answered all three Copilot threads from 10-18 (dd5603c), and Claude confirms each fix with a test that fails without it (146 pass). Copilot's review of the head opened two new CRITICALs about queue handover during a partial zone split and a natural track end, so it goes back to him. GPT Sol adds two narrow multi-zone ownership races we rate as suggestions. Providers-only and L, so it can be auto-approved once Copilot is clean.",
+   "summary": "Delta 5195bbf91..7eb892f52: dd5603cdef plus a dev merge (a8bee1b722 is #7112 and was ignored). r4308619957: _poll_zone now calls _follows_or_held() after its reads. A room that became a follower during the reads clears its next item (_clear_next) and returns before _maybe_advance. r4308619970: _queue_owners snapshots playback_generation for every claimant before probing and checks playback_unchanged_since (generation plus no running _changes_playback command) after all probes. No await sits between that check and _sync_groups, and the layout re-check still runs. r4308619981: a contested zone where no probe says True and one says None makes the whole result None. _follow_zones then retries every 2 s via _undecided_since and, after GROUP_SETTLE_TIME (10 s), mirrors with owners {}, so _pick_leader falls back to the first claimant. That fallback is bounded on purpose, and _undecided_since is reset on any layout change. Mutation check: reverting each fix fails exactly its new test (joined_during_poll, merge_waits[playback starts], merge_waits[no answer]).\n\nStill open, non-blocking: poll() awaits _leave_zone(), which waits up to ZONE_WAIT_TIMEOUT (6 s) plus the drop call. Core _poll_players polls every player serially, so that wait stalls polling for all players. It only fires when a leader that is playing gets switched off outside MA, and the rest of that poll relies on the updated zones, so moving it into a task needs care. Minor: when _queue_owners returns None, a zone in the same look that already had a conclusive owner loses it at the settle fallback. That needs two contested merges at once. 146 Raumfeld tests pass in the worktree, ruff and mypy are clean, and merge-tree is clean.",
    "blockers": [
-    "Copilot 19:20Z: 2 open CRITICALs on 062801f46 (r4308379336 own-zone source check, r4308379364 end-watch during split/handover)."
+    "Copilot CRITICAL r4336580781: a partial zone split skips queue handover",
+    "Copilot CRITICAL r4336580849: a natural track end clears queue ownership before the split is reconciled",
+    "Critical gate will draft it until both are answered"
    ],
    "findings": [
     {
-     "severity": "PROBLEM",
+     "model": "Copilot",
+     "severity": "CRITICAL",
      "file": "music_assistant/providers/raumfeld/player.py",
-     "line": 732,
-     "title": "Room that turns follower during _poll_zone's reads can start its stale next item (Copilot r4308619957)",
-     "detail": "After the reads _poll_zone checks only _held_for_watcher(). With flow mode off, a room merged into another zone mid-read sees a STOPPED reading near track end and _maybe_advance() starts its own next item over the group's audio. poll() returns early for followers before _poll_zone, so checking for a follower after the reads is safe.",
-     "fix": "Use _follows_or_held() instead of _held_for_watcher() after the reads in _poll_zone."
+     "line": 1119,
+     "title": "Partial zone split bypasses queue handover (r4336580781)",
+     "detail": "When Bar/Sofa/Kitchen/Office splits into a stopped Bar/Sofa zone and a Kitchen/Office zone still playing Bar's stream, Sofa triggers an early return that skips polling protection and queue handover, so Kitchen gets a group without the running queue and its controls.",
+     "fix": "Skip members in the leader's zone instead of abandoning the other zones; regression for the partial split.",
+     "posted": null
     },
     {
+     "model": "Copilot",
+     "severity": "CRITICAL",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 1163,
+     "title": "Natural track end clears queue ownership before split reconciliation (r4336580849)",
+     "detail": "With flow mode off, the continuing rooms can finish their track before the watcher reconciles a split. Their STOPPED transport returns False without checking TrackURI, so reconciliation skips handover and clears membership, and the detached leader's pending end-watch can start its next item there.",
+     "fix": "Keep ownership across natural track boundaries before clearing membership, without treating deliberate stops as playback; regression where the track ends before reconciliation.",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
      "severity": "SUGGESTION",
      "file": "music_assistant/providers/raumfeld/provider.py",
-     "line": 458,
-     "title": "Ownership probes commit on a failed or stale read (Copilot r4308619970, r4308619981)",
-     "detail": "A None reading counts as 'not the owner', and a playback start on another claimant during the probe is not detected. Both need two MA-playing zones merged in the Raumfeld app plus a host error or a new play in the same few seconds.",
-     "fix": "Optional: skip the commit when any probe returns None and retry on the next watcher pass; or answer the threads."
+     "line": 455,
+     "title": "Playback on an untracked zone member can invalidate the ownership result",
+     "detail": "GPT Sol rated this a PROBLEM: generations are snapshotted only for queue claimants, so an idle member starting playback during a probe isn't caught. Needs a merged zone with two playing leaders plus an idle room that starts during the read; we see it as rare.",
+     "fix": "Snapshot and validate every registered member of the probed zone.",
+     "posted": null
     },
     {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/raumfeld/provider.py",
+     "line": 469,
+     "title": "One inconclusive zone discards owners already found for other zones",
+     "detail": "GPT Sol rated this a PROBLEM, Claude a NIT: _queue_owners returns None for the whole layout if any contested zone stays inconclusive, so after the settle time a conclusively probed zone also falls back to _pick_leader. Needs two simultaneous contested merges with one unresponsive zone.",
+     "fix": "Keep confirmed owners and apply the timeout fallback only to unresolved zones.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
      "severity": "SUGGESTION",
      "file": "music_assistant/providers/raumfeld/player.py",
-     "line": 1112,
-     "title": "_leave_zone wait blocks the core's serial poll loop (GPT Sol)",
-     "detail": "PlayerController polls players one after another, so waiting up to 6 s for the zone list inside poll() delays every other player's poll and elapsed-time updates.",
-     "fix": "Run _leave_zone as a tracked task (mass.create_task) and let the next poll pick up the result."
+     "line": 685,
+     "title": "_leave_zone wait blocks the core's serial poll loop",
+     "detail": "poll() awaits _leave_zone(), which polls get_zone_for_room for up to ZONE_WAIT_TIMEOUT (6 s) after async_drop_room_from_zone. controllers/players/controller.py _poll_players awaits each player's poll() in turn, so every other player's poll is delayed for that time. This only happens when a leader that is playing is switched off outside MA.",
+     "fix": "Optional: shorten the wait, or run the leave and handover as one tracked task and return from poll() early (the rest of the poll needs the updated zones).",
+     "posted": null
     }
    ],
    "unaddressed_comments": [
@@ -5254,33 +5292,33 @@
    ],
    "copilot": {
     "green": false,
-    "comments": 3,
-    "findings": 3,
-    "review_url": "https://github.com/music-assistant/server/pull/7079#pullrequestreview-5564816934",
+    "comments": 2,
+    "findings": 2,
+    "review_url": "https://github.com/music-assistant/server/pull/7079#discussion_r4336580781",
     "titles": [
-     "[CRITICAL] Follower check missing after _poll_zone reads (r4308619957)",
-     "[CRITICAL] Ownership probe ignores playback changes during the read (r4308619970)",
-     "[CRITICAL] Unresolved ownership read commits the first claimant (r4308619981)"
+     "[CRITICAL] Partial zone splits bypass queue handover (r4336580781)",
+     "[CRITICAL] Natural track ends clear queue ownership before split reconciliation (r4336580849)"
     ]
    },
-   "copilot_reviewed_head": "5195bbf91",
-   "copilot_note": "Copilot 20:32Z on 5195bbf91 (6 min after our request): 2 earlier CRITICALs resolved, 3 new ones. One real one-liner, two rare ownership races.",
-   "suggested_fix": {
-    "description": "One-line follow-up for Copilot r4308619957: check _follows_or_held() after _poll_zone's reads, so a room that became a follower mid-read drops its own next item. git apply --check passes on 5195bbf91. The two ownership-probe CRITICALs can get a short reply (needs an app merge plus a race or a host error), or a retry when a probe returns None.",
-    "patch": "diff --git a/music_assistant/providers/raumfeld/player.py b/music_assistant/providers/raumfeld/player.py\n--- a/music_assistant/providers/raumfeld/player.py\n+++ b/music_assistant/providers/raumfeld/player.py\n@@ -729,8 +729,9 @@\n             # a play or stop command ran meanwhile; the next poll reads what it brought\n             self.update_state()\n             return\n-        if self._held_for_watcher():\n-            # the group's zone split during the reads, which then belong to the zone watcher\n+        if self._follows_or_held():\n+            # the room joined another group, or its group's zone split, during the reads:\n+            # they no longer tell this room's own playback\n             self.update_state()\n             return\n \n"
+   "copilot_reviewed_head": true,
+   "copilot_note": "12:08Z review on 7eb892f52 (requested 12:01Z): 3 resolved since last review, 2 new CRITICAL threads.",
+   "suggested_fix": null,
+   "backport": {
+    "rec": false,
+    "why": "Enhancement (label enhancement), not a bugfix."
    },
-   "backport": null,
-   "prompt": "In music-assistant/server PR #7079 (Raumfeld, author Simanias, head 5195bbf91), Copilot's 20:32Z round raised CRITICAL r4308619957: _poll_zone (music_assistant/providers/raumfeld/player.py ~732) only checks _held_for_watcher() after its reads, so a room that became a follower mid-read can start its stale next item. Fix: use self._follows_or_held() there (poll() returns early for followers, so this is safe). Copilot's other two (r4308619970 ownership probe vs playback start, r4308619981 None reading treated as not-owner) are rare. Draft a short reply to Simanias starting with '> [!NOTE] This comment was written by Claude on Marvin's behalf', 3 sentences max, suggesting the one-liner and mentioning that _leave_zone's 6 s wait runs inside the core's serial poll loop (controller.py awaits player.poll() per player), so it is better as a task. Post nothing without Marvin's OK.",
-   "whats_new": "Simanias pushed 7eb892f52 at 06:49Z while still in draft; not re-reviewed (draft).",
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-18 22:35 CEST",
+   "prompt": "",
+   "whats_new": "Simanias answered r4308619957, r4308619970 and r4308619981 at 11:54Z (fixed in dd5603c) and marked it ready at 11:55Z. Copilot hadn't reviewed 7eb892f52; requested as Marvin at 12:01Z, it landed at 12:08Z: 3 resolved, 2 new CRITICAL threads.",
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-21 14:10 CEST",
    "auto_approved": null,
    "stacked": null,
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "author",
-   "changed_now": null
+   "waiting_on": "Simanias",
+   "changed_now": "ready for review",
+   "gpt_sol": "0 critical, 2 problems"
   },
   {
    "repo": "server",
@@ -6760,6 +6798,70 @@
    "reviewed_now": false,
    "changed_now": null,
    "reviewed_at": "2026-10-21 10:05 CEST"
+  },
+  {
+   "repo": "server",
+   "number": 7135,
+   "state": "open",
+   "closed_at": null,
+   "title": "Use AirPlay 2 compatibility mode for a shairport-sync receiver on the MA host",
+   "author": "MarvinSchenkel",
+   "url": "https://github.com/music-assistant/server/pull/7135",
+   "draft": true,
+   "verdict": null,
+   "assessment": null,
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "your draft",
+   "gpt_sol": "not run",
+   "size": "M",
+   "code": 62,
+   "add": 111,
+   "del": 18,
+   "ci": "not checked (draft)",
+   "ci_fail": false,
+   "merge_state": "not checked (draft)",
+   "head_sha": "904389463",
+   "core_touched": false,
+   "providers_touched": [
+    "airplay"
+   ],
+   "stacked": false,
+   "tldr": "Your draft for support#6819: Automatic streaming mode now picks AirPlay 2 compatibility mode for a shairport-sync receiver on the MA host, whose nqptp clashes with MA's PTP engine on UDP 319/320. Copilot recommends approval. Not reviewed by us while it is a draft; AirPlay is excluded from auto-approve anyway.",
+   "summary": "",
+   "whats_new": "Your new draft, first card. Copilot reviewed 904389463 at 11:17Z: approval recommended, no open issues.",
+   "blockers": [
+    "Draft. support#6819 has no test ask yet."
+   ],
+   "findings": [],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7135",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on 904389463 (11:17Z).",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": [
+    {
+     "issue": "support#6819",
+     "my_last_comment_at": null,
+     "test_asked_at": null
+    }
+   ],
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "changed_now": "new",
+   "reviewed_at": null
   }
  ]
 }
