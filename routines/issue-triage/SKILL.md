@@ -186,7 +186,7 @@ whole section when `auto_post.enabled` in the state file is false.
 
 - The card is in `info` with `ask` `reply-info`, in `music-assistant/support`, not a discussion and not
   assigned to someone else. Test asks, answers, design replies, HA core issues and discussions always wait
-  for Marvin.
+  for Marvin. A card with a `fix_thread` (fix, repro or discussion session) waits for that session.
 - The last comment sweep ran this run, the issue is open, and the reporter (or another user, not Marvin,
   a teammate or a bot) wrote the newest comment. Nothing from Marvin or a teammate since the reporter's
   last comment, and no earlier ask of ours that the reporter hasn't answered yet: never two asks in a row.
