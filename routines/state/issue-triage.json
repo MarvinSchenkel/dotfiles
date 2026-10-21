@@ -60,11 +60,11 @@
    "col": "info",
    "area": "server / providers/sonos player.py _on_playback_error, streams controller (port 8097); airplay/player.py volume (with #6664)",
    "since": "2026-10-21 12:30",
-   "last": "innerskyone 2026-10-21 10:22",
+   "last": "MarvinSchenkel 2026-10-21 10:43",
    "gh": {
-    "login": "innerskyone",
-    "team": false,
-    "at": "2026-10-21T10:22:05Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-21T10:43:10Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -76,17 +76,17 @@
    "prs": [],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
+     "info",
+     "Waiting for user",
+     "waiting"
     ]
    ],
-   "ask": "reply-info",
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the detailed report. \"could not play None\" means the Port failed before it got to any track. With Flow mode both on and off, the one thing in common is the Port fetching audio from Music Assistant on port 8097, so I suspect it can't reach that port. Could you:\n1. Set the SONOS, AirPlay and Streams log levels to Verbose. Start native playback on Office once, then do one AirPlay volume change from the MA UI and one from the Sonos app. Attach the full log and the diagnostics file (Settings, System, Diagnostics).\n2. Tell us whether the Port is on a different VLAN or subnet from Home Assistant.\n3. Tell us whether a min or max volume is set in Office's player settings.\n\nThe AirPlay volume part is tracked in music-assistant/support#6664.",
-   "action": "Post the info ask (Verbose SONOS/AirPlay/Streams log, diagnostics, VLAN, min/max volume).",
+   "reply": "",
+   "action": "",
    "bookkeeping": [],
    "notes": [
-    "10-21 12:30 run: new issue. Native failure most likely the Port not reaching MA's stream server on 8097; AirPlay volume snap-back is the #6664 family, plus an MA-side DACP write-back lead. Info ask drafted."
+    "10-21 12:30 run: new issue. Native failure most likely the Port not reaching MA's stream server on 8097; AirPlay volume snap-back is the #6664 family, plus an MA-side DACP write-back lead. Info ask drafted.",
+    "10-21 13:45 reply: you posted the info ask from the board (10:43 UTC, https://github.com/music-assistant/support/issues/6838). Waiting for innerskyone."
    ]
   },
   {
@@ -2547,34 +2547,29 @@
    "col": "info",
    "area": "server / controllers/player_queues set_shuffle, players cmd_shuffle",
    "since": "2026-10-15 16:38",
-   "last": "zosopage1963 2026-10-20 16:12",
+   "last": "MarvinSchenkel 2026-10-21 11:13",
    "gh": {
-    "login": "zosopage1963",
-    "team": false,
-    "at": "2026-10-20T16:12:19Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-21T11:13:52Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "2.10.6 HA add-on, Plex library, 31 players. Shuffle turns blue but the queue keeps its original order and Next steps through in sequence, on Sonos and on the browser player, albums and playlists, enabled before or during playback. HA shuffle_set leaves the entity at shuffle: false. Smart Shuffle and Autoplay off. mnestrud could not reproduce on 2.10.6 Docker with Tidal on Sonos S2. zosopage1963 now points at Plex as the difference (HA OS VM on Unraid).",
    "fix": "",
-   "checked": "Opus subagent. The shuffle path (players/cmd/shuffle > cmd_shuffle > set_shuffle > _apply_local_shuffle > load(shuffle=True)) is the same on 2.10.6 and dev, and the 2.10.6 Sonos provider has no shuffle handling. Hermetic e2e pytest on both versions (shuffle while playing, shuffle before play_media, cmd_shuffle with source_id as the UI sends it, smart shuffle with recency 0): all reorder correctly. Diagnostics: 13 idle queues, no shuffle errors in the log tail. No duplicates since 09-20. The blue button plus shuffle: false in HA hints that the UI and HA address a different queue than the one playing (2 universal players, 1 synced player in the setup), not confirmed. 10-16: the 2.10.6 shuffle path (_apply_local_shuffle > load(shuffle=True) > random.sample) only reorders QueueItems, nothing in it depends on the provider, so Plex alone should not matter. No Plex provider in ~/.musicassistant, so the Plex angle is untested. 10-21: Opus read of zosopage1963's Player Queues DEBUG log (web player, Plex album, 10:46-10:47): album play 10:46:23 (resets shuffle by design, queue_loader.py:870), Next 10:47:21 and 10:47:28 step 1 then 2. The shuffle path logs nothing at DEBUG on 2.10.7 (players/controller.py:791 > set_shuffle :298 > _apply_local_shuffle :2012), and flow mode skips _enqueue_next_item logging, so the log can't show whether shuffle arrived. No websocket WARNING, so no refused command (websocket_client.py:301); an InsufficientPermissions refusal (:262) logs nothing though. Autoplay at index 1 means the album queue held 5 tracks. Plex Connect never re-synced the queue.",
-   "plan": "Ask for a Verbose Web Server log (logs 'Handling command players/cmd/shuffle', websocket_client.py:210) of the same test, whether a toast appears or the queue list reorders, and whether they use an admin or a regular MA user. If the command arrives OK and nothing reorders, repro a 5-item flow-mode Sendspin queue via players/cmd/shuffle with source_id.",
+   "checked": "Opus subagent. The shuffle path (players/cmd/shuffle > cmd_shuffle > set_shuffle > _apply_local_shuffle > load(shuffle=True)) is the same on 2.10.6 and dev, and the 2.10.6 Sonos provider has no shuffle handling. Hermetic e2e pytest on both versions (shuffle while playing, shuffle before play_media, cmd_shuffle with source_id as the UI sends it, smart shuffle with recency 0): all reorder correctly. Diagnostics: 13 idle queues, no shuffle errors in the log tail. No duplicates since 09-20. The blue button plus shuffle: false in HA hints that the UI and HA address a different queue than the one playing (2 universal players, 1 synced player in the setup), not confirmed. 10-16: the 2.10.6 shuffle path (_apply_local_shuffle > load(shuffle=True) > random.sample) only reorders QueueItems, nothing in it depends on the provider, so Plex alone should not matter. No Plex provider in ~/.musicassistant, so the Plex angle is untested. 10-21: Opus read of zosopage1963's Player Queues DEBUG log (web player, Plex album, 10:46-10:47): album play 10:46:23 (resets shuffle by design, queue_loader.py:870), Next 10:47:21 and 10:47:28 step 1 then 2. The shuffle path logs nothing at DEBUG on 2.10.7 (players/controller.py:791 > set_shuffle :298 > _apply_local_shuffle :2012), and flow mode skips _enqueue_next_item logging, so the log can't show whether shuffle arrived. No websocket WARNING, so no refused command (websocket_client.py:301); an InsufficientPermissions refusal (:262) logs nothing though. Autoplay at index 1 means the album queue held 5 tracks. Plex Connect never re-synced the queue. 10-21 repro session (Plex on Marvin's server, web player): not reproduced on dev or 2.10.7. UI button and players/cmd/shuffle with source_id while playing, shuffle before play on a playlist, and a non-admin user all reshuffle, and Next follows the new order. Starting an album resets shuffle by design (#5867), but then the button turns grey, so that isn't it. The symptoms (button blue, HA shuffle false, Next in order) point to the UI/HA addressing a different queue than the one playing.",
+   "plan": "Wait for zosopage1963: Verbose Webserver + Player Queues log of one shuffle click (players/cmd/shuffle shows the player_id and source_id), a queue-view screenshot right after, grouping/sync state and Plex Connect.",
    "branch": "",
    "diff": "",
    "prs": [],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
-    ],
-    [
-     "warn",
-     "Auto-post held: repro session running",
-     "auto held"
+     "info",
+     "Waiting for user",
+     "waiting"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the log. It shows the album starting and both Next presses, but nothing about shuffle either way, because the shuffle step doesn't log at that level. It also shows no error, so the server didn't refuse anything it received. Could you set the Web Server log level to Verbose (Settings, Core, Web Server), repeat the exact same test in the browser and attach that log? That shows whether the shuffle click actually reaches the server. Please also tell us whether a popup or error appears when you click shuffle, whether the queue list reorders at all, and whether you're logged in to Music Assistant as an admin or as a regular user.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-15 16:38 run: new issue. Not reproduced on 2.10.6 or dev with a hermetic test, no code cause found. Reply asks for a debug log and the player topology.",
@@ -2582,10 +2577,10 @@
     "10-20 16:38 run: you posted the Player Queues debug log + non-Plex comparison ask (14:37 UTC). Waiting for the reporter.",
     "10-21 07:38 run: zosopage1963 (16:12 UTC) reproduced on the Chrome web player with Plex on 2.10.7 and attached a Player Queues DEBUG log. The log has no shuffle trace at all (that path doesn't log) and no refused command. Next step is a Verbose Web Server log plus the user role.",
     "10-21 12:15: repro session started at your request against your local Plex server (Plex album/playlist on This device, Tidal comparison, dev then 2.10.7). Draft reply on hold until it reports.",
-    "10-21 13:20: info ask held from auto-posting while the repro session works the card."
+    "10-21 13:20: info ask held from auto-posting while the repro session works the card.",
+    "10-21 13:45 edit + reply: redrafted from the repro result (dropped the admin question, added the screenshot and grouping/Plex Connect questions) and posted on your OK (11:13 UTC, https://github.com/music-assistant/support/issues/6757#issuecomment-6314541606). Waiting for zosopage1963."
    ],
-   "action": "Auto-post held: the Plex repro session is still running. Wait for its result before posting the Verbose Web Server log ask. Post the reply asking for a Verbose Web Server log plus admin vs regular user; the Player Queues log can't show the shuffle step.",
-   "ask": "reply-info",
+   "action": "",
    "fix_thread": {
     "id": "mcp:b947aee9-eba6-476a-94ac-10fa0c05a450",
     "title": "Repro #6757: shuffle ignored with Plex"
@@ -3943,7 +3938,7 @@
   ]
  },
  "gone": "The 30 issues that shipped in 2.10.5, closed with the release comment: #6585, #6583, #6581, #6579, #6573, #6570, #6567, #6561, #6560, #6550, #6542, #6527, #6523, #6517, #6516, #6511, #6496, #6492, #6491, #6478, #6469, #6463, #6462, #6461, #6440, #6345, #6328, #6323, #6273, #4892. Dropped 10-05 as closed: #6470 (closed by reporter 10-02 (Bandcamp back in search)), #6460 (closed 10-02), #6458 (auto-closed 10-03 (no reply)), #6394 (closed 10-02), #6380 (closed by OzGav 10-03 after menaker12 confirmed on beta), #6338 (closed by reporter 10-03 (workaround holds)). Dropped 10-05 08:40: #6517 (auto-closed when you merged server#6702 at 06:31 UTC; booked Fix to be Confirmed + milestone 2.10.6 from its backport-to-stable label). Booked 10-05 09:40 (not on the board): #6629 FtbC + 2.10.6 (server#6691, backport-to-stable), #6620 FtbC (server#6685, backportable, see follow-ups). Dropped 10-05 10:40: #6635 (closed 06:19 UTC after your 2.11 beta reply). #6026 closed 08:03 UTC by your server#5175 merge; card kept in Fix merged until the bookkeeping is queued. Dropped 10-05 14:00: #6636 (closed by Soukyuu 11:40 UTC after your works-as-designed reply and OzGav's follow-up; going back to LMS). Dropped 10-05 15:40: #6026 (bookkeeping landed 12:40 UTC: Fix to be Confirmed + milestone 2.11.0). Dropped 10-06 09:00: #6559 (closed 06:40 UTC with your reply after the AirConnect removal fixed sync; reporter asked to file new issues); #6224 (closed 06:35 UTC when you merged server#6715; booked Fix to be Confirmed, milestone 2.11.0 was already set (migration, no backport)). Dropped 10-06 09:40: #6373 (you closed it 07:11 UTC when server#6611 merged with backport-to-stable; milestone 2.10.6 was set, I added Fix to be Confirmed); #6440 (you closed it 07:10 UTC after explaining Spotify's 1.1x headroom for crossfades); #6616 (you closed it 07:10 UTC as fixed in 2.11, milestone 2.11.0). Dropped 10-06 12:55: #6617 (assigned to jdaberkow, who is iterating on the Deezer family-profile branch with budius). Dropped 10-06 14:40: #6633 (howels closed it at 12:04 UTC, user error: a duplicate HA entity without volume_level). Dropped 10-06 15:40: #6247 (you milestoned and closed it at 13:21 UTC). #6647 closed 14:06 UTC after frontend#2924 merged. Dropped 10-07 as closed: #6641 (you merged server#6726 17:32 UTC, milestone 2.10.6, closed; already in backport/2.10.6). Dropped 10-07 as closed: #6646 (frontend#2923 merged), #6524 (fixed by frontend#2900). Dropped 10-07 13:40: #4377 (you closed it 10:58 UTC; LaneaLucy replied 11:23 UTC that the internal Snapcast server showed it too). #6613 closed 10-08 by the reporter (PO token 2.0.1 + cookie fixed it). Dropped 10-08 13:40 as closed: #6662 (server#6760 merged 11:26 UTC, auto-closed; I set Fix to be Confirmed; no backport label, but it cherry-picks cleanly onto backport/2.10.6 incl. the aiosonos 0.1.14 bump).; #6611 (closed by the reporter 10-09 06:12 UTC, keeps the opt-out on their fork) Dropped 10-12 07:40: #5723 (OzGav closed it 10-10 00:03 UTC as fixed. The reporter split the player-type part into #6688); #6063 (you closed it 10-10 with the 2.10.6 release comment); #6154 (you closed it 10-10 with the 2.10.6 release comment); #6425 (you closed it 10-10 with the 2.10.6 release comment); #6487 (OzGav closed it 10-09 23:58 UTC after parski confirmed the fix); #6562 (you closed it 10-10 with the 2.10.6 release comment); #6570 (you closed it 10-10 with the 2.10.6 release comment); #6571 (you closed it 10-10 with the 2.10.6 release comment); #6624 (closed after server#5868 + server#6858 (MSX Bridge, backport-to-stable) merged 10-10); #6627 (you closed it with the 2.10.6 release comment. magdalar commented 10-11 16:52 UTC that pause still jumps the progress back on Sonos with Audiobookshelf, mostly cosmetic now (see follow-ups)); #6642 (Annikadk confirmed 2.10.6 fixes it and closed it 10-10); #6648 (you closed it 10-10 with the 2.10.6 release comment); #6658 (dentedbread closed it 10-11 11:48 UTC, no repro on 2.11.0b4); #6669 (you closed it 10-10 with the 2.10.6 release comment); #6676 (OzGav closed it 10-11 11:47 UTC as by design: both editions sit in one Local files source, so a rescan of one file drops the other file's link. Advice is a separate source per edition. Our triage-6676 fix branch was never pushed); #6683 (megawubs closed it 10-09 17:33 UTC: 2.10.6 changed Deezer family accounts to one ARL, and the new ARL works); #6659 (now assigned to OzGav, who is working it with dentedbread). Dropped 10-12 09:40: #6493 (you closed it 07:09 UTC, fixed in 2.11). Dropped 10-12 14:40: #6714 (closed by you after server#6910 merged), #6464 (closed by you after server#6613 merged), #6451 (closed by you after server#6528 merged). #6671 and #6481 closed 10-12. Dropped 10-12 16:40: #6722 (Hypopheralcus fixed the Nextcloud proxy setting after your reply and closed it 13:49 UTC). Dropped 10-13 07:40: #6724 (OzGav closed it 22:53 UTC: 4 GB host OOM, reporter stopped Frigate and Grafana and MA kept running). Dropped 10-13 09:40: #6721 (closed 06:40 UTC, jdaberkow had taken it over). Dropped 10-13 10:40: #6577 (you closed it 08:07 UTC, no flip since the last update; reopen if it happens after an HA integration update). Dropped 10-13 15:40: #6666 (lupurs confirmed 2.10.6 fixed it and closed 12:42 UTC). Dropped 10-14 11:40: #6406 (bot auto-closed 03:31 UTC after two reminders) and #6667 (you closed it 18:14 UTC as a side effect of #6645; server#6968 closed with it). Dropped 10-14 13:40: #6725 (whc2001 confirmed the fix on the DEV add-on and closed it 11:02 UTC; server#6810 backport call moved to follow-ups). Dropped 10-14 15:40: #6643 (Asrem2 traced the Voice PE dropouts to a busy 2.4 GHz Wi-Fi channel, 13 h clean on Sendspin after moving the AP, closed 13:34 UTC). Dropped 10-15 10:15: #6186 (endevour confirmed the latest beta fixes it and closed it 10-14 19:36 UTC); #6547 (bot auto-closed 10-15 03:31 UTC after two reminders); #6732 (you closed it 10-15 07:23 UTC as a duplicate). Dropped 10-19 as closed after the 2.10.7 release: #6759, #6704, #6712, #6655, #6601, #6528, #6744 (you closed them 10-18), #6729 (sydlexius confirmed chrisuthe's fix), #6679 (dekiesel: switching to parallel fixed it). Dropped 10-19 08:38: #6811 (assigned to OzGav 06:37 UTC, he is handling the Sendspin Opus stutter). New #6813 and #6814 (ChrisB85, kiwipaulrob) were assigned to OzGav on arrival, not on the board. Dropped 10-20 07:38: #6407 (bot auto-closed 03:32 UTC after two reminders); #6102 (bot auto-closed 03:32 UTC after two reminders, our draft server#6706 is still open (see follow-ups)); #6002 (bot auto-closed 03:32 UTC after two reminders); #6782 (OzGav closed it 01:24 UTC as a feature request (Jellyfin genres were never implemented)); #6653 (anthonws closed the discussion 21:23 UTC, no time to work on it); #6508 (you assigned marcelveldt 10-20 11:50 UTC). #6673 (you closed it 12:56 UTC after the 2.11 provider sharing reply); #6668 (you closed it 12:50 UTC, resolved with the recommended tagging procedure); #6552 (OzGav closed it 13:21 UTC after sragot confirmed server#6425 fixes it on 2.11.0b5). #6682 (assigned to stvncode 13:39 UTC); #6684 (assigned to stvncode 13:39 UTC); #6777 (you closed it 13:45 UTC as duplicate of #6776); #6785 (you closed it 14:34 UTC after frontend#3032 split the review key). Dropped 10-21 07:38: #6639 (bot auto-closed 10-21 03:32 UTC after two reminders); #6663 (limitless-code confirmed the DEV app fixes all scenarios (19:02 UTC) and you closed it 22:30 UTC; FtbC + 2.11.0 were set); #6823 (jo-che confirmed on dev and closed it 19:58 UTC). Dropped 10-21 12:40: #6720 (you posted the thanks from the board 09:50 UTC and closed it).",
- "actions_applied_at": "2026-10-21T09:50:04Z",
+ "actions_applied_at": "2026-10-21T10:43:10Z",
  "auto_post": {
   "enabled": true
  }
