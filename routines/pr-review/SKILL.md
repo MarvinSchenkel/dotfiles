@@ -131,6 +131,10 @@ Tooling:
 - If `gh pr list` returns 502 or 504, fall back to `gh api --paginate
   'repos/music-assistant/<repo>/pulls?state=open&per_page=100'`.
 - macOS has no `timeout`. Run long read loops in the background and wait for them.
+- Never end a turn while a review subagent or GPT Sol run is still pending. Wait for it inline (a blocking
+  `until [ -f <result> ]` loop), and if it hasn't landed after a few minutes, card the PR as review pending.
+- The state file is JSON with a 1-space indent. Write it back with `json.dumps(state, indent=1,
+  ensure_ascii=False)` so the run commits stay small diffs.
 - In zsh, `==` inside an inline jq or awk test fails; put such loops in a bash script file.
 
 ## SLA and attention
@@ -284,7 +288,7 @@ A reply that changes the state writes it back and commits it the same way, with 
 ```json
 {
   "thread_id": "<this thread's id>",
-  "scheduled_task_id": "<the scheduled task's id>",
+  "scheduled_task_ids": ["<one id per schedule, 07:00 to 17:00>"],
   "last_run": "2026-10-21T08:25:00+02:00",
   "dev": "03ee9a687",
   "run_note": "two to four sentences shown under the title",
