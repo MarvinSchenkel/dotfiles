@@ -115,18 +115,41 @@ The runtime is full access: nothing in the harness gates GitHub writes, so this 
 
 ## Report
 
-Build the page and show it inline:
+Write the state file, then build both pages in one call:
 
-1. `python3 ~/git/dotfiles/routines/security-advisories--code-scanning/build.py ~/git/dotfiles/routines/state/security-inbox.json /tmp/security-inbox.html`
-2. `html_preview` the file content and check it, then `html_render` it with the title "Security inbox"
-   and height 2000, so an opened card has room; a taller card scrolls inside the frame.
+```
+python3 ~/git/dotfiles/routines/security-advisories--code-scanning/build.py ~/git/dotfiles/routines/state/security-inbox.json \
+  --full ~/.claude-teamB/routine-reports/security-inbox.html --digest /tmp/security-inbox-digest.html
+```
 
-The page shows, top to bottom: title, subtitle and tallies; the advisory board as a matrix of Draft, Open
-and False positive columns holding their cards; the code scanning board as a matrix of Not picked up, PR
-with fixes in draft and Unsure; release and fix tracking; the run note with the alerts dismissed this run; a
-footer with the reply verbs. Empty columns stay and say "Nothing here". Picking a card opens it full width
-below its board: the attention pane, status with older lines folded, details, CVSS table, fix PR, draft
-reply with a copy button and the replies that apply to it.
+- The full board goes to `~/.claude-teamB/routine-reports/security-inbox.html`, outside git on purpose. The
+  `local.routine-reports` LaunchAgent (`routines/launchd/`) serves that folder on `http://127.0.0.1:8765`,
+  and the board stays open in this thread's side panel.
+- After the build, refresh the side panel: `t3_preview_list`, then `preview_navigate` the tab whose URL
+  starts with `http://127.0.0.1:8765/security-inbox.html` to
+  `http://127.0.0.1:8765/security-inbox.html?run=<YYYYMMDDHHMM>` with the run time; the query keeps the
+  panel from showing the cached previous board. With no such tab, `preview_open` that URL. If the URL
+  doesn't answer, run `launchctl kickstart -k gui/$(id -u)/local.routine-reports` and retry once; if it
+  still fails, say so in the chat summary.
+- The digest is what you show in the thread with `html_render`, title "Security inbox". It stays under
+  40,000 characters because `html_render` takes the page as a tool argument. Run `html_preview` on it first
+  only when `build.py` changed since the last run, which
+  `git -C ~/git/dotfiles log -1 --format=%cI -- routines/security-advisories--code-scanning/build.py`
+  against `last_run` tells you; otherwise render it directly. Use the preview's `contentHeight` capped at
+  2000, or 2000 without a preview.
+- Change the layout in `build.py`, never by hand, so both pages stay stable from run to run.
+
+The full board: the title and "Last run"; a filter box and an "Only cards that need attention" toggle; one
+swimlane per column, Draft, Open and False positive for advisories, then Not picked up, PR in draft and
+Unsure for alerts, with empty lanes saying "Nothing here" and cards sorted attention first, then by
+severity; below the lanes every card in full as a collapsible block that a click on its lane card opens: the
+attention pane, status with older lines folded, details, CVSS table, fix PR, draft reply with a copy button
+and the replies that apply to it; then release and fix tracking, the run note with the alerts dismissed this
+run and the reply verbs.
+
+The digest: the title and "Last run", the card count per lane with how many need Marvin, the cards whose
+newest status line is from this run plus the alerts dismissed this run, one compact row each, and a footer
+pointing at the side panel.
 
 Don't edit build.py or this file in a scheduled run. If the layout needs a change, say so in the summary.
 
@@ -138,7 +161,7 @@ id and what he has to do, including cards carried over from earlier runs that di
 
 Ids: a full GHSA id or its first block after `GHSA-`, such as `abcd`; `cs-<n>` or `#<n>` for alerts.
 After any reply that changes a card, write the state, commit it as `security-inbox: reply <YYYY-MM-DD>`
-and re-render the page.
+and rebuild both pages: refresh the side panel and render the digest.
 
 - `close <ghsa> [message]`: post the card's draft close message, or the given one, in a fenced block so
   Marvin can paste it on the advisory, then
