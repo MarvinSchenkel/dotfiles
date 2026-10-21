@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-21 10:47 CEST",
+ "last_run": "2026-10-21 11:32 CEST",
  "columns": [
   [
    "info",
@@ -52,6 +52,47 @@
   ]
  ],
  "cards": [
+  {
+   "n": 6837,
+   "repo": "music-assistant/support",
+   "discussion": false,
+   "title": "Google Home speakers don't resume a voice-started radio station after an announcement",
+   "col": "cantfix",
+   "area": "server / controllers/players/announcements.py _restore_after_announcement, controller.py _handle_cmd_resume, providers/chromecast/player.py _update_active_source",
+   "since": "2026-10-21 11:32",
+   "last": "andreaskoelsch 2026-10-21 09:14",
+   "gh": {
+    "login": "andreaskoelsch",
+    "team": false,
+    "at": "2026-10-21T09:14:47Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.7 HA add-on, several Google Home minis and a Hub. Radio started by voice on the speaker ('play radio station X', so Google's own Cast app plays it), then music_assistant.play_announcement: the announcement plays, the radio doesn't come back. Log: 'restoring the previous state failed: Can not resolve stream URL: Invalid PlayerMedia data'.",
+   "fix": "",
+   "checked": "Code read on origin/dev (same on stable). A foreign Cast app becomes a passive source without play/pause (chromecast/player.py:794-815) and current_media is just its content_id (:751). After the announcement, _restore_after_announcement calls _handle_cmd_resume (announcements.py), which finds no MA queue, a passive source it can't select, and falls back to player.play_media(prev_media) (controller.py:4187-4190). That media has no queue session or source id, so the stream controller raises 'Invalid PlayerMedia data' (streams/controller.py:741-751). MA's announcement also replaced Google's receiver app, so there is nothing left to resume. Reporter confirmed the voice start, so the foreign-app assumption is theirs, not a guess. Not reproduced live: no unattended way to start Google Assistant radio on a Cast speaker.",
+   "plan": "Design call (row #6837). Reply explains it and gives the workaround: start the station from MA.",
+   "branch": "",
+   "prs": [],
+   "badges": [
+    [
+     "bad",
+     "Needs your action",
+     "needs attention"
+    ],
+    [
+     "warn",
+     "Needs your decision",
+     "decide"
+    ]
+   ],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the clear steps. When you start the station by voice, it plays in Google's own Cast app, not through Music Assistant. The announcement has to take the speaker over from that app, and afterwards Music Assistant has nothing it can resume: it can't restart a session another app started, which is what the 'Invalid PlayerMedia data' warning in your log means. If you start the station from Music Assistant instead (in the MA app, or with the music_assistant.play_media action in Home Assistant), it resumes after the announcement. We'll look at handling this case more clearly than with that warning.",
+   "action": "Decide how MA should handle an announcement on top of a foreign Cast app (design row #6837), then post the reply with the start-it-from-MA workaround.",
+   "bookkeeping": [],
+   "notes": [
+    "10-21 11:32 run: new issue. Restore after an announcement can't resume a session Google's own Cast app started; falls back to play_media on foreign media and logs 'Invalid PlayerMedia data'. Same on stable. Design row added, reply drafted."
+   ]
+  },
   {
    "n": 6836,
    "title": "[Nightly 2.11] Arylic A30/A50 LinkPlay: Loss of Home Assistant Player Support and Audio Transport Instability",
@@ -1316,29 +1357,30 @@
    "prs": [],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
+     "info",
+     "Waiting for user",
+     "waiting"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the capture. It shows the speaker failing on the stream it had been playing for about 68 minutes, with no source or Spotify error on our side and the other speaker playing on fine. It then loads the queued next item, which is why the queue jumps ahead. Another Cast report (#6748) turned out to be the speaker giving up on a stream with an announced content length. Could you set \"HTTP Profile used for sending audio\" on Google Gjestebad to profile 2 for a few days and let us know if the 102 errors stop?",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "Your queued reply was posted 2026-09-29 15:45.",
     "10-07 11:40 run: you posted your own reply at 09:12 UTC. It ties the 09-29 failure to Spotify's outage and asks for a debug log plus pychromecast capture of the next failure on a normal day, since the 09-28 failures came before the outage. The flow-stream design row stays open until we know whether a second cause exists.",
     "10-15 10:15 run: only a bot reminder (03:31 UTC), nothing new.",
     "10-19 07:38 run: Howard0000 (10-16 15:54 UTC) attached a DEBUG capture of a fresh MEDIA_DECODE 102 at 14:41:47 on Google Gjestebad. Log starts only 57 s earlier. No Spotify or source error, no MA stream error, the FLAC 'Google Bad' kept playing the same content. Gjestebad (MP3) was 4085 s into one flow stream, errored on item 1, the receiver loaded the queued next.mp3 and MA moved to the next track, which is the queue jump. So not the Sep 29 starvation. Possibly the same forced Content-Length problem as #6748 (other byte count), so asking for a profile 2 A/B. Moved to info.",
-    "10-20 17:38 run: server#7120 (Cast default back to profile 2) merged 15:38 UTC. Its description says it doesn't fix this one (MEDIA_DECODE 102 on the 2026 Google Home Speaker also shows up on chunked), so this card stays as it is."
+    "10-20 17:38 run: server#7120 (Cast default back to profile 2) merged 15:38 UTC. Its description says it doesn't fix this one (MEDIA_DECODE 102 on the 2026 Google Home Speaker also shows up on chunked), so this card stays as it is.",
+    "10-21 11:32 run: you posted the HTTP profile 2 test ask yourself (09:29 UTC). Waiting for Howard0000."
    ],
-   "last": "MarvinSchenkel 2026-10-07 09:12",
+   "last": "MarvinSchenkel 2026-10-21 09:29",
    "gh": {
     "login": "MarvinSchenkel",
     "team": true,
-    "at": "2026-10-07T09:12:20Z",
+    "at": "2026-10-21T09:29:17Z",
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "Post the reply asking for an HTTP profile 2 test on Gjestebad."
+   "action": ""
   },
   {
    "n": 6490,
@@ -3730,6 +3772,11 @@
    "#6819 Automatic lane for same-host shairport players",
    "Shairport-sync players on the MA host fail on Automatic because both PTP stacks need UDP 319/320. Options: (A) Automatic picks compatibility mode for ShairportSync devices advertised from this host (reuse the host-address check in _is_own_airplay_receiver); (B) keep it manual, docs only.",
    "A, a few lines in player.py streaming_mode and it removes a recurring support question."
+  ],
+  [
+   "#6837 announcement on a foreign Cast app",
+   "MA can't resume a session another Cast app started (Google Assistant radio); the restore falls back to play_media and logs 'Invalid PlayerMedia data'. Options: (A) skip the resume for passive foreign sources and log one clear info line; (B) re-cast content_id when it is a plain http(s) URL, else A; (C) docs only.",
+   "A plus a docs line that announcements resume what MA started. B guesses at Google's content ids."
   ]
  ],
  "followups": [
