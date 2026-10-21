@@ -5289,8 +5289,8 @@
    "draft": false,
    "verdict": "almost",
    "assessment": "comment",
-   "status": "attention",
-   "attention_since": "2026-10-19T08:22:18Z",
+   "status": "waiting",
+   "attention_since": null,
    "size": "M",
    "code": 202,
    "add": 476,
@@ -5306,7 +5306,7 @@
    "tldr": "33c048aa2 fixes both Copilot findings and Copilot is now clean. One thing left from our side: a guest whose screen still shows song A, and whose vote arrives after the skip, now counts against song B. GPT Sol flags the same. Small patch on card plus frontend#3014 sending the item id.",
    "summary": "Delta 28b8fc4ed..33c048aa2. skip_current records the playing item before any await, then holds _queue_lock and get_group_and_player_lock(queue_id, strict=True) through next(), and rejects the vote if the item changed. The player lock is re-entrant per task, so next() taking it again is fine; no inverse lock order found. Stale tallies: unload() clears the votes and their tally, and _remove_stale_skip_tally drops a tally no live vote belongs to on load and on every QUEUE_UPDATED (terminates, the pop removes the trigger). New tests cover both waits, the held lock and the three tally paths. Left: the item is captured on arrival at the server, so a late vote from a stale UI still lands on B. The author notes a natural track end can still slip between check and next(); that window is milliseconds and fine to accept. CI green, Copilot 09:19Z no open issues.",
    "blockers": [
-    "Late vote from a guest still on song A counts against B. Ask for queue_item_id on party/skip (patch on card), frontend#3014 to send it."
+    "Late votes for the previous song count on the next one: posted as f1, waiting on martinbuergi"
    ],
    "findings": [
     {
@@ -5315,7 +5315,11 @@
      "line": 947,
      "title": "Late votes for the previous song count on the next one (Opus + GPT Sol)",
      "detail": "target_item_id is read when the request reaches the server. With threshold 3 and five guests pressing Skip on A, votes 4 and 5 that arrive after next() count for B, so B needs one more vote. The new lock only protects changes during processing, not the delay between the guest's screen and the server.",
-     "fix": "Accept an optional queue_item_id in party/skip and reject a vote for an item that is no longer playing (patch on card). frontend#3014 already tracks current_item.queue_item_id and only needs to send it."
+     "fix": "Accept an optional queue_item_id in party/skip and reject a vote for an item that is no longer playing (patch on card). frontend#3014 already tracks current_item.queue_item_id and only needs to send it.",
+     "posted": {
+      "at": "2026-10-21T08:51:49Z",
+      "url": "https://github.com/music-assistant/server/pull/7081#discussion_r4334833676"
+     }
     },
     {
      "severity": "SUGGESTION",
@@ -5376,8 +5380,8 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you",
-   "changed_now": null
+   "waiting_on": "martinbuergi",
+   "changed_now": "posted f1"
   },
   {
    "repo": "server",
