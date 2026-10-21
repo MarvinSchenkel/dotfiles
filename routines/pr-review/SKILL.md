@@ -264,6 +264,9 @@ If `build.py` exits with a budget error, skip the render and say so in the chat 
 After the render, end the turn with a short chat summary: what changed, which cards need Marvin first with
 red ones at the top, reporter replies, test asks without an answer for 7 days, what was auto-approved, and
 anything that failed or was skipped. Link every PR to its GitHub page.
+Always end the summary with a clickable link to the matrix,
+`[Open the PR matrix](http://127.0.0.1:8765/pr-review.html?run=<YYYYMMDDHHMM>)`, since the side panel
+tab isn't always visible to Marvin.
 
 ## Replies
 
