@@ -6262,7 +6262,8 @@
   "Squeezelite: setting the provider log level to Verbose at runtime never reaches the aioslimproto logger (set only in handle_async_init, log-level changes skip the reload). Override update_config to re-apply the level. Found on #6800, same on stable.",
   "AirPlay: _adopt_device_volume (airplay/player.py:828-839, 1031-1044) and the Sendspin bridge volume path send VOLUME= without an owns_volume check; a candidate MA-side cause for Sonos volume snapping back during AirPlay (#6838, #6664).",
   "#6671: decide backport of server#6607 to 2.10.x, or a SoundTouch provider fix (report IDLE after the UPnP stop).",
-  "aioslimproto: disconnect() returns early after _socket_reader sets _connected False (client.py:652/658 in 3.2.3, :665/671 in 3.3.0), so the old socket is never closed and sits in CLOSE-WAIT (#6800). One-line fix in aioslimproto; reproducible with plain squeezelite (kill the client, `ss -tan state close-wait '( sport = :3483 )'`)."
+  "aioslimproto: disconnect() returns early after _socket_reader sets _connected False (client.py:652/658 in 3.2.3, :665/671 in 3.3.0), so the old socket is never closed and sits in CLOSE-WAIT (#6800). One-line fix in aioslimproto; reproducible with plain squeezelite (kill the client, `ss -tan state close-wait '( sport = :3483 )'`).",
+  "issue-triage release_table: for an unreleased patch milestone (2.10.8) check the backport branch (backport/2.10.8), not origin/stable; 'on stable' reads as 0 until the release."
  ],
  "milestones": {
   "2.10.5": 34,

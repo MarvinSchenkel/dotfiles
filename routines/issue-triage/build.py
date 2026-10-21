@@ -19,8 +19,8 @@ REPLY_WRAP = 96
 TZ_OFFSETS = {"CEST": 2, "CET": 1, "UTC": 0}
 NOTE_TIME = re.compile(r"^(\d{2}-\d{2}) (\d{2}:\d{2})")
 REPLY_GRAMMAR = (
-    "reply &lt;n&gt;, edit &lt;n&gt; &lt;change&gt;, book &lt;n&gt; [milestone], answer &lt;pr&gt;, "
-    "fix &lt;n&gt; [instructions], done &lt;n&gt;, drop &lt;n&gt;"
+    "reply &lt;n&gt;, edit &lt;n&gt; &lt;change&gt;, fix|repro|discuss &lt;n&gt; [instructions], book &lt;n&gt; [milestone], "
+    "answer &lt;pr&gt;, release &lt;milestone&gt; [post], done &lt;n&gt;, drop &lt;n&gt;"
 )
 SUPPORT = "music-assistant/support"
 COL_COLOR = {
