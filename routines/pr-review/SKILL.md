@@ -165,6 +165,8 @@ You are allowed to auto-approve a PR in the server repository and merge it if:
 - The PR is ready to merge: both you and Copilot found 0 issues.
 - The PR is S, M or L.
 - It does not touch any core code, meaning the diff is scoped to `providers/*` and the related tests only.
+- Copilot's verdict on the head is "Approval recommended". Zero open findings with "Needs a closer look"
+  is not enough: card it ready and needs-attention, and say why in the blockers.
 
 These important providers are excluded from auto approval: Sonos, AirPlay, Spotify, Sendspin,
 Squeezelite.
