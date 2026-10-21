@@ -9,7 +9,7 @@ import json
 import re
 import sys
 from datetime import datetime, timedelta, timezone
-from html import escape
+from html import escape, unescape
 
 FULL_LIMIT = 2_000_000
 DIGEST_LIMIT = 40_000
@@ -118,16 +118,36 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 760px; table-l
 dialog.pr { width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--border); border-top: 3px solid var(--c); border-radius: var(--radius); background: var(--card); color: var(--card-foreground); overflow: auto; }
 dialog.pr::backdrop { background: rgb(0 0 0 / .45); }
 .rh { position: sticky; top: 0; z-index: 1; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; background: var(--card); border-bottom: 1px solid var(--border); }
-.rh .btn { margin-left: auto; }
+.rh .btn { text-decoration: none; }
+.rh .tag + .btn, .rh .pill + .btn { margin-left: auto; }
+.rh .t { font-size: 15px; font-weight: 600; flex: 1 1 300px; }
+.next { border-radius: var(--radius); padding: 10px 14px; border-left: 4px solid var(--nc); background: color-mix(in srgb, var(--nc) 10%, transparent); display: flex; flex-direction: column; gap: 6px; }
+.next .nt { font-size: 15px; font-weight: 600; color: var(--foreground); }
+.next ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
+.t-ok { --nc: var(--success); } .t-warn { --nc: var(--warning); } .t-bad { --nc: var(--destructive); } .t-info { --nc: var(--info); } .t-muted { --nc: var(--muted-foreground); }
+.cmds { display: flex; flex-wrap: wrap; gap: 6px; }
+.cmd { font: 500 12px var(--font-mono); padding: 3px 9px; border-radius: var(--radius); border: 1px solid color-mix(in srgb, var(--nc) 50%, var(--border)); background: var(--card); color: var(--foreground); cursor: pointer; }
+.cmd:hover { border-color: var(--nc); }
+.sigs { display: flex; flex-wrap: wrap; gap: 6px; }
+.sig { font-size: 12px; padding: 2px 9px 2px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--foreground); cursor: default; display: inline-flex; align-items: center; gap: 6px; }
+.sig::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--sc); }
+.s-ok { --sc: var(--success); } .s-warn { --sc: var(--warning); } .s-bad { --sc: var(--destructive); } .s-muted { --sc: var(--muted-foreground); }
+.fm { font-size: 11px; color: var(--muted-foreground); margin-left: auto; }
+.more-all > summary { cursor: pointer; font-size: 12.5px; color: var(--muted-foreground); list-style: none; display: flex; gap: 6px; align-items: baseline; }
+.more-all > summary::-webkit-details-marker { display: none; }
+.more-all > summary::before { content: "\\25B8"; font-size: 10px; }
+.more-all[open] > summary::before { content: "\\25BE"; }
+.mb { display: flex; flex-direction: column; gap: 12px; padding: 10px 0 0 14px; border-left: 2px solid var(--border); margin: 6px 0 0 4px; color: var(--muted-foreground); }
+.mb p, .mb dd { color: var(--foreground); }
 .fd > summary::-webkit-details-marker, .more > summary::-webkit-details-marker { display: none; }
 .fd > summary::before, .more > summary::before { content: "\\25B8"; color: var(--muted-foreground); font-size: 10px; }
 .fd[open] > summary::before, .more[open] > summary::before { content: "\\25BE"; }
 .pr .n { font: 500 12px var(--font-mono); color: var(--muted-foreground); }
 .pr .t { font-weight: 600; flex: 1 1 300px; }
 .pill { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 1px 7px; border-radius: 4px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
-.body { padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; }
+.body { padding: 12px 18px 18px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; }
 .by { color: var(--muted-foreground); font-size: 12px; display: flex; flex-wrap: wrap; gap: 2px 12px; }
-.tldr { font-size: 14px; margin: 0; }
+.tldr { font-size: 14px; margin: 0; max-width: 75ch; }
 .box { border-radius: var(--radius); padding: 7px 11px; margin: 0; background: color-mix(in srgb, var(--bc, var(--warning)) 12%, transparent); }
 .box.auto { --bc: var(--info); } .box.reply { --bc: var(--success); }
 dl.facts { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; margin: 0; }
@@ -177,6 +197,13 @@ document.addEventListener("click", e => {
   }
   if (e.target.closest("[data-close]") || e.target.matches("dialog.pr")) {
     e.target.closest("dialog").close();
+    return;
+  }
+  const c = e.target.closest("button[data-cmd]");
+  if (c) {
+    const t = c.dataset.cmd;
+    const ok = () => { c.textContent = "Copied"; setTimeout(() => { c.textContent = t; }, 1200); };
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok, () => {});
     return;
   }
   const b = e.target.closest("button[data-copy]");
@@ -445,47 +472,130 @@ def _tags(p: dict, now: datetime) -> list:
 
 
 def _detail(p: dict, now: datetime) -> str:
-    """Render one PR's full review as the dialog its card opens."""
+    """Render one PR's review as the dialog its card opens: next step first, details folded away."""
     col = _col(p, now)
     _, col_label, var = next(c for c in COLS if c[0] == col)
-    lbl = _label(p)
     sha = str(p.get("head_sha") or "")[:9] or "head"
-    summary = (
-        f'<div class="rh"><span class="n">{escape(lbl)}</span><span class="t">{escape(p.get("title", ""), quote=False)}</span>'
-        f'<span class="pill">{escape(col_label)}</span>{"".join(_tags(p, now))}'
+    age = _wait_days(p, now)
+    wait = f'<span class="tag{" late" if (age or 0) >= 7 else ""}">{age}d on you</span>' if age is not None else ""
+    head = (
+        f'<div class="rh"><span class="n">{escape(_label(p))}</span><span class="t">{escape(p.get("title", ""), quote=False)}</span>'
+        f'<span class="pill">{escape(col_label)}</span>{wait}'
+        f'<a class="btn" href="{escape(p.get("url", ""))}" target="_blank" rel="noopener">GitHub</a>'
         '<button class="btn" data-close aria-label="Close">Close</button></div>'
     )
-    loc = f'{p.get("code", "?")} loc, +{p.get("add", "?")}/-{p.get("del", "?")} total'
-    by = (
-        f'<div class="by"><span>{escape(p.get("author", ""))}</span><span>{escape(str(p.get("size", "")))}, {loc}</span>'
-        f'<span>reviewed {escape(str(p.get("reviewed_at") or ""))} on <code>{escape(sha)}</code></span>'
-        f'<a href="{escape(p.get("url", ""))}">Open on GitHub</a></div>'
+    meta = [escape(p.get("author", "")), f'{escape(str(p.get("size", "?")))}, {escape(str(p.get("code", "?")))} loc']
+    if p.get("draft"):
+        meta.append("draft")
+    meta.append(f'reviewed {escape(str(p.get("reviewed_at") or "never"))} on <code>{escape(sha)}</code>')
+    parts = [f'<div class="by">{"".join(f"<span>{m}</span>" for m in meta)}</div>', _next_step(p, now), _signals(p)]
+    if p.get("tldr"):
+        parts.append(f'<p class="tldr">{_md(p["tldr"])}</p>')
+    parts.append(_findings(p))
+    parts.append(_more(p, col, sha))
+    return (
+        f'<dialog class="pr" id="{_anchor(p)}" style="--c:var(--{var})">{head}'
+        f'<div class="body">{"".join(parts)}</div></dialog>'
     )
-    parts = [by]
-    if p.get("auto_approved"):
-        aa = p["auto_approved"]
-        parts.append(f'<p class="box auto">Auto-approved {escape(str(aa.get("at", "")))}. {_md(aa.get("note"))}</p>')
+
+
+def _next_step(p: dict, now: datetime) -> str:
+    """The one thing to do on this PR, its blockers and the replies that do it."""
+    rl = _reply_label(p)
+    mine = p.get("author") == "MarvinSchenkel"
+    sf = p.get("suggested_fix") if isinstance(p.get("suggested_fix"), dict) else {}
+    open_fs = [
+        f"f{i}" for i, f in enumerate(p.get("findings") or [], 1)
+        if str(f.get("severity", "")).upper() in ("CRITICAL", "PROBLEM") and not f.get("posted")
+    ]
+    bullets = [b for b in (p.get("blockers") or []) if b]
+    cmds: list = []
+    rr = p.get("reporter_reply")
+    if p.get("state", "open") != "open":
+        aa = p.get("auto_approved") or {}
+        what = f'Auto-approved {aa.get("at", "")[:10]}, now {p.get("state")}' if aa else f'{p.get("state", "").capitalize()}'
+        tone, title, bullets = "info", what, []
+    elif p.get("status") != "attention":
+        tone, title = "muted", f'Waiting on {p.get("waiting_on") or "the author"}'
+    elif isinstance(rr, dict) and mine:
+        tone, title = "warn", f'Reporter replied on {rr.get("issue", "the issue")}'
+        bullets = [rr.get("summary", "")] + bullets
+    elif p.get("verdict") == "ready":
+        tone = "ok"
+        if mine:
+            title = "Ready. Merge it once someone else approves"
+        else:
+            title, cmds = "Approve and queue the merge", [f"approve {rl}"]
+    elif p.get("verdict") == "almost":
+        tone = "warn"
+        if sf.get("patch") and not sf.get("pushed"):
+            title, cmds = "Push the prepared fix", [f"fix {rl}"]
+        else:
+            title = "Answer the open points"
+        cmds += [f"post {rl} {' '.join(open_fs)}"] if open_fs else []
+    else:
+        tone, title = "bad", "Decide on the open findings"
+        cmds += [f"post {rl} {' '.join(open_fs)}"] if open_fs else []
+    if p.get("prompt") and p.get("state", "open") == "open" and p.get("status") == "attention":
+        cmds.append(f"chip {rl}")
+    shown, extra = bullets[:3], len(bullets) - 3
+    items = "".join(f"<li>{_md(b)}</li>" for b in shown) + (f'<li class="hint">{extra} more under details</li>' if extra > 0 else "")
+    ul = f"<ul>{items}</ul>" if items else ""
+    chips = "".join(f'<button class="cmd" type="button" data-cmd="{escape(c)}" title="Copy reply">{escape(c)}</button>' for c in cmds)
+    return f'<div class="next t-{tone}"><div class="nt">{escape(title)}</div>{ul}{f"<div class=cmds>{chips}</div>" if chips else ""}</div>'
+
+
+def _signals(p: dict) -> str:
+    """One-word health pills for CI, merge, reviews and backport; the full text sits in the tooltip."""
+    out = []
+    ci = str(p.get("ci") or "")
+    if p.get("ci_fail"):
+        out.append(("bad", "CI failing", ci))
+    elif "green" in ci.lower() or "pass" in ci.lower():
+        out.append(("ok", "CI green", ci))
+    else:
+        out.append(("muted", "CI n/a", ci))
+    ms = str(p.get("merge_state") or "")
+    low = ms.lower()
+    if re.search(r"(?<!no )conflict|dirty", low):
+        out.append(("bad", "Conflicts", ms))
+    elif "clean" in low or "mergeable" in low:
+        out.append(("ok", "Merges clean", ms))
+    else:
+        out.append(("muted", "Merge n/a", ms))
+    tones = {"ok": "ok", "wn": "warn", "bd": "bad"}
+    cp, cc = _copilot_short(p)
+    out.append((tones.get(cc, "muted"), f"Copilot {cp}", str(p.get("copilot_note") or "")))
+    gs, gc = _gpt_short(p)
+    out.append((tones.get(gc, "muted"), f"GPT Sol {'n/a' if gs == '?' else unescape(gs)}", str(p.get("gpt_sol") or "")))
+    bp = p.get("backport")
+    if isinstance(bp, dict) and (p.get("verdict") == "ready" or p.get("auto_approved")):
+        out.append(("ok" if bp.get("rec") else "muted", "Backport" if bp.get("rec") else "No backport", str(bp.get("why") or "")))
+    pills = "".join(f'<span class="sig s-{t}" title="{escape(tip)}">{escape(label)}</span>' for t, label, tip in out)
+    return f'<div class="sigs">{pills}</div>'
+
+
+def _more(p: dict, col: str, sha: str) -> str:
+    """Everything that is not needed to decide, folded into one details block."""
+    rl = escape(_reply_label(p))
+    parts = []
     if p.get("whats_new"):
-        parts.append(f'<p class="box">{_md(p["whats_new"])}</p>')
+        parts.append(f"<section><h3>This run</h3><p>{_md(p['whats_new'])}</p></section>")
     for key, what in (("reporter_reply", "Reporter reply"), ("author_replied", "Author reply")):
         r = p.get(key)
         if isinstance(r, dict):
-            where = f' on {escape(r["issue"])}' if r.get("issue") else ""
-            who = f' by {escape(r["author"])}' if r.get("author") else ""
+            src = " ".join(escape(str(r[k])) for k in ("issue", "author") if r.get(k))
             link = f' <a href="{escape(r["url"])}">open</a>' if r.get("url") else ""
-            parts.append(f'<p class="box reply"><b>{what}</b>{where}{who}, {escape(_fmt(r.get("at")))}: {_md(r.get("summary"))}{link}</p>')
-    if p.get("fix_thread"):
-        parts.append(f'<p class="hint">Fix session: {_md(str(p["fix_thread"]))}</p>')
-    parts.append(f'<p class="tldr">{_md(p.get("tldr"))}</p>')
-    if p.get("blockers"):
-        parts.append(f"<section><h3>Before merge</h3>{_list(p['blockers'])}</section>")
-    rl = escape(_reply_label(p))
+            parts.append(f"<section><h3>{what}</h3><p>{src}, {escape(_fmt(r.get('at')))}: {_md(r.get('summary'))}{link}</p></section>")
+    if p.get("auto_approved"):
+        aa = p["auto_approved"]
+        parts.append(f"<section><h3>Auto-approval</h3><p>{escape(str(aa.get('at', '')))}. {_md(aa.get('note'))}</p></section>")
     facts = [("CI", _md(p.get("ci"))), ("Merge", _md(p.get("merge_state")))]
     bp = p.get("backport")
-    if bp and (p.get("verdict") == "ready" or p.get("auto_approved")):
+    if isinstance(bp, dict) and (p.get("verdict") == "ready" or p.get("auto_approved")):
         facts.append(("Backport", ("Recommended. " if bp.get("rec") else "No. ") + _md(bp.get("why"))))
     facts.append(("Copilot", _md(p.get("copilot_note")) or _copilot(p.get("copilot"))))
-    parts.append('<dl class="facts">' + "".join(f"<dt>{k}</dt><dd>{v}</dd>" for k, v in facts) + "</dl>")
+    parts.append('<section><h3>Checks</h3><dl class="facts">' + "".join(f"<dt>{k}</dt><dd>{v}</dd>" for k, v in facts) + "</dl></section>")
     sf = p.get("suggested_fix")
     if sf and col != "auto" and p.get("verdict") != "ready":
         patch = sf.get("patch") if isinstance(sf, dict) else None
@@ -493,69 +603,58 @@ def _detail(p: dict, now: datetime) -> str:
         pushed = sf.get("pushed") if isinstance(sf, dict) else None
         box = [f"<p>{_md(desc)}</p>"]
         if patch:
-            n = patch.rstrip("\n").count("\n") + 1
-            box.append(f'<details class="more"><summary>Patch, {n} lines</summary>{_diff(patch)}</details>')
+            box.append(_diff(patch))
             if pushed:
                 box.append(f'<p class="hint">Pushed {escape(str(pushed.get("at", "")))} as <code>{escape(str(pushed.get("sha", "")))}</code>.</p>')
             else:
-                box.append(f'<p class="hint">Reply <code>fix {rl}</code> to commit this on top of <code>{escape(sha)}</code> and push it to the PR.</p>')
-        parts.append(f'<section><h3>Suggested fix</h3><div class="fixbox">{"".join(box)}</div></section>')
+                box.append(f'<p class="hint"><code>fix {rl}</code> commits this on top of <code>{escape(sha)}</code> and pushes it.</p>')
+        parts.append(f"<section><h3>Suggested fix</h3>{''.join(box)}</section>")
     if p.get("prompt"):
         pid = f"pp-{_anchor(p)}"
         parts.append(
-            f'<section><h3>Fix session prompt</h3><details class="more"><summary>Show prompt '
-            f'<button class="btn" type="button" data-copy="{pid}">Copy prompt</button></summary>'
-            f'<pre id="{pid}">{escape(str(p["prompt"]), quote=False)}</pre></details>'
-            f'<p class="hint">Reply <code>chip {rl}</code> to start a fix session with it.</p></section>'
+            f'<section><h3>Fix session prompt <button class="btn" type="button" data-copy="{pid}">Copy</button></h3>'
+            f'<pre id="{pid}">{escape(str(p["prompt"]), quote=False)}</pre></section>'
         )
-    parts.append(f"<section><h3>Summary</h3><p>{_md(p.get('summary'))}</p></section>")
-    parts.append(_findings(p))
-    uc = p.get("unaddressed_comments")
-    if uc:
-        parts.append(f"<section><h3>Unaddressed review comments</h3>{_list(uc)}</section>")
+    if p.get("summary"):
+        parts.append(f"<section><h3>Review notes</h3><p>{_md(p['summary'])}</p></section>")
+    blockers = p.get("blockers") or []
+    if len(blockers) > 3:
+        parts.append(f"<section><h3>All blockers</h3>{_list(blockers)}</section>")
+    if p.get("unaddressed_comments"):
+        parts.append(f"<section><h3>Unaddressed review comments</h3>{_list(p['unaddressed_comments'])}</section>")
     if p.get("related_prs"):
         parts.append(f"<section><h3>Related PRs</h3>{_list(p['related_prs'])}</section>")
-    return _wrap_detail(p, var, summary, parts)
-
-
-def _wrap_detail(p: dict, var: str, summary: str, parts: list) -> str:
-    """Wrap a review body in its dialog."""
-    return (
-        f'<dialog class="pr" id="{_anchor(p)}" style="--c:var(--{var})">{summary}'
-        f'<div class="body">{"".join(parts)}</div></dialog>'
-    )
+    if p.get("fix_thread"):
+        parts.append(f"<section><h3>Fix session</h3><p>{_md(str(p['fix_thread']))}</p></section>")
+    return f'<details class="more-all"><summary>More details</summary><div class="mb">{"".join(parts)}</div></details>'
 
 
 def _findings(p: dict) -> str:
-    """Render findings grouped by the model that raised them, numbered f1, f2 and so on."""
+    """Findings as one line each, most severe first, numbered f1, f2 in state order."""
     fs = p.get("findings") or []
     if not fs:
-        return '<section><h3>Findings</h3><p class="hint">No findings.</p></section>'
-    groups: dict = {}
-    for i, f in enumerate(fs, 1):
-        groups.setdefault(f.get("model") or "", []).append((i, f))
+        return ""
+    order = {"CRITICAL": 0, "PROBLEM": 1, "SUGGESTION": 2, "NIT": 3}
+    items = sorted(enumerate(fs, 1), key=lambda x: (order.get(str(x[1].get("severity", "")).upper(), 4), x[0]))
     out = []
-    for model, items in groups.items():
-        if len(groups) > 1 or model:
-            out.append(f"<h4>{escape(model or 'Combined review')}</h4>")
-        for i, f in items:
-            sev = str(f.get("severity", "")).upper()
-            where = escape(str(f.get("file") or "")) + (f":{escape(str(f['line']))}" if f.get("line") else "")
-            posted = f.get("posted")
-            badge = ""
-            if posted:
-                url = posted.get("url") if isinstance(posted, dict) else None
-                badge = f'<a class="tag ok" href="{escape(url)}">posted</a>' if url else '<span class="tag ok">posted</span>'
-            head = (
-                f'<span class="fid">f{i}</span><span class="sev">{escape(sev)}</span>'
-                f'<span class="ft">{_md(f.get("title"))}</span>{badge}<span class="loc">{where}</span>'
-            )
-            body = (f"<p>{_md(f.get('detail'))}</p>" if f.get("detail") else "") + (
-                f'<p class="fix">{_md(f.get("fix"))}</p>' if f.get("fix") else ""
-            )
-            out.append(f'<details class="fd s-{escape(sev)}"><summary>{head}</summary><div class="fb">{body}</div></details>')
-    hint = f'<p class="hint">Reply <code>post {escape(_reply_label(p))} f1</code> to post a finding as a review comment.</p>'
-    return f'<section><h3>Findings</h3><div class="fl">{"".join(out)}</div>{hint}</section>'
+    for i, f in items:
+        sev = str(f.get("severity", "")).upper()
+        where = escape(str(f.get("file") or "")) + (f":{escape(str(f['line']))}" if f.get("line") else "")
+        posted = f.get("posted")
+        badge = ""
+        if posted:
+            url = posted.get("url") if isinstance(posted, dict) else None
+            badge = f'<a class="tag ok" href="{escape(url)}">posted</a>' if url else '<span class="tag ok">posted</span>'
+        model = f'<span class="fm">{escape(f["model"])}</span>' if f.get("model") else ""
+        head = (
+            f'<span class="fid">f{i}</span><span class="sev">{escape(sev.lower())}</span>'
+            f'<span class="ft">{_md(f.get("title"))}</span>{badge}{model}'
+        )
+        body = (f'<p class="loc">{where}</p>' if where else "") + (f"<p>{_md(f.get('detail'))}</p>" if f.get("detail") else "") + (
+            f'<p class="fix">{_md(f.get("fix"))}</p>' if f.get("fix") else ""
+        )
+        out.append(f'<details class="fd s-{escape(sev)}"><summary>{head}</summary><div class="fb">{body}</div></details>')
+    return f'<section><h3>Findings</h3><div class="fl">{"".join(out)}</div></section>'
 
 
 def _copilot(c) -> str:

@@ -223,9 +223,13 @@ The full report shows:
 - Badges on the cards, only in the report, never as GitHub labels: size, draft, user replied, reporter
   replied, backport recommended on ready and auto-approved PRs, yours, new review, failing CI, stacked, and
   days waiting on Marvin.
-- Per PR, in a dialog that opens when Marvin clicks its card: the 5 to 6 line max summary in `tldr`, CI, merge and Copilot facts, the blockers,
-  the longer review notes in `summary`, and the findings per model, each with its id `f1`, `f2` and so on
-  so Marvin can reply `post <pr> f2`. Set `model` on every finding: Claude, GPT Sol or Copilot.
+- Per PR, in a dialog that opens when Marvin clicks its card, ordered by what he needs first: a next-step
+  panel (one line on what to do, up to three blockers, and the reply commands as copy chips), one-word
+  pills for CI, merge, Copilot, GPT Sol and backport, the `tldr`, then the findings one line each with
+  their id `f1`, `f2` and so on so Marvin can reply `post <pr> f2`. Set `model` on every finding: Claude,
+  GPT Sol or Copilot. Everything else (this run's changes, full CI/merge/Copilot notes, the review notes in
+  `summary`, suggested fix, prompt, comments) sits under a collapsed "More details". Keep `blockers` short
+  and actionable, since they are the first thing he reads.
 - For almost ready: your suggestion to fix the small outstanding thing, the patch as a coloured diff, and
   the prompt for a fix session with the necessary context and instructions, readable in place and with a
   copy button.
