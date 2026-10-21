@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-21T10:05:00+02:00",
- "dev": "6a96b509a",
- "run_note": "OzGav's dd3d3d155 on #7124 fixes the stale MusicBrainz lookups, but all three reviewers still flag the same-name check being skipped when 'link via MusicBrainz' is off; there's a validated one-line patch, so it's back on you (fix or post). Your new #7133 (Sonic Similarity per-user row) and #7134 (Endless Mix from a station) are ready: Copilot recommends approval and we only found NITs, but they need another maintainer's approval. No merges, no auto-approvals, no reporter replies.",
+ "last_run": "2026-10-21T11:05:00+02:00",
+ "dev": "ff27e69af",
+ "run_note": "You merged #7100, #7130, #7133, #7134 and client#319 (client 1.7.0). Copilot's review of #7124 opened two CRITICALs, one is the cross-service gate we have a patch for, the other is new, and the critical gate drafted it, so it waits on OzGav. #6802 and #6809 now also conflict in sonic_similarity after #7133. #6918 and #7081 moved to waiting after your comments. No new PRs, no auto-approvals, no reporter replies.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -262,7 +262,7 @@
    "providers_touched": [
     "hass"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; no decision, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; no decision, no auto-merge",
    "head_sha": "c5dec46f6",
    "tldr": "Small, correct fix. _hass_listener only re-armed the reconnect after a BaseHassClientError, so any other exception out of start_listening() (hass-client 1.3.1 raises an AttributeError on a heartbeat timeout) ended the task and left the HA provider loaded but disconnected until a manual reload. A broad except now logs with traceback and falls through to the existing reload. CancelledError is a BaseException, so unload still cancels cleanly. The test fails on dev and passes here. Code-wise it's an auto-approve candidate (S, providers/hass only), but Copilot's single low PROBLEM on the PR description has to be fixed or answered first.",
    "summary": "Read the diff and _hass_listener on the head. The new except Exception sits after BaseHassClientError, so the original path is unchanged, and asyncio.CancelledError (BaseException) still propagates on unload. Before _startup_complete it returns silently as before. After that it sets available=False and arms call_later(5, load_provider, task_id=load_provider_<id>), the same as a normal disconnect. The new test sets an AttributeError on connection_lost and asserts the reload is armed. The upstream root cause is music-assistant/python-hass-client#279. origin/stable has the identical except block at providers/hass/__init__.py:707, so this cherry-picks cleanly. Copilot (requested by us 05:33Z, landed 05:35Z): Changes recommended, 1 low PROBLEM about the description.",
@@ -1462,7 +1462,7 @@
    "providers_touched": [
     "fastmcp_server"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; no decision, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; no decision, no auto-merge",
    "head_sha": "7708abc0b",
    "tldr": "dmoo500 answered your cache question with a benchmark (7708abc0b adds scripts/perf/statistics_cache_benchmark.py, dev-only). At 100k plays the uncached aggregates take 50-455 ms against about 1 ms warm. The benchmark looks sound; GPT Sol's one point would only understate the gain. Left for you: keep or drop the cache now that you have numbers, the unfixed diagnostics registry line, and his decline on moving _get_period_cutoff. CI green.",
    "summary": "Delta 9821d7778..395fab073 is one commit, 7 files, +230/-355. Albums: new TRACK_ALBUMS_CTE joins history_tracks to album_tracks and albums, used by top_items(ALBUM) and play_count(ALBUM); play_count binds :requested_media_type for the album lookup and :media_type=track for history, which is correct. New test covers provider-mapped tracks plus an ignored album enqueue row (3/3 counts). artist_distribution and played_item_ids are gone with no leftover references (fastmcp command_policy included). All statistics modules import get_current_user directly; statistics and library-merge tests use set_current_user in a try/finally helper. 69 statistics and merge tests pass locally on the head. GPT Sol found no binding, cache or test issues; it flags that a track on several albums credits each album, which I rate a SUGGESTION since history stores no album. Copilot 13:16Z on the head: 1 open PROBLEM, the cache benchmark you asked for. Both CRITICALs on the old card (DISTINCT over name/image, deleted library items shown available) were already fixed at 9821d7778 and are dropped.",
@@ -1611,7 +1611,7 @@
     "wled_audio_sync",
     "sendspin_lights"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; changes requested, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; changes requested, no auto-merge",
    "head_sha": "46ce632a0",
    "tldr": "OzGav reviewed at 21:46Z: asked netmindz to update the PR description (path is now providers/wled_audio_sync, drop the 'Sendspin visualizer API unreleased' line) and left three optional notes: drop _ensure_client_unclaimed() or give it the port_in_use key, and two try/except blocks in bridge.py that aren't needed. Waiting on netmindz. Our review stays as it was (head unchanged).",
    "summary": "Delta 447c10ed3..46ce632a0 (9d5c29d40, 5e922fb91, 9134204c4, 177bc704a, 46c70cd00, dev merge a27927846, 222b89aad, 5a0ba9aea, 46ce632a0). (1) base.py now takes a VisualizerStatePayload plus buffer_capacity, passes the request to setup_visualizer() and sends only buffer_capacity in the hello. That matches BridgeVisualizerRole.setup_visualizer(request) on dev. (2) bridge.py sends one zero packet in _on_stream_end and stop(), guarded by transport.is_closing(), and stop() and the start() failure path use nested try/finally so unregister and close always run. (3) New _ensure_client_unclaimed() refuses to start if wled-zone-{port} is already registered. There is no await between the check and register_client(), and the failure path is safe: unregister_client() is a no-op because _sendspin_client is still None, so it cannot remove the other zone's client. (4) Scaling mode options drop the hardcoded titles so strings.json translations show. (5) setup_flow now prefills via value= (default_value stays DEFAULT_PORT), keeps the submitted port when the form is shown again, and passes the SetupFlowError through so its translation key, owner and args reach the form. Dev's SessionSetup.form() accepts str | SetupFlowError, so this is correct. (6) en.json regenerated. Copilot review 5558709689 on the head reports no open issues and one previously missed PROBLEM: the render tick catches every Exception. That is the same pattern as hue_entertainment/bridge.py:417 on dev, and asyncio datagram sendto reports send errors through error_received instead of raising, so log spam on network loss is unlikely. Not worth a change, but it should get a reply. netmindz answered the packet layout and sendspin reload threads correctly (44-byte packed struct; depends_on sendspin tears the provider down on a sendspin reload). All review threads are resolved and there are no new human comments. Tests not run locally: the shared .venv has a stale music_assistant_models (ListingType import error). CI pytest is green.",
@@ -2010,7 +2010,7 @@
    "providers_touched": [
     "sonic_similarity"
    ],
-   "merge_state": "CONFLICT with origin/dev 6a96b509a in music_assistant/controllers/music/media/tracks.py; review required, no auto-merge",
+   "merge_state": "CONFLICT with origin/dev ff27e69af in controllers/music/media/tracks.py, providers/sonic_similarity/provider.py and its test; review required, no auto-merge",
    "head_sha": "ba4cd6c21",
    "tldr": "fmunkes fixed the CRITICAL Copilot raised at 05:52Z (a hidden-source library playlist leaked its name in the error): _get_visible_library_item now goes through get_visible_library_item_by_prov_id first (ba4cd6c21). Verified: the new test fails without the fix and passes with it, CI green, no conflict with dev. Copilot's earlier PROBLEM on similar tracks caching was fixed in 40590f856 and Copilot marked it resolved. GPT Sol finds nothing in the delta. Copilot has not reviewed ba4cd6c21 yet (requested 06:14Z, nothing by 06:40Z). Our two older PROBLEMs are still open and never posted: the explicit provider_filter cache key on library artist listings and _resolve_library_artist using the unfiltered lookup (patch below, still applies). Decide whether to post them or approve as is.",
    "summary": "Delta 40590f856..ba4cd6c21: one commit. ba4cd6c21 (playlists.py 2104): _get_visible_library_item resolves the playlist with get_visible_library_item_by_prov_id(str(item_id), 'library') and raises a plain MediaNotFoundError without the name when that is None, then keeps _check_visible for the access record. That closes Copilot's 05:52Z 'previously missed' CRITICAL: tracks/iter_tracks via _playlist_source, export and both migration callers no longer reach _select_provider_id, whose error carried the playlist name. System context (no user), playlists without mappings and builtin playlists still pass (has_visible_source returns True for them). playlists.get already used the visible lookup through base.get. _get_editable_library_item still uses get_library_item; that is the write path (on dev too) and not part of this fix. New test test_a_library_playlist_on_hidden_sources_is_a_plain_miss: fails on the old playlists.py (checked by swapping the file), passes now. Local run on the new head: test_read_visibility 50 passed, test_playlist_access plus test_playlists 62 passed. Earlier delta 49deb9041..40590f856 (similar tracks: only a down source counts as a gap, not a hidden one) answered Copilot's 05:22Z PROBLEM; Copilot listed it as resolved at 05:52Z and the thread is resolved. GPT Sol on the delta: no findings, agrees the fix covers all read callers and changes nothing for legitimate callers. Our two leftovers (artists.py 732/795/861 cache key, media_resolver.py 984) are untouched by the delta and still valid; the patch still passes git apply --check on ba4cd6c21.",
@@ -2085,7 +2085,7 @@
     "why": "New impersonation feature, not a fix."
    },
    "prompt": "music-assistant/server#6802 (fmunkes, head ba4cd6c21, base dev; #6809 is stacked on it). fmunkes fixed Marvin's three 12:27Z points, Copilot's 05:22Z PROBLEM (40590f856) and Copilot's 05:52Z 'previously missed' CRITICAL on hidden-source playlist names (ba4cd6c21, _get_visible_library_item now uses get_visible_library_item_by_prov_id). All verified, CI green, no conflict. Check whether Copilot's 06:14Z re-review on ba4cd6c21 has landed and fold in any finding. Two of our older findings are still open and were never posted: (1) artists.py 732/795/861 library branches of top_tracks/top_albums/similar_artists pass narrowed_to=self._ensure_provider_filter(provider_filter), so with an explicit filter the cache key is shared across users while the library substitution follows each user's full sources; (2) controllers/player_queues/media_resolver.py:984 _resolve_library_artist should use get_visible_library_item_by_prov_id. Patch at scratchpad rv/fix6802_v4.patch (applies on ba4cd6c21). Optional: tracks.py ~262, tracks.get by provider id or recursive=False keeps a hidden album ItemMapping. Ask Marvin whether to post the leftovers or approve. If he wants a comment, draft it starting with '> [!NOTE] This comment was written by Claude on Marvin's behalf', thank fmunkes for the fixes in one line, list the two gaps with the fixes, and mention the album mapping as optional. Post nothing and approve nothing without Marvin's OK. This is core security code: never auto-approve.",
-   "whats_new": "This morning fmunkes pushed ba4cd6c21 (07:59 CEST) and replied at 06:01Z: a library playlist held only by sources the user may not see is now a plain miss without its name, which fixes the CRITICAL Copilot flagged at 05:52Z. Small, correct, with a test that fails without the fix. Earlier this morning 40590f856 fixed Copilot's 05:22Z PROBLEM on similar tracks caching. Copilot re-review of ba4cd6c21 is pending. Copilot 06:22Z on ba4cd6c21 confirmed that fix and raised 2 previously-missed CRITICALs (album visibility on provider-id track reads, unloaded hidden account on non-strict reads). Since 13:13 dev moved to b5a1c0ace and this now conflicts in controllers/music/media/tracks.py.",
+   "whats_new": "#7133 merged at 08:20Z; the branch now also conflicts in providers/sonic_similarity (provider and test) besides tracks.py. Head unchanged.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-20 08:40 CEST",
    "auto_approved": null,
@@ -2108,7 +2108,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you",
-   "changed_now": null
+   "changed_now": "conflict"
   },
   {
    "repo": "server",
@@ -2272,9 +2272,9 @@
     "constants (API_SCHEMA_VERSION 98 -> 99)"
    ],
    "providers_touched": [],
-   "merge_state": "CONFLICT with origin/dev 6a96b509a in music_assistant/controllers/music/media/tracks.py; no decision, no auto-merge",
+   "merge_state": "CONFLICT with origin/dev ff27e69af in controllers/music/media/tracks.py, providers/sonic_similarity/provider.py and its test; no decision, no auto-merge",
    "head_sha": "618d38432",
-   "whats_new": "fmunkes merged #6802's ba4cd6c21 in at 05:59Z, nothing else changed. Copilot 06:21Z then found a real CRITICAL: autoplay and dynamic refills restore the queue owner but keep the inherited impersonation, so they read the impersonated user's library. Two-line fix (clear impersonation in both refill paths). Our select_source PROBLEM is still unposted. Since 13:13 dev moved to b5a1c0ace and this now conflicts in controllers/music/media/tracks.py.",
+   "whats_new": "#7133 merged at 08:20Z; the branch now also conflicts in providers/sonic_similarity (provider and test) besides tracks.py. Head unchanged.",
    "tldr": "No new code of its own: 618d38432 only merges #6802's ba4cd6c21 (hidden-source library playlist is a plain miss without its name). Proven: the sorted +/- lines against the dev merge-base change exactly as in #6802's delta. CI green, no conflict. Copilot's 05:48Z review on b026d8cc9 had no open issues; the re-review on 618d38432 requested 06:14Z has not landed. GPT Sol finds nothing in the merged fix. Still open and never posted: select_source lets a restricted user point their player at any queue and read it (patch below, still applies). set_members without a player access check stays a follow-up.",
    "summary": "Delta b026d8cc9..618d38432: one merge commit (parents b026d8cc9 and ba4cd6c21) of impersonation-reads-basic, nothing else. Checked by diffing the sorted +/- lines of git diff $(git merge-base origin/dev X) X for b026d8cc9 and 618d38432: the 26 added lines are identical to the change in #6802 from 40590f856 to ba4cd6c21 (playlists.py _get_visible_library_item plus its test); merge-base with dev is the same (4a380c19d). git diff b026d8cc9 618d38432 touches only playlists.py (+4/-1) and test_read_visibility.py (+21). The fix is reviewed on #6802; GPT Sol found nothing. Copilot 05:20Z on 1c8b81da5 and 05:48Z on b026d8cc9: no open issues, only the standing note that it needs human security review. All review threads are resolved. Our select_source finding from 10-15 is still present (controller.py unchanged) and was not in your 12:27Z review; patch passes git apply --check on 618d38432. API_SCHEMA_VERSION stays 98 -> 99 against dev 98.",
    "blockers": [
@@ -2356,7 +2356,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you",
-   "changed_now": null
+   "changed_now": "conflict"
   },
   {
    "repo": "server",
@@ -2471,7 +2471,7 @@
    "providers_touched": [
     "ai_radio"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; no decision, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; no decision, no auto-merge",
    "head_sha": "7b9eed31e",
    "whats_new": "jpittelkow answered Marcel at 20:30Z. He scored Marcel's guard on the 38 tracks: it doesn't separate them (11 right, 0 over the singer, 27 too early), because the strict config opens at the same second almost everywhere. A 'voice never stops' guard scores 22/0/16 and is ready on a branch, but he left it out because it was found on the same 4 late-lyrics tracks. He also fixed the title and description. Now Marcel's call.",
    "tldr": "Follow-up to #6866. An AI Radio post now times its overlap from the synced-lyrics onset, and the stored analysis onset only wins when it is more than 5 s later. The new commit adds the exact-5 s boundary case and a lyrics-timeout test, so the code and tests are done. Copilot cleared the boundary finding on the new head. One Copilot PROBLEM is still open: it wants the PR body trimmed. That needs a body edit or a reply, no code change.",
@@ -2563,7 +2563,7 @@
     "hass",
     "openai_compatible"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; no decision, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; no decision, no auto-merge",
    "head_sha": "afccae4a2",
    "tldr": "Out of draft. The link download is now limited to the configured endpoint's own scheme, host and port, with no redirects, and the endpoint is asked for inline images first. We checked the guard and it holds. tracks.py change is dropped. Copilot's Lite review at 05:32Z left 2 new findings: one we judge invalid, one test nit. Both need a reply from the author.",
    "summary": "Reviewed cb4978be4..afccae4a2 (one commit, 3 files, +184/-527). (1) Images endpoint first asks response_format b64_json. A 400 whose detail names response_format adds the model to a per-provider set and retries plainly; 401/403, 429 and 5xx still propagate. (2) _download only fetches a link whose (scheme, raw_host lowercased, port) equals base_url's. yarl fills default ports (http://h equals http://h:80, 0080 is 80), lowercases the host, and userinfo or IPv6 brackets do not change the host. aiohttp parses with the same yarl, so the check and the connection agree. allow_redirects=False and any status >= 300 is refused. DNS and trust_env proxies are the same as for the generation request, which already goes to that host with the API key, so no new trust is added. This removes the custom resolver, so the earlier proxy-scheme gap, the mDNS gap and our proxied-name suggestion are gone. Trade-off the author names: LiteLLM in front of BFL or fal.ai, which always link to their CDN, now gets a clear error. (3) tracks.py most_played_by_artists is dropped from the PR (author 10-20 15:00Z, waits for #5700). Your thread is still unresolved, so you can resolve it. (4) Copilot 05:32Z (Lite review, full agentic run timed out): HIGH says the AI cover mutates playlist.metadata.images without returning it, so it may not be saved. Invalid: enrichment.py _update_playlist_metadata calls update_item_in_library(playlist, overwrite=True) after the provider loop, so the in-place change is stored, and the code comment explains why it is set directly. MEDIUM: _json_response read mock toggles body and EOF. That is deliberate so one mock response can be read for several requests; a test NIT. Tests: openai_compatible 77/77 and hass 160/160 pass on the head. test_ai.py fails 63 in the shared venv on the same missing-loop issue as last time; CI is green, so not a PR issue. Unchanged: hass connect timeout logs the signed URL (patch in suggested_fix), AI_QUERY gating.",
@@ -2729,8 +2729,8 @@
    "draft": true,
    "verdict": "not_ready",
    "assessment": "request_changes",
-   "status": "attention",
-   "attention_since": "2026-10-12T15:45:28Z",
+   "status": "waiting",
+   "attention_since": null,
    "size": "M",
    "code": 111,
    "add": 201,
@@ -2807,7 +2807,7 @@
    },
    "backport": null,
    "prompt": "music-assistant/server#6918 (dainjaruss, head d94e8674d, M core): adds audio_analysis/features and audio_analysis/features/batch. Blockers: description is the empty template (pr-checks Apply/Verify fail), API_SCHEMA_VERSION not bumped (dev 87, needs 88), and the batch command bypasses the FastMCP provider filter in music_assistant/providers/fastmcp_server/target_filters.py because provider ids are nested in items (Copilot CRITICAL, verified). Draft a short review comment for Marvin asking the author to fill in the description and consumer, bump the schema, and drop batch or add a target rule plus test. Ask Marvin before posting anything or pushing.",
-   "whats_new": "dainjaruss commented at 15:51Z on the agreed scope (BPM, Camelot key, 1-10 energy from stored analysis). Still draft, not re-reviewed. Pushed 1b4686035 at 16:58Z while draft; not re-reviewed.",
+   "whats_new": "You replied at 08:35Z: use EBU LUFS/LRA from Loudness Analysis, and questioned the weights (playback is normalized to -14 LUFS, tempo duplicates other features). Waiting on dainjaruss.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-12 12:30 CEST",
    "auto_approved": null,
@@ -2815,8 +2815,8 @@
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you",
-   "changed_now": null
+   "waiting_on": "dainjaruss",
+   "changed_now": "you replied"
   },
   {
    "repo": "server",
@@ -2951,7 +2951,7 @@
    "ci": "All green on 306c090ad (lint, pytest 1-3/3, provider-scope, test).",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; review required, no auto-merge",
    "head_sha": "306c090ad",
    "tldr": "thelad-dev fixed both Copilot CRITICALs: volume_set errors are now wrapped to PlayerCommandFailed like handle_player_command, and the config reads moved under the VOLUME lock with a race test. Copilot now has 0 inline findings. Side effect: every VOLUME_SET player now waits on its VOLUME lock during register/reconnect while the global register lock is held, even with no pin. Copilot's Previously missed item (no apply on unavailable to available) is real for Chromecast. One small commit plus a reply.",
    "summary": "Delta e2882279a..306c090ad, one commit, controller.py and the pin test file. (1) _apply_native_volume_pin now catches non-MusicAssistantError from player.volume_set and raises PlayerCommandFailed, same pattern as handle_player_command in players/helpers.py. Register and register_or_update keep their MusicAssistantError catch, so device errors no longer abort registration. This resolves our previous blocker and Copilot r4280705863 without touching providers. (2) The CONF_VOLUME_CONTROL and CONF_NATIVE_VOLUME reads moved inside the per-player VOLUME lock, which resolves r4280705925. save_player_config writes storage before calling on_player_config_change, so the recheck sees the new values. get_player_lock is per-task reentrant, so no self-deadlock, and the pin only takes the member lock, so no group/member inversion. The new asyncio test does catch the old ordering: after sleep(0) the old code had already read the pin before blocking. (3) New issue from (2): the early return now happens inside the lock, so every VOLUME_SET player takes its VOLUME lock on each register/register_or_update. Both calls run under the global _register_lock. If a volume command is stuck on that player (likely on a reconnect after a drop), registration of every player waits up to PLAYER_LOCK_TIMEOUT (30s), even though the pin is not configured. GPT Sol flagged the same thing as PROBLEM. Fix: cheap pre-check before the lock, recheck inside (patch below). (4) Pin before set_config: author kept it and replied on the resolved thread r4254688831. Fine. Copilot 06:20Z on 306c090ad: 0 open inline findings, both old threads resolved in its overview (the GitHub threads are still unresolved). Previously missed (1) [CRITICAL]: no pin apply on unavailable to available. Checked: chromecast/player.py sets _attr_available = False at init and flips it in the connection-status handler via update_state, never re-registering. So for Cast the pin is skipped at register and never applied at startup, only on config save while online. Cast into an AVR is a typical setup for this feature, so this is worth fixing in the PR: in signal_player_state_update, when 'available' changed to True on an initialized player, schedule _apply_native_volume_pin as a task that logs errors. The Universal Player item from the last review was not repeated. Our depends_on_value_not = PLAYER_CONTROL_NATIVE suggestion is still unposted. Local tests could not run: the shared .venv has stale models (SortField.FAVORITE_TIMESTAMP missing). CI green. Marvin has not commented on this PR.",
@@ -3046,7 +3046,7 @@
    "providers_touched": [
     "dlna_receiver"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; changes requested, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; changes requested, no auto-merge",
    "head_sha": "0d643083b",
    "tldr": "Out of draft again since 08:52Z and OzGav is re-requested. All 58 review threads are resolved, and the three OzGav points from September (owner_player_id rename, conftest.py removed, deferred import removed) are done in the code. Scope is clean: only the new provider, its tests and en.json keys. Two real bugs remain against the current AudioSource session model. The plugin never calls deselect_source, so a second cast on the same renderer reuses the first cast's cached stream details (with the codec ffmpeg detected), and a DLNA Stop leaves the player showing the DLNA source. Also, any stream teardown during Pause is treated as Stop.",
    "summary": "New plugin provider synced from ma-provider-dlna-receiver v1.2.8. It runs one aiohttp UPnP server per MA player (ports from 8298 upward, on one detected IPv4) and one SSDP advertiser per renderer, each with its own UDP 1900 socket (SO_REUSEPORT). Playback goes through play_media with an AUDIO_SOURCE uri, and get_audio_stream proxies the sender's URL. Files touched: only music_assistant/providers/dlna_receiver/*, tests/providers/dlna_receiver/* and 9 new keys in translations/en.json. No core changes. Conventions are mostly fine: get_config_entries is an instance method on dev's model, the registry uses the event bus, tasks go through mass.create_task, and narrow excepts are used. The VERSION file matches other synced providers (yandex_*, kion_music, msx_bridge). The docs URL in the manifest returns 404 until music-assistant.io#626 merges. Unload cancels the metadata task, unsubscribes the player events, sends byebye, closes both UDP transports, stops the aiohttp runner, cancels GENA tasks and leaves mass.http_session open. GPT Sol and I found no leak. Security of the unauthenticated endpoint is reasonable for DLNA: SetAVTransportURI and GENA callbacks are validated against loopback, link-local, multicast and reserved addresses on every redirect hop, redirects are capped at 5, GENA is capped at 32 subs per service with a 1800 s TIMEOUT clamp, and SOAP/DIDL parsing rejects DOCTYPE/ENTITY and anything over 64 KiB. Anyone on the LAN can still play to and set the volume of every exposed player. That is inherent to DLNA and the plugin is opt-in. The remaining issues are about the newer AudioSource session contract. Sessions survive cmd_stop and keep session.streamdetails on re-select (_start_audio_source_session with preserve_details). ffmpeg writes the detected codec into that AudioFormat in place, so the next cast on the same renderer is launched with the old -acodec. Other receivers (airplay_receiver, spotify_connect, ariacast, sendspin_source) call deselect_source with the session's playback_session_id when their session ends. This plugin does not. on_source_unselected also sets STOPPED and clears elapsed on every stream teardown, but dev documents that a paused source's stream can be torn down while the source stays selected.",
@@ -3155,7 +3155,7 @@
    "ci": "All green on 2ebd50161: lint, pytest 1-3, CodeQL, codecov patch and project. Bot workflows skipped as usual.",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; review required, no auto-merge",
    "head_sha": "2ebd50161",
    "tldr": "Reporter amsound says the fix doesn't work, but the attached log shows the DEV add-on never got to run it: installing requirements failed with 'No space left on device' while building aiolibdatachannel from its git branch. Ask them to free disk space and retry. Code side unchanged: Copilot green, CI green, waiting on a second maintainer.",
    "summary": "Fixes support#6731: TuneIn's signed Apple Music HLS url expires after 5-6 h, the playlist reload gets HTTP 433, ffmpeg exits non-zero and playback stops. get_media_stream now routes MediaType.RADIO through _get_restarting_radio_media_stream. After a run that yielded audio fails with MusicAssistantError/ClientError/TimeoutError, it calls the same provider instance's get_stream_details, resolves it via the new shared _resolve_radio_stream_details helper and copies path, stream_type, audio_format and data into the existing StreamDetails, so the queue item keeps its object. A failure before any audio still raises, so provider fallback is unchanged. ProviderStreamLimitError, CancelledError and GeneratorExit propagate. The restart budget now counts PCM seconds of the current run (fix from Copilot's second review), so a slow failing refresh cannot reset it. The reporter's log shows the media_stream warning dump, which only happens on the error path, so the 433 case does reach the restart loop. Copilot threads: r4258226164 (copy the HLS metadata callback on refresh) was declined with a reply and is resolved; r4258280565 (budget reset on refresh latency) was fixed in 2ebd501 and is resolved. Latest Copilot review on 2ebd50161 at 11:59:39Z: Approval recommended, 0 open findings. GPT Sol flagged a clean EOF as CRITICAL: _get_media_stream returns normally when ffmpeg exits 0, and the loop then returns without a restart. That is real for the legacy Shoutcast reader, which turns IncompleteReadError into EOF, but it is pre-existing behavior and not the reported failure, so we log it as a suggestion and do not block on it. Tests not run locally; CI covers them.",
@@ -3385,7 +3385,7 @@
    "providers_touched": [
     "web_kiosk"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; review required, no auto-merge",
    "head_sha": "257e3ae8b",
    "tldr": "v1.1.0 drops ENQUEUE and plays core's flow stream, which removes the provider's own successor logic and with it the seek-to-end bug (Copilot r4302797493 resolved, page clamp verified, server seeks now safe via flow). Copilot is clean on the head. New: Repeat One leaves the page clock stuck at the end. The 9 older PROBLEMs and the maintainer question remain. Not ready.",
    "summary": "Delta b852cf2f7..257e3ae8b (v1.1.0, +894/-1285): the kiosk drops PlayerFeature.ENQUEUE, so core serves queue media as one /flow/ stream. Removed: the /flow/ to /single/ rewrite, enqueue_next_media, start_enqueued_media, QueueWalk, playback_reached_end and the short-end detection; a browser 'ended' now just reports IDLE. play_media checks resolve_stream_url to set serves_flow. refresh_stream rebuilds the flow at the queue's item and position via cmd_seek with resume_position(). New PlaybackClaim replaces transport_mark/still_plays/take_over_output (GPT Sol found no ownership or pause bug in it). _publish_flow_item sends title, duration and a stream-clock start (queue elapsed minus stream elapsed x speed; GPT Sol confirmed the formula) when the queue's item changes inside the flow. Closing a page that got the current play message rebuilds the flow for the remaining pages. web.js caps seekToSong at floor(dur) - end_margin from the welcome message, clamps its clock to the song duration, and reports position every 2 s. Effect on old findings: fixed or gone are the seek-to-end CRITICAL, the /flow/ rewrite limitation (crossfade and overlays now apply), one-item Repeat All, paused successor resume_pos, radio jumping to the next item, end report during the snapshot seek, and the short complete file stopping the queue. The failed-playback teardown is downgraded to SUGGESTION since there are no enqueue tasks now. The other 9 PROBLEMs are untouched. New PROBLEM: Repeat One (and one-item Repeat All) never sends a new media message, so the page clock and lyrics stay at the end.",
@@ -4459,7 +4459,7 @@
    "providers_touched": [
     "sendspin"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; review required, no auto-merge",
    "head_sha": "31e6c701c",
    "tldr": "Code is clean and CI is green, but Marcel questioned the approach at 11:29Z: he would rather have the Sendspin client flag itself as private or shared than add a server-side toggle. That likely means a client-side redesign, so it waits on teancom and Marcel.",
    "summary": "New boolean entry shared_player, offered only to web/app players and never to virtual players. _apply_standalone_visibility runs from _refresh_client_info and on_config_updated, so the toggle applies without a reconnect. The websocket event filter re-reads player.private on each event, matching auth_middleware.is_own_client_player. Since the last card the only code change is the rebase: the .constants import block in sendspin/player.py now keeps dev's CONF_SOURCE_INPUT_DECLINED and adds CONF_SHARED_PLAYER; every imported name exists in constants.py and lint passed. merge-tree against origin/dev is clean. The author's rebuttal to Copilot holds: WebserverController.update_active_user_filters (controller.py:537) already changes a live user's access without notifying the client, so the stale cache for a restricted owner is an existing limitation, not new. Server-side auth still checks current privacy, so the stale UI grants no access. Config save needs CONFIG_PLAYERS_WRITE, so only an admin can trigger the case. Copilot re-reviewed the new head and marked the finding resolved with 0 open findings. 10-17: Marcel suggested the Sendspin client should flag privacy itself; teancom replied that needs a spec change and pinged maximmaxim345.",
@@ -4726,7 +4726,7 @@
    "providers_touched": [
     "pandora"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; changes requested, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; changes requested, no auto-merge",
    "head_sha": "4bb2edc0c",
    "tldr": "Both earlier blockers are fixed: no close() is left outside unload(), and stationless answers no longer replace each other. Copilot reviewed the head at 05:22Z and opened 2 smaller PROBLEMs: a failed first login now leaks the SOCKS session, and _clear_feedback catches Exception too broadly. Both fit in one small commit (patch ready). OzGav still needs to re-review.",
    "summary": "Delta 3bd9f7c76..4bb2edc0c, 2 commits. b0c0bc079: _remember_feedback only replaces a kept entry when the new answer names a station, with a regression test for two stationless answers. Fixed. 4bb2edc0c: the close() calls left in _authenticate() and in the not-logged-in guard of _api_request() are gone, so close() only runs in unload(). Tests cover dropped connections, unreadable bodies, a request before login and failed logins, all asserting the proxy session stays open. Fixed. drawsmcgraw answered OzGav's thread r4325283202 and both Copilot CRITICALs (15:29Z, 15:47Z, 15:48Z). 140 Pandora tests pass on a git-archive copy.\n\nNew side effect: before, a failed login in handle_async_init closed the proxy session. Now nothing does, because mass.py does not call unload() when handle_async_init fails, and the retry builds a new instance with a new session. Each failed load with the SOCKS setting leaves an unclosed aiohttp session. Small (GC warning, one session per retry), but real. Copilot r4333311814 (PROBLEM, 05:22Z) says the same.\n\nCopilot 05:22Z on 4bb2edc0c: 'Changes recommended', both earlier CRITICALs resolved, 1 open PROBLEM (the leak above) and 1 'previously missed' PROBLEM: _clear_feedback catches Exception, so a programming error keeps going with more remote deletes before it is raised. Valid per the project's exception rule; narrowing to MusicAssistantError and TimeoutError keeps every expected case (_api_request maps aiohttp errors to ProviderUnavailableError).\n\nGPT Sol: confirms no close() is left outside unload(), the stationId change is correct and _clear_feedback still deletes stationless entries by id. Its only finding is the same init leak (LOW).\n\nOzGav's thread r4325283202 is answered but not resolved, and his CHANGES_REQUESTED review still stands. chrisuthe is still a pending reviewer.",
@@ -5061,7 +5061,7 @@
    "ci": "green on 6b5beb793 (lint, pytest, Verify, CodSpeed); no run against current dev because of the conflict",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "CONFLICT with origin/dev 6a96b509a in pyproject.toml, requirements_all.txt; no decision, no auto-merge",
+   "merge_state": "CONFLICT with origin/dev ff27e69af in pyproject.toml, requirements_all.txt; no decision, no auto-merge",
    "head_sha": "6b5beb793",
    "tldr": "Optional OIDC login. ashtonian took it out of draft at 03:51Z, head unchanged, and now conflicts with dev on the models pin. All card blockers still hold. He says recent Copilot findings are pre-existing; that is true for the in-flight auth race (r4309422583) but not for the CRITICAL re-auth subscription leak (r4309722568), which his new re-validation branch introduces. OzGav said maintainers will give feedback. Next move is a maintainer's: the LoginProvider vs auth-framework decision and a reply on the CRITICAL.",
    "summary": "No new commits since 6b5beb793. ashtonian marked it ready at 03:51:51Z without fixing the open Copilot CRITICAL, which bypasses the critical gate (no override-critical label). Rechecked blockers on the same head: (1) models pin still on ashtonian/music-assistant-models@82a0865, models#439 and frontend#3011 still draft. (2) LAN HTTP sign-in 400 on the HTTPS callback hop: unchanged. (3) Proxy redirect loop without X-Forwarded-Proto: unchanged. (4) Copilot r4309722568: on dev a failed re-auth returns early and keeps the old identity and subscription; the PR's re-validation loop clears _authenticated_user to None while the old subscription stays live, so player_access_filter(None) drops player restrictions. That is new in this PR. (5) Copilot r4309422583 in-flight revocation race exists on dev and the PR narrows it, so 'pre-existing' fits there. Merge conflict is only the models version line in both files.",
@@ -5301,7 +5301,7 @@
    "providers_touched": [
     "party"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; review required, no auto-merge",
    "head_sha": "33c048aa2",
    "tldr": "33c048aa2 fixes both Copilot findings and Copilot is now clean. One thing left from our side: a guest whose screen still shows song A, and whose vote arrives after the skip, now counts against song B. GPT Sol flags the same. Small patch on card plus frontend#3014 sending the item id.",
    "summary": "Delta 28b8fc4ed..33c048aa2. skip_current records the playing item before any await, then holds _queue_lock and get_group_and_player_lock(queue_id, strict=True) through next(), and rejects the vote if the item changed. The player lock is re-entrant per task, so next() taking it again is fine; no inverse lock order found. Stale tallies: unload() clears the votes and their tally, and _remove_stale_skip_tally drops a tally no live vote belongs to on load and on every QUEUE_UPDATED (terminates, the pop removes the trigger). New tests cover both waits, the held lock and the three tally paths. Left: the item is captured on arrival at the server, so a late vote from a stale UI still lands on B. The author notes a natural track end can still slip between check and next(); that window is milliseconds and fine to accept. CI green, Copilot 09:19Z no open issues.",
@@ -5386,8 +5386,8 @@
   {
    "repo": "server",
    "number": 7100,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-21T08:25:59Z",
    "title": "Keep AirPlay receivers that share one IP on their own Universal Player",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7100",
@@ -5446,13 +5446,13 @@
     }
    ],
    "waiting_on": "you",
-   "changed_now": null
+   "changed_now": "merged"
   },
   {
    "repo": "client",
    "number": 319,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-21T08:16:42Z",
    "title": "chore(main): release 1.7.0",
    "author": "musicassistant-bot[bot]",
    "url": "https://github.com/music-assistant/client/pull/319",
@@ -5496,7 +5496,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you (release PR)",
-   "changed_now": null
+   "changed_now": "merged"
   },
   {
    "repo": "server",
@@ -5790,11 +5790,11 @@
    "title": "Keep same-name artists on one streaming provider apart via MusicBrainz",
    "author": "OzGav",
    "url": "https://github.com/music-assistant/server/pull/7124",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
-   "status": "attention",
-   "attention_since": "2026-10-21T07:27:52Z",
+   "status": "waiting",
+   "attention_since": null,
    "size": "M",
    "code": 213,
    "add": 210,
@@ -5805,14 +5805,14 @@
    "providers_touched": [
     "musicbrainz"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6a96b509a; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ff27e69af; review required, no auto-merge",
    "head_sha": "dd3d3d155",
-   "tldr": "OzGav's dd3d3d155 fixes the stale lookups: MusicBrainz answers now live for one add, so a link you add later is picked up. Still open, and found by all three reviewers: the same-name check is skipped when 'link via MusicBrainz' is off, although that setting is only about linking other services. A validated one-line patch fixes it. The 'add the missing link' hint is also wrong for URLs linked to several artists. Copilot's review of this head is pending.",
+   "tldr": "Back to draft: Copilot's review of dd3d3d155 has 2 CRITICALs. One is the cross-service-linking gate we already flagged (patch ready). The other is new: a later same-name candidate with a conflicting known MusicBrainz ID still gets accepted. The stale-lookup fix landed and is answered. Waiting on OzGav.",
    "summary": "dd3d3d155 replaces the controller-lifetime _url_mbids map with _match_lookups: a dict keyed by id(item), created lazily in _confirm_library_candidate and removed by weakref.finalize when the artist object dies. add_item_to_library passes the same object to both match passes and to _add_library_item, and _add_library_item reads the lookups before converting an ItemMapping. So the locked recheck reuses the first pass's answers and the insert picks up the found MBID. A new add (a new object) goes back to get_mbid_by_url, and from there to mass.cache. Concurrent adds of different objects cannot see each other's state. Two tasks sharing one object would share identical answers, which does no harm. Because the weakref ties the state to the object's lifetime, exceptions cannot leak it. id() reuse is safe because the finalizer runs before the memory is freed. A WeakKeyDictionary would not work here: MediaItem hashes by value, so two same-identity objects would share an entry. The id+finalize approach is justified.\n\nThe gating is still open. _confirm_library_candidate uses _musicbrainz_link_provider(), which returns None when link_providers_via_musicbrainz is off. That setting (advanced, default on) is about linking items to other music services, and its own description says identification on MusicBrainz continues regardless. Users who turned it off silently get the pre-PR merge behaviour. That is not a regression, but the setting does not mean that, and the fix is one line. The earlier worry about retries under the add lock is moot: a failed lookup returns None, the candidate is accepted in the unlocked pass, and the lock is never reached. The locked pass only asks MusicBrainz again when a new same-name candidate appeared in the meantime. Two minor points remain. get_data caches a None (unknown URL) for 30 days, so the 'add the link' hint does not take effect for up to a month. A URL linked to several artists produces the same 'not on MusicBrainz' hint. Tests: 21/21 pass in the new file, 209 pass for -k artist, ruff and mypy are clean, merge-tree is clean, and constants.py is untouched.",
    "blockers": [
-    "Same-name check is skipped when 'link via MusicBrainz' is off: push the one-line fix or post the finding",
-    "Reply to and resolve Copilot thread r4334124132 (fixed in dd3d3d155)",
-    "Copilot review of dd3d3d155 pending"
+    "Copilot CRITICAL r4334449847: same-name check skipped when 'link via MusicBrainz' is off (our patch fixes it, `fix 7124` if OzGav doesn't)",
+    "Copilot CRITICAL r4334449779: a later candidate with a conflicting known MBID is still accepted",
+    "Critical gate drafted it at 08:24Z; OzGav answers or fixes both, then marks it ready"
    ],
    "findings": [
     {
@@ -5851,7 +5851,7 @@
      "file": "music_assistant/controllers/music/media/artists.py",
      "line": 1956,
      "title": "MusicBrainz check skipped when cross-service linking is disabled",
-     "detail": "Copilot 'previously missed' finding in its 07:27Z review body (no thread): _musicbrainz_link_provider() returns None when cross-service linking is off, so same-provider artists still merge. Still present on dd3d3d155; Claude and GPT Sol agree.",
+     "detail": "Now a CRITICAL thread on dd3d3d155 (r4334449847). Same as Claude's PROBLEM; the prepared patch fixes it.",
      "fix": "Resolve the MusicBrainz provider independently of that setting (patch prepared).",
      "posted": null
     },
@@ -5867,11 +5867,11 @@
     },
     {
      "model": "Copilot",
-     "severity": "PROBLEM",
+     "severity": "NIT",
      "file": "music_assistant/controllers/music/media/artists.py",
      "line": null,
-     "title": "Failed URL lookups stay stale (thread r4334124132)",
-     "detail": "Fixed by dd3d3d155 (lookups scoped per added object); the thread is not answered or resolved yet.",
+     "title": "Failed URL lookups stay stale (r4334124132), fixed and answered",
+     "detail": "Fixed in dd3d3d155; OzGav replied 08:48Z and Copilot lists it as resolved.",
      "fix": "OzGav replies and resolves the thread.",
      "posted": null
     },
@@ -5883,6 +5883,16 @@
      "title": "Lookups live as long as the artist object, not the add",
      "detail": "GPT Sol rated this a PROBLEM: re-adding the same Artist/ItemMapping object reuses its cached None. Library sync builds fresh objects per add, so we see this as narrow.",
      "fix": "Clear the lookups when add_item_to_library finishes.",
+     "posted": null
+    },
+    {
+     "model": "Copilot",
+     "severity": "CRITICAL",
+     "file": "music_assistant/controllers/music/media/artists.py",
+     "line": 1958,
+     "title": "Later candidate with a conflicting known MusicBrainz ID is still accepted (r4334449779)",
+     "detail": "If a Deezer candidate is rejected after the incoming artist's MBID was recovered, a later same-name Spotify-only candidate whose stored MBID differs is still accepted, because the recovered MBID isn't compared against later candidates. Claude listed the same gap as a pre-existing SUGGESTION (split only holds per provider); Copilot rates it CRITICAL.",
+     "fix": "Compare the recovered MBID against later candidates' known MBIDs without mutating the item; keep the fallback when a candidate has none. Regression: rejected Deezer candidate, then a Spotify-only one with a conflicting MBID.",
      "posted": null
     }
    ],
@@ -5896,17 +5906,16 @@
    ],
    "copilot": {
     "green": false,
-    "comments": 1,
-    "findings": 3,
-    "review_url": "https://github.com/music-assistant/server/pull/7124#pullrequestreview",
+    "comments": 2,
+    "findings": 2,
+    "review_url": "https://github.com/music-assistant/server/pull/7124#discussion_r4334449779",
     "titles": [
-     "[PROBLEM] Failed URL lookups remain stale (r4334124132, fixed in dd3d3d155)",
-     "[CRITICAL] MusicBrainz lookup skipped when cross-service linking is disabled (previously missed, body only)",
-     "[PROBLEM] Ambiguous artist URLs reported as missing links (previously missed, body only)"
+     "[CRITICAL] Reject candidates with conflicting recovered MusicBrainz IDs (r4334449779)",
+     "[CRITICAL] Keep disambiguation when cross-service linking is disabled (r4334449847)"
     ]
    },
-   "copilot_reviewed_head": false,
-   "copilot_note": "Real review 07:27Z on 0f1358818: 1 thread + 2 'previously missed' findings in the body (those have no thread, so the critical gate doesn't see the CRITICAL). 07:42Z review on dd3d3d155 was a quota stub; re-requested as Marvin 08:00:48Z, work started 08:01:19Z, no review yet at write time.",
+   "copilot_reviewed_head": true,
+   "copilot_note": "Real review 08:08Z on dd3d3d155: 2 new CRITICAL threads, stale-lookup thread marked resolved. Critical gate drafted the PR at 08:24Z. OzGav answered the stale-lookup thread at 08:48Z; both CRITICALs unanswered.",
    "suggested_fix": {
     "description": "Gate the same-name MusicBrainz check on the MusicBrainz provider being loaded instead of on the cross-service linking setting. Validated: git apply --check OK on dd3d3d155, 21/21 tests pass, ruff and mypy clean.",
     "patch": "diff --git a/music_assistant/controllers/music/media/artists.py b/music_assistant/controllers/music/media/artists.py\nindex ff41b56fa1..2596eb7a1f 100644\n--- a/music_assistant/controllers/music/media/artists.py\n+++ b/music_assistant/controllers/music/media/artists.py\n@@ -1956,7 +1956,7 @@ class ArtistsController(MediaControllerBase[Artist]):\n             return True\n         if not (conflict := self._same_provider_other_ids(db_item, item)):\n             return True\n-        if (musicbrainz := self._musicbrainz_link_provider()) is None:\n+        if (musicbrainz := self._musicbrainz_provider()) is None:\n             return True\n         mapping, library_mappings = conflict\n         lookups = self._lookups_of(item)\n@@ -2068,6 +2068,10 @@ class ArtistsController(MediaControllerBase[Artist]):\n             self._log_missing_musicbrainz_link(mapping, url, name, other_mbid)\n         return mbid\n \n+    def _musicbrainz_provider(self) -> MusicbrainzProvider | None:\n+        \"\"\"Return the MusicBrainz provider when it is loaded.\"\"\"\n+        return cast(\"MusicbrainzProvider | None\", self.mass.get_provider(\"musicbrainz\"))\n+\n     def _lookups_of(self, item: Artist | ItemMapping) -> dict[str, str | None]:\n         \"\"\"Return the MusicBrainz lookups made while adding this artist object, by URL.\"\"\"\n         key = id(item)\ndiff --git a/tests/controllers/music/test_artists_same_name.py b/tests/controllers/music/test_artists_same_name.py\nindex 422b709a8c..86a700e20f 100644\n--- a/tests/controllers/music/test_artists_same_name.py\n+++ b/tests/controllers/music/test_artists_same_name.py\n@@ -98,7 +98,7 @@ def _harness(\n         patch.object(mass, \"get_provider_manifest\", return_value=deezer_manifest),\n         patch.object(\n             mass.music.artists,\n-            \"_musicbrainz_link_provider\",\n+            \"_musicbrainz_provider\",\n             return_value=musicbrainz if musicbrainz_loaded else None,\n         ),\n     ):\n",
@@ -5914,8 +5923,8 @@
    },
    "backport": null,
    "prompt": "Server PR #7124 (https://github.com/music-assistant/server/pull/7124), head dd3d3d155, by OzGav. In music_assistant/controllers/music/media/artists.py, _confirm_library_candidate gates the same-name MusicBrainz check on _musicbrainz_link_provider(), which is None when 'link items via MusicBrainz' is off. Gate it on the MusicBrainz provider being loaded instead (add _musicbrainz_provider()), patch that in tests/controllers/music/test_artists_same_name.py, and add a regression with cross-service linking disabled. Also reword the missing-link hint so it covers a URL linked to several MusicBrainz artists. Work in a worktree from refs/remotes/pr/7124.",
-   "whats_new": "Copilot reviewed 0f1358818 at 07:27Z: 1 PROBLEM thread (stale lookups) plus two 'previously missed' findings in the review body only (CRITICAL cross-service gating, PROBLEM ambiguous hint). OzGav pushed dd3d3d155 at 07:42Z fixing the stale lookups, without replying on the thread. Copilot's review of dd3d3d155 was a quota stub; re-requested as Marvin 08:00Z, work started 08:01Z.",
-   "reviewed_now": true,
+   "whats_new": "Copilot's 08:08Z review of dd3d3d155 opened 2 CRITICAL threads (cross-service gating, and a later candidate with a conflicting known MBID). Critical gate drafted it at 08:24Z. OzGav answered the stale-lookup thread at 08:48Z.",
+   "reviewed_now": false,
    "reviewed_at": "2026-10-21 10:05 CEST",
    "auto_approved": null,
    "stacked": false,
@@ -5926,9 +5935,9 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you: fix or post",
+   "waiting_on": "OzGav",
    "gpt_sol": "1 crit, 2 problems",
-   "changed_now": "pushed"
+   "changed_now": "drafted"
   },
   {
    "repo": "server",
@@ -6087,8 +6096,8 @@
   {
    "repo": "server",
    "number": 7130,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-21T08:25:59Z",
    "title": "Read Kodi artist NFO tags case-insensitively and import type, style, mood and life span",
    "author": "OzGav",
    "url": "https://github.com/music-assistant/server/pull/7130",
@@ -6154,7 +6163,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you",
-   "changed_now": null
+   "changed_now": "merged"
   },
   {
    "repo": "server",
@@ -6624,8 +6633,8 @@
   {
    "repo": "server",
    "number": 7133,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-21T08:20:24Z",
    "title": "Keep Sonic Similarity's \"Inspired by recently played\" row separate per user",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7133",
@@ -6701,15 +6710,15 @@
    "related_prs": [
     "#7121"
    ],
-   "reviewed_now": true,
-   "changed_now": "new",
+   "reviewed_now": false,
+   "changed_now": "merged",
    "reviewed_at": "2026-10-21 10:05 CEST"
   },
   {
    "repo": "server",
    "number": 7134,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-21T08:37:25Z",
    "title": "Fix Endless Mix not playing when seeded by a radio station",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7134",
@@ -6783,8 +6792,8 @@
    "related_prs": [
     "#7021"
    ],
-   "reviewed_now": true,
-   "changed_now": "new",
+   "reviewed_now": false,
+   "changed_now": "merged",
    "reviewed_at": "2026-10-21 10:05 CEST"
   }
  ]
