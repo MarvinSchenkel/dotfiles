@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-21 15:30 CEST",
+ "last_run": "2026-10-21 16:30 CEST",
  "columns": [
   [
    "info",
@@ -92,7 +92,7 @@
    "action": "Local fix ready (fix/wiim-seek-transient-position, 633cfc8). Test a seek-then-pause on a WiiM with an Audiobookshelf book; if it holds, say so and I open the PR with backport (cherry-picks cleanly onto stable).",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "riskywhat",
      "at": "2026-10-21T13:06:34Z",
@@ -150,7 +150,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T10:43:09Z",
@@ -223,7 +223,7 @@
    ],
    "milestone": "2.10.7",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T13:54:33Z",
@@ -293,7 +293,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-21T13:26:39Z",
@@ -353,7 +353,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T09:33:39Z",
@@ -427,7 +427,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "dunxd",
      "at": "2026-10-20T19:23:52Z",
@@ -495,7 +495,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T11:33:10Z",
@@ -575,7 +575,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T06:35:59Z",
@@ -656,7 +656,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-21T12:51:00Z",
@@ -723,7 +723,7 @@
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "maisun",
      "at": "2026-10-21T12:49:48Z",
@@ -800,7 +800,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T12:36:16Z",
@@ -839,17 +839,17 @@
    "col": "info",
    "area": "frontend / mediaSession play handlers (PlayerBrowserMediaControls.vue, SendspinPlayer.vue) + server players/controller.py _handle_cmd_pause",
    "since": "2026-10-19 11:38",
-   "last": "MarvinSchenkel 2026-10-20 11:46",
+   "last": "MarvinSchenkel 2026-10-21 14:35",
    "gh": {
     "login": "MarvinSchenkel",
     "team": true,
-    "at": "2026-10-20T11:46:59Z",
+    "at": "2026-10-21T14:35:07Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "2.11.0b5 Docker. Opening the web UI makes a 2-HomePod AirPlay sync group play a few seconds of the radio station left in its stopped queue. It also started on its own at 05:18 with nobody at the UI. Verbose webserver log: players/cmd/play and players/cmd/pause for the syncgroup 1 ms apart, then two more pauses, all while the queue is still IDLE, so every pause is dropped and the group starts. Report written with Claude, diagnostics attached (uptime 18 min, doesn't cover either event).",
    "fix": "",
-   "checked": "Code read on frontend origin/main and server origin/dev, no repro. The frontend only sends play/pause from the mediaSession action handlers (PlayerBrowserMediaControls.vue:149-160, SendspinPlayer.vue:455-470) and the companion tray (companion.ts:296-300). Both browser handlers delay pause by 250 ms, so a play and pause 1 ms apart is not one click: it fits a pause action ~250 ms before a play action, i.e. the OS or browser firing media keys (tab grabbing Now Playing, headphones connecting, Mac waking). Nothing in the page-load path calls play itself, the silent <audio> element play() never reaches the server. The 05:18 start without anyone opening the UI points the same way: an MA tab or app left open somewhere. Server side, _handle_cmd_pause returns early when the player is IDLE (controller.py:5101), so a pause that lands while a play is still starting the group is lost. The Received: log line has no client id, so the log can't say which tab or device sent it.",
+   "checked": "Code read on frontend origin/main and server origin/dev, no repro. The frontend only sends play/pause from the mediaSession action handlers (PlayerBrowserMediaControls.vue:149-160, SendspinPlayer.vue:455-470) and the companion tray (companion.ts:296-300). Both browser handlers delay pause by 250 ms, so a play and pause 1 ms apart is not one click: it fits a pause action ~250 ms before a play action, i.e. the OS or browser firing media keys (tab grabbing Now Playing, headphones connecting, Mac waking). Nothing in the page-load path calls play itself, the silent <audio> element play() never reaches the server. The 05:18 start without anyone opening the UI points the same way: an MA tab or app left open somewhere. Server side, _handle_cmd_pause returns early when the player is IDLE (controller.py:5101), so a pause that lands while a play is still starting the group is lost. The Received: log line has no client id, so the log can't say which tab or device sent it. 10-21 (frontend origin/main = b5's 2.17.341 on these paths): in 'Built-in web player only' mode PlayerBrowserMediaControls.vue is never mounted (App.vue:35, :137-144) and SendspinPlayer.vue's handlers (455-470) target the web player only (getTargetPlayerId :442); keyboard and player buttons send play_pause, visibility/focus handlers send no commands, the companion tray needs Tauri. No frontend path sends play/pause to the syncgroup in this mode (~70% not a frontend bug); likely another WebSocket client (HA integration) or a different stored setting in that Zen profile.",
    "plan": "Ask which Browser media controls mode each client uses (Settings > User Interface > Display, per device, default web player only) plus browser/OS, other open clients and media keys. If it's 'Any actively selected player', that explains it; then consider guarding the play handler or letting pause cancel a play that is still starting.",
    "branch": "",
    "diff": "",
@@ -866,19 +866,20 @@
    "notes": [
     "10-19 11:38 run: new issue. Code read only: the frontend's mediaSession play/pause handlers are the only browser senders and pause is delayed 250 ms, so the 1 ms pair looks like OS/browser media actions, not page load code. Reply asks for browser/OS, other open clients at 05:18 and headphones/media keys.",
     "10-20 14:00 (on request): reply now points to the per-device Browser media controls setting (frontend#2626, in 2.10.7 and 2.11.0b5). The 'Any actively selected player' mode sends media keys to the selected player, which fits the syncgroup play/pause pair. Dropped the private-window question, the setting test replaces it.",
-    "10-20 14:38 run: you posted the Browser media controls reply (11:47 UTC). Waiting for CaseyRo."
+    "10-20 14:38 run: you posted the Browser media controls reply (11:47 UTC). Waiting for CaseyRo.",
+    "10-21 16:30 run: CaseyRo (14:02 UTC): 'Built-in web player only', Zen (Firefox) on macOS, one MA tab, no desktop or companion app. Posted on your behalf (https://github.com/music-assistant/support/issues/6817#issuecomment-6318669160): capture the tab's outgoing WebSocket messages during one reproduction to see whether this tab sends the play/pause. GPT: revise (one capture first, HA-disable test later), accepted."
    ],
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-20T11:46:59Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6817#issuecomment-6290129828"
+     "login": "CaseyRo",
+     "at": "2026-10-21T14:02:12Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6817#issuecomment-6317993689"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -887,7 +888,7 @@
     "labels": [
      "airplay",
      "sendspin",
-     "waiting-for-user"
+     "needs-attention"
     ]
    }
   },
@@ -928,7 +929,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:36:49Z",
@@ -980,7 +981,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "Anto79-ops",
      "at": "2026-10-10T18:07:20Z",
@@ -1053,7 +1054,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "bdeprez",
      "at": "2026-10-13T20:17:14Z",
@@ -1121,7 +1122,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "jetpacktuxedo",
      "at": "2026-10-09T18:36:05Z",
@@ -1190,7 +1191,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:45:17Z",
@@ -1252,7 +1253,7 @@
    "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-10T16:01:24Z",
@@ -1324,7 +1325,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T07:54:30Z",
@@ -1420,7 +1421,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:14:26Z",
@@ -1514,7 +1515,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:16:29Z",
@@ -1594,7 +1595,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "kiwipaulrob",
      "at": "2026-10-17T22:19:56Z",
@@ -1670,7 +1671,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-08T14:40:21Z",
@@ -1808,7 +1809,7 @@
    "ask": "reply-answer",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-18T05:28:39Z",
@@ -2068,7 +2069,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:17:32Z",
@@ -2161,7 +2162,7 @@
    "ask": "nudge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "CDrummond",
      "at": "2026-10-10T06:44:22Z",
@@ -2256,7 +2257,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "davidfi01",
      "at": "2026-10-14T14:12:59Z",
@@ -2323,7 +2324,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-12T13:38:14Z",
@@ -2397,7 +2398,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "PipTheBirb",
      "at": "2026-10-13T13:28:36Z",
@@ -2480,7 +2481,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T10:06:51Z",
@@ -2560,7 +2561,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T09:29:17Z",
@@ -2621,7 +2622,7 @@
    },
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:20:45Z",
@@ -2680,7 +2681,7 @@
    "ask": "reply-test",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "johnp3004",
      "at": "2026-09-13T18:24:58Z",
@@ -2746,7 +2747,7 @@
    },
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:19:58Z",
@@ -2797,7 +2798,7 @@
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "Dragon-Creature",
      "at": "2026-10-18T02:31:00Z",
@@ -2860,7 +2861,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-07T06:33:43Z",
@@ -2925,7 +2926,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "Geweldich",
      "at": "2026-09-30T11:09:20Z",
@@ -3051,7 +3052,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:49:03Z",
@@ -3115,7 +3116,7 @@
    "action": null,
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:19:23Z",
@@ -3186,7 +3187,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-06T13:51:35Z",
@@ -3237,7 +3238,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "marcelveldt",
      "at": "2026-08-26T21:48:58Z",
@@ -3301,7 +3302,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:18:47Z",
@@ -3370,7 +3371,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "salanki",
      "at": "2026-08-29T17:15:18Z",
@@ -3407,6 +3408,10 @@
     {
      "url": "https://github.com/music-assistant/server/pull/5175",
      "label": "server#5175 (merged 10-05, partial)"
+    },
+    {
+     "url": "https://github.com/music-assistant/models/pull/442",
+     "label": "models#442 (yours via the fix session, parse_value BOOLEAN strings)"
     }
    ],
    "badges": [
@@ -3421,20 +3426,21 @@
    "notes": [
     "2026-10-02: root cause is models ConfigEntry.parse_value doing bool(\"false\") == True for BOOLEAN entries; the MCP `value: Any` tool sends an untyped schema, so gateways send strings. Repro'd against origin/dev with the fastmcp_server test fixtures.",
     "10-06 verify (you asked): server#5175 (FastMCP v2.1.22, merged 10-05) removed config_set_player_value. Player config now goes through ma_api:config/players/save, whose schema types each value as a union of boolean|number|integer|string|array|null. Repro through the real adapter (schema -> parse_arguments(strict) -> PlayerConfig.update) on dev d118bb433: \"false\" -> True (no-op), JSON false -> False, \"0\" -> True, 0 -> False, \"off\" -> True. models 1.1.215 still does bool(value) for BOOLEAN strings. Partially fixed: compliant clients now send real booleans, stringifying gateways still flip. Repro test saved at scratchpad/test_repro_6023.py (session 3a4bb986).",
-    "10-21 15:10 fix: you said yes; fix session started on your main account (models fix/parse-value-bool-strings off origin/main, server pin bump after the release)."
+    "10-21 15:10 fix: you said yes; fix session started on your main account (models fix/parse-value-bool-strings off origin/main, server pin bump after the release).",
+    "10-21 16:30 run: the fix session opened models#442. Server pin bump follows the models release (the session asks you first)."
    ],
    "gh": {
     "login": "rwlove",
     "team": false,
     "at": "2026-08-21T17:56:26Z",
-    "pr_open": false,
+    "pr_open": true,
     "pr_draft": false
    },
    "action": "You said yes to the models parse_value fix and a fix session is running. The drafted reply already says we will fix it at the source; post it when you like.",
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "rwlove",
      "at": "2026-08-21T17:56:26Z",
@@ -3452,6 +3458,14 @@
       "draft": false,
       "merged_at": "2026-10-05T08:03:57Z",
       "own": false
+     },
+     {
+      "repo": "music-assistant/models",
+      "n": 442,
+      "state": "OPEN",
+      "draft": false,
+      "merged_at": null,
+      "own": true
      }
     ],
     "test_ask": null,
@@ -3510,7 +3524,7 @@
    "summary": "QQ Music lists music but full-stream URL resolution fails with 104003 and the preview fallback gets a 403, so tracks are skipped. The reporter has a local endpoint correction that works. xiasi0, the provider maintainer, will fix it after their vacation.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "xiasi0",
      "at": "2026-10-06T18:49:41Z",
@@ -3586,7 +3600,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-15T08:41:56Z",
@@ -3654,7 +3668,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:36:19Z",
@@ -3736,7 +3750,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T12:45:57Z",
@@ -3796,7 +3810,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "Ccohen68",
      "at": "2026-10-14T00:46:18Z",
@@ -3856,7 +3870,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-15T08:23:30Z",
@@ -3935,7 +3949,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "olifoss",
      "at": "2026-10-17T21:13:56Z",
@@ -4052,7 +4066,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T11:12:58Z",
@@ -4153,7 +4167,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "moodwrench",
      "at": "2026-10-20T17:43:15Z",
@@ -4238,7 +4252,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-15T14:12:24Z",
@@ -4304,7 +4318,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "tylernolf",
      "at": "2026-10-21T00:49:25Z",
@@ -4333,17 +4347,17 @@
    "col": "info",
    "area": "server / controllers/player_queues set_shuffle, players cmd_shuffle",
    "since": "2026-10-15 16:38",
-   "last": "MarvinSchenkel 2026-10-21 11:13",
+   "last": "MarvinSchenkel 2026-10-21 14:35",
    "gh": {
     "login": "MarvinSchenkel",
     "team": true,
-    "at": "2026-10-21T11:13:52Z",
+    "at": "2026-10-21T14:35:06Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "2.10.6 HA add-on, Plex library, 31 players. Shuffle turns blue but the queue keeps its original order and Next steps through in sequence, on Sonos and on the browser player, albums and playlists, enabled before or during playback. HA shuffle_set leaves the entity at shuffle: false. Smart Shuffle and Autoplay off. mnestrud could not reproduce on 2.10.6 Docker with Tidal on Sonos S2. zosopage1963 now points at Plex as the difference (HA OS VM on Unraid).",
    "fix": "",
-   "checked": "Opus subagent. The shuffle path (players/cmd/shuffle > cmd_shuffle > set_shuffle > _apply_local_shuffle > load(shuffle=True)) is the same on 2.10.6 and dev, and the 2.10.6 Sonos provider has no shuffle handling. Hermetic e2e pytest on both versions (shuffle while playing, shuffle before play_media, cmd_shuffle with source_id as the UI sends it, smart shuffle with recency 0): all reorder correctly. Diagnostics: 13 idle queues, no shuffle errors in the log tail. No duplicates since 09-20. The blue button plus shuffle: false in HA hints that the UI and HA address a different queue than the one playing (2 universal players, 1 synced player in the setup), not confirmed. 10-16: the 2.10.6 shuffle path (_apply_local_shuffle > load(shuffle=True) > random.sample) only reorders QueueItems, nothing in it depends on the provider, so Plex alone should not matter. No Plex provider in ~/.musicassistant, so the Plex angle is untested. 10-21: Opus read of zosopage1963's Player Queues DEBUG log (web player, Plex album, 10:46-10:47): album play 10:46:23 (resets shuffle by design, queue_loader.py:870), Next 10:47:21 and 10:47:28 step 1 then 2. The shuffle path logs nothing at DEBUG on 2.10.7 (players/controller.py:791 > set_shuffle :298 > _apply_local_shuffle :2012), and flow mode skips _enqueue_next_item logging, so the log can't show whether shuffle arrived. No websocket WARNING, so no refused command (websocket_client.py:301); an InsufficientPermissions refusal (:262) logs nothing though. Autoplay at index 1 means the album queue held 5 tracks. Plex Connect never re-synced the queue. 10-21 repro session (Plex on Marvin's server, web player): not reproduced on dev or 2.10.7. UI button and players/cmd/shuffle with source_id while playing, shuffle before play on a playlist, and a non-admin user all reshuffle, and Next follows the new order. Starting an album resets shuffle by design (#5867), but then the button turns grey, so that isn't it. The symptoms (button blue, HA shuffle false, Next in order) point to the UI/HA addressing a different queue than the one playing.",
+   "checked": "Opus subagent. The shuffle path (players/cmd/shuffle > cmd_shuffle > set_shuffle > _apply_local_shuffle > load(shuffle=True)) is the same on 2.10.6 and dev, and the 2.10.6 Sonos provider has no shuffle handling. Hermetic e2e pytest on both versions (shuffle while playing, shuffle before play_media, cmd_shuffle with source_id as the UI sends it, smart shuffle with recency 0): all reorder correctly. Diagnostics: 13 idle queues, no shuffle errors in the log tail. No duplicates since 09-20. The blue button plus shuffle: false in HA hints that the UI and HA address a different queue than the one playing (2 universal players, 1 synced player in the setup), not confirmed. 10-16: the 2.10.6 shuffle path (_apply_local_shuffle > load(shuffle=True) > random.sample) only reorders QueueItems, nothing in it depends on the provider, so Plex alone should not matter. No Plex provider in ~/.musicassistant, so the Plex angle is untested. 10-21: Opus read of zosopage1963's Player Queues DEBUG log (web player, Plex album, 10:46-10:47): album play 10:46:23 (resets shuffle by design, queue_loader.py:870), Next 10:47:21 and 10:47:28 step 1 then 2. The shuffle path logs nothing at DEBUG on 2.10.7 (players/controller.py:791 > set_shuffle :298 > _apply_local_shuffle :2012), and flow mode skips _enqueue_next_item logging, so the log can't show whether shuffle arrived. No websocket WARNING, so no refused command (websocket_client.py:301); an InsufficientPermissions refusal (:262) logs nothing though. Autoplay at index 1 means the album queue held 5 tracks. Plex Connect never re-synced the queue. 10-21 repro session (Plex on Marvin's server, web player): not reproduced on dev or 2.10.7. UI button and players/cmd/shuffle with source_id while playing, shuffle before play on a playlist, and a non-admin user all reshuffle, and Next follows the new order. Starting an album resets shuffle by design (#5867), but then the button turns grey, so that isn't it. The symptoms (button blue, HA shuffle false, Next in order) point to the UI/HA addressing a different queue than the one playing. 10-21: the reporter's 14:12 screenshot shows the shuffle button white (off) and the repeat button blue (repeat all), matching HA shuffle false and the album order; likely user confusion (~85%), the log/diagnostics attachments 404. UX gap: the shuffle-off icon (two straight arrows, ShuffleBtn.vue IconArrowsRight) doesn't read as shuffle.",
    "plan": "Wait for zosopage1963: Verbose Webserver + Player Queues log of one shuffle click (players/cmd/shuffle shows the player_id and source_id), a queue-view screenshot right after, grouping/sync state and Plex Connect.",
    "branch": "",
    "diff": "",
@@ -4365,7 +4379,8 @@
     "10-21 12:15: repro session started at your request against your local Plex server (Plex album/playlist on This device, Tidal comparison, dev then 2.10.7). Draft reply on hold until it reports.",
     "10-21 13:20: info ask held from auto-posting while the repro session works the card.",
     "10-21 13:45 edit + reply: redrafted from the repro result (dropped the admin question, added the screenshot and grouping/Plex Connect questions) and posted on your OK (11:13 UTC, https://github.com/music-assistant/support/issues/6757#issuecomment-6314541606). Waiting for zosopage1963.",
-    "10-21 14:55 v2 migration: the repro session reported back, marked done."
+    "10-21 14:55 v2 migration: the repro session reported back, marked done.",
+    "10-21 16:30 run: zosopage1963's screenshot (14:12 UTC) shows Shuffle off and Repeat (blue, repeat all) on; their log and diagnostics links 404 (upload didn't finish). Posted on your behalf (https://github.com/music-assistant/support/issues/6757#issuecomment-6318668667): which button is Shuffle, click it once on the browser player and report, re-attach the files if it still plays in order. GPT: revise (one targeted check), then post on round 2."
    ],
    "action": "",
    "fix_thread": {
@@ -4376,14 +4391,14 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-21T11:13:52Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6757#issuecomment-6314541606"
+     "login": "zosopage1963",
+     "at": "2026-10-21T14:12:10Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6757#issuecomment-6318209469"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -4393,7 +4408,7 @@
      "triage",
      "sonos",
      "hass",
-     "waiting-for-user"
+     "needs-attention"
     ]
    }
   },
@@ -4452,7 +4467,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "marklam",
      "at": "2026-10-15T15:27:32Z",
@@ -4513,7 +4528,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "suporte640",
      "at": "2026-10-19T00:58:04Z",
@@ -4584,7 +4599,7 @@
    "ask": "design",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:15:21Z",
@@ -4657,7 +4672,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "Thyraz",
      "at": "2026-10-18T18:56:10Z",
@@ -4719,7 +4734,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "axsuul",
      "at": "2026-10-18T04:08:57Z",
@@ -4776,7 +4791,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:50:16Z",
@@ -4844,7 +4859,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "patrick131",
      "at": "2026-10-19T01:09:06Z",
@@ -4927,7 +4942,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T07:10:09Z",
@@ -5001,7 +5016,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T13:34:36Z",
@@ -5058,7 +5073,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:42:54Z",
@@ -5111,7 +5126,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "robertoweij",
      "at": "2026-10-16T21:09:17Z",
@@ -5196,7 +5211,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-17T15:30:42Z",
@@ -5275,7 +5290,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T22:06:21Z",
@@ -5335,7 +5350,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T21:30:55Z",
@@ -5387,7 +5402,7 @@
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T19:54:23Z",
@@ -5453,7 +5468,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:32:52Z",
@@ -5514,7 +5529,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "kmycek",
      "at": "2026-10-17T17:36:42Z",
@@ -5566,7 +5581,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "theseal666",
      "at": "2026-10-16T20:04:31Z",
@@ -5625,7 +5640,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "marapavelka",
      "at": "2026-10-17T09:58:35Z",
@@ -5683,7 +5698,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:52:28Z",
@@ -5752,7 +5767,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "TubeCrafterYT",
      "at": "2026-10-18T08:05:15Z",
@@ -5832,7 +5847,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:47:03Z",
@@ -5910,7 +5925,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-19T05:54:08Z",
@@ -5999,7 +6014,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:35:53Z",
@@ -6092,7 +6107,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-21T13:57:28Z",
+    "at": "2026-10-21T14:30:16Z",
     "last_human": {
      "login": "profLewis",
      "at": "2026-10-21T00:18:32Z",
@@ -6298,7 +6313,8 @@
   "AirPlay: _adopt_device_volume (airplay/player.py:828-839, 1031-1044) and the Sendspin bridge volume path send VOLUME= without an owns_volume check; a candidate MA-side cause for Sonos volume snapping back during AirPlay (#6838, #6664).",
   "#6671: decide backport of server#6607 to 2.10.x, or a SoundTouch provider fix (report IDLE after the UPnP stop).",
   "aioslimproto: disconnect() returns early after _socket_reader sets _connected False (client.py:652/658 in 3.2.3, :665/671 in 3.3.0), so the old socket is never closed and sits in CLOSE-WAIT (#6800). One-line fix in aioslimproto; reproducible with plain squeezelite (kill the client, `ss -tan state close-wait '( sport = :3483 )'`).",
-  "issue-triage release_table: for an unreleased patch milestone (2.10.8) check the backport branch (backport/2.10.8), not origin/stable; 'on stable' reads as 0 until the release."
+  "issue-triage release_table: for an unreleased patch milestone (2.10.8) check the backport branch (backport/2.10.8), not origin/stable; 'on stable' reads as 0 until the release.",
+  "Frontend: the shuffle-off icon (two straight arrows, ShuffleBtn.vue IconArrowsRight) doesn't read as shuffle; #6757's reporter toggled Repeat thinking it was Shuffle. Small UX chip: use a crossed-arrows icon in both states, colour for on."
  ],
  "milestones": {
   "2.10.5": 34,
@@ -6566,7 +6582,6 @@
   6419,
   6602,
   6645,
-  6671,
   6672,
   6688,
   6695,
