@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-21 13:30 CEST",
+ "last_run": "2026-10-21 14:30 CEST",
  "columns": [
   [
    "info",
@@ -408,11 +408,11 @@
    "col": "norepro",
    "area": "server / controllers/players/controller.py signal_player_state_update (pre-registration events) + HA core music_assistant/__init__.py handle_player_config_updated",
    "since": "2026-10-20 07:38",
-   "last": "maisun 2026-10-21 06:11",
+   "last": "OzGav 2026-10-21 12:31",
    "gh": {
-    "login": "maisun",
-    "team": false,
-    "at": "2026-10-21T06:11:35Z",
+    "login": "OzGav",
+    "team": true,
+    "at": "2026-10-21T12:31:00Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -438,7 +438,8 @@
     "10-20 15:38 run: maisun (12:49 UTC): never enabled exposure; entities come back online whenever MA opens in Safari, so not stale devices. OzGav (13:00) pointed at the UI web player toggle. Re-triaged: likely an MA event race plus HA's exposed-by-default read of a missing key (see checked). Not reproduced, moved to Cannot reproduce with the repro plan.",
     "10-20 16:38 run: maisun (13:59 UTC) declined OzGav's UI web player toggle since it hides the web players from MA too; they want them in MA with only 'expose to Home Assistant' off. That's the intended use, so the bug stands. Reply drops the toggle workaround.",
     "10-20 17:38 run: OzGav (15:00 UTC) tried it and leans to the stale entity theory: check whether the HA entity is unavailable, tick and untick 'expose to Home Assistant', and confirm it's gone. That doesn't match maisun's 12:49 report (the entity goes online whenever MA is open in Safari), so the pre-registration race is still the better fit. Our reply hasn't been posted yet.",
-    "10-21 09:11 run: maisun (06:11 UTC) disabled Sendspin for web players and the entities stopped coming back (a workaround, they want Sendspin), and listed exact steps. They don't mind web player devices in HA, they mind unavailable leftovers and _2/_3 entity ids. Reply redrafted: drops the debug log ask, notes the leftover request as separate."
+    "10-21 09:11 run: maisun (06:11 UTC) disabled Sendspin for web players and the entities stopped coming back (a workaround, they want Sendspin), and listed exact steps. They don't mind web player devices in HA, they mind unavailable leftovers and _2/_3 entity ids. Reply redrafted: drops the debug log ask, notes the leftover request as separate.",
+    "10-21 14:30 run: OzGav (12:31 UTC) suggested trying Chrome instead of Safari. The draft still holds (maisun already showed turning off Sendspin for web players stops it, which fits the pre-registration race rather than a Safari quirk), so it stays for you."
    ],
    "action": "maisun gave deterministic steps and found that turning off Sendspin for web players stops it, which fits the pre-registration race. Post the updated reply (it no longer asks for a debug log) and decide whether to start a fix session.",
    "ask": "reply-answer"
@@ -449,11 +450,11 @@
    "col": "pr",
    "area": "server / providers/airplay player.py protocol + streaming_mode (auto lane), provider.py _is_own_airplay_receiver",
    "since": "2026-10-19 16:38",
-   "last": "iVolt1 2026-10-19 15:16",
+   "last": "MarvinSchenkel 2026-10-21 12:36",
    "gh": {
-    "login": "iVolt1",
-    "team": false,
-    "at": "2026-10-19T15:16:44Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-21T12:36:00Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -471,21 +472,26 @@
    ],
    "badges": [
     [
-     "bad",
-     "Needs your action",
-     "needs attention"
+     "info",
+     "Waiting for user",
+     "waiting"
+    ],
+    [
+     "info",
+     "Test asked 10-21",
+     "test asked"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nFair point. Music Assistant already checks whether a shairport player is advertised from its own host (it uses that to hide its own AirPlay Receiver), so Automatic can use the same check and pick compatibility mode for those players. That only needs a small change in the AirPlay provider, so we're picking it up in music-assistant/server#7135. Until it ships, setting the streaming mode by hand per player is the workaround.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-19 16:38 run: new issue. Documented limitation (shared PTP ports with nqptp). Auto-selecting compatibility mode for same-host ShairportSync devices is a small enhancement, design call. Same reporter as #6807 (they ran pr-7100).",
     "10-19 17:38 run: iVolt1 (15:16 UTC) disagrees with the feature request label: Automatic fails while MA already has the info that the AirPlay 2 instance shares its IP, and the manual fix isn't obvious for add-on/Docker users. Reply rewritten to meet that halfway; still your call on option A.",
     "10-21 12:25: you chose option A and asked for a fix. Fix session launched (fix/airplay-same-host-shairport off origin/dev). Design row removed.",
-    "10-21 13:30 run: the fix session opened draft server#7135 (11:15 UTC). Card moved to Reproduced + fixed; reply now links the PR."
+    "10-21 13:30 run: the fix session opened draft server#7135 (11:15 UTC). Card moved to Reproduced + fixed; reply now links the PR.",
+    "10-21 14:30 run: you posted the pr-7135 DEV test ask (12:36 UTC), so the 'picking it up' draft is dropped. Waiting for iVolt1."
    ],
-   "action": "server#7135 is open as a draft. Post the reply that we are picking it up (it now links the PR); the DEV test ask follows once the PR is green.",
-   "ask": "reply-answer",
+   "action": "",
    "fix_thread": {
     "id": "mcp:1a31e149-73ab-4c4b-9bbd-6a38988b54b1",
     "title": "Fix: Automatic streaming mode for same-host shairport players (#6819)"
@@ -2979,18 +2985,18 @@
    "col": "info",
    "area": "server providers/squeezelite + aioslimproto",
    "since": "2026-10-19 07:38",
-   "last": "MarvinSchenkel 2026-10-21 09:15",
+   "last": "MarvinSchenkel 2026-10-21 12:43",
    "gh": {
     "login": "MarvinSchenkel",
     "team": true,
-    "at": "2026-10-21T09:15:41Z",
+    "at": "2026-10-21T12:43:36Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "Eversolo T8 and DMP-A6 using built-in Squeeze Connect drop and reconnect to MA's slimproto server about every 130 seconds, which interrupts playback. It still happens on 2.10.7 (Docker on a Pi 5, host networking). LMS is stable with the same devices. The reporter's captures show RSTs from the Eversolo side and CLOSE-WAIT sockets piling up on the MA side. Update 10-21: firmware 1.6.15 on both; idle tests on 2.10.7 show the cycle with both players, T8 alone (130.28 s) and DMP-A6 alone (127.28 s). Offers a tcpdump on port 3483.",
    "fix": "",
-   "checked": "Attached log: the DMP-A6 cycles 'Player unavailable' then 'connected' every 129-131 s from 08:30 on. It starts right after the provider loads and while nothing plays, so it is not playback related. The T8 does not cycle in this log. aioslimproto (3.2.3 on stable, 3.3.0 on dev) sends strm 't' every 5 s (client.py _send_heartbeat, HEARTBEAT_INTERVAL=5 in const.py). After each heartbeat it calls _render_display, which sends display/brightness frames unless the player reported a 0x0 display. The socket reader drops the client after 10 s of silence (client.py _socket_reader, timeout HEARTBEAT_INTERVAL*2). Nothing in the code gives a 130 s period, and the log is INFO only, so we can't see which side closes or why. One guess, not verified: the display frames sent every 5 s to a squeezeplay-type device with no display. The CLOSE-WAIT buildup points to a possible missed close in aioslimproto disconnect(), but I could not tie it to the cycle. 10-21: the three Verbose logs hold no aioslimproto lines at all. Log-level-only config changes skip the provider reload (models/provider.py:136), and the Squeezelite provider sets the aioslimproto logger level only in handle_async_init (squeezelite/provider.py:69-73), so it stayed at WARNING. All three logs come from the same 05:24 boot with Verbose set at 05:37. Same code on stable. Reconnect lands 140-170 ms after 'unavailable' each time, so the device redials immediately; which side closes is still unknown.",
-   "plan": "Get a Verbose log taken after a restart (so aioslimproto logs at DEBUG) plus the tcpdump the reporter offered; then compare with LMS.",
+   "checked": "Attached log: the DMP-A6 cycles 'Player unavailable' then 'connected' every 129-131 s from 08:30 on. It starts right after the provider loads and while nothing plays, so it is not playback related. The T8 does not cycle in this log. aioslimproto (3.2.3 on stable, 3.3.0 on dev) sends strm 't' every 5 s (client.py _send_heartbeat, HEARTBEAT_INTERVAL=5 in const.py). After each heartbeat it calls _render_display, which sends display/brightness frames unless the player reported a 0x0 display. The socket reader drops the client after 10 s of silence (client.py _socket_reader, timeout HEARTBEAT_INTERVAL*2). Nothing in the code gives a 130 s period, and the log is INFO only, so we can't see which side closes or why. One guess, not verified: the display frames sent every 5 s to a squeezeplay-type device with no display. The CLOSE-WAIT buildup points to a possible missed close in aioslimproto disconnect(), but I could not tie it to the cycle. 10-21: the three Verbose logs hold no aioslimproto lines at all. Log-level-only config changes skip the provider reload (models/provider.py:136), and the Squeezelite provider sets the aioslimproto logger level only in handle_async_init (squeezelite/provider.py:69-73), so it stayed at WARNING. All three logs come from the same 05:24 boot with Verbose set at 05:37. Same code on stable. Reconnect lands 140-170 ms after 'unavailable' each time, so the device redials immediately; which side closes is still unknown. 10-21 14:30: Vivi92821's 11:32 capture: the T8 closes first (RST, then FIN every ~127 s) and reconnects ~130 ms later; MA's own FIN on the old socket lands ~52 s late. The Verbose log and diagnostics it mentions are not attached, only a findings txt. In squeezeplay a ~130 ms reconnect comes from LocalPlayer connectToServer/connectIp (Comet serverstatus on 9000, a serv frame or discovery, DISCOVERY_TIMEOUT 120 s), not the slimproto read timeout (35 s, random 1-5 s backoff); confidence ~35%, Eversolo firmware is closed. Separate real bug: aioslimproto _socket_reader sets _connected False (client.py:652 in 3.2.3, :665 in 3.3.0) and then calls disconnect(), which returns early (:124), so write_eof/close never run and the socket sits in CLOSE-WAIT until GC.",
+   "plan": "Read the Verbose log and PCAP when they come. If the frames before each close are not conclusive, ask for a capture with port 3483, 9000 and 9090 (TCP and UDP) and one idle LMS capture of the T8 for comparison. Repro stand-in: SqueezePlay desktop (same LocalPlayer/SlimProto.lua).",
    "branch": "",
    "diff": "",
    "prs": [],
@@ -3007,7 +3013,8 @@
     "10-19 07:38 run: new issue. Not enough info, reply asks for what's missing.",
     "10-20 17:38 run: you posted the verbose Squeezelite log ask (14:41 UTC). Waiting for Vivi92821.",
     "10-21 09:11 run: Vivi92821 (06:02 + 06:17 UTC) sent firmware 1.6.15 and Verbose idle logs for both players, T8 alone and DMP-A6 alone; all cycle at ~127-130 s. The logs have no aioslimproto output because Verbose was set at runtime without a restart. Reply redrafted to ask for a log after restart plus a tcpdump.",
-    "10-21 11:20 reply: you posted the restart + tcpdump ask from the board (09:15 UTC, https://github.com/music-assistant/support/issues/6800#issuecomment-6312422645). Waiting for Vivi92821."
+    "10-21 11:20 reply: you posted the restart + tcpdump ask from the board (09:15 UTC, https://github.com/music-assistant/support/issues/6800#issuecomment-6312422645). Waiting for Vivi92821.",
+    "10-21 14:30 run: Vivi92821 (11:32 UTC) sent a TCP timeline: the T8 hangs up first, MA's FIN on the old socket comes ~52 s late (aioslimproto CLOSE-WAIT bug, see checked). Posted on your behalf (https://github.com/music-assistant/support/issues/6800#issuecomment-6316208611): ask for the missing Verbose log and the original PCAP, no new capture yet. GPT: revise to that single ask (port filter idea and a second capture held back), accepted."
    ],
    "action": ""
   },
@@ -3921,7 +3928,8 @@
   "#6822: maisun wants web player devices in HA cleaned up when the player goes away, without _2/_3 entity ids when it returns. HA integration side, separate from the expose race.",
   "Squeezelite: setting the provider log level to Verbose at runtime never reaches the aioslimproto logger (set only in handle_async_init, log-level changes skip the reload). Override update_config to re-apply the level. Found on #6800, same on stable.",
   "AirPlay: _adopt_device_volume (airplay/player.py:828-839, 1031-1044) and the Sendspin bridge volume path send VOLUME= without an owns_volume check; a candidate MA-side cause for Sonos volume snapping back during AirPlay (#6838, #6664).",
-  "#6671: decide backport of server#6607 to 2.10.x, or a SoundTouch provider fix (report IDLE after the UPnP stop)."
+  "#6671: decide backport of server#6607 to 2.10.x, or a SoundTouch provider fix (report IDLE after the UPnP stop).",
+  "aioslimproto: disconnect() returns early after _socket_reader sets _connected False (client.py:652/658 in 3.2.3, :665/671 in 3.3.0), so the old socket is never closed and sits in CLOSE-WAIT (#6800). One-line fix in aioslimproto; reproducible with plain squeezelite (kill the client, `ss -tan state close-wait '( sport = :3483 )'`)."
  ],
  "milestones": {
   "2.10.5": 34,
