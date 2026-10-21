@@ -77,7 +77,8 @@ Per new issue, run a triage.
   app, counts as reproduced but is its own outcome. Keep that fix as a local diff in a worktree, open no
   draft PR, put the diff on the card and give it the `local fix` badge. Marvin tests these on real hardware
   the next day. When a local fix later passes a live A/B on real hardware, give it `local fix · hw` and
-  still open no PR; Marvin opens it after review.
+  open a draft PR for it through the normal gogogo path, same as any other fix (Marvin's decision of
+  2026-10-21). He reviews the draft before it goes ready.
 
 ## Existing issues that have been updated
 
