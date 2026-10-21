@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-21T12:10:00+02:00",
+ "last_run": "2026-10-21T13:05:00+02:00",
  "dev": "53c876f91",
- "run_note": "OzGav fixed both #7124 CRITICALs; Claude, GPT Sol and Copilot agree, and Copilot's only leftover is the missing-link hint wording, raised in its review body where OzGav may miss it, so it's your call to post it or approve. #6940 left draft and the seed-guard fix is good, but Copilot's re-review opened a new CRITICAL (Smart Shuffle reordering the similar artist's albums) that we read as a design call; it waits on szsolt. You merged #6767.",
+ "run_note": "Quiet hour. Your reply on #5700 asks dmoo500 to drop the statistics cache for query rewrites, so it now waits on him. The critical gate drafted #6940 over Copilot's Smart Shuffle CRITICAL; szsolt hasn't answered. #7124 still waits on your post or approve. No merges, no new PRs, no reporter replies.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -306,7 +306,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "author",
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -1451,7 +1451,7 @@
    "url": "https://github.com/music-assistant/server/pull/5700",
    "verdict": "almost",
    "assessment": "comment",
-   "status": "attention",
+   "status": "waiting",
    "size": "XL",
    "code": 1639,
    "add": 3188,
@@ -1467,9 +1467,9 @@
    "tldr": "dmoo500 answered your cache question with a benchmark (7708abc0b adds scripts/perf/statistics_cache_benchmark.py, dev-only). At 100k plays the uncached aggregates take 50-455 ms against about 1 ms warm. The benchmark looks sound; GPT Sol's one point would only understate the gain. Left for you: keep or drop the cache now that you have numbers, the unfixed diagnostics registry line, and his decline on moving _get_period_cutoff. CI green.",
    "summary": "Delta 9821d7778..395fab073 is one commit, 7 files, +230/-355. Albums: new TRACK_ALBUMS_CTE joins history_tracks to album_tracks and albums, used by top_items(ALBUM) and play_count(ALBUM); play_count binds :requested_media_type for the album lookup and :media_type=track for history, which is correct. New test covers provider-mapped tracks plus an ignored album enqueue row (3/3 counts). artist_distribution and played_item_ids are gone with no leftover references (fastmcp command_policy included). All statistics modules import get_current_user directly; statistics and library-merge tests use set_current_user in a try/finally helper. 69 statistics and merge tests pass locally on the head. GPT Sol found no binding, cache or test issues; it flags that a track on several albums credits each album, which I rate a SUGGESTION since history stores no album. Copilot 13:16Z on the head: 1 open PROBLEM, the cache benchmark you asked for. Both CRITICALs on the old card (DISTINCT over name/image, deleted library items shown available) were already fixed at 9821d7778 and are dropped.",
    "blockers": [
-    "Your cache question now has numbers (dmoo500 13:48Z): with 100k synthetic plays the uncached aggregates take 50-455 ms vs under 1.3 ms warm, 40-1000x. Decide whether that justifies keeping the cache layer, then resolve your thread and Copilot's r4325374027.",
-    "Diagnostics gap still unfixed and unanswered: CORE_CONTROLLER_ATTRS in controllers/diagnostics/__init__.py lacks 'statistics', so get_diagnostics never runs. Copilot raised it again at 14:12Z.",
-    "dmoo500 declined your base.py:70 request (keep _get_period_cutoff in statistics, it now uses get_timezone) at 10:35Z. Copilot 14:12Z repeats the request; you need to accept or push back."
+    "You asked dmoo500 to drop the cache layer and switch to the query rewrites and one covering index (10:36Z)",
+    "Diagnostics gap still open: 'statistics' missing from CORE_CONTROLLER_ATTRS, so get_diagnostics never runs",
+    "His decline on moving _get_period_cutoff to base.py is still unanswered by you"
    ],
    "findings": [
     {
@@ -1572,7 +1572,7 @@
     "description": "Register statistics in the diagnostics controller so get_diagnostics runs: add \"statistics\" to CORE_CONTROLLER_ATTRS in music_assistant/controllers/diagnostics/__init__.py."
    },
    "prompt": "music-assistant/server PR #5700 (dmoo500, statistics API, head 395fab073). dmoo500 addressed all four of Marvin's 10:44Z change requests (verified). Two items remain: (1) Marvin's 10:43Z thread on cache.py (https://github.com/music-assistant/server/pull/5700#discussion_r4324074784): dmoo500 has not measured cached vs uncached; Marvin must decide whether to ask for numbers or for removal of the cache layer. (2) StatisticsController.get_diagnostics is dead because 'statistics' is missing from CORE_CONTROLLER_ATTRS in music_assistant/controllers/diagnostics/__init__.py. Ask Marvin which way to go on the cache. Then draft a short reply on the cache thread and a short PR comment about the diagnostics registry, each starting with '> [!NOTE] This comment was written by Claude on Marvin's behalf'. Post nothing without Marvin's OK.",
-   "whats_new": "7708abc0b (14:05Z) adds a hermetic cache A/B benchmark under scripts/perf, nothing in the server runtime. dmoo500 posted the numbers on your cache.py thread at 13:48Z: 40-1000x faster warm at 100k plays, about 5x for play_history. Copilot 14:12Z and GPT Sol found nothing blocking in the delta. Diagnostics gap still open.",
+   "whats_new": "You replied on the cache.py thread at 10:36Z: the cache controller has no memory layer, so 'warm' was already a cache-DB hit, and the cache is invalidated on every play. You asked dmoo500 to drop the cache layer and its invalidation hooks and use per-(provider, item_id) query rewrites instead (2-6x faster at 100k plays), plus one covering index replacing both play_history indexes.",
    "backport": {
     "rec": false,
     "why": "New core feature with a frontend counterpart; rides the next release."
@@ -1582,11 +1582,11 @@
    "reviewed_now": false,
    "reviewed_at": "2026-10-20 16:25 CEST",
    "auto_approved": null,
-   "attention_since": "2026-10-20T13:12:02Z",
+   "attention_since": null,
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you",
-   "changed_now": null,
+   "waiting_on": "dmoo500",
+   "changed_now": "you replied",
    "fix_thread": "[Cache benchmark discussion](t3-thread://v1/mcp:86e76b02-68f1-4956-9579-2147ce8dc226), started 10-21: cache-DB hit vs uncached instead of warm memory"
   },
   {
@@ -2826,7 +2826,7 @@
    "title": "Add a similar artists Autoplay mode",
    "author": "szsolt",
    "url": "https://github.com/music-assistant/server/pull/6940",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "waiting",
@@ -2845,7 +2845,7 @@
    "summary": "In `_fill_autoplay_music_tracks` the delta resolves the mode first and dispatches SIMILAR_ARTISTS to `_fill_autoplay_similar_artist` before `if not queue_data.enqueued_media_items: return`. It is the same change as our prepared patch. The similar-artists path seeds from the last Track in `queue_data.items` and doesn't read enqueued_media_items, so it doesn't need the guard. With no Track in the queue, `get_similar_artists` returns [] and the fill logs and returns. `resolve_mode` only reads config (with an AUTO fallback), so moving it earlier has no side effects. SIMILAR, LIBRARY, PLAYLIST and AUTO still hit the seed guard and run unchanged. Dynamic queues are still routed to `_fill_dynamic_tracks` by the callers, so the new early branch can't fire on them.\n\nThe new test `test_adds_a_similar_artist_to_a_queue_started_from_a_genre` clears enqueued_media_items and checks that the refill loads the similar artist's track. Copilot r4333307177 (queued artists compared by name) was declined by the author because the queue holds library and provider copies with different ids, and we agreed. The only nit: the 'Filling autoplay tracks (mode: ...)' debug line no longer logs for this mode. API_SCHEMA_VERSION is 99 on both sides and constants.py is not touched.",
    "blockers": [
     "Copilot CRITICAL r4335531927 (Smart Shuffle reorders the similar artist's albums) needs szsolt's fix or a decline; we lean decline",
-    "Critical gate will draft it until that thread is answered"
+    "Draft (critical gate) until that thread is answered"
    ],
    "findings": [
     {
@@ -2918,8 +2918,8 @@
     "why": "New feature (new Autoplay mode, config option and strings), not a bugfix. Cherry-picking onto origin/stable also conflicts in queue_loader.py."
    },
    "prompt": "",
-   "whats_new": "szsolt took it out of draft at 09:04Z without new commits. Copilot had not reviewed 8fe7fdf72; requested as Marvin at 10:01Z, it landed at 10:08Z: both old threads resolved, 1 new CRITICAL thread r4335531927 (Smart Shuffle reorders album tracks).",
-   "reviewed_now": true,
+   "whats_new": "Critical gate drafted it at 10:19Z over Copilot's new CRITICAL r4335531927 (Smart Shuffle reordering the similar artist's albums). No reply from szsolt yet.",
+   "reviewed_now": false,
    "reviewed_at": "2026-10-21 12:10 CEST",
    "auto_approved": null,
    "stacked": false,
@@ -2931,7 +2931,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "szsolt",
-   "changed_now": "ready for review",
+   "changed_now": "drafted",
    "gpt_sol": "clean"
   },
   {
@@ -5889,7 +5889,7 @@
    },
    "prompt": "Server PR #7124 (https://github.com/music-assistant/server/pull/7124), head aa969ea6f, by OzGav. In music_assistant/controllers/music/media/artists.py (~2089) the missing-link hint assumes get_mbid_by_url() returned None because the URL is unknown, but it also returns None when the URL is linked to several MusicBrainz artists. Reword the hint to cover both cases, update the _hint helper assertions in tests/controllers/music/test_artists_same_name.py and add an ambiguous-URL case. Work in a worktree from refs/remotes/pr/7124.",
    "whats_new": "OzGav pushed 3c902a8e9 and aa969ea6f, answered r4334449779 at 09:50Z and marked it ready at 09:51Z. Copilot's own review was a quota stub; re-requested as Marvin at 10:01Z, it landed at 10:06Z with no open threads and one 'previously missed' PROBLEM (hint wording).",
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-21 12:10 CEST",
    "auto_approved": null,
    "stacked": false,
@@ -5902,7 +5902,7 @@
    "reporter_reply": null,
    "waiting_on": "you: post or approve",
    "gpt_sol": "clean",
-   "changed_now": "pushed"
+   "changed_now": null
   },
   {
    "repo": "server",
