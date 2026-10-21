@@ -43,6 +43,15 @@ triage, but the merged PR bookkeeping below still applies to it.
 
 Do these before building the board, on every card, not only on issues updated in the window.
 
+0. Last comment sweep. In the same GraphQL query as the state sweep, read the last few comments of every
+   card and refresh its `gh` (`login`, `team`, `at`) from the newest comment by a person; bots
+   (`musicassistant-bot`, `github-actions`, anything ending in `[bot]`) don't count. Compare with the card:
+   - Marvin or a teammate commented after the stored `gh.at`: read that comment. If it covers the draft,
+     drop the draft, `action` and the attention badges and add a note with the comment URL; otherwise
+     redraft. A card never stays on Marvin's list for a reply he already gave.
+   - The reporter commented after the stored `gh.at`: the card counts as changed. Read the new comment and
+     act on it like a fresh update.
+   Only looking at comments inside the run window misses everything that landed between runs.
 1. State sweep. One GraphQL query with an aliased `issue(number:N){state}` field per card. Drop every
    closed issue: remove the card, append it to `gone` with the date and the reason, and remove its rows
    from `design` and `followups`. Searching only the update window misses closures that happened earlier.
@@ -160,14 +169,52 @@ Stop early when:
 The run does the writes this spec asks for on its own: pushing fix branches, opening draft PRs,
 requesting Copilot reviews, babysitting, assigning Marvin and the merged PR bookkeeping above.
 
-The run never posts a comment on its own. Replies to reporters, discussion comments and replies on PR
-review threads are drafted on the card and only go out when Marvin answers in this thread with one of the
-replies below. Every comment starts with:
+The run posts only one kind of comment on its own: an info ask, under the rules in "Autonomous info asks"
+below. Every other reply to a reporter, every discussion comment and every reply on a PR review thread is
+drafted on the card and only goes out when Marvin posts it from the board or answers in this thread with
+one of the replies below. Every comment starts with:
 
 ```
 > [!NOTE]
 > This comment was written by Claude on Marvin's behalf
 ```
+
+## Autonomous info asks
+
+Marvin allows the run to post an info ask on his behalf, without asking, when all of these hold. Skip the
+whole section when `auto_post.enabled` in the state file is false.
+
+- The card is in `info` with `ask` `reply-info`, in `music-assistant/support`, not a discussion and not
+  assigned to someone else. Test asks, answers, design replies, HA core issues and discussions always wait
+  for Marvin.
+- The last comment sweep ran this run, the issue is open, and the reporter (or another user, not Marvin,
+  a teammate or a bot) wrote the newest comment. Nothing from Marvin or a teammate since the reporter's
+  last comment, and no earlier ask of ours that the reporter hasn't answered yet: never two asks in a row.
+- The ask doesn't repeat anything already asked or already answered in the thread, including the triage
+  bot's diagnostics request. Re-read the whole thread right before posting.
+- The draft follows the content rules: the NOTE header, short, one clear ask with the exact steps (which
+  provider's log level, where in Settings, what to do while it logs), a question rather than a claim when it
+  hinges on an unconfirmed assumption, no diagnosis stated as fact, no promises about fixes or releases.
+
+GPT Sol check. Put every candidate of this run in one file in a fresh temp dir: per card the issue number,
+the full thread text (body and comments, bots marked) and the draft. Then run, once per run:
+
+```
+copilot -p '<instructions>' --model gpt-6.1-sol --reasoning-effort medium --add-dir <dir> \
+  --allow-tool read --deny-tool write --deny-tool shell --deny-tool url --deny-tool memory --no-ask-user -s
+```
+
+The instructions ask GPT to judge each draft against the thread and the rules above, and to answer with one
+JSON line per card: `{"n", "verdict": "post" | "revise" | "marvin", "reason", "text"}`, where `text` is the
+improved ask for `revise`. Weigh each verdict yourself:
+- Both agree it should go out: post it.
+- `revise`: settle on one text with GPT's point taken into account, and run one more check on just those
+  cards. If you still disagree after that round, the card goes to Marvin.
+- `marvin`, or any disagreement left: the card stays on Marvin's list with both versions and GPT's
+  objection in the card's notes.
+There is no cap per run. Post with `gh issue comment <n> -R <repo> --body-file -`, then treat it like a
+`reply <n>`: clear `reply`, `action` and the attention badges, add the waiting badge, refresh `gh`, and add a
+note `<MM-DD HH:MM> run: posted on your behalf (<url>), GPT: <verdict>, <one-line reason>`.
 
 ## Merging with earlier runs
 
@@ -252,7 +299,9 @@ status tags on every card:
 No badges like "draft reply"; Marvin expects those to be there when he opens the issue. Set `action` on
 every card that needs attention; it is the text of the highlighted pane.
 
-After the render, end the turn with a chat summary. Say what changed this run in a few sentences, then end
+After the render, end the turn with a chat summary. Say what changed this run in a few sentences. If the
+run posted info asks on its own, list them next under "Posted on your behalf", one line each with the issue,
+what was asked and the comment link. Then end
 with an overview of all cards that currently need Marvin, including the ones carried over from earlier
 runs, grouped by the card's `ask` under these headings, in this order, empty groups left out:
 
@@ -359,6 +408,7 @@ board embedded, so earlier run notes still match.
   "followups": ["one line per follow-up"],
   "release": { "title": "2.10.7 released 10-17, 2.10.8 queued", "rows": [["issue", "fix", "on stable", "note"]] },
   "milestones": { "2.10.8": 39 },
+  "auto_post": { "enabled": true },
   "actions_applied_at": "2026-10-21T09:12:00Z",
   "gone": "Closed and dropped issues with dates and reasons, never shown on the board."
 }
