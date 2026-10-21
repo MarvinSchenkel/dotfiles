@@ -45,7 +45,10 @@ Do these before building the board, on every card, not only on issues updated in
 
 0. Last comment sweep. In the same GraphQL query as the state sweep, read the last few comments of every
    card and refresh its `gh` (`login`, `team`, `at`) from the newest comment by a person; bots
-   (`musicassistant-bot`, `github-actions`, anything ending in `[bot]`) don't count. Compare with the card:
+   (`musicassistant-bot`, `github-actions`, anything ending in `[bot]`) don't count. A teammate is an author
+   whose comment `authorAssociation` is MEMBER, OWNER or COLLABORATOR, or who is listed in `codeowners` of
+   any `music_assistant/providers/*/manifest.json` on server `origin/dev`; provider maintainers like
+   Tommatheussen show as NONE on the support repo, so the manifests are needed. Compare with the card:
    - Marvin or a teammate commented after the stored `gh.at`: read that comment. If it covers the draft,
      drop the draft, `action` and the attention badges and add a note with the comment URL; otherwise
      redraft. A card never stays on Marvin's list for a reply he already gave.
@@ -195,9 +198,16 @@ whole section when `auto_post.enabled` in the state file is false.
 - The draft follows the content rules: the NOTE header, short, one clear ask with the exact steps (which
   provider's log level, where in Settings, what to do while it logs), a question rather than a claim when it
   hinges on an unconfirmed assumption, no diagnosis stated as fact, no promises about fixes or releases.
+- Every UI step is checked against the code, not written from memory: labels and pages from the
+  frontend's `src/translations/en.json` on `origin/main` (and the view that uses them), config entries from
+  the server on `origin/dev`. Known paths: a provider's log level is an advanced setting (provider
+  settings, "Show advanced settings", "Log level"); the full log is "Download logfile" on Settings >
+  System > Diagnostics.
 
-GPT Sol check. Put every candidate of this run in one file in a fresh temp dir: per card the issue number,
-the full thread text (body and comments, bots marked) and the draft. Then run, once per run:
+GPT Sol check. Put every candidate of this run in one file in a fresh temp dir: the rules above, then per
+card the issue number, the full thread text (body and comments, bots marked), the card's `checked` evidence
+(GPT can't open attachments, so findings from diagnostics or logs must be in the file or it flags them as
+unsupported), the verified UI paths the draft uses, and the draft. Then run, once per run:
 
 ```
 copilot -p '<instructions>' --model gpt-6.1-sol --reasoning-effort medium --add-dir <dir> \
@@ -209,7 +219,10 @@ JSON line per card: `{"n", "verdict": "post" | "revise" | "marvin", "reason", "t
 improved ask for `revise`. Weigh each verdict yourself:
 - Both agree it should go out: post it.
 - `revise`: settle on one text with GPT's point taken into account, and run one more check on just those
-  cards. If you still disagree after that round, the card goes to Marvin.
+  cards. If GPT's revised text is one you accept as it is, that is agreement and it goes out. If you still
+  disagree after that round, the card goes to Marvin.
+- The header is never GPT's: strip whatever header GPT's text carries and put the exact NOTE header
+  back (GPT rewrote it to "written by Copilot" in the dry run).
 - `marvin`, or any disagreement left: the card stays on Marvin's list with both versions and GPT's
   objection in the card's notes.
 There is no cap per run. Post with `gh issue comment <n> -R <repo> --body-file -`, then treat it like a

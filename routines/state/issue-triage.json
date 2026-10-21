@@ -296,11 +296,12 @@
      "needs attention"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the thorough testing. Your log also shows 'Spotify is already streaming somewhere else', which happens when the same Spotify account plays on another device (for example the Denon's own Spotify Connect) at the same time, so please make sure nothing else uses that account while testing. Could you set the Music Assistant log level to Debug (Settings > System > Logging), do a manual skip until it stalls, and attach the full log file? Please also note the time of the skip and which output codec was set.",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nCould you capture one failed manual skip with debug logging? In Music Assistant, open Settings, then the HEOS and Spotify provider settings. For each provider, enable \"Show advanced settings\", set \"Log level\" to Debug and save. Keep other devices using the same Spotify account idle during the capture. Start Spotify playback on the Denon, manually skip a track and, if it goes silent, wait until playback stops. Then use Settings > System > Diagnostics > \"Download logfile\" and attach the full log with the time of the failed skip and the output codec used.",
    "bookkeeping": [],
    "notes": [
     "10-21 07:38 run: new issue. Not enough info: diagnostics only, HEOS 'Unsupported format' + Spotify slot errors, needs a debug log of one stalled skip. Related to #6831 (same speaker family, flow URL not delivering audio fast enough) but a different trigger.",
-    "10-21 07:38 run: server#7132 (flow stream read-any, for #6831) may also shorten the time to first bytes after a skip here. Worth a retest once it's in a nightly."
+    "10-21 07:38 run: server#7132 (flow stream read-any, for #6831) may also shorten the time to first bytes after a skip here. Worth a retest once it's in a nightly.",
+    "10-21 13:05 dry run of autonomous info asks: GPT Sol revised twice (old Settings path was wrong, the separate Spotify-account question became a capture condition). Agreed text stored as the draft; the next run may post it under the new rules."
    ],
    "action": "Post the debug log ask (and the 'Spotify streaming somewhere else' hint).",
    "ask": "reply-info"
