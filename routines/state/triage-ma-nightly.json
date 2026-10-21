@@ -1,11 +1,71 @@
 {
   "thread_id": "mcp:dba76884-e5e6-48aa-aa88-914e09fa4301",
   "scheduled_task_id": "scheduled-task:command:mcp:ece76a14-da84-4b32-9dc2-e104d78297bd:schedule-task:triage-ma-nightly-setup-2026-10-21",
-  "last_run_end": "2026-10-21T05:10:00+02:00",
-  "last_run_summary": "Desktop run 2026-10-21 05:17: WiiM regroup rewinds 4/4, no skips, health flat.",
-  "known": {},
+  "last_run_end": "2026-10-21T08:53:48+02:00",
+  "last_run_summary": "T3 run 2026-10-21 08:49: quiet, add-on updated 07:23 (shutdown noise only), one WiiM regroup stop resumed at the right spot, anon RSS 1114 MB at 1.4 h.",
+  "known": {
+    "wiim:native-join-stops-leader": {
+      "title": "WiiM regroup after restart stopped Mancave, HA resumed it",
+      "severity": "medium",
+      "first_seen": "2026-10-08",
+      "seen": 1,
+      "last_seen": "2026-10-21"
+    },
+    "airplay:appletv-mrp-companion-reconnect": {
+      "title": "Apple TV MRP + Companion reconnect loop",
+      "severity": "medium",
+      "first_seen": "2026-10-20",
+      "seen": 1,
+      "last_seen": "2026-10-21"
+    },
+    "remote_access.gateway._bridge_websocket:ConnectionRefusedError@shutdown": {
+      "title": "Shutdown noise: remote access bridges to unloaded Sendspin",
+      "severity": "low",
+      "first_seen": "2026-10-15",
+      "seen": 1,
+      "last_seen": "2026-10-21"
+    },
+    "aiosendspin:non-compliant-client": {
+      "title": "Sendspin non-compliant client warnings",
+      "severity": "low",
+      "first_seen": "2026-10-08",
+      "seen": 1,
+      "last_seen": "2026-10-21"
+    },
+    "remote_access:libjuice-turn-403": {
+      "title": "libjuice TURN CreatePermission 403 and send failures",
+      "severity": "low",
+      "first_seen": "2026-10-21",
+      "seen": 1,
+      "last_seen": "2026-10-21"
+    },
+    "helpers.images:dlna-un_known-404": {
+      "title": "DLNA un_known artwork 404 at startup",
+      "severity": "low",
+      "first_seen": "2026-08-08",
+      "seen": 1,
+      "last_seen": "2026-10-21"
+    },
+    "startup-advisories": {
+      "title": "Startup advisories (tunein email, torch, HF Hub, WiiM SDK parse)",
+      "severity": "low",
+      "first_seen": "2026-10-21",
+      "seen": 1,
+      "last_seen": "2026-10-21"
+    }
+  },
   "muted": [],
   "log_sources": {
-    "docker_logs_over_ssh": null
+    "docker_logs_over_ssh": "works (2026-10-21) but the container is recreated on every add-on update, so it only reaches back to the current session",
+    "container": "app_d5369777_music_assistant_nightly",
+    "rotated_log_over_ssh": "works (2026-10-21): sudo docker exec <container> cat /data/musicassistant.log.1 holds the previous session",
+    "ws_client": "routines/triage-ma-nightly/ma_ws.py with /usr/bin/python3, env via set -a"
+  },
+  "health": {
+    "rss_mb": 1813.9,
+    "rss_anon_mb": 1114.2,
+    "uptime_seconds": 5161,
+    "event_loop_lag_ms": 0.6,
+    "version": "2.11.0.dev2026102103"
   }
 }
