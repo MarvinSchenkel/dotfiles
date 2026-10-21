@@ -251,8 +251,9 @@ every card that needs attention; it is the text of the highlighted pane.
 After the render, end the turn with a chat summary. Say what changed this run in a few sentences, then end
 with a short list of all cards that currently need Marvin's attention, one line each with the issue and
 what he needs to do. Include the ones carried over from earlier runs that did not change this run. Sort the
-list by importance, most important first. Write every issue number as a link to the issue on GitHub, for
-example `[#6823](https://github.com/music-assistant/support/issues/6823)`.
+list by importance, most important first. Write every issue number as a link to its card on the board,
+filtered and opened: `[#6823](http://127.0.0.1:8765/issue-triage.html?q=6823#c-6823)`; a core card uses
+`?q=<n>#c-core-<n>`.
 
 ## Replies
 

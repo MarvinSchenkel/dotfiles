@@ -259,7 +259,11 @@ JS = """
   }
   q.addEventListener("input", filter);
   act.addEventListener("change", filter);
+  // Chat links use ?q=<n>#c-<n>: filter the lanes to the issue and open its card.
+  const term = new URLSearchParams(location.search).get("q");
+  if (term) { q.value = term; filter(); }
   if (location.hash) open(location.hash.slice(1));
+  window.addEventListener("hashchange", () => open(location.hash.slice(1)));
 })();
 """
 
