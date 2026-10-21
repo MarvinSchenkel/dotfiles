@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-21 11:32 CEST",
+ "last_run": "2026-10-21 12:30 CEST",
  "columns": [
   [
    "info",
@@ -52,6 +52,94 @@
   ]
  ],
  "cards": [
+  {
+   "n": 6838,
+   "repo": "music-assistant/support",
+   "discussion": false,
+   "title": "Sonos Port: native playback fails with ERROR_PLAYBACK_NO_CONTENT, AirPlay volume snaps back",
+   "col": "info",
+   "area": "server / providers/sonos player.py _on_playback_error, streams controller (port 8097); airplay/player.py volume (with #6664)",
+   "since": "2026-10-21 12:30",
+   "last": "innerskyone 2026-10-21 10:22",
+   "gh": {
+    "login": "innerskyone",
+    "team": false,
+    "at": "2026-10-21T10:22:05Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.7 HA add-on, Sonos Port 'Office' (line-out Variable). Native playback fails at once ('Speaker Office could not play None and reported ERROR_PLAYBACK_NO_CONTENT'), with MP3 and radio, Flow mode on and off, publish IP auto or the HA LAN IP. On AirPlay it plays, but volume changes from MA or the Sonos app snap back after a few seconds until MA clears the AirPlay output. Same error as the bot-closed support#5721.",
+   "fix": "",
+   "checked": "Opus subagent, 2.10.7 = dev on these paths. 'None' is the speaker's own trackName/itemId in the playbackError event (player.py:1028-1034 on 2.10.7), so it failed before resolving any item; no httpStatus, so most likely no HTTP answer from MA. Flow on (play_stream_url) and off (play_cloud_queue) both need the Port to fetch http://<publish_ip>:8097; Sonos app, AirPlay and the browser don't, so likely a reachability problem (VLAN/firewall/port 8097), about 65%. Volume: Port on Variable has VOLUME_SET, so __control_for_output returns NATIVE and owns_volume is False (same as #6664); the Sonos provider doesn't push volume back. MA-side snap-back candidates: AirPlay DACP device-volume > update_volume_from_device > _adopt_device_volume writes VOLUME= back without an owns_volume check (airplay/provider.py:1111-1135, airplay/player.py:828-839, 1031-1044), or _enforce_volume_limits if a min/max volume is set (players/controller.py:2150).",
+   "plan": "Need a Verbose SONOS + AirPlay + Streams log of one native start and one AirPlay volume change, the diagnostics, the network layout and any min/max volume. No 'Cloud Queue request' line = network; itemWindow items=0 = MA bug.",
+   "branch": "",
+   "prs": [],
+   "badges": [
+    [
+     "bad",
+     "Needs your action",
+     "needs attention"
+    ]
+   ],
+   "ask": "reply-info",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the detailed report. \"could not play None\" means the Port failed before it got to any track. With Flow mode both on and off, the one thing in common is the Port fetching audio from Music Assistant on port 8097, so I suspect it can't reach that port. Could you:\n1. Set the SONOS, AirPlay and Streams log levels to Verbose. Start native playback on Office once, then do one AirPlay volume change from the MA UI and one from the Sonos app. Attach the full log and the diagnostics file (Settings, System, Diagnostics).\n2. Tell us whether the Port is on a different VLAN or subnet from Home Assistant.\n3. Tell us whether a min or max volume is set in Office's player settings.\n\nThe AirPlay volume part is tracked in music-assistant/support#6664.",
+   "action": "Post the info ask (Verbose SONOS/AirPlay/Streams log, diagnostics, VLAN, min/max volume).",
+   "bookkeeping": [],
+   "notes": [
+    "10-21 12:30 run: new issue. Native failure most likely the Port not reaching MA's stream server on 8097; AirPlay volume snap-back is the #6664 family, plus an MA-side DACP write-back lead. Info ask drafted."
+   ]
+  },
+  {
+   "n": 6671,
+   "repo": "music-assistant/support",
+   "discussion": false,
+   "title": "Bose SoundTouch: resume after pause doesn't restart playback (2.10.7, after server#6821)",
+   "col": "dev",
+   "area": "server / controllers/player_queues _handle_play, players cmd_play (stable) + providers/bose_soundtouch player.py",
+   "since": "2026-10-21 12:30",
+   "last": "dekiesel 2026-10-17 14:18",
+   "gh": {
+    "login": "dekiesel",
+    "team": false,
+    "at": "2026-10-17T14:18:58Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "Docker, Bose SoundTouch speakers, local/Tidal. On 2.10.5 pause+resume played 2-3 s then went silent. fmunkes' server#6821 (merged 10-10, on 2.10.7) makes MA stop instead of pause while it streams to a SoundTouch; OzGav closed the issue. On 2.10.7 (10-17) pause now stops, but play/pause again doesn't restart at all, no ffmpeg. Phone ('This device') resumes fine. You reopened it 10-21 10:01 UTC.",
+   "fix": "server#6607 (dev, merged 09-30, in the 2.11 beta, not on stable): has_lost_paused_stream() makes _handle_play and cmd_play resume the queue from the saved position when a PAUSED player's queue session was cleared by a stop.",
+   "checked": "Opus subagent on origin/stable (2.10.7) and dev. #6821 drops PAUSE while streaming over UPnP (bose_soundtouch/player.py:619-631), so core sends Key.STOP (:227) and tears down the stream session (on 2.10.7 as 0f281c869f). The speaker then most likely reports PAUSE_STATE with source UPNP, so the player shows PAUSED (:609). UI play_pause goes to player_queues _handle_play: queue PAUSED, so it calls the speaker's play() (stable controller.py:1909-1918), which only presses Key.PLAY (:210); no stream left, nothing plays. HA play takes players/cmd/play (:699) to the same player.play() fallback (:4956). Diagnostics: no errors, no streams, 15 idle queues and 1 paused. server#6607 on dev covers this case (player_queues :327, :2100; players :682). Reproducible without hardware: stub the SoundTouch client in tests/providers/bose_soundtouch/test_player.py and feed PAUSE_STATE/UPNP after a stop. Medium-high confidence; the PAUSE_STATE report is inferred, not seen.",
+   "plan": "Ask dekiesel to try the 2.11 beta. Your call: backport server#6607 to 2.10.x (larger core change), or let fmunkes report IDLE instead of PAUSED for a stopped UPnP source in the provider (smaller, stable-friendly).",
+   "branch": "",
+   "prs": [
+    {
+     "url": "https://github.com/music-assistant/server/pull/6821",
+     "label": "server#6821 (fmunkes, merged 10-10, on 2.10.7: stop instead of pause)"
+    },
+    {
+     "url": "https://github.com/music-assistant/server/pull/6607",
+     "label": "server#6607 (merged 09-30, dev only: resume after a lost paused stream)"
+    }
+   ],
+   "badges": [
+    [
+     "bad",
+     "Needs your action",
+     "needs attention"
+    ],
+    [
+     "warn",
+     "Still broken on 2.10.7",
+     "still broken"
+    ]
+   ],
+   "ask": "reply-test",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for retesting, and sorry this got closed too early. The speaker now stops correctly, but afterwards it still reports itself as paused, so on 2.10.7 pressing play only sends it a play key instead of restarting the stream. The current 2.11 beta already restarts the queue from where you paused in that situation. Could you try the beta and let us know if pause and resume work there?",
+   "action": "Post the beta test ask. Then decide: backport server#6607 to 2.10.x, or ask fmunkes for a provider-side fix (report IDLE after the stop).",
+   "bookkeeping": [],
+   "notes": [
+    "10-21 12:30 run: you reopened it 10:01 UTC. Re-added: 2.10.7 resume does nothing after #6821's stop because the speaker reports PAUSED and stable only presses play; dev's server#6607 already resumes the queue. Beta test ask drafted."
+   ]
+  },
   {
    "n": 6837,
    "repo": "music-assistant/support",
@@ -1341,7 +1429,8 @@
     "10-12 15:40 run: you posted the reply from the board (13:34 UTC). Waiting for the reporter.",
     "10-14 11:40 run: mawi13's verbose test analysed. MA sent no volume to Küche; the 65 s grid is the Sonos holding native volume during AirPlay (his own native test shows it). Possible mitigation: send Sonos volume over the AirPlay session while it renders over AirPlay, needs a bench check. Reply asks for dashboard wiring + unfiltered log.",
     "10-21 12:05: discussion session started at your request: is the HA Sonos integration the cause, and did mawi13 set HA entities as volume control (diagnostics player configs). Draft reply on hold until it reports.",
-    "10-21 12:40 edit + reply: you replaced the draft with your own text (solo AirPlay test, full log, dashboard/automation question) and it went out (10:06 UTC, https://github.com/music-assistant/support/issues/6664#issuecomment-6313370521). Waiting for mawi13."
+    "10-21 12:40 edit + reply: you replaced the draft with your own text (solo AirPlay test, full log, dashboard/automation question) and it went out (10:06 UTC, https://github.com/music-assistant/support/issues/6664#issuecomment-6313370521). Waiting for mawi13.",
+    "10-21 12:30 run: lead from #6838 triage: the AirPlay DACP device-volume path (_adopt_device_volume, airplay/player.py:828-839, 1031-1044) writes VOLUME= back without an owns_volume check, like the Sendspin bridge path. Worth checking in the discussion session."
    ],
    "action": "",
    "fix_thread": {
@@ -3792,7 +3881,9 @@
   "#6668 (closed by you 10-20 as a tagging issue): the get_album_dir exact-tier bug for self-titled album folders still has a clean unit repro and no fix. Worth a small PR if you want it.",
   "HA core music_assistant handle_player_config_updated defaults a missing expose_player_to_ha to True (#6822). Small HA core PR: fall back to the client player's expose_to_ha.",
   "#6822: maisun wants web player devices in HA cleaned up when the player goes away, without _2/_3 entity ids when it returns. HA integration side, separate from the expose race.",
-  "Squeezelite: setting the provider log level to Verbose at runtime never reaches the aioslimproto logger (set only in handle_async_init, log-level changes skip the reload). Override update_config to re-apply the level. Found on #6800, same on stable."
+  "Squeezelite: setting the provider log level to Verbose at runtime never reaches the aioslimproto logger (set only in handle_async_init, log-level changes skip the reload). Override update_config to re-apply the level. Found on #6800, same on stable.",
+  "AirPlay: _adopt_device_volume (airplay/player.py:828-839, 1031-1044) and the Sendspin bridge volume path send VOLUME= without an owns_volume check; a candidate MA-side cause for Sonos volume snapping back during AirPlay (#6838, #6664).",
+  "#6671: decide backport of server#6607 to 2.10.x, or a SoundTouch provider fix (report IDLE after the UPnP stop)."
  ],
  "milestones": {
   "2.10.5": 34,
