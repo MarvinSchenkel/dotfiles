@@ -2,8 +2,8 @@
 
 Replaces `python3 -m http.server` in the local.routine-reports LaunchAgent. GET serves the report pages
 with the action token and the posted state filled in. POST /api/issue-triage/post posts a card's draft
-reply with `gh` after checking that the board is current and nobody commented since the draft, and
-appends the post to a log the issue-triage routine folds back into its state.
+reply, or the edited text sent with it, with `gh` after checking that the board is current and nobody
+commented since the draft, and appends the post to a log the issue-triage routine folds back into its state.
 
 Runs on the system /usr/bin/python3 (3.9), stdlib only.
 """
@@ -25,7 +25,9 @@ from urllib.parse import unquote, urlsplit
 POST_PATH = "/api/issue-triage/post"
 SUPPORT = "music-assistant/support"
 GH_TIMEOUT = 60
-MAX_BODY = 10_000
+MAX_BODY = 300_000
+MAX_COMMENT = 65_000
+NOTE_HEADER = "> [!NOTE]"
 TOKEN = secrets.token_urlsafe(24)
 POST_LOCK = threading.Lock()
 
@@ -92,7 +94,7 @@ class Handler(BaseHTTPRequestHandler):
             data = f.read()
         ctype = mimetypes.guess_type(path)[0] or "application/octet-stream"
         if path.endswith(".html"):
-            posted = json.dumps(_posted(self.cfg.log)).replace("</", "<\\/")
+            posted = json.dumps(_posted(self.cfg.log)).replace("<", "\\u003c")
             data = data.replace(b"__ACTION_TOKEN__", TOKEN.encode()).replace(b"__POSTED__", posted.encode())
             ctype = "text/html; charset=utf-8"
         self._send(200, data, ctype)
@@ -118,19 +120,26 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._json(200, {"ok": True, "url": url})
 
-    def _request(self) -> Tuple[str, int, str]:
+    def _request(self) -> Tuple[str, int, str, Optional[str]]:
         """Parse and validate the POST body."""
         length = int(self.headers.get("Content-Length") or 0)
         if not 0 < length <= MAX_BODY:
             raise Refused(400, "Bad request body")
         try:
             body = json.loads(self.rfile.read(length))
-            repo, n, digest = body["repo"], body["n"], body["hash"]
-        except (ValueError, KeyError, TypeError):
+            repo, n, digest, text = body["repo"], body["n"], body["hash"], body.get("body")
+        except (ValueError, KeyError, TypeError, AttributeError):
             raise Refused(400, "Bad request body")
         if not (isinstance(repo, str) and isinstance(n, int) and isinstance(digest, str)):
             raise Refused(400, "Bad request body")
-        return repo, n, digest
+        if text is not None:
+            if not isinstance(text, str) or not text.strip():
+                raise Refused(400, "The reply is empty")
+            if len(text) > MAX_COMMENT:
+                raise Refused(400, f"The reply is over {MAX_COMMENT:,} characters")
+            if not text.lstrip().startswith(NOTE_HEADER):
+                raise Refused(400, "Keep the [!NOTE] header at the top")
+        return repo, n, digest, text
 
     def _file(self, url_path: str) -> Optional[str]:
         """Map a URL path to a file in the report dir, or None."""
@@ -156,8 +165,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
-def _post(cfg: argparse.Namespace, repo: str, n: int, digest: str) -> str:
-    """Check the card and the thread, post the reply, log it and return the comment URL."""
+def _post(cfg: argparse.Namespace, repo: str, n: int, digest: str, text: Optional[str]) -> str:
+    """Check the card and the thread, post the edited text or else the draft, log it and return the comment URL."""
     with open(cfg.state) as f:
         card = next(
             (c for c in json.load(f)["cards"] if (c.get("repo") or SUPPORT) == repo and c.get("n") == n), None
@@ -171,17 +180,24 @@ def _post(cfg: argparse.Namespace, repo: str, n: int, digest: str) -> str:
         raise Refused(409, "The board is out of date, reload it")
     if any(e.get("repo") == repo and e.get("n") == n and e.get("hash") == digest for e in _log_entries(cfg.log)):
         raise Refused(409, "This draft was already posted")
+    edited = text is not None and text.rstrip() != reply.rstrip()
+    text = text if edited else reply
     discussion = bool(card.get("discussion"))
     node_id = _guard(repo, n, discussion, (card.get("gh") or {}).get("at"))
     if cfg.dry_run:
         url = f"dry-run://{repo}#{n}"
     elif discussion:
-        out = _gh(["api", "graphql", "--input", "-"], json.dumps({"query": ADD_COMMENT, "variables": {"id": node_id, "body": reply}}))
+        out = _gh(["api", "graphql", "--input", "-"], json.dumps({"query": ADD_COMMENT, "variables": {"id": node_id, "body": text}}))
         url = json.loads(out)["data"]["addDiscussionComment"]["comment"]["url"]
     else:
-        out = _gh(["issue", "comment", str(n), "-R", repo, "--body-file", "-"], reply)
+        out = _gh(["issue", "comment", str(n), "-R", repo, "--body-file", "-"], text)
         url = next((line for line in reversed(out.split()) if line.startswith("https://")), "")
-    entry = {"at": _now(), "action": "post", "repo": repo, "n": n, "discussion": discussion, "hash": digest, "url": url}
+    entry = {
+        "at": _now(), "action": "post", "repo": repo, "n": n, "discussion": discussion, "hash": digest, "url": url,
+        "edited": edited,
+    }
+    if edited:
+        entry["body"] = text
     with open(cfg.log, "a") as f:
         f.write(json.dumps(entry) + "\n")
     return url
@@ -223,7 +239,10 @@ def _gh(args: list, stdin: Optional[str] = None) -> str:
 
 def _posted(log: str) -> dict:
     """Latest post per repo#n, as the page's POSTED map."""
-    return {f"{e['repo']}#{e['n']}": {"hash": e.get("hash"), "url": e.get("url")} for e in _log_entries(log)}
+    return {
+        f"{e['repo']}#{e['n']}": {"hash": e.get("hash"), "url": e.get("url"), "body": e.get("body")}
+        for e in _log_entries(log)
+    }
 
 
 def _log_entries(log: str) -> list:

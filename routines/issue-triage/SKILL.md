@@ -12,8 +12,9 @@ message `issue-triage: run <YYYY-MM-DD HH:MM>`. Never push.
 
 Before anything else in a run or a reply, fold in the posts Marvin made from the board's Post button. They
 sit in `~/.claude-teamB/routine-state/issue-triage-actions.jsonl`, one JSON line each with `at`, `repo`, `n`,
-`hash` and `url`. For every line newer than `actions_applied_at` in the state file, treat it like a
-`reply <n>` that already went out: clear the card's `reply`, add a dated note with the comment URL, and drop
+`hash`, `url` and `edited` (plus the posted `body` when Marvin edited the draft in the board). For every line
+newer than `actions_applied_at` in the state file, treat it like a `reply <n>` that already went out (note
+"with your edits" when `edited` is true): clear the card's `reply`, add a dated note with the comment URL, and drop
 `action` and the attention badges when the reply was the only thing pending. Then set
 `actions_applied_at` to the newest `at`. Never rewrite or truncate the log; `report_server.py` appends to it.
 

@@ -1559,7 +1559,7 @@
      "reply"
     ]
    ],
-   "reply": "Thanks, the repeat-one log is really useful. When it happened with repeat all at the end of an album, roughly how many tracks did that album have? And if you catch it again, a debug log of just the last track wrapping round to the first would help.",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, the repeat-one log is really useful. When it happened with repeat all at the end of an album, roughly how many tracks did that album have? And if you catch it again, a debug log of just the last track wrapping round to the first would help.",
    "bookkeeping": [],
    "notes": [
     "Not on the board before: Marcel has been handling it (8 merged server PRs cross-reference it). No assignee on the issue, so it passed the filter.",
@@ -1754,7 +1754,7 @@
      "waiting"
     ]
    ],
-   "reply": "The changes from the linked PR are in 2.11.0 beta 3. The now playing screen no longer uses the blue accent on top of the artwork colours, it uses gray tones instead. Could you give the beta a try with the same album and let us know if the contrast is fine now? The bottom bar and the colour picking itself were not part of this change, so tell us if those still bother you.",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThe changes from the linked PR are in 2.11.0 beta 3. The now playing screen no longer uses the blue accent on top of the artwork colours, it uses gray tones instead. Could you give the beta a try with the same album and let us know if the contrast is fine now? The bottom bar and the colour picking itself were not part of this change, so tell us if those still bother you.",
    "bookkeeping": [],
    "notes": [
     "2026-10-02: fixed by frontend#2762, shipped in server 2.11.0b3, not in 2.10.x.",
@@ -1797,7 +1797,7 @@
      "reply"
     ]
    ],
-   "reply": "Thanks for sticking with this. For the Bluesound players we now know the cause: they only report volume changes over a newer AirPlay 2 channel, and Music Assistant currently only listens to the older one that your Denon uses. Fixing that is a new feature in our AirPlay library, so it will take a while. @salanki your Sonos Move case is a different bug in how the Sendspin bridge restores volume. Could you open a separate issue for it with a diagnostics file, so it doesn't get lost here?",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for sticking with this. For the Bluesound players we now know the cause: they only report volume changes over a newer AirPlay 2 channel, and Music Assistant currently only listens to the older one that your Denon uses. Fixing that is a new feature in our AirPlay library, so it will take a while. @salanki your Sonos Move case is a different bug in how the Sendspin bridge restores volume. Could you open a separate issue for it with a diagnostics file, so it doesn't get lost here?",
    "bookkeeping": [],
    "notes": [
     "2026-10-02: BluOS needs MRP volume support in airplay-cli; salanki's Sonos bridge case is separate."
@@ -1842,7 +1842,7 @@
      "reply"
     ]
    ],
-   "reply": "I checked this against the current dev build with the new MCP server (2.1.22). The old config_set_player_value tool is gone and config changes now go through config/players/save, which tells clients the value can be a boolean. Sending a real JSON false works fine, but if your gateway still turns booleans into strings, \"false\" is still read as true. We'll fix that at the source so strings like \"false\", \"0\" and \"off\" are read correctly for on/off settings.",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nI checked this against the current dev build with the new MCP server (2.1.22). The old config_set_player_value tool is gone and config changes now go through config/players/save, which tells clients the value can be a boolean. Sending a real JSON false works fine, but if your gateway still turns booleans into strings, \"false\" is still read as true. We'll fix that at the source so strings like \"false\", \"0\" and \"off\" are read correctly for on/off settings.",
    "bookkeeping": [],
    "notes": [
     "2026-10-02: root cause is models ConfigEntry.parse_value doing bool(\"false\") == True for BOOLEAN entries; the MCP `value: Any` tool sends an untyped schema, so gateways send strings. Repro'd against origin/dev with the fastmcp_server test fixtures.",

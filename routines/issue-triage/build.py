@@ -14,6 +14,8 @@ from html import escape
 FULL_MAX = 2_000_000
 DIGEST_MAX = 40_000
 STATUS_LEN = (160, 100, 60)
+REPLY_ROWS = 14
+REPLY_WRAP = 96
 TZ_OFFSETS = {"CEST": 2, "CET": 1, "UTC": 0}
 NOTE_TIME = re.compile(r"^(\d{2}-\d{2}) (\d{2}:\d{2})")
 REPLY_GRAMMAR = (
@@ -103,6 +105,7 @@ dialog.card::backdrop { background: rgb(0 0 0 / .45); }
 .sec > summary { cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted-foreground); }
 .prose { white-space: pre-wrap; font: 13.5px/1.5 var(--font-sans); margin: 6px 0 0; overflow-wrap: anywhere; max-width: 100ch; }
 .reply-text { white-space: pre-wrap; font: 12.5px/1.5 var(--font-mono); margin: 6px 0; padding: 10px; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); overflow-wrap: anywhere; max-width: 100ch; }
+textarea.reply-text { display: block; width: 100%; resize: vertical; background: transparent; color: inherit; }
 .diff { margin: 6px 0 0; overflow: auto; font: 11.5px/1.5 var(--font-mono); padding: 6px 0; max-height: 480px; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); }
 .diff i { display: block; font-style: normal; padding: 0 10px; white-space: pre; }
 .diff .a { background: color-mix(in srgb, var(--success) 14%, transparent); }
@@ -167,6 +170,7 @@ JS = """
   function open(id){
     const d = document.getElementById(id);
     if (!d || d.tagName !== "DIALOG" || d.open) return;
+    d.querySelectorAll("button[data-post]").forEach(restore);
     d.showModal(); d.scrollTop = 0;
     history.replaceState(null, "", "#" + id);
   }
@@ -174,6 +178,8 @@ JS = """
   document.addEventListener("click", e => {
     const a = e.target.closest("a.chip");
     if (a) { e.preventDefault(); open(a.hash.slice(1)); return; }
+    const r = e.target.closest("a[data-revert]");
+    if (r) { e.preventDefault(); revert(r); return; }
     if (e.target.closest("[data-close]") || e.target.matches("dialog.card")) { e.target.closest("dialog").close(); return; }
     const p = e.target.closest("button[data-post]");
     if (p) { post(p); return; }
@@ -182,15 +188,39 @@ JS = """
   });
   async function copy(b){
     const src = document.getElementById(b.dataset.copy);
-    try { await navigator.clipboard.writeText(src.textContent); b.textContent = "Copied"; }
-    catch (e) {
-      const r = document.createRange(); r.selectNodeContents(src);
-      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
-      b.textContent = "Selected, press copy";
-    }
+    try { await navigator.clipboard.writeText(src.value); b.textContent = "Copied"; }
+    catch (e) { src.focus(); src.select(); b.textContent = "Selected, press copy"; }
     setTimeout(() => { b.textContent = "Copy"; }, 2000);
   }
-  function posted(b, url){
+  // Edits are kept per draft hash, so a redrafted reply starts from the new draft.
+  function key(b){ return "issue-triage-edit:" + b.dataset.repo + "#" + b.dataset.n + ":" + b.dataset.hash; }
+  function save(k, v){ try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+  function box(el){ return el.closest("details").querySelector("textarea"); }
+  function mark(t){ t.closest("details").querySelector(".edited").classList.toggle("hide", t.readOnly || t.value === t.defaultValue); }
+  function restore(b){
+    const t = box(b);
+    let v = null;
+    try { v = localStorage.getItem(key(b)); } catch (e) {}
+    if (v !== null) t.value = v;
+    mark(t);
+  }
+  function revert(r){
+    const t = box(r), b = t.closest("details").querySelector("button[data-post]");
+    t.value = t.defaultValue;
+    if (b) save(key(b), null);
+    mark(t);
+  }
+  document.addEventListener("input", e => {
+    const t = e.target;
+    if (!t.matches("textarea.reply-text")) return;
+    const b = t.closest("details").querySelector("button[data-post]");
+    if (b) save(key(b), t.value === t.defaultValue ? null : t.value);
+    mark(t);
+  });
+  function posted(b, url, body){
+    const t = box(b);
+    if (body) t.value = body;
+    t.readOnly = true; mark(t);
     const a = document.createElement("a");
     a.className = "btn posted"; a.href = url; a.rel = "noopener"; a.textContent = "Posted";
     b.replaceWith(a);
@@ -202,17 +232,17 @@ JS = """
       const r = await fetch("/api/issue-triage/post", {
         method: "POST",
         headers: {"Content-Type": "application/json", "X-Action-Token": TOKEN},
-        body: JSON.stringify({repo: b.dataset.repo, n: Number(b.dataset.n), discussion: b.dataset.discussion === "1", hash: b.dataset.hash}),
+        body: JSON.stringify({repo: b.dataset.repo, n: Number(b.dataset.n), discussion: b.dataset.discussion === "1", hash: b.dataset.hash, body: box(b).value}),
       });
       const j = await r.json().catch(() => ({error: "HTTP " + r.status}));
-      if (j.ok) { posted(b, j.url); return; }
+      if (j.ok) { save(key(b), null); posted(b, j.url); return; }
       err.textContent = j.error || "HTTP " + r.status;
     } catch (e) { err.textContent = "The report server did not answer: " + e.message; }
     b.disabled = false; b.textContent = "Post";
   }
   document.querySelectorAll("button[data-post]").forEach(b => {
     const p = POSTED[b.dataset.repo + "#" + b.dataset.n];
-    if (p && p.hash === b.dataset.hash) posted(b, p.url);
+    if (p && p.hash === b.dataset.hash) posted(b, p.url, p.body);
   });
   const q = document.getElementById("q"), act = document.getElementById("act");
   function filter(){
@@ -534,9 +564,12 @@ def _card(c: dict, col_name: str, color: str) -> str:
         rid = "r-" + _anchor(c)
         title = "Draft reply: ask the reporter to test" if c.get("prs") else "Draft reply to the reporter"
         out.append(
-            f'<details class="sec" open><summary>{title}</summary><pre class="reply-text" id="{rid}">'
-            f'{escape(c["reply"], quote=False)}</pre><div class="row"><button type="button" data-copy="{rid}">Copy</button>'
-            f'{_post_button(c)}<code>reply {escape(ref.lstrip("#"))}</code><span class="perr"></span></div></details>'
+            # The newline after <textarea> is dropped by the parser, so a draft's own leading newline survives.
+            f'<details class="sec" open><summary>{title}</summary><textarea class="reply-text" id="{rid}" '
+            f'rows="{_reply_rows(c["reply"])}" aria-label="{title}">\n{escape(c["reply"], quote=False)}</textarea>'
+            f'<div class="row"><button type="button" data-copy="{rid}">Copy</button>{_post_button(c)}'
+            '<span class="edited hide"><span class="b warn">Edited</span> <a href="#" target="_self" data-revert>Revert</a></span>'
+            f'<code>reply {escape(ref.lstrip("#"))}</code><span class="perr"></span></div></details>'
         )
     for rr in c.get("review_replies") or []:
         out.append(
@@ -573,6 +606,11 @@ def _post_button(c: dict) -> str:
         f'<button type="button" data-post data-repo="{escape(_repo(c))}" data-n="{c["n"]}" '
         f'data-discussion="{1 if c.get("discussion") else 0}" data-hash="{digest}">Post</button>'
     )
+
+
+def _reply_rows(text: str) -> int:
+    """Textarea height that fits the draft, capped at REPLY_ROWS."""
+    return min(REPLY_ROWS, sum(len(line) // REPLY_WRAP + 1 for line in text.split("\n")))
 
 
 def _badge(tone: str, text: str) -> str:
