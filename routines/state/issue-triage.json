@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-21 09:11 CEST",
+ "last_run": "2026-10-21 10:47 CEST",
  "columns": [
   [
    "info",
@@ -2186,6 +2186,10 @@
     {
      "url": "https://github.com/music-assistant/server/pull/3088",
      "label": "server#3088 (closed, Range support for Cast, related)"
+    },
+    {
+     "url": "https://github.com/music-assistant/music-assistant.io/pull/1147",
+     "label": "music-assistant.io#1147 (yours, docs: Cast default is HTTP profile 2, open)"
     }
    ],
    "badges": [
@@ -2205,7 +2209,8 @@
    "notes": [
     "10-15 10:15 run: new issue. No byte cap in MA. Likely the receiver reacting to the forced Content-Length of profile 3 (24 MiB is far below the announced 12 h). Not reproducible without the reporter's devices, so a profile A/B on their side first.",
     "10-19 07:38 run: FlorianSlopeLift (10-16 18:59 UTC, HTML paste) ran the A/B: profile 3 stopped at 626-630 s (~24 MiB) in 4/4 runs, profile 2 played 15+ min (~35 MiB) on one GET with no next.mp3. Only other event an APP_ERROR at an ICY title change, harmless. Diagnostics: 2.10.6, nothing at the cutoff. olifoss (10-17 21:13 UTC): Waipu TV 4K stick, Spotify flow, stops after ~3 min, which is ~24 MiB at FLAC rates, so likely the same; their Sendspin/Chrome warnings are from their phone's web player and unrelated. Cause confirmed on the reporter side: forced Content-Length (Cast default since your #4133). Needs a default decision.",
-    "10-20 17:38 run: you merged server#7120 at 15:38 UTC (backport-to-stable), which went with option (a): Cast default back to profile 2. I set Fix to be Confirmed + milestone 2.10.8. The backport PR server#7101 already carries it. Confirm reply drafted."
+    "10-20 17:38 run: you merged server#7120 at 15:38 UTC (backport-to-stable), which went with option (a): Cast default back to profile 2. I set Fix to be Confirmed + milestone 2.10.8. The backport PR server#7101 already carries it. Confirm reply drafted.",
+    "10-21 10:47 run: your docs PR music-assistant.io#1147 (Cast default HTTP profile 2) is open, linked here. Confirm reply still pending."
    ],
    "action": "Your server#7120 merged with backport-to-stable; I booked Fix to be Confirmed + 2.10.8. Post the confirm reply."
   },
@@ -2793,7 +2798,7 @@
   {
    "n": 6807,
    "title": "Several AirPlay receivers on one IP get linked to the wrong Universal Player",
-   "col": "pr",
+   "col": "merged",
    "area": "server controllers/players/protocol_linking.py",
    "since": "2026-10-19 07:38",
    "last": "iVolt1 2026-10-18 20:58",
@@ -2805,27 +2810,27 @@
     "pr_draft": false
    },
    "summary": "The reporter runs several AirPlay 2 receivers on one host, for example multiple shairport-sync instances. These share an IP and have locally administered MACs, and differ only by AirPlay ID. Over days or weeks, AirPlay protocol players end up under another receiver's Universal Player. One parent ends up with two AirPlay children and another with none, and group members point at stale parents. Seen for months on stable, beta and dev, now on 2.10.7 (HA add-on).",
-   "fix": "server#7100: _identifiers_match returns False when both players carry an AirPlay id and they differ, before the IP fallback, so receivers sharing one IP (locally-administered MACs) no longer match each other. MAC/serial/UUID matches still win. Existing mixed-up configs are not repaired.",
+   "fix": "server#7100 (merged 10-21 08:25 UTC, backport-to-stable): _identifiers_match returns False when both players carry an AirPlay id and they differ, before the IP fallback, so receivers sharing one IP (locally-administered MACs) no longer match each other. MAC/serial/UUID matches still win. Existing mixed-up configs are not repaired.",
    "checked": "_identifiers_match (protocol_linking.py:1866-1996) loops over MAC/serial/UUID/CAST_UUID/AIRPLAY_ID. A differing AIRPLAY_ID only does `continue`, then it falls through to the IP fallback (1966-1994). With equal IPs and no real hardware MAC on either side, that returns True. Reproduced with a scratch test that reuses MockPlayer from tests/controllers/players/test_protocol_linking.py: two PROTOCOL players with the same IP, LA MACs and different AIRPLAY_IDs, and _identifiers_match returns True. When a receiver is briefly unregistered, its parent's AirPlay slot is free. _try_link_to_existing_player (250-330) then links the other receiver to the first universal player that IP-matches. It does not check whether a different universal player already lists the protocol player in _protocol_player_ids. Identifiers are then merged into the wrong parent (lines 290-292), which spreads the mixup. I could not read the reporter's diagnostics either; the bot flagged it as unreadable. The settings.json and log they attached were not needed for the code-level repro.",
-   "plan": "Wait for iVolt1 to test pr-7100. Mark ready once they confirm.",
+   "plan": "Post the confirm reply, then wait for iVolt1 on 2.10.8.",
    "branch": "fix/protocol-link-airplay-id-mismatch @ 32a4d6f39d, worktree server-worktrees/fix-6807",
    "diff": "",
    "prs": [
     {
      "url": "https://github.com/music-assistant/server/pull/7100",
-     "label": "server#7100 (ours, draft, CI green, Copilot approval recommended, 0 open threads)"
+     "label": "server#7100 (yours, merged 10-21 08:25 UTC, backport-to-stable, on backport/2.10.8)"
     }
    ],
    "badges": [
     [
-     "info",
-     "Waiting for user",
-     "waiting"
+     "bad",
+     "Needs your action",
+     "needs attention"
     ],
     [
      "ok",
-     "Draft PR green",
-     "green"
+     "FtbC + 2.10.8 booked",
+     "booked"
     ],
     [
      "muted",
@@ -2833,7 +2838,7 @@
      "assigned"
     ]
    ],
-   "reply": "",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThe fix is merged in music-assistant/server#7100 and ships in 2.10.8: AirPlay receivers that share one IP but have different AirPlay ids no longer get linked to each other's Universal Player. It doesn't repair links that are already mixed up, so if a player still lands on the wrong Universal Player after the update, please let us know which one. Could you confirm once you're on 2.10.8?",
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Reproduced with a unit test, fix agent started.",
@@ -2841,9 +2846,10 @@
     "10-19 chat: posted the DEV add-on ask on the issue (HAOS steps only, they run the add-on) and a waiting-for-confirmation note on server#7100.",
     "10-19 09:38 run: your DEV add-on ask for pr-7100 is on the issue (07:10 UTC). Waiting on iVolt1.",
     "10-19 15:38 run: a comment on server#7100 at 12:49 UTC came from iVolt1's account but carries our '[!NOTE] written by Claude on Marvin's behalf' header and says we keep the PR in draft until they confirm. Looks pasted, not a test result. Still waiting on their DEV add-on test.",
-    "10-19 16:38 run: iVolt1 filed #6819 (same-host shairport players fail on Automatic) while running pr-7100. No test result for #7100 itself yet."
+    "10-19 16:38 run: iVolt1 filed #6819 (same-host shairport players fail on Automatic) while running pr-7100. No test result for #7100 itself yet.",
+    "10-21 10:47 run: you merged server#7100 at 08:25 UTC (backport-to-stable), already on backport/2.10.8. iVolt1 never posted a test result. I set Fix to be Confirmed + milestone 2.10.8 and drafted a confirm reply."
    ],
-   "action": ""
+   "action": "You merged server#7100 (backport-to-stable) before iVolt1 tested it; I booked Fix to be Confirmed + 2.10.8. Post the confirm reply."
   },
   {
    "n": 6800,
@@ -3799,7 +3805,7 @@
     "2.10.8 batch",
     "backport/2.10.8",
     "**Queued**",
-    "On the branch: server#7098 (#6808), #7090 (Tidal multi-disc, no issue). Auto backport failed: #7094, #7096, #7099 and #7102 resolve by hand (patches in the triage scratchpad, tests pass on a stable venv at server-worktrees/bp-stable-venv), #7035 needs 2.11 code. Also merged 10-18: server#7060, #7059 (Sendspin). I created the 2.10.8 milestone in support. 10-20 17:38: backport PR server#7101 is out of draft and now carries #7090, #7098, #7074, #7022, #7082 and #7120 (#6748). 10-21 07:38: server#7118 (#6774, backport-to-stable, merged 02:08 UTC) is not on server#7101 yet, cherry-picks cleanly onto stable. 10-21 09:11: server#7131 (#6833) and server#7117 (#6752) auto-backported onto backport/2.10.8; server#7118 (#6774) still not on it."
+    "On the branch: server#7098 (#6808), #7090 (Tidal multi-disc, no issue). Auto backport failed: #7094, #7096, #7099 and #7102 resolve by hand (patches in the triage scratchpad, tests pass on a stable venv at server-worktrees/bp-stable-venv), #7035 needs 2.11 code. Also merged 10-18: server#7060, #7059 (Sendspin). I created the 2.10.8 milestone in support. 10-20 17:38: backport PR server#7101 is out of draft and now carries #7090, #7098, #7074, #7022, #7082 and #7120 (#6748). 10-21 07:38: server#7118 (#6774, backport-to-stable, merged 02:08 UTC) is not on server#7101 yet, cherry-picks cleanly onto stable. 10-21 09:11: server#7131 (#6833) and server#7117 (#6752) auto-backported onto backport/2.10.8; server#7118 (#6774) still not on it. 10-21 10:47: server#7100 (#6807) auto-backported onto backport/2.10.8."
    ]
   ]
  },
