@@ -58,6 +58,8 @@ table { border-collapse: collapse; width: 100%; }
 td, th { padding: 3px 6px; text-align: left; vertical-align: baseline; border-bottom: 1px solid var(--border); white-space: nowrap; }
 th { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
 td.t { white-space: normal; width: 100%; min-width: 220px; }
+td.s { white-space: normal; }
+td.s b { display: inline-block; margin: 1px 0; white-space: nowrap; }
 tr.g th { padding-top: 10px; color: var(--foreground); text-transform: none; letter-spacing: 0; font-size: 12px; border-bottom-color: var(--c); }
 tr.l td { background: color-mix(in srgb, var(--destructive) 13%, transparent); }
 tr.l td:first-child { box-shadow: inset 3px 0 var(--destructive); }
@@ -357,7 +359,7 @@ def _digest_row(p: dict, now: datetime, title_len: int) -> str:
     return (
         f'<tr{late}><td class="n"><a href="{escape(p.get("url", ""))}">'
         f'{escape(_label(p))}</a></td><td class="t">{escape(_cut(p.get("title", ""), title_len), quote=False)} '
-        f'<span class="muted">{escape(_cut(p.get("author", ""), 16))}</span></td><td><b>{escape(str(p.get("size", "?")))}</b></td><td>{state}</td>'
+        f'<span class="muted">{escape(_cut(p.get("author", ""), 16))}</span></td><td><b>{escape(str(p.get("size", "?")))}</b></td><td class="s">{state}</td>'
         f'<td class="{cp_cls}">{cp}</td><td class="{gs_cls}">{gs}</td><td>{escape(_cut(waiting, 24))}</td></tr>'
     )
 
