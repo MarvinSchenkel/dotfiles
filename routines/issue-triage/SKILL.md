@@ -10,13 +10,8 @@ Read `~/git/dotfiles/routines/state/issue-triage.json` first, then do the run be
 back and commit only that file in `~/git/dotfiles` as `Marvin Schenkel <marvinschenkel@gmail.com>` with the
 message `issue-triage: run <YYYY-MM-DD HH:MM>`. Never push.
 
-Before anything else in a run or a reply, fold in the posts Marvin made from the board's Post button. They
-sit in `~/.claude-teamB/routine-state/issue-triage-actions.jsonl`, one JSON line each with `at`, `repo`, `n`,
-`hash`, `url` and `edited` (plus the posted `body` when Marvin edited the draft in the board). For every line
-newer than `actions_applied_at` in the state file, treat it like a `reply <n>` that already went out (note
-"with your edits" when `edited` is true): clear the card's `reply`, add a dated note with the comment URL, and drop
-`action` and the attention badges when the reply was the only thing pending. Then set
-`actions_applied_at` to the newest `at`. Never rewrite or truncate the log; `report_server.py` appends to it.
+Before anything else in a run or a reply, run the sync (see "Sync before the run"). It folds in the posts
+Marvin made from the board's Post button and refreshes every derived fact, so never re-derive those by hand.
 
 You act as Marvin's first line of support and secretary. Act on every issue that changed since `last_run`
 in the state file. Changed means a new comment was added or the issue was newly posted.
@@ -39,43 +34,32 @@ the only guard. `gh` is logged in as Marvin and every write goes out under his n
 Filter out issues that are closed or assigned to someone else. An issue assigned to a teammate gets no
 triage, but the merged PR bookkeeping below still applies to it.
 
-## Sweeps on every run
+## Sync before the run
 
-Do these before building the board, on every card, not only on issues updated in the window.
+```
+python3 ~/git/dotfiles/routines/issue-triage/sync.py ~/git/dotfiles/routines/state/issue-triage.json \
+  --report /tmp/issue-triage-sync.json
+```
 
-0. Last comment sweep. In the same GraphQL query as the state sweep, read the last few comments of every
-   card and refresh its `gh` (`login`, `team`, `at`) from the newest comment by a person; bots
-   (`musicassistant-bot`, `github-actions`, anything ending in `[bot]`) don't count. A teammate is an author
-   whose comment `authorAssociation` is MEMBER, OWNER or COLLABORATOR, or who is listed in `codeowners` of
-   any `music_assistant/providers/*/manifest.json` on server `origin/dev`; provider maintainers like
-   Tommatheussen show as NONE on the support repo, so the manifests are needed. The issue's own author is
-   never a teammate on that issue, even when they are a codeowner (iVolt1, Simanias, xiasi0 report too). Compare with the card:
-   - Marvin or a teammate commented after the stored `gh.at`: read that comment. If it covers the draft,
-     drop the draft, `action` and the attention badges and add a note with the comment URL; otherwise
-     redraft. A card never stays on Marvin's list for a reply he already gave.
-   - The reporter commented after the stored `gh.at`: the card counts as changed. Read the new comment and
-     act on it like a fresh update.
-   - For every card with PRs, refresh `gh.pr_open` and `gh.pr_draft` from the linked PR's real state, and
-     move a card whose PR merged since the last run on to the next step (bookkeeping, or a release for
-     airplay-cli and other libraries). When the thread holds a test ask from Marvin or a teammate (a DEV
-     add-on or `pr-<n>` ask), give the card `["info", "Test asked <MM-DD>", "test asked"]`; when the reporter
-     reports a result, `["ok", "Tested <MM-DD>", "tested"]`, or `still broken` when it failed. The board's
-     "no test ask" tag only shows when neither badge is there, so stale badges show up as wrong chips.
-   Only looking at comments inside the run window misses everything that landed between runs.
-1. State sweep. One GraphQL query with an aliased `issue(number:N){state}` field per card. Drop every
-   closed issue: remove the card, append it to `gone` with the date and the reason, and remove its rows
-   from `design` and `followups`. Searching only the update window misses closures that happened earlier.
-2. Cross reference sweep. One aliased GraphQL query over the timeline items of every card that is not in
-   the Fix merged column, asking for `CROSS_REFERENCED_EVENT` and `CONNECTED_EVENT` pull requests. Checking
-   only the PRs a card already links, or `gh pr list --head` on our own branches, misses fixes teammates
-   open on their own branches. Read each PR body. A "Fixes" or "related issue" line for this issue counts as
-   the fix; a passing mention only gets a "related" link. Compare every MERGED PR with the card's column:
-   - merged fix: move to Fix merged and do the bookkeeping.
-   - someone else's open fix: move to Already fixed on dev.
-   - our own PR: replace the local fix badge with the PR.
-   - a PR that only fixed a test environment is not the issue's fix, so no bookkeeping for it.
-3. Merged PR sweep. Every PR merged since `last_run` that references an issue, including issues assigned
-   to teammates.
+`sync.py` computes everything that is a fact rather than a judgement, for every card, every run: board
+posts from the Post button (folded in like a `reply <n>`), the newest human comment (`gh`, `last`), who is a
+teammate, PR state, test asks (`test asked` badge), closed issues (moved to `gone`, their `design` and
+`followups` rows pruned), milestones and the release table. It never sets or clears `ask`. A teammate is a
+comment author with authorAssociation MEMBER, OWNER or COLLABORATOR, or a `codeowners` login in a provider
+manifest on server `origin/dev`; the issue's own author never counts as a teammate on that issue.
+
+Then work through its report; these are the judgement calls left to you:
+- `team_new`: read the comment. If it covers the card's draft, clear `reply`, `action` and `ask`;
+  otherwise redraft. A card never stays on Marvin's list for a reply he already gave.
+- `reporter_new`: read it and act on it like a fresh update. After a test ask, record the result as
+  `["ok", "Tested <MM-DD>", "tested"]`, or `still broken` when it failed.
+- `prs_merged_since`: do the merged PR bookkeeping below, set `col` to `merged` and clear `ask` unless
+  something besides the release is open. A merged library PR (airplay-cli and the like) gets `ask` `merge`
+  until it is released and pinned.
+- `prs_opened_since`: someone else's fix moves the card to `dev`; our own PR is linked on the card.
+- `new_issues`, `ha_core`, `discussions_tagged`: triage them as below.
+- `merged_prs`: bookkeeping for every referenced issue, including issues assigned to teammates; a PR that
+  only fixed a test environment is not the issue's fix.
 
 ## New issues
 
@@ -113,7 +97,7 @@ Do not run a full triage on issues that were triaged before. Only triage an exis
 flips from not enough info to enough info to reproduce. Otherwise take the new comments into account when
 you suggest a reply to the user.
 
-## Possible issue states
+## Possible issue states (the card's `col`)
 
 Per issue, the outcome is one of these. The key is the card's `col`.
 
@@ -126,6 +110,24 @@ Per issue, the outcome is one of these. The key is the card's `col`.
 | `pr` | Reproduced + fixed | Draft PR open, or a local fix waiting for review |
 | `dev` | Already fixed on dev | Fixed on dev or in someone else's open PR |
 | `merged` | Fix merged | Waiting for the reporter to confirm |
+
+## Lanes on the board
+
+The board's lanes show whose move it is; build.py derives them, nothing stores them. `col` above stays on
+every card as the outcome and shows as a small tag.
+
+| lane | holds |
+|---|---|
+| Needs reply | `ask` is `reply-test`, `reply-info` or `reply-answer`: a draft waits for Marvin |
+| Needs decision | `ask` is `input`, `design`, `merge` or `nudge` |
+| In progress | no `ask`, and a running session (`fix_thread` without `done`), our own open PR that isn't test-asked yet, or a `local fix` |
+| Waiting on teammate or release | no `ask`, and `col` is `merged` or `dev`, or `waiting_on` is `team` |
+| Waiting on reporter | everything else: we spoke last, a test or info ask is out |
+
+`ask` is the only "needs Marvin" signal: set it on every card that needs him and clear it when it doesn't.
+In the first two lanes cards are grouped by `ask`. When a card needs two things, pick the one that
+unblocks it. Set `waiting_on` only to override the default lane, for example `team` while a teammate's PR
+or answer is pending.
 
 ## Reproduction rules
 
@@ -170,7 +172,7 @@ Stop early when:
     the Fix merged column. If it cannot, set the milestone to the next minor version, for example 2.11.0.
 - Milestone numbers live in `milestones` in the state file. Create a missing milestone in the support repo
   and record its number.
-- Missing or conflicting cherry-picks are never a needs attention item. Marvin does all cherry-picks at
+- Missing or conflicting cherry-picks never set an `ask`. Marvin does all cherry-picks at
   once before the patch release. Keep a muted `backport?` badge if useful, but no action and no place in
   the attention list for it.
 
@@ -253,11 +255,6 @@ changed since stays on the board until Marvin acted on it. A card only leaves th
 closed, or when Marvin replies `drop`. Closed and dropped issues go to `gone`, which stays in the state file
 and is never shown on the board.
 
-## Merged PR sweep command
-
-Use `gh pr list --repo <repo> --state merged --search "merged:>=<ISO time>" --json number,title,mergedAt,labels`.
-`gh search prs --merged` ignores the time filter and returns unrelated PRs back to April.
-
 ## Card field `since`
 
 `since` is the time the card was first seen. Never overwrite it when a card moves lanes; build.py marks a
@@ -293,7 +290,8 @@ python3 ~/git/dotfiles/routines/issue-triage/build.py ~/git/dotfiles/routines/st
 The digest:
 
 - The title and only "Last run <time>".
-- The card count per lane, with how many in each lane need Marvin.
+- The card count per lane, with the `ask` breakdown for the first two lanes, and the release table as
+  counts per milestone.
 - Only the cards that are new or changed this run, one compact row each: the number linked to GitHub, the
   title, the lane, a one-line status, the age of the last activity and a "new" or "changed" mark. Cards
   that need Marvin come first. A card counts as changed when its newest note carries the time of the last
@@ -305,9 +303,9 @@ The full board:
 
 - Header: the title and only "Last run <time>". No run narrative, no list of dropped issues.
 - A filter box and an "Only cards that need attention" toggle.
-- One column per issue state with every issue as a separate card. Within a column, cards are sorted by
-  what needs Marvin first, then by the most recent activity.
-- Clicking a card opens it in a dialog. A card that needs attention starts with a highlighted pane holding
+- One lane per turn (see "Lanes on the board"), with `ask` groups in the first two. Within a group or
+  lane, cards are sorted by urgency, then by the most recent activity. Cards without `ask` are faded.
+- Clicking a card opens it in a dialog. A card with an `ask` starts with a highlighted pane holding
   a one or two sentence summary of the action needed. Then the badges, a summary of what was done and the
   status, the facts with the optional PR link, the draft reply with a copy button and a Post button, the
   run notes, what the fix changes, how it was checked, the analysis and the diff.
@@ -315,36 +313,31 @@ The full board:
   draft with `gh` straight away and logs it. It refuses when the issue is closed, when a comment landed
   after the card's `gh.at` or when the page is older than the draft, and Marvin then asks in the thread.
   So keep `gh.at` current on every card and redraft the reply whenever a newer comment changes it.
-- The release check, the design calls for Marvin and the follow-ups spotted.
+- Cards in Needs decision have Discuss, Fix and Repro buttons that copy `discuss <n>`, `fix <n>` or
+  `repro <n>` for Marvin to paste here; the board can't start a session itself.
+- The release table from `release_table`, the design calls for Marvin and the follow-ups spotted.
 
-Badges are `[tone, label, kind]` with tone one of `bad`, `warn`, `info`, `ok`, `muted`. The board shows two
-status tags on every card:
-- "needs attention": the issue requires an action from Marvin. That is a draft reply while the reporter
-  spoke last and no PR is open, pending bookkeeping, or a badge of kind `needs attention`, `review`,
-  `decide`, `local fix`, `local fix · hw`, `verify red`, `still broken`, `retest` or `not on stable`.
-  `backport?` is muted information, never attention.
-- "waiting for user": Marvin or a teammate replied last, or the reporter was asked to test, and the user
-  has to respond.
+Badges are `[tone, label, kind]` with tone one of `bad`, `warn`, `info`, `ok`, `muted`. They are facts on the
+card (test asked, tested, still broken, booked, local fix, auto held, backport?); they never decide whether
+a card needs Marvin, `ask` does. `backport?` is muted information.
 
 No badges like "draft reply"; Marvin expects those to be there when he opens the issue. Set `action` on
-every card that needs attention; it is the text of the highlighted pane.
+every card with an `ask`; it is the text of the highlighted pane.
 
 After the render, end the turn with a chat summary. Say what changed this run in a few sentences. If the
 run posted info asks on its own, list them next under "Posted on your behalf", one line each with the issue,
-what was asked and the comment link. Then end
-with an overview of all cards that currently need Marvin, including the ones carried over from earlier
-runs, grouped by the card's `ask` under these headings, in this order, empty groups left out:
+what was asked and the comment link; held ones follow under "Held for you". Then the overview of what
+needs Marvin:
 
-- Replies to confirm (`reply`): a drafted reply waiting to be posted. Start each line with what kind of
-  reply it is: test ask, info ask or answer.
-- Input (`input`): a go or no-go, or a pick between fix options I laid out, before work can go on.
-- Design calls (`design`): a decision on how Music Assistant should behave, usually with a row in `design`.
-- Merge and release (`merge`): review, merge or release a PR.
-- Nudges (`nudge`): ping a teammate or contributor.
-
-One line per card with the issue and what Marvin needs to do, most important first within a group. Set `ask`
-on every card that needs Marvin (`reply-test`, `reply-info`, `reply-answer`, `input`, `design`, `merge`,
-`nudge`); when a card needs two things, pick the one that unblocks it. Write every issue number as a link to its card on the board,
+- On the first run of the day, and whenever a card entered or left the list since the previous run: the
+  full list, grouped by `ask` under these headings in this order, empty groups left out. Replies to
+  confirm (`reply-*`, each line starting with test ask, info ask or answer), Input (`input`), Design calls
+  (`design`), Merge and release (`merge`), Nudges (`nudge`). One line per card with the issue and what
+  Marvin needs to do, most important first within a group.
+- Otherwise only the counts per group, for example "Needs you: 29 (replies 7, input 7, design 11, merge 3,
+  nudge 1), unchanged since the last run".
+Keep the list of card numbers you showed in `summary_cards` in the state file to tell the two apart.
+Write every issue number as a link to its card on the board,
 filtered and opened: `[#6823](http://127.0.0.1:8765/issue-triage.html?q=6823#c-6823)`; a core card uses
 `?q=<n>#c-core-<n>`.
 
@@ -384,6 +377,15 @@ Marvin acts on cards by replying in this thread. Handle the reply right away, ou
   card, and the card's `diff` in a fenced block when it has one. Tell it the diff is from triage time and
   the branch is the source of truth. Store the launched thread in `fix_thread` and link it in your reply as
   `[Fix: <title>](t3-thread://v1/<threadId>)`.
+- `repro <n>` and `discuss <n>` (each with optional extra instructions): start a repro or a discussion
+  session the same way as `fix`, with title `Repro: <short title>` or `Discuss: <short title>` and the same
+  card context. A repro session tries to reproduce first and asks Marvin before it fixes anything; a
+  discussion session changes no code and posts nothing. Store it in `fix_thread` with `kind`; set `done`
+  when the session reports back.
+- `release <milestone>`: show the release table for that milestone with the on-stable check, plus a short
+  closing comment per issue (the NOTE header, which release it shipped in, ask to reopen if it isn't
+  fixed). Post nothing yet. `release <milestone> post` then posts every closing comment, closes the issues
+  and moves them to `gone`.
 - `done <n>` or `done <n> <note>`: Marvin handled it himself. Clear `action`, the draft reply and the
   attention badges, and add a dated note. The card stays until the issue closes.
 - `drop <n>` or `drop <n> <reason>`: take the card off the board and append it to `gone` with the date and
@@ -420,7 +422,7 @@ board embedded, so earlier run notes still match.
       "summary": "",
       "action": "one or two sentences for the attention pane",
       "ask": "reply-test | reply-info | reply-answer | input | design | merge | nudge",
-      "badges": [["bad", "Needs your action", "needs attention"]],
+      "badges": [["info", "Test asked 10-21", "test asked"]],
       "reply": "draft reply, starting with the NOTE header",
       "prs": [{ "url": "https://github.com/music-assistant/server/pull/7131", "label": "server#7131 (ours, draft, CI green)" }],
       "branch": "fix/<slug> @ <sha>, worktree server-worktrees/<dir>",
@@ -430,7 +432,10 @@ board embedded, so earlier run notes still match.
       "diff": "",
       "bookkeeping": [{ "id": "6836-milestone", "text": "", "labels": ["Fix to be Confirmed"], "milestone": "2.10.8" }],
       "review_replies": [{ "repo": "music-assistant/server", "pr": 7131, "comment_id": 0, "thread_id": "PRRT_...", "body": "" }],
-      "fix_thread": { "id": "<threadId>", "title": "Fix: ..." },
+      "fix_thread": { "id": "<threadId>", "title": "Fix: ...", "kind": "fix", "done": false },
+      "waiting_on": "team",
+      "milestone": "2.10.8",
+      "sync": { "written by sync.py each run, read only": true },
       "notes": ["10-21 07:38 run: ..."]
     }
   ],
@@ -439,6 +444,8 @@ board embedded, so earlier run notes still match.
   "release": { "title": "2.10.7 released 10-17, 2.10.8 queued", "rows": [["issue", "fix", "on stable", "note"]] },
   "milestones": { "2.10.8": 39 },
   "auto_post": { "enabled": true },
+  "release_table": { "2.10.8": [{ "n": 6833, "title": "", "prs": ["server#7131"], "on_stable": true }] },
+  "summary_cards": [6835, 6671],
   "actions_applied_at": "2026-10-21T09:12:00Z",
   "gone": "Closed and dropped issues with dates and reasons, never shown on the board."
 }

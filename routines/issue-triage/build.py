@@ -35,11 +35,26 @@ COL_COLOR = {
 TONES = {"ok", "warn", "info", "bad"}
 # Badges worth showing on the board itself; the card body shows all of them.
 KEEP = {"booked", "still broken", "backport?", "test asked", "tested", "auto held"}
-# Badge kinds that put a card on Marvin's list.
-ACT = {
-    "needs attention", "review", "decide", "local fix", "local fix · hw", "verify red",
-    "still broken", "retest", "not on stable", "auto held",
-}
+KEEP_TONE = {"auto held": "warn", "still broken": "bad"}
+# Board lanes from CONTRACT.md, in order: key, name, description, colour.
+LANES = (
+    ("reply", "Needs reply", "A reply to the reporter waits for you.", "--warning"),
+    ("decision", "Needs decision", "Input, a design call, a merge or a nudge only you can give.", "--info"),
+    ("progress", "In progress", "A fix thread, our own open PR or a local fix is moving.", "--success"),
+    ("team", "Waiting on teammate or release", "Fix merged or on dev, or a teammate has the move.", "--muted-foreground"),
+    ("reporter", "Waiting on reporter", "We spoke last: a test or info ask is out.", "--muted-foreground"),
+)
+# Sub-groups inside lanes 1 and 2, in order: ask value, sub-header, digest label.
+ASKS = (
+    ("reply-test", "Test ask", "test"),
+    ("reply-info", "Info ask", "info"),
+    ("reply-answer", "Answer", "answer"),
+    ("input", "Input", "input"),
+    ("design", "Design", "design"),
+    ("merge", "Merge and release", "merge"),
+    ("nudge", "Nudge", "nudge"),
+)
+LAUNCH_COLS = {"cantfix", "norepro"}
 REF = re.compile(
     r"(https://github\.com/[\w.\-/#]+|\b(?:home-assistant/core|music-assistant/[\w-]+|server|frontend|models"
     r"|client|aioslimproto|support)#\d+)"
@@ -73,12 +88,15 @@ h2 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: v
 .tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .tools input[type=search] { flex: 1 1 240px; min-width: 0; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--foreground); font: inherit; }
 .tools label { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted-foreground); }
-.cols { display: grid; grid-template-columns: repeat(7, minmax(220px, 1fr)); gap: 8px; align-items: start; overflow-x: auto; padding-bottom: 4px; }
+.cols { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 8px; align-items: start; overflow-x: auto; padding-bottom: 4px; }
 .col { border: 1px solid var(--border); border-top: 3px solid var(--c); border-radius: var(--radius); padding: 8px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .col-head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 .col-head b { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); line-height: 1.3; }
 .col-head .n { font: 500 12px var(--font-mono); color: var(--c); }
 .col-desc { font-size: 11.5px; color: var(--muted-foreground); margin: 0; line-height: 1.35; }
+.grp { display: flex; flex-direction: column; gap: 6px; }
+.grp-h { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--muted-foreground); border-bottom: 1px solid var(--border); padding: 4px 0 2px; }
+.grp-h .gn { font: 500 11px var(--font-mono); }
 .chip { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; row-gap: 3px; padding: 5px 7px; border: 1px solid var(--border); border-left: 3px solid var(--c); border-radius: calc(var(--radius) - 2px); text-decoration: none; min-width: 0; }
 .chip:hover { background: var(--muted); }
 /* Cards that don't need Marvin recede so the ones that do stand out. */
@@ -122,6 +140,7 @@ button, a.btn { font: inherit; font-size: 12.5px; font-weight: 500; border-radiu
 button:hover, a.btn:hover { background: var(--muted); }
 button:disabled { opacity: .6; cursor: progress; }
 .perr { color: var(--destructive); }
+.hint { color: var(--success); }
 a.posted { color: var(--success); border-color: color-mix(in srgb, var(--success) 50%, var(--border)); }
 .bk { border-left: 3px solid var(--warning); background: color-mix(in srgb, var(--warning) 10%, transparent); border-radius: calc(var(--radius) - 2px); padding: 6px 12px; font-size: 13px; }
 .tbl { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
@@ -129,11 +148,12 @@ table { border-collapse: collapse; width: 100%; font-size: 13px; }
 th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
 th { font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-foreground); font-weight: 600; }
 tr:last-child td { border-bottom: 0; }
+tr.ms td { font-weight: 600; background: var(--muted); }
 .lower { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; }
 .note { font-size: 12.5px; color: var(--muted-foreground); border-top: 1px solid var(--border); padding-top: 10px; margin: 0; }
 .note code { color: var(--foreground); }
 .hide { display: none !important; }
-@media (max-width: 1180px) { .cols { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 1180px) { .cols { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lower { grid-template-columns: 1fr; } }
 """
 
@@ -150,7 +170,7 @@ h2 { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color:
 .lane { border: 1px solid var(--border); border-top: 3px solid var(--c); border-radius: var(--radius); padding: 6px 8px; }
 .lane .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted-foreground); line-height: 1.25; }
 .lane .v { font: 600 17px var(--font-mono); margin-top: 2px; }
-.lane .s { font-size: 11px; color: var(--warning); }
+.lane .s { font-size: 11px; color: var(--muted-foreground); }
 .rows { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius); }
 .r { padding: 6px 10px; border-bottom: 1px solid var(--border); border-left: 3px solid transparent; }
 .r:last-child { border-bottom: 0; }
@@ -186,9 +206,17 @@ JS = """
     if (e.target.closest("[data-close]") || e.target.matches("dialog.card")) { e.target.closest("dialog").close(); return; }
     const p = e.target.closest("button[data-post]");
     if (p) { post(p); return; }
+    const l = e.target.closest("button[data-cmd]");
+    if (l) { launch(l); return; }
     const b = e.target.closest("button[data-copy]");
     if (b) copy(b);
   });
+  async function launch(b){
+    const h = b.parentElement.querySelector(".hint");
+    try { await navigator.clipboard.writeText(b.dataset.cmd); h.textContent = "Copied, paste it in the triage thread"; }
+    catch (e) { h.textContent = "Copy failed, type: " + b.dataset.cmd; }
+    setTimeout(() => { h.textContent = ""; }, 4000);
+  }
   async function copy(b){
     const src = document.getElementById(b.dataset.copy);
     try { await navigator.clipboard.writeText(src.value); b.textContent = "Copied"; }
@@ -238,21 +266,29 @@ JS = """
         body: JSON.stringify({repo: b.dataset.repo, n: Number(b.dataset.n), discussion: b.dataset.discussion === "1", hash: b.dataset.hash, body: box(b).value}),
       });
       const j = await r.json().catch(() => ({error: "HTTP " + r.status}));
-      if (j.ok) { save(key(b), null); posted(b, j.url); return; }
+      if (j.ok) { save(key(b), null); posted(b, j.url); moved(b.dataset.repo + "#" + b.dataset.n); filter(); return; }
       err.textContent = j.error || "HTTP " + r.status;
     } catch (e) { err.textContent = "The report server did not answer: " + e.message; }
     b.disabled = false; b.textContent = "Post";
   }
-  document.querySelectorAll("button[data-post]").forEach(b => {
-    const p = POSTED[b.dataset.repo + "#" + b.dataset.n];
-    if (p && p.hash === b.dataset.hash) posted(b, p.url, p.body);
-  });
+  // A posted reply hands the move to the reporter, so the card leaves its ask lane at once.
+  function moved(k){
+    const a = [...document.querySelectorAll("a.chip[data-k]")].find(x => x.dataset.k === k);
+    if (!a) return;
+    delete a.dataset.p;
+    document.querySelector('.col[data-lane="reporter"] .empty').after(a);
+  }
   const q = document.getElementById("q"), act = document.getElementById("act");
   function filter(){
     const term = q.value.trim().toLowerCase(), only = act.checked;
     document.querySelectorAll("a.chip").forEach(a => {
       const text = (a.textContent + " " + a.dataset.a).toLowerCase();
       a.classList.toggle("hide", (term && !text.includes(term)) || (only && !a.dataset.p));
+    });
+    document.querySelectorAll(".grp").forEach(g => {
+      const n = g.querySelectorAll("a.chip:not(.hide)").length;
+      g.querySelector(".gn").textContent = n;
+      g.classList.toggle("hide", n === 0);
     });
     document.querySelectorAll(".col").forEach(col => {
       const n = col.querySelectorAll("a.chip:not(.hide)").length;
@@ -262,6 +298,11 @@ JS = """
   }
   q.addEventListener("input", filter);
   act.addEventListener("change", filter);
+  document.querySelectorAll("button[data-post]").forEach(b => {
+    const k = b.dataset.repo + "#" + b.dataset.n, p = POSTED[k];
+    if (p && p.hash === b.dataset.hash) { posted(b, p.url, p.body); moved(k); }
+  });
+  filter();
   // Chat links use ?q=<n>#c-<n>: filter the lanes to the issue and open its card.
   const term = new URLSearchParams(location.search).get("q");
   if (term) { q.value = term; filter(); }
@@ -293,27 +334,34 @@ def main() -> None:
 
 def render_full(state: dict) -> str:
     """Render the complete board with every card in full."""
-    cols = state["columns"]
+    names = {key: name for key, name, _ in state["columns"]}
+    headers = {ask: header for ask, header, _ in ASKS}
     cards = sorted(state["cards"], key=_last_at, reverse=True)
     cards.sort(key=_urgency)
     lanes, dialogs = [], []
-    for key, name, desc in cols:
-        in_col = [c for c in cards if c["col"] == key]
-        color = COL_COLOR.get(key, "--muted-foreground")
-        chips = "".join(_chip(c, color) for c in in_col)
-        empty = '<div class="empty' + (" hide" if in_col else "") + '">Nothing here</div>'
+    for lane, name, desc, lane_color in LANES:
+        in_lane = [c for c in cards if _lane(c) == lane]
+        if lane in ("reply", "decision"):
+            chips = "".join(
+                f'<div class="grp"><div class="grp-h"><span>{escape(headers.get(ask, ask))}</span>'
+                f'<span class="gn">{len(group)}</span></div>' + "".join(_chip(c, names) for c in group) + "</div>"
+                for ask, group in _ask_groups(in_lane)
+            )
+        else:
+            chips = "".join(_chip(c, names) for c in in_lane)
+        empty = '<div class="empty' + (" hide" if in_lane else "") + '">Nothing here</div>'
         lanes.append(
-            f'<section class="col" style="--c:var({color})"><div class="col-head"><b>{escape(name)}</b>'
-            f'<span class="n">{len(in_col)}</span></div><p class="col-desc">{escape(desc)}</p>{empty}{chips}</section>'
+            f'<section class="col" data-lane="{lane}" style="--c:var({lane_color})"><div class="col-head"><b>{escape(name)}</b>'
+            f'<span class="n">{len(in_lane)}</span></div><p class="col-desc">{escape(desc)}</p>{empty}{chips}</section>'
         )
-        dialogs += [_card(c, name, color) for c in in_col]
+        dialogs += [_card(c, names, lane) for c in in_lane]
     parts = [
         '<header><h1>Support issue triage</h1>'
         f'<p class="sub">Last run {escape(state.get("last_run") or "never")}</p></header>',
         '<div class="tools"><input id="q" type="search" placeholder="Filter by issue number, title or area" '
         'aria-label="Filter issues"><label><input type="checkbox" id="act"> Only cards that need attention</label></div>',
         '<div class="cols">' + "".join(lanes) + "</div>",
-        _release(state.get("release")),
+        _release(state, {c["n"] for c in cards if _repo(c) == SUPPORT}),
         '<div class="lower"><section><h2>Design calls for you</h2><div class="tbl"><table><thead><tr><th>Issue</th>'
         "<th>Decision</th><th>Recommendation</th></tr></thead><tbody>"
         + "".join("<tr>" + "".join(f"<td>{_rich(x)}</td>" for x in r) + "</tr>" for r in state.get("design", []))
@@ -340,20 +388,24 @@ def render_full(state: dict) -> str:
 
 
 def render_digest(state: dict, board_path: str | None, status_len: int) -> str:
-    """Render the compact inline digest: lane counts, info asks held for Marvin, and cards changed this run."""
+    """Render the compact inline digest: lane counts, info asks held for Marvin, cards changed this run, release counts."""
     run = state.get("last_run") or ""
     run_at = _run_time(run)
     cards = sorted(state["cards"], key=_last_at, reverse=True)
     cards.sort(key=_urgency)
     names = {key: name for key, name, _ in state["columns"]}
     lanes = []
-    for key, name, _ in state["columns"]:
-        in_col = [c for c in cards if c["col"] == key]
-        due = sum(1 for c in in_col if _pending(c))
+    for lane, name, _, color in LANES:
+        in_lane = [c for c in cards if _lane(c) == lane]
+        short = {ask: label for ask, _, label in ASKS}
+        split = ", ".join(
+            f"{short.get(ask, ask)} {len(group)}" for ask, group in _ask_groups(in_lane)
+        ) if lane in ("reply", "decision") else ""
         lanes.append(
-            f'<div class="lane" style="--c:var({COL_COLOR.get(key, "--muted-foreground")})"><div class="k">{escape(name)}</div>'
-            f'<div class="v">{len(in_col)}</div><div class="s">{f"{due} need you" if due else "&nbsp;"}</div></div>'
+            f'<div class="lane" style="--c:var({color})"><div class="k">{escape(name)}</div>'
+            f'<div class="v">{len(in_lane)}</div><div class="s">{escape(split) if split else "&nbsp;"}</div></div>'
         )
+    table = state.get("release_table") or {}
     changed = [c for c in cards if _new(c, run) or _changed(c, run)]
     held = [c for c in cards if any(_kind(b) == "auto held" for b in c["badges"])]
     board = escape((board_path or "~/.claude-teamB/routine-reports/issue-triage.html").replace(os.path.expanduser("~"), "~", 1))
@@ -367,6 +419,11 @@ def render_digest(state: dict, board_path: str | None, status_len: int) -> str:
         + ('<div class="rows">' + "".join(_row(c, names, run, run_at, status_len) for c in changed) + "</div>"
            if changed else '<div class="sub">Nothing changed this run.</div>')
         + "</section>",
+        ("<section><h2>Release table</h2>" + '<div class="rows">' + "".join(
+            f'<div class="r"><div class="l1"><span class="n">{escape(ms)}</span><span class="t">{len(issues)} issues, '
+            f'{sum(1 for i in issues if i.get("on_stable") is True)} on stable</span></div></div>'
+            for ms, issues in table.items()) + "</div></section>"
+         if table else ""),
         f'<div class="foot"><span>Full board with filter, drafts and diffs in the side panel, or <code>open {board}</code></span>'
         f"<span>Replies: <code>{REPLY_GRAMMAR}</code></span></div>",
     ]
@@ -451,14 +508,49 @@ def _gh(c: dict, key: str) -> bool:
 
 def _pending(c: dict) -> bool:
     """Whether the card waits on Marvin."""
-    reply_due = bool(c.get("reply")) and not _gh(c, "team") and not _gh(c, "pr_open")
-    book_due = any(not b.get("done") for b in c.get("bookkeeping") or [])
-    return reply_due or book_due or any(_kind(b) in ACT for b in c["badges"])
+    return bool(c.get("ask"))
+
+
+def _lane(c: dict) -> str:
+    """Board lane the card sits in, derived as CONTRACT.md describes."""
+    ask = c.get("ask")
+    if ask:
+        return "reply" if ask.startswith("reply-") else "decision"
+    thread = c.get("fix_thread")
+    if (thread and not thread.get("done")) or (_own_pr_open(c) and not _test_asked(c)) or _local_fix(c):
+        return "progress"
+    if c.get("waiting_on") == "reporter":
+        return "reporter"
+    if c["col"] in ("merged", "dev") or c.get("waiting_on") == "team":
+        return "team"
+    return "reporter"
+
+
+def _ask_groups(cards: list) -> list:
+    """Cards split into (ask, cards) sub-groups in ASKS order, empty groups left out."""
+    order = [ask for ask, _, _ in ASKS]
+    asks = sorted({c["ask"] for c in cards}, key=lambda a: order.index(a) if a in order else len(order))
+    return [(ask, [c for c in cards if c["ask"] == ask]) for ask in asks]
+
+
+def _own_pr_open(c: dict) -> bool:
+    """Whether our own PR for the card is open; cards without sync data fall back to the PR outcome."""
+    prs = (c.get("sync") or {}).get("pr")
+    if prs is not None:
+        return any(p.get("own") and p.get("state") == "OPEN" for p in prs)
+    return c["col"] == "pr" and _gh(c, "pr_open")
+
+
+def _local_fix(c: dict) -> bool:
+    """Whether a fix sits on a local branch that isn't pushed yet."""
+    if any(_kind(b).startswith("local fix") for b in c["badges"]):
+        return True
+    return c["col"] == "pr" and not _gh(c, "pr_open") and not c.get("prs")
 
 
 def _test_asked(c: dict) -> bool:
     """Whether the reporter was asked to test a fix."""
-    return any(_kind(b) == "test asked" for b in c["badges"])
+    return bool((c.get("sync") or {}).get("test_ask")) or any(_kind(b) == "test asked" for b in c["badges"])
 
 
 def _in_review(c: dict) -> bool:
@@ -506,23 +598,16 @@ def _issue_url(c: dict) -> str:
     return f"https://github.com/{_repo(c)}/{'discussions' if c.get('discussion') else 'issues'}/{c['n']}"
 
 
-def _tags(c: dict, key: str) -> str:
-    """Status tags shown on the chip and the card summary."""
-    tags = []
-    if _pending(c):
-        tags.append(("warn", "needs attention"))
-    if _in_review(c):
-        tags.append(("info", "in review"))
-    if _waiting(c):
-        tags.append(("", "waiting for user"))
-    if key == "pr":
-        if _gh(c, "pr_open"):
-            tags.append(("ok", "draft PR" if _gh(c, "pr_draft") else "PR open"))
-            if not any(_kind(b) in ("test asked", "tested") for b in c["badges"]):
-                tags.append(("", "no test ask"))
-        elif not c.get("prs"):
-            tags.append(("warn", "local fix"))
-    tags += [(b[0], _kind(b)) for b in c["badges"] if _kind(b) in KEEP]
+def _tags(c: dict, col_name: str) -> str:
+    """Outcome and status tags shown on the chip and the card summary."""
+    tags = [("", col_name)]
+    if c["col"] == "pr" and _gh(c, "pr_open"):
+        tags.append(("ok", "draft PR" if _gh(c, "pr_draft") else "PR open"))
+        if not _test_asked(c) and not any(_kind(b) == "tested" for b in c["badges"]):
+            tags.append(("", "no test ask"))
+    if _local_fix(c):
+        tags.append(("warn", "local fix"))
+    tags += [(KEEP_TONE.get(_kind(b), b[0]), _kind(b)) for b in c["badges"] if _kind(b) in KEEP]
     return "".join(_badge(t, x) for t, x in tags)
 
 
@@ -531,23 +616,32 @@ def _search_attrs(c: dict) -> str:
     return f'data-a="{escape(c.get("area", ""))}"' + (' data-p="1"' if _pending(c) else "")
 
 
-def _chip(c: dict, color: str) -> str:
+def _chip(c: dict, names: dict) -> str:
     """Render one card on the board lanes."""
-    tags = _tags(c, c["col"])
+    color = COL_COLOR.get(c["col"], "--muted-foreground")
     return (
-        f'<a class="chip" href="#{_anchor(c)}" target="_self" {_search_attrs(c)} style="--c:var({color})">'
-        f'<span class="num">{escape(_ref(c))}</span><span class="t">'
-        f'{escape(c["title"], quote=False)}</span>' + (f'<span class="tags">{tags}</span>' if tags else "") + "</a>"
+        f'<a class="chip" href="#{_anchor(c)}" target="_self" {_search_attrs(c)} data-k="{escape(_repo(c))}#{c["n"]}" '
+        f'style="--c:var({color})"><span class="num">{escape(_ref(c))}</span><span class="t">'
+        f'{escape(c["title"], quote=False)}</span><span class="tags">{_tags(c, names.get(c["col"], c["col"]))}</span></a>'
     )
 
 
-def _card(c: dict, col_name: str, color: str) -> str:
+def _card(c: dict, names: dict, lane: str) -> str:
     """Render one card's detail dialog."""
     ref = _ref(c)
+    col_name = names.get(c["col"], c["col"])
+    color = COL_COLOR.get(c["col"], "--muted-foreground")
     out = []
     if _pending(c):
         action = c.get("action") or _todo_fallback(c)
         out.append(f'<div class="todo"><b>Needs your action</b><p>{_rich(action)}</p></div>')
+    if lane == "decision" or (lane == "reply" and c["col"] in LAUNCH_COLS):
+        cmd = escape(ref.lstrip("#"))
+        out.append(
+            '<div class="row">Start a thread:'
+            + "".join(f'<button type="button" data-cmd="{k} {cmd}">{k.title()}</button>' for k in ("discuss", "fix", "repro"))
+            + '<span class="hint"></span></div>'
+        )
     badges = _badge("", col_name) + "".join(_badge(b[0], b[1]) for b in c["badges"])
     out.append(f'<div class="badges">{badges}</div>')
     if c.get("summary"):
@@ -604,7 +698,7 @@ def _card(c: dict, col_name: str, color: str) -> str:
         out.append(f'<details class="sec"><summary>Diff</summary>{_diff(c["diff"])}</details>')
     head = (
         f'<div class="dh"><span class="num">{escape(ref)}</span><span class="t">{escape(c["title"], quote=False)}</span>'
-        f'<span class="tags">{_tags(c, c["col"])}</span><a class="btn gh" href="{_issue_url(c)}" rel="noopener">GitHub</a>'
+        f'<span class="tags">{_tags(c, col_name)}</span><a class="btn gh" href="{_issue_url(c)}" rel="noopener">GitHub</a>'
         '<button type="button" data-close aria-label="Close">Close</button></div>'
     )
     return f'<dialog class="card" id="{_anchor(c)}" style="--c:var({color})">{head}<div class="body">{"".join(out)}</div></dialog>'
@@ -639,15 +733,30 @@ def _todo_fallback(c: dict) -> str:
     return "See the badges and notes on the card."
 
 
-def _release(rel: dict | None) -> str:
-    """Render the release check table."""
-    if not rel:
+def _release(state: dict, on_board: set) -> str:
+    """Render the release table per milestone, with the release title line above it."""
+    title = (state.get("release") or {}).get("title")
+    table = state.get("release_table") or {}
+    if not (title or table):
         return ""
-    rows = "".join("<tr>" + "".join(f"<td>{_rich(x)}</td>" for x in r) + "</tr>" for r in rel.get("rows", []))
-    return (
-        f'<section><h2>{escape(rel.get("title") or "Release check")}</h2><div class="tbl"><table><thead><tr>'
-        f"<th>Issue</th><th>Fix</th><th>On stable</th><th>Note</th></tr></thead><tbody>{rows}</tbody></table></div></section>"
+    stable = {True: ("ok", "yes"), False: ("bad", "no")}
+    rows = []
+    for ms, issues in table.items():
+        rows.append(f'<tr class="ms"><td colspan="4">{escape(ms, quote=False)}</td></tr>')
+        for i in issues:
+            n = i["n"]
+            link = (f'<a href="#c-{n}" target="_self">#{n}</a>' if n in on_board
+                    else f'<a href="https://github.com/{SUPPORT}/issues/{n}">#{n}</a>')
+            prs = ", ".join(f'<a href="{escape(_ref_url(p))}">{escape(p, quote=False)}</a>' for p in i.get("prs") or [])
+            rows.append(
+                f'<tr><td class="mono">{link}</td><td>{escape(i.get("title") or "", quote=False)}</td><td>{prs}</td>'
+                f"<td>{_badge(*stable.get(i.get('on_stable'), ('', 'unknown')))}</td></tr>"
+            )
+    body = (
+        '<div class="tbl"><table><thead><tr><th>Issue</th><th>Title</th><th>Fix PRs</th><th>On stable</th></tr></thead>'
+        f'<tbody>{"".join(rows)}</tbody></table></div>' if table else ""
     )
+    return "<section><h2>Release check</h2>" + (f'<p class="sub">{_rich(title)}</p>' if title else "") + body + "</section>"
 
 
 def _diff(text: str) -> str:
