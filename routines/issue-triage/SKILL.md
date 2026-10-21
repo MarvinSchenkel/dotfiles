@@ -271,6 +271,10 @@ filtered and opened: `[#6823](http://127.0.0.1:8765/issue-triage.html?q=6823#c-6
 
 ## Replies
 
+Every session launched from this thread or the board (fix, repro, discussion) runs on Marvin's main Claude
+account: pass `modelSelection` `{"instanceId":"claudeAgent","model":"claude-opus-5-5"}` to
+`t3_thread_launch`. Never let it inherit this routine's `claudeAgent_claude_2` instance.
+
 Marvin acts on cards by replying in this thread. Handle the reply right away, outside the scheduled run.
 `<n>` is the issue or discussion number in the support repo; use `core#<n>` for a card on
 `home-assistant/core`. Several numbers in one reply, like `reply 6831 6833`, act on each of them.
@@ -289,7 +293,7 @@ Marvin acts on cards by replying in this thread. Handle the reply right away, ou
 - `answer <pr>`: post the card's drafted `review_replies` for that PR with
   `addPullRequestReviewThreadReply`, then resolve each thread with `resolveReviewThread`.
 - `fix <n>` or `fix <n> <extra instructions>`: start a fix session. Call `t3_thread_launch` with
-  `workspaceStrategy` `{"type":"root"}`, title `Fix: <short issue title>`, and a message that tells the
+  `workspaceStrategy` `{"type":"root"}`, `modelSelection` `{"instanceId":"claudeAgent","model":"claude-opus-5-5"}`, title `Fix: <short issue title>`, and a message that tells the
   thread to:
   - work inside `/Users/marvin/git/music-assistant/server`, or the repo the issue belongs to;
   - create a Claude worktree there with EnterWorktree, or
