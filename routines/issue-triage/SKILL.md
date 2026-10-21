@@ -293,7 +293,8 @@ Marvin acts on cards by replying in this thread. Handle the reply right away, ou
 
 After a reply that changes the state, write and commit the state file with the message
 `issue-triage: <verb> <n>`. Answer with one confirmation line and the link to what was posted. Do not
-rebuild or render the pages; the next run shows the change.
+render the digest. After `edit`, rebuild the pages and refresh the side panel, so the Post button carries
+the new draft; otherwise the next run shows the change.
 
 ## State file shape
 
