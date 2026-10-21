@@ -365,7 +365,7 @@
    "summary": "2.10.7 and the pr-7100 DEV add-on, HAOS. Players from the AirPlay2 Multiroom Audio add-on (shairport-sync) run on the same host as MA. On Automatic, playback errors and nothing plays. AirPlay 2 compatibility mode works. The reporter asks MA to pick compatibility mode itself. OzGav called it a feature request, the bot quoted the docs.",
    "fix": "",
    "checked": "Code read on origin/dev, no repro (needs a second PTP stack on the MA host). Known limitation: shairport-sync's nqptp and MA's PTP engine both need UDP 319/320, and the docs say a shairport device on the MA host must use RAOP or compatibility mode. player.py protocol picks AIRPLAY2 for every capable device unless RAOP is pinned, and Automatic never switches lanes after a failure. provider.py _is_own_airplay_receiver already matches a ShairportSync advertisement against this host's addresses, but only to hide MA's own AirPlay Receiver instances, not third-party add-ons on the same host.",
-   "plan": "Enhancement, not a bug. If you want it: in Automatic, a device with model ShairportSync whose advertised addresses are on this host defaults to compatibility mode (reuse the host-address check from _is_own_airplay_receiver). Small change in player.py streaming_mode. Otherwise point to the docs and close as feature request.",
+   "plan": "Option A chosen 10-21: Automatic picks compatibility mode for ShairportSync players advertised from this host. Fix session running; local branch first, PR after your OK.",
    "branch": "",
    "diff": "",
    "prs": [],
@@ -374,21 +374,21 @@
      "bad",
      "Needs your action",
      "needs attention"
-    ],
-    [
-     "warn",
-     "Needs your decision",
-     "decide"
     ]
    ],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nFair point. Music Assistant already checks whether a shairport player is advertised from its own host (it uses that to hide its own AirPlay Receiver), so Automatic can use the same check and pick compatibility mode for those players. That only needs a small change in the AirPlay provider, so we'll pick it up. Until it ships, setting the streaming mode by hand per player is the workaround.",
    "bookkeeping": [],
    "notes": [
     "10-19 16:38 run: new issue. Documented limitation (shared PTP ports with nqptp). Auto-selecting compatibility mode for same-host ShairportSync devices is a small enhancement, design call. Same reporter as #6807 (they ran pr-7100).",
-    "10-19 17:38 run: iVolt1 (15:16 UTC) disagrees with the feature request label: Automatic fails while MA already has the info that the AirPlay 2 instance shares its IP, and the manual fix isn't obvious for add-on/Docker users. Reply rewritten to meet that halfway; still your call on option A."
+    "10-19 17:38 run: iVolt1 (15:16 UTC) disagrees with the feature request label: Automatic fails while MA already has the info that the AirPlay 2 instance shares its IP, and the manual fix isn't obvious for add-on/Docker users. Reply rewritten to meet that halfway; still your call on option A.",
+    "10-21 12:25: you chose option A and asked for a fix. Fix session launched (fix/airplay-same-host-shairport off origin/dev). Design row removed."
    ],
-   "action": "iVolt1 argues it's a bug, not a feature request. Decide on option A (Automatic picks compatibility mode for same-host ShairportSync players, small player.py change) and post the reply, or keep it docs-only.",
-   "ask": "design"
+   "action": "You picked option A and a fix session is running. The drafted reply already says we will pick it up; post it.",
+   "ask": "reply-answer",
+   "fix_thread": {
+    "id": "mcp:1a31e149-73ab-4c4b-9bbd-6a38988b54b1",
+    "title": "Fix: Automatic streaming mode for same-host shairport players (#6819)"
+   }
   },
   {
    "n": 6817,
@@ -3776,11 +3776,6 @@
    "#6786 duplicate playlist in Recently Played",
    "Dedupe provider vs library rows in recently_played now, or wait for the server#5714 playlog redesign?",
    "Small read-side dedupe now."
-  ],
-  [
-   "#6819 Automatic lane for same-host shairport players",
-   "Shairport-sync players on the MA host fail on Automatic because both PTP stacks need UDP 319/320. Options: (A) Automatic picks compatibility mode for ShairportSync devices advertised from this host (reuse the host-address check in _is_own_airplay_receiver); (B) keep it manual, docs only.",
-   "A, a few lines in player.py streaming_mode and it removes a recurring support question."
   ],
   [
    "#6837 announcement on a foreign Cast app",
