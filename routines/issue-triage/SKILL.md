@@ -10,6 +10,13 @@ Read `~/git/dotfiles/routines/state/issue-triage.json` first, then do the run be
 back and commit only that file in `~/git/dotfiles` as `Marvin Schenkel <marvinschenkel@gmail.com>` with the
 message `issue-triage: run <YYYY-MM-DD HH:MM>`. Never push.
 
+Before anything else in a run or a reply, fold in the posts Marvin made from the board's Post button. They
+sit in `~/.claude-teamB/routine-state/issue-triage-actions.jsonl`, one JSON line each with `at`, `repo`, `n`,
+`hash` and `url`. For every line newer than `actions_applied_at` in the state file, treat it like a
+`reply <n>` that already went out: clear the card's `reply`, add a dated note with the comment URL, and drop
+`action` and the attention badges when the reply was the only thing pending. Then set
+`actions_applied_at` to the newest `at`. Never rewrite or truncate the log; `report_server.py` appends to it.
+
 You act as Marvin's first line of support and secretary. Act on every issue that changed since `last_run`
 in the state file. Changed means a new comment was added or the issue was newly posted.
 
@@ -218,11 +225,14 @@ The full board:
 - A filter box and an "Only cards that need attention" toggle.
 - One column per issue state with every issue as a separate card. Within a column, cards are sorted by
   what needs Marvin first, then by the most recent activity.
-- Below the columns every card again in full, as a collapsible block. Clicking a card on the board opens
-  it. A card that needs attention starts with a highlighted pane holding a one or two sentence summary of
-  the action needed. Then the badges, a summary of what was done and the status, the facts with the
-  optional PR link, the draft reply with a copy button, the run notes, what the fix changes, how it was
-  checked, the analysis and the diff.
+- Clicking a card opens it in a dialog. A card that needs attention starts with a highlighted pane holding
+  a one or two sentence summary of the action needed. Then the badges, a summary of what was done and the
+  status, the facts with the optional PR link, the draft reply with a copy button and a Post button, the
+  run notes, what the fix changes, how it was checked, the analysis and the diff.
+- The Post button only works through `routines/report_server.py`, the LaunchAgent's server. It posts the
+  draft with `gh` straight away and logs it. It refuses when the issue is closed, when a comment landed
+  after the card's `gh.at` or when the page is older than the draft, and Marvin then asks in the thread.
+  So keep `gh.at` current on every card and redraft the reply whenever a newer comment changes it.
 - The release check, the design calls for Marvin and the follow-ups spotted.
 
 Badges are `[tone, label, kind]` with tone one of `bad`, `warn`, `info`, `ok`, `muted`. The board shows two
@@ -327,6 +337,7 @@ board embedded, so earlier run notes still match.
   "followups": ["one line per follow-up"],
   "release": { "title": "2.10.7 released 10-17, 2.10.8 queued", "rows": [["issue", "fix", "on stable", "note"]] },
   "milestones": { "2.10.8": 39 },
+  "actions_applied_at": "2026-10-21T09:12:00Z",
   "gone": "Closed and dropped issues with dates and reasons, never shown on the board."
 }
 ```

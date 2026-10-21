@@ -3,6 +3,7 @@
 Usage: python3 build.py <state.json> [--full <board.html>] [--digest <digest.html>]
 """
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -86,14 +87,14 @@ h2 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: v
 .ok { --t: var(--success); } .warn { --t: var(--warning); } .info { --t: var(--info); } .bad { --t: var(--destructive); }
 .badges .b { font: 500 11.5px var(--font-sans); text-transform: none; letter-spacing: 0; padding: 1px 8px; border-radius: 999px; }
 .empty { font-size: 12px; color: var(--muted-foreground); }
-.group { display: flex; flex-direction: column; gap: 6px; }
-details.card { border: 1px solid var(--border); border-left: 3px solid var(--c); border-radius: var(--radius); scroll-margin-top: 8px; }
-details.card > summary { cursor: pointer; padding: 7px 10px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; list-style: none; }
-details.card > summary::-webkit-details-marker { display: none; }
-details.card > summary .t { flex: 1 1 260px; font-size: 13.5px; }
-.body { padding: 2px 12px 12px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border); }
+dialog.card { width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--border); border-top: 3px solid var(--c); border-radius: var(--radius); background: var(--background); color: var(--foreground); overflow: auto; }
+dialog.card::backdrop { background: rgb(0 0 0 / .45); }
+.dh { position: sticky; top: 0; z-index: 1; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; background: var(--background); border-bottom: 1px solid var(--border); }
+.dh .t { font-size: 15px; font-weight: 600; flex: 1 1 300px; }
+.dh .gh { margin-left: auto; }
+.body { padding: 12px 18px 18px; display: flex; flex-direction: column; gap: 10px; }
 .body p { margin: 0; max-width: 90ch; }
-.todo { border-left: 3px solid var(--destructive); background: color-mix(in srgb, var(--destructive) 10%, transparent); border-radius: calc(var(--radius) - 2px); padding: 8px 12px; margin-top: 8px; }
+.todo { border-left: 3px solid var(--destructive); background: color-mix(in srgb, var(--destructive) 10%, transparent); border-radius: calc(var(--radius) - 2px); padding: 8px 12px; }
 .todo b { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--destructive); display: block; }
 .kv { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; font-size: 13px; margin: 0; }
 .kv dt { color: var(--muted-foreground); }
@@ -111,8 +112,11 @@ details.card > summary .t { flex: 1 1 260px; font-size: 13.5px; }
 ul.tight { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; max-width: 100ch; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12.5px; color: var(--muted-foreground); }
 .row code { color: var(--foreground); }
-button { font: inherit; font-size: 12.5px; font-weight: 500; border-radius: calc(var(--radius) - 2px); padding: 3px 12px; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--foreground); }
-button:hover { background: var(--muted); }
+button, a.btn { font: inherit; font-size: 12.5px; font-weight: 500; border-radius: calc(var(--radius) - 2px); padding: 3px 12px; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--foreground); text-decoration: none; }
+button:hover, a.btn:hover { background: var(--muted); }
+button:disabled { opacity: .6; cursor: progress; }
+.perr { color: var(--destructive); }
+a.posted { color: var(--success); border-color: color-mix(in srgb, var(--success) 50%, var(--border)); }
 .bk { border-left: 3px solid var(--warning); background: color-mix(in srgb, var(--warning) 10%, transparent); border-radius: calc(var(--radius) - 2px); padding: 6px 12px; font-size: 13px; }
 .tbl { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
 table { border-collapse: collapse; width: 100%; font-size: 13px; }
@@ -156,14 +160,27 @@ h2 { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color:
 
 JS = """
 (function(){
-  document.querySelectorAll("a.chip").forEach(a => a.addEventListener("click", e => {
-    e.preventDefault();
-    const d = document.getElementById(a.hash.slice(1));
-    if (!d) return;
-    d.open = true;
-    d.scrollIntoView({block: "start", behavior: "smooth"});
-  }));
-  document.querySelectorAll("button[data-copy]").forEach(b => b.addEventListener("click", async () => {
+  // report_server.py fills both placeholders when it serves the page.
+  const TOKEN = "__ACTION_TOKEN__";
+  let POSTED = {};
+  try { POSTED = __POSTED__; } catch (e) {}
+  function open(id){
+    const d = document.getElementById(id);
+    if (!d || d.tagName !== "DIALOG" || d.open) return;
+    d.showModal(); d.scrollTop = 0;
+    history.replaceState(null, "", "#" + id);
+  }
+  document.querySelectorAll("dialog.card").forEach(d => d.addEventListener("close", () => history.replaceState(null, "", location.pathname + location.search)));
+  document.addEventListener("click", e => {
+    const a = e.target.closest("a.chip");
+    if (a) { e.preventDefault(); open(a.hash.slice(1)); return; }
+    if (e.target.closest("[data-close]") || e.target.matches("dialog.card")) { e.target.closest("dialog").close(); return; }
+    const p = e.target.closest("button[data-post]");
+    if (p) { post(p); return; }
+    const b = e.target.closest("button[data-copy]");
+    if (b) copy(b);
+  });
+  async function copy(b){
     const src = document.getElementById(b.dataset.copy);
     try { await navigator.clipboard.writeText(src.textContent); b.textContent = "Copied"; }
     catch (e) {
@@ -172,25 +189,47 @@ JS = """
       b.textContent = "Selected, press copy";
     }
     setTimeout(() => { b.textContent = "Copy"; }, 2000);
-  }));
+  }
+  function posted(b, url){
+    const a = document.createElement("a");
+    a.className = "btn posted"; a.href = url; a.rel = "noopener"; a.textContent = "Posted";
+    b.replaceWith(a);
+  }
+  async function post(b){
+    const err = b.parentElement.querySelector(".perr");
+    err.textContent = ""; b.disabled = true; b.textContent = "Posting";
+    try {
+      const r = await fetch("/api/issue-triage/post", {
+        method: "POST",
+        headers: {"Content-Type": "application/json", "X-Action-Token": TOKEN},
+        body: JSON.stringify({repo: b.dataset.repo, n: Number(b.dataset.n), discussion: b.dataset.discussion === "1", hash: b.dataset.hash}),
+      });
+      const j = await r.json().catch(() => ({error: "HTTP " + r.status}));
+      if (j.ok) { posted(b, j.url); return; }
+      err.textContent = j.error || "HTTP " + r.status;
+    } catch (e) { err.textContent = "The report server did not answer: " + e.message; }
+    b.disabled = false; b.textContent = "Post";
+  }
+  document.querySelectorAll("button[data-post]").forEach(b => {
+    const p = POSTED[b.dataset.repo + "#" + b.dataset.n];
+    if (p && p.hash === b.dataset.hash) posted(b, p.url);
+  });
   const q = document.getElementById("q"), act = document.getElementById("act");
   function filter(){
     const term = q.value.trim().toLowerCase(), only = act.checked;
     document.querySelectorAll("a.chip").forEach(a => {
       const text = (a.textContent + " " + a.dataset.a).toLowerCase();
-      const hide = (term && !text.includes(term)) || (only && !a.dataset.p);
-      a.classList.toggle("hide", hide);
-      document.getElementById(a.hash.slice(1)).classList.toggle("hide", hide);
+      a.classList.toggle("hide", (term && !text.includes(term)) || (only && !a.dataset.p));
     });
     document.querySelectorAll(".col").forEach(col => {
       const n = col.querySelectorAll("a.chip:not(.hide)").length;
       col.querySelector(".n").textContent = n;
       col.querySelector(".empty").classList.toggle("hide", n > 0);
     });
-    document.querySelectorAll(".group").forEach(g => g.classList.toggle("hide", !g.querySelector("details.card:not(.hide)")));
   }
   q.addEventListener("input", filter);
   act.addEventListener("change", filter);
+  if (location.hash) open(location.hash.slice(1));
 })();
 """
 
@@ -220,7 +259,7 @@ def render_full(state: dict) -> str:
     cols = state["columns"]
     cards = sorted(state["cards"], key=_last_at, reverse=True)
     cards.sort(key=_urgency)
-    lanes, groups = [], []
+    lanes, dialogs = [], []
     for key, name, desc in cols:
         in_col = [c for c in cards if c["col"] == key]
         color = COL_COLOR.get(key, "--muted-foreground")
@@ -230,16 +269,13 @@ def render_full(state: dict) -> str:
             f'<section class="col" style="--c:var({color})"><div class="col-head"><b>{escape(name)}</b>'
             f'<span class="n">{len(in_col)}</span></div><p class="col-desc">{escape(desc)}</p>{empty}{chips}</section>'
         )
-        if in_col:
-            body = "".join(_card(c, name, color) for c in in_col)
-            groups.append(f'<section class="group"><h2>{escape(name)} ({len(in_col)})</h2>{body}</section>')
+        dialogs += [_card(c, name, color) for c in in_col]
     parts = [
         '<header><h1>Support issue triage</h1>'
         f'<p class="sub">Last run {escape(state.get("last_run") or "never")}</p></header>',
         '<div class="tools"><input id="q" type="search" placeholder="Filter by issue number, title or area" '
         'aria-label="Filter issues"><label><input type="checkbox" id="act"> Only cards that need attention</label></div>',
         '<div class="cols">' + "".join(lanes) + "</div>",
-        *groups,
         _release(state.get("release")),
         '<div class="lower"><section><h2>Design calls for you</h2><div class="tbl"><table><thead><tr><th>Issue</th>'
         "<th>Decision</th><th>Recommendation</th></tr></thead><tbody>"
@@ -258,7 +294,9 @@ def render_full(state: dict) -> str:
         + CSS
         + '</style></head><body><div class="wrap">'
         + "".join(parts)
-        + "</div><script>"
+        + "</div>"
+        + "".join(dialogs)
+        + "<script>"
         + JS
         + "</script></body></html>"
     )
@@ -463,14 +501,14 @@ def _chip(c: dict, color: str) -> str:
 
 
 def _card(c: dict, col_name: str, color: str) -> str:
-    """Render one card's full detail block."""
+    """Render one card's detail dialog."""
     ref = _ref(c)
     out = []
     if _pending(c):
         action = c.get("action") or _todo_fallback(c)
         out.append(f'<div class="todo"><b>Needs your action</b><p>{_rich(action)}</p></div>')
     badges = _badge("", col_name) + "".join(_badge(b[0], b[1]) for b in c["badges"])
-    out.append(f'<div class="badges" style="margin-top:8px">{badges}</div>')
+    out.append(f'<div class="badges">{badges}</div>')
     if c.get("summary"):
         out.append(f"<p>{_rich(c['summary'])}</p>")
     kv = [("Issue", f'<a href="{_issue_url(c)}">{escape(_repo(c))}{escape(ref[ref.index("#"):])}</a>')]
@@ -498,7 +536,7 @@ def _card(c: dict, col_name: str, color: str) -> str:
         out.append(
             f'<details class="sec" open><summary>{title}</summary><pre class="reply-text" id="{rid}">'
             f'{escape(c["reply"], quote=False)}</pre><div class="row"><button type="button" data-copy="{rid}">Copy</button>'
-            f'<code>reply {escape(ref.lstrip("#"))}</code></div></details>'
+            f'{_post_button(c)}<code>reply {escape(ref.lstrip("#"))}</code><span class="perr"></span></div></details>'
         )
     for rr in c.get("review_replies") or []:
         out.append(
@@ -520,10 +558,20 @@ def _card(c: dict, col_name: str, color: str) -> str:
             )
     if c.get("diff"):
         out.append(f'<details class="sec"><summary>Diff</summary>{_diff(c["diff"])}</details>')
+    head = (
+        f'<div class="dh"><span class="num">{escape(ref)}</span><span class="t">{escape(c["title"], quote=False)}</span>'
+        f'<span class="tags">{_tags(c, c["col"])}</span><a class="btn gh" href="{_issue_url(c)}" rel="noopener">GitHub</a>'
+        '<button type="button" data-close aria-label="Close">Close</button></div>'
+    )
+    return f'<dialog class="card" id="{_anchor(c)}" style="--c:var({color})">{head}<div class="body">{"".join(out)}</div></dialog>'
+
+
+def _post_button(c: dict) -> str:
+    """Post button for the draft reply; the page script swaps it for a link once posted."""
+    digest = hashlib.sha256(c["reply"].encode("utf-8")).hexdigest()[:16]
     return (
-        f'<details class="card" id="{_anchor(c)}" style="--c:var({color})"><summary>'
-        f'<span class="num">{escape(ref)}</span><span class="t">{escape(c["title"], quote=False)}</span>'
-        f'<span class="tags">{_tags(c, c["col"])}</span></summary><div class="body">{"".join(out)}</div></details>'
+        f'<button type="button" data-post data-repo="{escape(_repo(c))}" data-n="{c["n"]}" '
+        f'data-discussion="{1 if c.get("discussion") else 0}" data-hash="{digest}">Post</button>'
     )
 
 

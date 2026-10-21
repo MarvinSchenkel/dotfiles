@@ -42,4 +42,5 @@ The scheduler runs inside T3 Code, so routines only fire while the app is open, 
 
 The `local.routine-reports` LaunchAgent (`launchd/`, installed by `../install.sh`) serves
 `~/.claude-teamB/routine-reports` on `http://127.0.0.1:8765`, so a routine can keep its full report open in
-its thread's side panel.
+its thread's side panel. The server is `report_server.py`; it also takes the issue-triage board's Post button,
+posts the draft with `gh` and logs it to `~/.claude-teamB/routine-state/issue-triage-actions.jsonl`.
