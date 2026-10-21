@@ -317,8 +317,8 @@
     "login": "MarvinSchenkel",
     "team": true,
     "at": "2026-10-21T06:35:59Z",
-    "pr_open": false,
-    "pr_draft": false
+    "pr_open": true,
+    "pr_draft": true
    },
    "summary": "Docker 2.11.0.dev2026100703, native HEOS group of two Denon Home 200s, Tidal, FLAC 44.1/24 output, ICY off, crossfade off. Playback stopped near 434 s of a 466 s track and every Play retried that position and failed with HEOS 'Unable to play media'. An MA restart didn't help, skipping to the next track did. Incident log, diagnostics and a standalone repro attached.",
    "fix": "server#7132 (draft): the flow route passes on whatever ffmpeg has encoded (read-any) when ICY is off, instead of waiting for a full second of encoded audio (~197 KB for FLAC). ICY framing unchanged. This restores the behaviour from before 4108ef5292 (Feb 2025, 'use static chunksize'); the single-item route already reads this way.",
@@ -347,6 +347,11 @@
      "muted",
      "Assigned to you",
      "assigned"
+    ],
+    [
+     "info",
+     "Test asked 10-21",
+     "test asked"
     ]
    ],
    "reply": "",
@@ -354,7 +359,8 @@
    "notes": [
     "10-21 07:38 run: new issue, reproduced hermetically by an Opus triage agent. A gogogo fix agent is building the draft PR (A/B, Copilot, you assigned).",
     "10-21 07:38 run: gogogo agent opened draft server#7132 (fix/flow-stream-chunk-latency @ 1c65220). Safety check: the static chunk size came from 4108ef5292 with no stated reason; Content-Length profile, pacing and seconds-streamed don't depend on it; single-item route already reads any. One new test, no existing tests touched. A/B ok; streams + audio + ffmpeg suites 1844 passed. CI green, Copilot 0 comments. You're assigned. Reply is the DEV Docker ask.",
-    "10-21 09:11 run: you posted the DEV Docker test ask (06:35 UTC, https://github.com/music-assistant/support/issues/6831#issuecomment-6309724742). Waiting for amodig."
+    "10-21 09:11 run: you posted the DEV Docker test ask (06:35 UTC, https://github.com/music-assistant/support/issues/6831#issuecomment-6309724742). Waiting for amodig.",
+    "10-21 13:35: added the missing \"test asked\" badge (your DEV Docker ask 10-21 06:35 UTC); PR state refreshed (server#7132 open, draft)."
    ],
    "action": ""
   },
@@ -862,6 +868,11 @@
      "muted",
      "Assigned to you",
      "assigned"
+    ],
+    [
+     "info",
+     "Test asked 10-20",
+     "test asked"
     ]
    ],
    "reply": "",
@@ -875,7 +886,8 @@
     "10-20 09:38 run: you posted the free-disk-space reply (06:45 UTC). Waiting for amsound to rebuild pr-6959 and run past the 6 h mark.",
     "10-20 11:38 run: amsound (09:22 UTC) has 8.4 GB free on a 30.8 GB disk. Real cause: music_assistant_dev runs with tmpfs: true (Supervisor sets no size, Docker default 50% of RAM) and uv pip install --no-cache clones and compiles in /tmp; dev's git pin of aiolibdatachannel (libdatachannel submodule, C++ build) alone peaks ~390 MB. Reproduced in docker on the nightly image: 200-400 MB tmpfs fails with the exact 'fatal: write error: No space left on device' from their log, 450 MB passes. Draft home-assistant-addon#48 (head ac389eb) points TMPDIR at /data/server-build-tmp for both installs and removes it after. A/B on the built add-on image with a 300 MB tmpfs: original fails, fixed installs all 94 packages + server. Copilot clean, that repo has no PR CI. My earlier 'free disk space' reply was wrong.",
     "10-20 13:30 (on request): you merged home-assistant-addon#48 (10:57 UTC) and posted the retry reply (11:14). No Fix to be Confirmed yet, since the issue's own fix is still server#6959.",
-    "10-20 13:38 run: you posted the corrected reply (11:14 UTC): RAM temp folder was the cause, home-assistant-addon#48 merged, rebuild steps for the DEV app with pr-6959. Waiting for amsound's 6 h retest."
+    "10-20 13:38 run: you posted the corrected reply (11:14 UTC): RAM temp folder was the cause, home-assistant-addon#48 merged, rebuild steps for the DEV app with pr-6959. Waiting for amsound's 6 h retest.",
+    "10-21 13:35: added the missing \"test asked\" badge (your DEV add-on ask 10-20 11:14 UTC)."
    ],
    "action": ""
   },
@@ -1356,13 +1368,13 @@
    "summary": "2.10.6 HA add-on, Roku streaming stick on the AirPlay provider. Pausing and resuming skips 1-2 s of audio, and the progress bar jumps on pause. The reporter sent a Verbose log and diagnostics.",
    "fix": "Our airplay-cli#91 (ready, CI green, Copilot clean): a buffered AirPlay 2 pause resumes from the audible position instead of the write position.",
    "checked": "Opus subagent on the reporter's log (2.10.6) and airplay-cli origin/main a5a2175. The Roku streams native AirPlay 2 buffered over PTP (auto route), reports no latency (buffer window 0-0, lead is our 2000 ms default). Three pause/resume pairs at 14:21: the resume RTP anchor is always ahead of the pause anchor, +100 ms, +319 ms, +1879 ms, and the elapsed time jumps about 1.5 s past real time after each resume. Cause: ap2cl_pause (ap2_client.c ~4576) sends the rate-0 anchor at p->rtp_timestamp, the sender's write position about one lead ahead of what's audible. ap2cl_play (~4686) re-anchors at prev_rtp + AP2_BUFFERED_RTP_GAP_MS. Everything sent but not played falls before the new anchor and the receiver drops it. Splice (Apple) and RAOP/compat paths don't do this, so every non-Apple buffered AP2 receiver should hit it. Side issue: after a 37 s pause the session dropped at 14:22:36 (write timeout) and the next play failed with 'cliairplay did not connect'. Not reproduced locally yet.",
-   "plan": "Merge airplay-cli#91, release, let the bot bump the pin, then ask PipTheBirb to test the DEV add-on (server_repo dev).",
+   "plan": "Release airplay-cli, let the bot bump the pin, then ask PipTheBirb to test the DEV add-on (server_repo dev).",
    "branch": "",
    "diff": "",
    "prs": [
     {
      "url": "https://github.com/music-assistant/airplay-cli/pull/91",
-     "label": "airplay-cli#91 (draft, CI green, Copilot clean at f43c73a, WiiM retest passed)"
+     "label": "airplay-cli#91 (merged by you 10-21 11:08 UTC, not released yet; latest release v0.5.8 from 10-14)"
     }
    ],
    "badges": [
@@ -1385,9 +1397,10 @@
     "10-13 15:40 run: PipTheBirb sent a Verbose log. The loss comes from cliairplay's buffered AP2 pause anchor (write position instead of audible position), confirmed from the log's RTP anchors, not locally. Moved to Reproduced, cannot fix: fix belongs in airplay-cli.",
     "10-14 11:40 run: airplay-cli#91 is out of draft, CI green, Copilot clean. Moved to Reproduced + fixed and assigned you. The compat-mode workaround reply was already posted.",
     "10-15 10:15 run: airplay-cli#91 got a reworked pause shape (force-push 07:17, extra commit 08:03 'Record the paused frame after the rate-0 round trip'). Copilot had 2 findings on the first push, both resolved on the second review: 0 open findings, CI green at 4e753f0a55. Still needs the one WiiM Keuken retest of the new shape before merge.",
-    "10-15 11:40 run: You reverted Copilot's post-response sample in f43c73a after the WiiM Amp retest (every SETRATEANCHORTIME takes ~207 ms, so a post-response sample anchored resumes 207 ms late). Copilot re-reviewed f43c73a at 08:38 UTC: approval recommended, 0 open findings, CI green. No reply until the fix is in a dev build."
+    "10-15 11:40 run: You reverted Copilot's post-response sample in f43c73a after the WiiM Amp retest (every SETRATEANCHORTIME takes ~207 ms, so a post-response sample anchored resumes 207 ms late). Copilot re-reviewed f43c73a at 08:38 UTC: approval recommended, 0 open findings, CI green. No reply until the fix is in a dev build.",
+    "10-21 13:35: you merged airplay-cli#91 at 11:08 UTC. Next is the airplay-cli release and pin bump."
    ],
-   "action": "airplay-cli#91 is done: WiiM Amp retest passed at f43c73a and Copilot recommends approval with 0 findings. Mark it ready, merge, and cut an airplay-cli release for the server pin bump.",
+   "action": "You merged airplay-cli#91. Cut an airplay-cli release (latest is v0.5.8 from 10-14) so the bot bumps the server pin, then the DEV add-on test ask for PipTheBirb can go out.",
    "ask": "merge"
   },
   {
@@ -2864,7 +2877,7 @@
     "login": "patrick131",
     "team": false,
     "at": "2026-10-19T01:09:06Z",
-    "pr_open": false,
+    "pr_open": true,
     "pr_draft": false
    },
    "summary": "On 2.10.7 (HA add-on, 57 players), AirPlay 2 sync groups go playing then idle, and one member logs that it has not answered the PTP clock. Groups with 9 or more AirPlay members always fail. A smaller group fails after a different group was used first, and works again after an MA restart or an AirPlay provider reload. The reporter's packet captures show the daemon sending Sync only to 7 or 8 peers, including a speaker from the previous group.",
@@ -2897,7 +2910,8 @@
     "10-19 07:38 run: new issue. Fix belongs in airplay-cli (PTP peer cap + slot release) and needs your call first.",
     "10-20 14:30 (on request): investigation chip queued. It confirms the cause with a build and hermetic repro and implements the recommended airplay-cli fix on a local branch with A/B. No PR or GitHub comments until you've reviewed it.",
     "10-20 14:38 run: the chip opened draft airplay-cli#95 (all builds and sanitizer tests green). Copilot (12:37 UTC) left 3 open findings: the shared-memory object isn't resized when a new daemon reuses an older, smaller one; tests use the production shm name and control port; no-pid registrations take one slot each and get rejected after 128 while still answering OK.",
-    "10-20 15:38 run: airplay-cli#95 is out of draft, CI green, 0 unresolved threads after 4 Copilot rounds (shm recreate when too small, isolated test shm name and port, ownerless regs counted, reap-and-retry on a full table). Waiting for your merge."
+    "10-20 15:38 run: airplay-cli#95 is out of draft, CI green, 0 unresolved threads after 4 Copilot rounds (shm recreate when too small, isolated test shm name and port, ownerless regs counted, reap-and-retry on a full table). Waiting for your merge.",
+    "10-21 13:35: PR state refreshed (airplay-cli#95 open, ready for review)."
    ],
    "action": "Merge airplay-cli#95 (ready for review, CI green, all Copilot threads resolved, AirPlay is excluded from auto-merge). Then cut a cliairplay release and bump the server pin before replying to patrick131.",
    "ask": "merge"
@@ -3620,8 +3634,8 @@
     "login": "MarvinSchenkel",
     "team": true,
     "at": "2026-10-20T13:35:53Z",
-    "pr_open": false,
-    "pr_draft": false
+    "pr_open": true,
+    "pr_draft": true
    },
    "summary": "2.10.7 HA add-on, Sonos Era 100 x3 (Native), Spotify Premium. transfer_queue (auto_play) from one Sonos to another loads the track on the target, which sits idle 30 s, then 'Timeout waiting for audio data' and a skip, later ERROR_LSE. Stopping the source first and waiting ~1 s avoids it. Follow-up: a separate mid-track ClientConnectionResetError on one Era 100 (#5057), after which the skip chain hits Spotify's 1-stream limit. Also says the transfer restarts at 0:00.",
    "fix": "server#7116 (draft): transfer_queue waits for the source to release its audio (and Spotify stream slot) before it starts the target, so the target no longer times out after 30 s.",
@@ -3650,6 +3664,11 @@
      "muted",
      "Assigned to you",
      "assigned"
+    ],
+    [
+     "info",
+     "Test asked 10-20",
+     "test asked"
     ]
    ],
    "reply": "",
@@ -3658,7 +3677,8 @@
     "10-19 09:38 run: new issue. Reproduced with a hermetic test on dev, one-line fix ready locally. Not pushed: the two existing mock builders in test_transfer_queue.py (_fake_controller, _shuffle_controller) each need one added line (fake._cleanup_queue_audio_data = AsyncMock()), otherwise 8 existing transfer tests fail on an un-awaitable MagicMock. Assigned you.",
     "10-20 13:40 (on request): you OK'd the two mock lines in the existing test builders. gogogo chip queued for the fix.",
     "10-20 14:38 run: the chip opened draft server#7116 (CI green; Copilot flagged a teardown ordering gap and a test that hid it, both fixed, re-review clean 12:35 UTC). DEV ask drafted (HAOS only, the reporter runs the add-on).",
-    "10-20 15:38 run: you posted the pr-7116 DEV test ask (13:36 UTC). server#7116 still draft, CI green, Copilot clean. Waiting for raine-works."
+    "10-20 15:38 run: you posted the pr-7116 DEV test ask (13:36 UTC). server#7116 still draft, CI green, Copilot clean. Waiting for raine-works.",
+    "10-21 13:35: added the missing \"test asked\" badge (your test ask 10-20 13:35 UTC); PR state refreshed (server#7116 open, draft)."
    ],
    "action": ""
   },
@@ -3703,6 +3723,11 @@
      "muted",
      "Assigned to you",
      "assigned"
+    ],
+    [
+     "info",
+     "Test asked 10-20",
+     "test asked"
     ]
    ],
    "reply": "",
@@ -3713,7 +3738,8 @@
     "10-20 13:38 run: draft server#7115 (head a330175f), CI green, Copilot reviewed with 0 comments. The fix agent had marked it ready (gogogo rule); I set it back to draft per the triage spec. Review request to alams154 failed (422, not a collaborator).",
     "10-20 14:38 run: you posted the pr-7115 DEV test ask (12:09 UTC). server#7115 still draft, CI green, Copilot clean. Waiting for profLewis.",
     "10-20 17:38 run: profLewis (15:30 UTC) refiled the report in the issue form and will test pr-7115. Nothing new technically. Waiting for their result.",
-    "10-21 07:38 run: profLewis (00:18 UTC) posted the full MA + skill-service logs and a new repro on add-on 1.3.7-beta.2: two failures a minute apart (Errno 104 connection reset, then Server disconnected), the add-on never logged the POST, the third try played. Both errors are covered by server#7115 (ClientOSError and ServerDisconnectedError retry once). Not tested pr-7115 yet, will do next."
+    "10-21 07:38 run: profLewis (00:18 UTC) posted the full MA + skill-service logs and a new repro on add-on 1.3.7-beta.2: two failures a minute apart (Errno 104 connection reset, then Server disconnected), the add-on never logged the POST, the third try played. Both errors are covered by server#7115 (ClientOSError and ServerDisconnectedError retry once). Not tested pr-7115 yet, will do next.",
+    "10-21 13:35: added the missing \"test asked\" badge (your test ask 10-20 12:09 UTC). profLewis replied with logs since, but no test result yet."
    ]
   }
  ],

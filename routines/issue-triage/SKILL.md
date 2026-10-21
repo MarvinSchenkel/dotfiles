@@ -54,6 +54,12 @@ Do these before building the board, on every card, not only on issues updated in
      redraft. A card never stays on Marvin's list for a reply he already gave.
    - The reporter commented after the stored `gh.at`: the card counts as changed. Read the new comment and
      act on it like a fresh update.
+   - For every card with PRs, refresh `gh.pr_open` and `gh.pr_draft` from the linked PR's real state, and
+     move a card whose PR merged since the last run on to the next step (bookkeeping, or a release for
+     airplay-cli and other libraries). When the thread holds a test ask from Marvin or a teammate (a DEV
+     add-on or `pr-<n>` ask), give the card `["info", "Test asked <MM-DD>", "test asked"]`; when the reporter
+     reports a result, `["ok", "Tested <MM-DD>", "tested"]`, or `still broken` when it failed. The board's
+     "no test ask" tag only shows when neither badge is there, so stale badges show up as wrong chips.
    Only looking at comments inside the run window misses everything that landed between runs.
 1. State sweep. One GraphQL query with an aliased `issue(number:N){state}` field per card. Drop every
    closed issue: remove the card, append it to `gone` with the date and the reason, and remove its rows

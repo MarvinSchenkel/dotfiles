@@ -81,6 +81,9 @@ h2 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: v
 .col-desc { font-size: 11.5px; color: var(--muted-foreground); margin: 0; line-height: 1.35; }
 .chip { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; row-gap: 3px; padding: 5px 7px; border: 1px solid var(--border); border-left: 3px solid var(--c); border-radius: calc(var(--radius) - 2px); text-decoration: none; min-width: 0; }
 .chip:hover { background: var(--muted); }
+/* Cards that don't need Marvin recede so the ones that do stand out. */
+.chip:not([data-p]) { opacity: .45; }
+.chip:not([data-p]):hover, .chip:not([data-p]):focus-visible { opacity: 1; }
 .num { font: 500 11.5px var(--font-mono); color: var(--muted-foreground); padding-top: 1px; }
 .chip .t { font-size: 12.5px; line-height: 1.3; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .chip .tags { grid-column: 2; }
