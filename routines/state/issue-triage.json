@@ -2512,10 +2512,15 @@
     "10-15 16:38 run: new issue. Not reproduced on 2.10.6 or dev with a hermetic test, no code cause found. Reply asks for a debug log and the player topology.",
     "10-16 16:38 run: reporter suspects Plex after mnestrud's Tidal non-repro. Shuffle path is provider-agnostic; reply updated to still ask the debug log, plus a non-Plex comparison.",
     "10-20 16:38 run: you posted the Player Queues debug log + non-Plex comparison ask (14:37 UTC). Waiting for the reporter.",
-    "10-21 07:38 run: zosopage1963 (16:12 UTC) reproduced on the Chrome web player with Plex on 2.10.7 and attached a Player Queues DEBUG log. The log has no shuffle trace at all (that path doesn't log) and no refused command. Next step is a Verbose Web Server log plus the user role."
+    "10-21 07:38 run: zosopage1963 (16:12 UTC) reproduced on the Chrome web player with Plex on 2.10.7 and attached a Player Queues DEBUG log. The log has no shuffle trace at all (that path doesn't log) and no refused command. Next step is a Verbose Web Server log plus the user role.",
+    "10-21 12:15: repro session started at your request against your local Plex server (Plex album/playlist on This device, Tidal comparison, dev then 2.10.7). Draft reply on hold until it reports."
    ],
    "action": "Post the reply asking for a Verbose Web Server log plus admin vs regular user; the Player Queues log can't show the shuffle step.",
-   "ask": "reply-info"
+   "ask": "reply-info",
+   "fix_thread": {
+    "id": "mcp:b947aee9-eba6-476a-94ac-10fa0c05a450",
+    "title": "Repro #6757: shuffle ignored with Plex"
+   }
   },
   {
    "n": 6758,
