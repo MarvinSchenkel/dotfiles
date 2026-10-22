@@ -6310,8 +6310,15 @@
    "action": "Design call: Fully Kiosk codec default (AAC silent on this Echo, MP3 dies at ~9 min elsewhere). Reply draft ready. Separate int media_content_id crash in hass_players: local fix ready (11ca7c45c6, needs your OK for a PR).",
    "notes": [
     "10-22 12:30 run: new issue. Reporter found MP3 works where the AAC default stays silent. Design row for the codec default; reply drafted. Spotted a separate hass_players crash (int/dict media_content_id) in the log, local fix with an Opus subagent.",
-    "10-22 12:40: Opus subagent built the hass_players local fix (11ca7c45c6), A/B clean, stable cherry-pick clean. No PR until you say so."
-   ]
+    "10-22 12:40: Opus subagent built the hass_players local fix (11ca7c45c6), A/B clean, stable cherry-pick clean. No PR until you say so.",
+    "10-22 12:50 fix: fix session launched on your second Claude instance (claudeAgent_claude_2, Opus 5.5, your call) to PR the hass_players local fix with backport. Codec design stays open."
+   ],
+   "fix_thread": {
+    "id": "mcp:54661029-8377-44a2-8aa7-dd9ea1d8a516",
+    "title": "Fix: HA players crash on a non-text media_content_id (#6845)",
+    "kind": "fix",
+    "done": false
+   }
   }
  ],
  "design": [
