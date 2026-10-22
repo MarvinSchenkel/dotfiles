@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-22T10:00:00+02:00",
- "dev": "42a39108c",
- "run_note": "You approved #5700, but it is not queued and still lacks the API schema bump. #7143 (Alexa position) is out of draft: our stop-race patch is ready, and Copilot's new CRITICAL needs a core call. Simanias's #7146 looks good, but a body-only Copilot PROBLEM about the button cache blocks auto-approval. #7145 merged.",
+ "last_run": "2026-10-22T11:00:00+02:00",
+ "dev": "56eabe897",
+ "run_note": "You merged #5700 at 08:03Z, but API_SCHEMA_VERSION is still 99 on dev and the statistics diagnostics hook never landed. Simanias moved #7146's button cache to mass.cache and it is ready for your approve. #7147 (flow lead opt-in) is out of draft and needs requires_reload plus Marcel's design call. The gate drafted #7143. Simanias's #7148 (group sample rates) fixed three Copilot CRITICALs, but a fourth landed on the new head.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -50,7 +50,7 @@
    "providers_touched": [
     "sonos"
    ],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
    "head_sha": "05cc0aeb5",
    "tldr": "_leads_moved_group is now re-checked synchronously after the wait, connection included, so a role given up again is left alone. The flow-load timeout decline holds, because aiosonos create_session can hand back the same session id. Our PROBLEM still stands: a play preparing audio on either player has not bumped cloud_queue_item_generation yet, so the hand-over transfers over it. Checking ATTR_PLAY_ACTION_IN_PROGRESS on both queues fixes it without touching core. Copilot resolved all three threads and has no open issues. Sonos is excluded from auto-approve.",
    "summary": "r4333309129: commit 07c354954 moves the readiness predicate into _leads_moved_group (connected, client.player.is_coordinator, group subscribed). _hand_over_moved_group calls it again after _wait_for_moved_group, with no await between that check, the generation/_plays_queue checks and the start of the hand-over. Parametrised tests cover role, status and connection loss, so the fix is verified. r4333309191 (declined): aiosonos 0.1.15 _play_stream_url runs create_session and then load_stream_url, and create_session can return the previously used session id. After a CommandTimeout, the provider cannot tell a timed-out create (old session still active) from a timed-out load into a reused session. Forgetting the queue is the conservative choice. The play command already raised, so the user sees the failure. Decline OK. r4333309171 (declined): holding core playback locks from a provider risks lock-order inversion with transfer_queue's own cmd_ungroup/stop calls, so fixing it in core transfer_queue is the right home. The justification is only half-true, though: core's _transfer_ad_hoc_leadership runs inside cmd_set_members under the old leader's PLAYBACK lock (players/controller.py:1404), and only the new leader is unguarded there. Our PROBLEM is the concrete harm from that gap. Scenario: the user starts a play on either speaker right after the move, and handle_play_action holds the lock and sets ATTR_PLAY_ACTION_IN_PROGRESS while audio prepares. play_media has not run yet, so neither generation has moved. The hand-over then forgets our queue, transfer_queue clears and moves it, and play_index cancels the user's pending play or moves their new items to the other speaker. The suggested patch bails when either queue has the flag set. It is a synchronous check right before the transfer and has been validated: 195 sonos tests pass, and the new test fails without the fix.",
@@ -1439,8 +1439,8 @@
   {
    "repo": "server",
    "number": 5700,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-22T08:03:40Z",
    "title": "Add statistics API for play history",
    "author": "dmoo500",
    "url": "https://github.com/music-assistant/server/pull/5700",
@@ -1457,7 +1457,7 @@
    "providers_touched": [
     "fastmcp_server"
    ],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; no decision, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; no decision, no auto-merge",
    "head_sha": "8071325c1",
    "tldr": "dmoo500 rebased onto dev: DB schema 71, podcast episodes in the default history, Copilot's availability CRITICAL fixed. He declined the album-credit CRITICAL because you asked for track-to-album aggregation (r4324084923). Dev's #7073 now counts album plays from where a track was played from, so the two album numbers will disagree. Your call. Still open: API_SCHEMA_VERSION 100 and the diagnostics hook (validated patch ready).",
    "summary": "Head 8071325c1 merges dev cleanly (merge-tree clean, dev is an ancestor). The merge commit also carries real changes: DB_SCHEMA_VERSION 71, the play-history index migration moved under `prev_version <= 70` with dev's `<= 69` Apple Music block kept, and a new provider-mapping pass in `_set_library_item_availability`. That pass answers Copilot's 'previously missed' critical: provider-keyed history and ranking rows now go unavailable when their exact-instance mapping is unavailable, or when none of their domain mappings is available on a loaded instance. Same rule as dev's `_summary_available`/MediaItem.available. A933be9bd adds PODCAST_EPISODE to the default history types, with a test. Still open: API_SCHEMA_VERSION is 99 even though the PR adds 8 statistics/* API commands (also exposed through the MCP policy), and StatisticsController.get_diagnostics is never collected because 'statistics' is not in CORE_CONTROLLER_ATTRS. Minor: the new provider-mapping lookup filters only on media_type plus provider_item_id, so it scans every mapping of that media type per history page. The migration test still passes prev_version=69, and its docstring says 'Schema 70'.",
@@ -1573,7 +1573,7 @@
     "pushed": null
    },
    "prompt": "Server PR #5700 (https://github.com/music-assistant/server/pull/5700), head 8071325c1, by dmoo500. Bump API_SCHEMA_VERSION to 100 in music_assistant/constants.py, add 'statistics' to CORE_CONTROLLER_ATTRS in controllers/diagnostics/__init__.py, and run the play-history migration test from prev_version=70. Separately, Copilot r4338544556: album top_items/play_count credit every album a track is linked to; consider aggregating from the album a play came from (queue item origin, #6872/#7073) instead. Work in a worktree from refs/remotes/pr/5700.",
-   "whats_new": "You approved it at 07:57Z. No auto-merge or merge queue yet, and the head is unchanged (8071325c1), so API_SCHEMA_VERSION is still 99 and the diagnostics hook is still uncollected.",
+   "whats_new": "You merged it at 08:03Z on 8071325c1, without the API_SCHEMA_VERSION bump (dev still 99) or the statistics diagnostics hook.",
    "backport": {
     "rec": false,
     "why": "New feature with a DB schema bump and new API; ships in the next minor."
@@ -1591,7 +1591,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "you: queue merge",
-   "changed_now": "approved",
+   "changed_now": "merged",
    "fix_thread": "[Cache benchmark discussion](t3-thread://v1/mcp:86e76b02-68f1-4956-9579-2147ce8dc226), started 10-21: cache-DB hit vs uncached instead of warm memory",
    "gpt_sol": "0 critical, 2 problems"
   },
@@ -1617,7 +1617,7 @@
     "wled_audio_sync",
     "sendspin_lights"
    ],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; changes requested, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; changes requested, no auto-merge",
    "head_sha": "76c74c929",
    "tldr": "OzGav reviewed at 21:46Z: asked netmindz to update the PR description (path is now providers/wled_audio_sync, drop the 'Sendspin visualizer API unreleased' line) and left three optional notes: drop _ensure_client_unclaimed() or give it the port_in_use key, and two try/except blocks in bridge.py that aren't needed. Waiting on netmindz. Our review stays as it was (head unchanged).",
    "summary": "Delta 447c10ed3..46ce632a0 (9d5c29d40, 5e922fb91, 9134204c4, 177bc704a, 46c70cd00, dev merge a27927846, 222b89aad, 5a0ba9aea, 46ce632a0). (1) base.py now takes a VisualizerStatePayload plus buffer_capacity, passes the request to setup_visualizer() and sends only buffer_capacity in the hello. That matches BridgeVisualizerRole.setup_visualizer(request) on dev. (2) bridge.py sends one zero packet in _on_stream_end and stop(), guarded by transport.is_closing(), and stop() and the start() failure path use nested try/finally so unregister and close always run. (3) New _ensure_client_unclaimed() refuses to start if wled-zone-{port} is already registered. There is no await between the check and register_client(), and the failure path is safe: unregister_client() is a no-op because _sendspin_client is still None, so it cannot remove the other zone's client. (4) Scaling mode options drop the hardcoded titles so strings.json translations show. (5) setup_flow now prefills via value= (default_value stays DEFAULT_PORT), keeps the submitted port when the form is shown again, and passes the SetupFlowError through so its translation key, owner and args reach the form. Dev's SessionSetup.form() accepts str | SetupFlowError, so this is correct. (6) en.json regenerated. Copilot review 5558709689 on the head reports no open issues and one previously missed PROBLEM: the render tick catches every Exception. That is the same pattern as hue_entertainment/bridge.py:417 on dev, and asyncio datagram sendto reports send errors through error_received instead of raising, so log spam on network loss is unlikely. Not worth a change, but it should get a reply. netmindz answered the packet layout and sendspin reload threads correctly (44-byte packed struct; depends_on sendspin tears the provider down on a sendspin reload). All review threads are resolved and there are no new human comments. Tests not run locally: the shared .venv has a stale music_assistant_models (ListingType import error). CI pytest is green.",
@@ -2477,7 +2477,7 @@
    "providers_touched": [
     "ai_radio"
    ],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; no decision, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; no decision, no auto-merge",
    "head_sha": "7b9eed31e",
    "whats_new": "jpittelkow answered Marcel at 20:30Z. He scored Marcel's guard on the 38 tracks: it doesn't separate them (11 right, 0 over the singer, 27 too early), because the strict config opens at the same second almost everywhere. A 'voice never stops' guard scores 22/0/16 and is ready on a branch, but he left it out because it was found on the same 4 late-lyrics tracks. He also fixed the title and description. Now Marcel's call.",
    "tldr": "Follow-up to #6866. An AI Radio post now times its overlap from the synced-lyrics onset, and the stored analysis onset only wins when it is more than 5 s later. The new commit adds the exact-5 s boundary case and a lyrics-timeout test, so the code and tests are done. Copilot cleared the boundary finding on the new head. One Copilot PROBLEM is still open: it wants the PR body trimmed. That needs a body edit or a reply, no code change.",
@@ -2882,7 +2882,7 @@
    "ci": "green on 8fe7fdf72",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
    "head_sha": "8fe7fdf72",
    "tldr": "szsolt declined Copilot's Smart Shuffle CRITICAL at 21:28Z (autoplay never turns shuffle off, same as Auto mode and adding the artist by hand on dev), resolved it and marked the PR ready. We leaned the same way. No open threads, CI green, Claude and GPT Sol clean on this head. Ready for your approve; core is touched, so no auto-approval.",
    "summary": "In `_fill_autoplay_music_tracks` the delta resolves the mode first and dispatches SIMILAR_ARTISTS to `_fill_autoplay_similar_artist` before `if not queue_data.enqueued_media_items: return`. It is the same change as our prepared patch. The similar-artists path seeds from the last Track in `queue_data.items` and doesn't read enqueued_media_items, so it doesn't need the guard. With no Track in the queue, `get_similar_artists` returns [] and the fill logs and returns. `resolve_mode` only reads config (with an AUTO fallback), so moving it earlier has no side effects. SIMILAR, LIBRARY, PLAYLIST and AUTO still hit the seed guard and run unchanged. Dynamic queues are still routed to `_fill_dynamic_tracks` by the callers, so the new early branch can't fire on them.\n\nThe new test `test_adds_a_similar_artist_to_a_queue_started_from_a_genre` clears enqueued_media_items and checks that the refill loads the similar artist's track. Copilot r4333307177 (queued artists compared by name) was declined by the author because the queue holds library and provider copies with different ids, and we agreed. The only nit: the 'Filling autoplay tracks (mode: ...)' debug line no longer logs for this mode. API_SCHEMA_VERSION is 99 on both sides and constants.py is not touched.",
@@ -2988,7 +2988,7 @@
    "ci": "All green on 306c090ad (lint, pytest 1-3/3, provider-scope, test).",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
    "head_sha": "306c090ad",
    "tldr": "thelad-dev fixed both Copilot CRITICALs: volume_set errors are now wrapped to PlayerCommandFailed like handle_player_command, and the config reads moved under the VOLUME lock with a race test. Copilot now has 0 inline findings. Side effect: every VOLUME_SET player now waits on its VOLUME lock during register/reconnect while the global register lock is held, even with no pin. Copilot's Previously missed item (no apply on unavailable to available) is real for Chromecast. One small commit plus a reply.",
    "summary": "Delta e2882279a..306c090ad, one commit, controller.py and the pin test file. (1) _apply_native_volume_pin now catches non-MusicAssistantError from player.volume_set and raises PlayerCommandFailed, same pattern as handle_player_command in players/helpers.py. Register and register_or_update keep their MusicAssistantError catch, so device errors no longer abort registration. This resolves our previous blocker and Copilot r4280705863 without touching providers. (2) The CONF_VOLUME_CONTROL and CONF_NATIVE_VOLUME reads moved inside the per-player VOLUME lock, which resolves r4280705925. save_player_config writes storage before calling on_player_config_change, so the recheck sees the new values. get_player_lock is per-task reentrant, so no self-deadlock, and the pin only takes the member lock, so no group/member inversion. The new asyncio test does catch the old ordering: after sleep(0) the old code had already read the pin before blocking. (3) New issue from (2): the early return now happens inside the lock, so every VOLUME_SET player takes its VOLUME lock on each register/register_or_update. Both calls run under the global _register_lock. If a volume command is stuck on that player (likely on a reconnect after a drop), registration of every player waits up to PLAYER_LOCK_TIMEOUT (30s), even though the pin is not configured. GPT Sol flagged the same thing as PROBLEM. Fix: cheap pre-check before the lock, recheck inside (patch below). (4) Pin before set_config: author kept it and replied on the resolved thread r4254688831. Fine. Copilot 06:20Z on 306c090ad: 0 open inline findings, both old threads resolved in its overview (the GitHub threads are still unresolved). Previously missed (1) [CRITICAL]: no pin apply on unavailable to available. Checked: chromecast/player.py sets _attr_available = False at init and flips it in the connection-status handler via update_state, never re-registering. So for Cast the pin is skipped at register and never applied at startup, only on config save while online. Cast into an AVR is a typical setup for this feature, so this is worth fixing in the PR: in signal_player_state_update, when 'available' changed to True on an initialized player, schedule _apply_native_volume_pin as a task that logs errors. The Universal Player item from the last review was not repeated. Our depends_on_value_not = PLAYER_CONTROL_NATIVE suggestion is still unposted. Local tests could not run: the shared .venv has stale models (SortField.FAVORITE_TIMESTAMP missing). CI green. Marvin has not commented on this PR.",
@@ -3083,7 +3083,7 @@
    "providers_touched": [
     "dlna_receiver"
    ],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; changes requested, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; changes requested, no auto-merge",
    "head_sha": "0d643083b",
    "tldr": "Out of draft again since 08:52Z and OzGav is re-requested. All 58 review threads are resolved, and the three OzGav points from September (owner_player_id rename, conftest.py removed, deferred import removed) are done in the code. Scope is clean: only the new provider, its tests and en.json keys. Two real bugs remain against the current AudioSource session model. The plugin never calls deselect_source, so a second cast on the same renderer reuses the first cast's cached stream details (with the codec ffmpeg detected), and a DLNA Stop leaves the player showing the DLNA source. Also, any stream teardown during Pause is treated as Stop.",
    "summary": "New plugin provider synced from ma-provider-dlna-receiver v1.2.8. It runs one aiohttp UPnP server per MA player (ports from 8298 upward, on one detected IPv4) and one SSDP advertiser per renderer, each with its own UDP 1900 socket (SO_REUSEPORT). Playback goes through play_media with an AUDIO_SOURCE uri, and get_audio_stream proxies the sender's URL. Files touched: only music_assistant/providers/dlna_receiver/*, tests/providers/dlna_receiver/* and 9 new keys in translations/en.json. No core changes. Conventions are mostly fine: get_config_entries is an instance method on dev's model, the registry uses the event bus, tasks go through mass.create_task, and narrow excepts are used. The VERSION file matches other synced providers (yandex_*, kion_music, msx_bridge). The docs URL in the manifest returns 404 until music-assistant.io#626 merges. Unload cancels the metadata task, unsubscribes the player events, sends byebye, closes both UDP transports, stops the aiohttp runner, cancels GENA tasks and leaves mass.http_session open. GPT Sol and I found no leak. Security of the unauthenticated endpoint is reasonable for DLNA: SetAVTransportURI and GENA callbacks are validated against loopback, link-local, multicast and reserved addresses on every redirect hop, redirects are capped at 5, GENA is capped at 32 subs per service with a 1800 s TIMEOUT clamp, and SOAP/DIDL parsing rejects DOCTYPE/ENTITY and anything over 64 KiB. Anyone on the LAN can still play to and set the volume of every exposed player. That is inherent to DLNA and the plugin is opt-in. The remaining issues are about the newer AudioSource session contract. Sessions survive cmd_stop and keep session.streamdetails on re-select (_start_audio_source_session with preserve_details). ffmpeg writes the detected codec into that AudioFormat in place, so the next cast on the same renderer is launched with the old -acodec. Other receivers (airplay_receiver, spotify_connect, ariacast, sendspin_source) call deselect_source with the session's playback_session_id when their session ends. This plugin does not. on_source_unselected also sets STOPPED and clears elapsed on every stream teardown, but dev documents that a paused source's stream can be torn down while the source stays selected.",
@@ -3192,7 +3192,7 @@
    "ci": "All green on 2ebd50161: lint, pytest 1-3, CodeQL, codecov patch and project. Bot workflows skipped as usual.",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
    "head_sha": "2ebd50161",
    "tldr": "Reporter amsound says the fix doesn't work, but the attached log shows the DEV add-on never got to run it: installing requirements failed with 'No space left on device' while building aiolibdatachannel from its git branch. Ask them to free disk space and retry. Code side unchanged: Copilot green, CI green, waiting on a second maintainer.",
    "summary": "Fixes support#6731: TuneIn's signed Apple Music HLS url expires after 5-6 h, the playlist reload gets HTTP 433, ffmpeg exits non-zero and playback stops. get_media_stream now routes MediaType.RADIO through _get_restarting_radio_media_stream. After a run that yielded audio fails with MusicAssistantError/ClientError/TimeoutError, it calls the same provider instance's get_stream_details, resolves it via the new shared _resolve_radio_stream_details helper and copies path, stream_type, audio_format and data into the existing StreamDetails, so the queue item keeps its object. A failure before any audio still raises, so provider fallback is unchanged. ProviderStreamLimitError, CancelledError and GeneratorExit propagate. The restart budget now counts PCM seconds of the current run (fix from Copilot's second review), so a slow failing refresh cannot reset it. The reporter's log shows the media_stream warning dump, which only happens on the error path, so the 433 case does reach the restart loop. Copilot threads: r4258226164 (copy the HLS metadata callback on refresh) was declined with a reply and is resolved; r4258280565 (budget reset on refresh latency) was fixed in 2ebd501 and is resolved. Latest Copilot review on 2ebd50161 at 11:59:39Z: Approval recommended, 0 open findings. GPT Sol flagged a clean EOF as CRITICAL: _get_media_stream returns normally when ffmpeg exits 0, and the loop then returns without a restart. That is real for the legacy Shoutcast reader, which turns IncompleteReadError into EOF, but it is pre-existing behavior and not the reported failure, so we log it as a suggestion and do not block on it. Tests not run locally; CI covers them.",
@@ -3422,7 +3422,7 @@
    "providers_touched": [
     "web_kiosk"
    ],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
    "head_sha": "257e3ae8b",
    "tldr": "v1.1.0 drops ENQUEUE and plays core's flow stream, which removes the provider's own successor logic and with it the seek-to-end bug (Copilot r4302797493 resolved, page clamp verified, server seeks now safe via flow). Copilot is clean on the head. New: Repeat One leaves the page clock stuck at the end. The 9 older PROBLEMs and the maintainer question remain. Not ready.",
    "summary": "Delta b852cf2f7..257e3ae8b (v1.1.0, +894/-1285): the kiosk drops PlayerFeature.ENQUEUE, so core serves queue media as one /flow/ stream. Removed: the /flow/ to /single/ rewrite, enqueue_next_media, start_enqueued_media, QueueWalk, playback_reached_end and the short-end detection; a browser 'ended' now just reports IDLE. play_media checks resolve_stream_url to set serves_flow. refresh_stream rebuilds the flow at the queue's item and position via cmd_seek with resume_position(). New PlaybackClaim replaces transport_mark/still_plays/take_over_output (GPT Sol found no ownership or pause bug in it). _publish_flow_item sends title, duration and a stream-clock start (queue elapsed minus stream elapsed x speed; GPT Sol confirmed the formula) when the queue's item changes inside the flow. Closing a page that got the current play message rebuilds the flow for the remaining pages. web.js caps seekToSong at floor(dur) - end_margin from the welcome message, clamps its clock to the song duration, and reports position every 2 s. Effect on old findings: fixed or gone are the seek-to-end CRITICAL, the /flow/ rewrite limitation (crossfade and overlays now apply), one-item Repeat All, paused successor resume_pos, radio jumping to the next item, end report during the snapshot seek, and the short complete file stopping the queue. The failed-playback teardown is downgraded to SUGGESTION since there are no enqueue tasks now. The other 9 PROBLEMs are untouched. New PROBLEM: Repeat One (and one-item Repeat All) never sends a new media message, so the page clock and lyrics stay at the end.",
@@ -4496,7 +4496,7 @@
    "providers_touched": [
     "sendspin"
    ],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
    "head_sha": "31e6c701c",
    "tldr": "Code is clean and CI is green, but Marcel questioned the approach at 11:29Z: he would rather have the Sendspin client flag itself as private or shared than add a server-side toggle. That likely means a client-side redesign, so it waits on teancom and Marcel.",
    "summary": "New boolean entry shared_player, offered only to web/app players and never to virtual players. _apply_standalone_visibility runs from _refresh_client_info and on_config_updated, so the toggle applies without a reconnect. The websocket event filter re-reads player.private on each event, matching auth_middleware.is_own_client_player. Since the last card the only code change is the rebase: the .constants import block in sendspin/player.py now keeps dev's CONF_SOURCE_INPUT_DECLINED and adds CONF_SHARED_PLAYER; every imported name exists in constants.py and lint passed. merge-tree against origin/dev is clean. The author's rebuttal to Copilot holds: WebserverController.update_active_user_filters (controller.py:537) already changes a live user's access without notifying the client, so the stale cache for a restricted owner is an existing limitation, not new. Server-side auth still checks current privacy, so the stale UI grants no access. Config save needs CONFIG_PLAYERS_WRITE, so only an admin can trigger the case. Copilot re-reviewed the new head and marked the finding resolved with 0 open findings. 10-17: Marcel suggested the Sendspin client should flag privacy itself; teancom replied that needs a spec change and pinged maximmaxim345.",
@@ -5337,7 +5337,7 @@
    "providers_touched": [
     "party"
    ],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; no decision, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; no decision, no auto-merge",
    "head_sha": "33c048aa2",
    "tldr": "33c048aa2 fixes both Copilot findings and Copilot is now clean. One thing left from our side: a guest whose screen still shows song A, and whose vote arrives after the skip, now counts against song B. GPT Sol flags the same. Small patch on card plus frontend#3014 sending the item id.",
    "summary": "Delta 28b8fc4ed..33c048aa2. skip_current records the playing item before any await, then holds _queue_lock and get_group_and_player_lock(queue_id, strict=True) through next(), and rejects the vote if the item changed. The player lock is re-entrant per task, so next() taking it again is fine; no inverse lock order found. Stale tallies: unload() clears the votes and their tally, and _remove_stale_skip_tally drops a tally no live vote belongs to on load and on every QUEUE_UPDATED (terminates, the pop removes the trigger). New tests cover both waits, the held lock and the three tally paths. Left: the item is captured on arrival at the server, so a late vote from a stale UI still lands on B. The author notes a natural track end can still slip between check and next(); that window is milliseconds and fine to accept. CI green, Copilot 09:19Z no open issues.",
@@ -5739,7 +5739,7 @@
    "ci": "green on b22cc7e1d",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
    "head_sha": "b22cc7e1d",
    "tldr": "The play_index fast path now keys on source_current_item, captured before the source is stopped, and only fires if that item still exists in the target. If it is gone, update_items -> _resync_position moves the target to the item at the index and zeroes resume_pos/elapsed_time, then resume() starts it from 0. Full player_queues suite passes. Ready. Copilot recommends approval. Core touched, so it's your approve.",
    "summary": "Delta 3073fb3ab..b22cc7e1d replaces target_queue.current_item with source_current_item in the auto_play guard. Previously update_items could resync the target's current_item to a replacement item, which then passed the index_by_id check and got play_index at the missing item's offset. Now a missing source item fails the guard, and the elif auto_play path calls resume(). Two sub-cases. When the target has a buffered index, update_items calls _resync_position, which sets resume_pos=0 and elapsed_time=0. resume() then computes resume_pos = 0 or _last_played_position() = 0, because the target's prev_state names a different queue_item_id. When the target has no buffered index, resume() sees the parked item missing and takes its explicit 'no valid current item' branch with resume_pos=0. Radio and ended handling are unchanged. The new test covers the buffered-index case and asserts play_index is not awaited and resume_pos is 0.",
@@ -5812,7 +5812,7 @@
    "providers_touched": [
     "musicbrainz"
    ],
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
    "head_sha": "3ac44a43d",
    "tldr": "get_url_data now deletes the 30-day settled entry when a lookup finds the URL unknown or ambiguous. Keys match the set call and cache.get honours BYPASS_CACHE, so a refresh really re-asks and clears it. The declined CRITICAL needs three rare conditions at once, and the harm is a duplicate rather than a wrong merge. Ready. Copilot recommends approval on the head. Core touched, so it's your approve.",
    "summary": "Delta 80c73af04..3ac44a43d adds an else branch in MusicBrainzAPIClient.get_url_data that calls mass.cache.delete(settled_key, provider=self.domain) whenever the lookup does not resolve to exactly one entity. The key and provider are the same as in the set call. delete() with category None matches any category, and set uses the default 0, so the entry is removed. cache.get_with_freshness returns a miss under BYPASS_CACHE for non-persistent entries, so a bypassing refresh skips the settled entry, re-queries and now drops it. That closes r4337198057. Concurrent lookups for one URL are last-writer-wins, and both writers reflect MusicBrainz at their own time, so no harmful race. A 400/401/404 response (None) also drops the settled entry, which is right for 404 and harmless otherwise because the 1-day cache re-asks. The new test drives the real set/delete sequence with BYPASS_CACHE. On the declined r4337197972: the recovered MBID is only applied at insert, after _get_library_item_by_match has run its external-id pass without it. A duplicate therefore needs a same-provider name clash, a MusicBrainz URL link, and a third library artist carrying that MBID under a name that normalises differently (localised names, P!nk/Pink). OzGav's premise that library artists carry the MusicBrainz name is not quite right: names come from the first provider. Even so the combination is rare, and the outcome (a duplicate with the same MBID, mergeable by hand) is better than the pre-PR behaviour, which merged the item into the wrong same-name artist. Decline accepted. A cheap follow-up would look up the recovered MBID before inserting.",
@@ -6818,7 +6818,7 @@
    "del": 2,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
    "head_sha": "0c1f198da",
    "core_touched": true,
    "providers_touched": [],
@@ -7068,12 +7068,12 @@
    "title": "Correct the Alexa player's position from the Echo's own reports",
    "author": "nyakaspeter",
    "url": "https://github.com/music-assistant/server/pull/7143",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "attention",
    "attention_since": "2026-10-22T07:34:00Z",
-   "waiting_on": "you: post f2, core call",
+   "waiting_on": "nyakaspeter: f1; you: post f2, core call",
    "gpt_sol": "2 critical, 1 problem",
    "size": "M",
    "code": 152,
@@ -7081,7 +7081,7 @@
    "del": 26,
    "ci": "green on 492ce3580 (15 checks)",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
    "head_sha": "492ce3580",
    "core_touched": false,
    "providers_touched": [
@@ -7090,9 +7090,9 @@
    "stacked": false,
    "tldr": "Alexa now takes the Echo's real stream offset from the companion skill API, so voice requests no longer push the queue ahead. Both earlier Copilot CRITICALs are only partly fixed. A stop race can still revive a stopped player (Opus reproduced it, GPT Sol agrees; 6-line patch). A paused correction can leave the queue on the next track (Copilot's new CRITICAL r4345952554), and a real fix needs core. 57 alexa tests pass.",
    "summary": "The PR adds a quiet GET /alexa/playback-state read per poll and applies the Echo's offset and play/pause state with an age-based anchor. The anchor math, repeat suppression, IDLE guard and old-stream filtering are correct, and paused players poll every 5 s while the Amazon volume read stays at the 30 s pace. CRITICAL 2 is fixed. CRITICAL 1 is only mostly fixed: the generation counter is bumped at the start of each command, so a poll that starts during stop()'s Amazon call can still revive the player (reproduced). The PAUSED pre-step also flips an already-paused player to PLAYING and back, emitting real state events. A 6-line patch fixes both, and 57/57 alexa tests still pass with it. GPT Sol rates the stop race and the track-boundary case CRITICAL, and adds that an unseen older report fetched after a pause could undo it. Copilot's 08:08Z review opens r4345952554 (queue keeps the drifted track with the paused offset) and adds a body-only PROBLEM: the 5 s skill-API timeout runs inside the shared serial poll loop.",
-   "whats_new": "Marked ready for review at 07:34Z after the 23:06Z push; both earlier CRITICAL threads resolved. Copilot (requested as Marvin 08:01Z) reviewed 492ce3580 at 08:08Z: Changes recommended, 1 new CRITICAL thread, 1 previously-missed PROBLEM. The critical gate will draft it.",
+   "whats_new": "The critical gate drafted it at 08:24Z over Copilot's CRITICAL r4345952554. Marked ready for review at 07:34Z after the 23:06Z push; both earlier CRITICAL threads resolved. Copilot (requested as Marvin 08:01Z) reviewed 492ce3580 at 08:08Z: Changes recommended, 1 new CRITICAL thread, 1 previously-missed PROBLEM. The critical gate will draft it.",
    "blockers": [
-    "Copilot CRITICAL r4345952554: a paused correction keeps the drifted track. on_player_elapsed_time_corrected (core) drops the flow index, so the clean fix is in core: your call",
+    "Draft (critical gate) over Copilot CRITICAL r4345952554: a paused correction keeps the drifted track. on_player_elapsed_time_corrected (core) drops the flow index, so the clean fix is in core: your call",
     "Stop race (f2, reproduced): the generation is bumped before the Amazon await, so a poll can revive a stopped player. Post it, or `fix 7143` pushes the validated 6-line patch (also stops the PAUSED blip, f3)",
     "Copilot previously-missed PROBLEM (body only): the 5 s skill-API timeout blocks the shared poll loop; a 1-2 s timeout is enough"
    ],
@@ -7194,9 +7194,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-22 10:00 CEST",
-   "changed_now": "ready for review"
+   "changed_now": "drafted"
   },
   {
    "repo": "server",
@@ -7279,7 +7279,7 @@
    "del": 1,
    "ci": "green on 1efe76b06 (23 checks)",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
    "head_sha": "1efe76b06",
    "core_touched": true,
    "providers_touched": [],
@@ -7332,49 +7332,117 @@
    "title": "Let a player ask for a larger lead on the flow stream",
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7147",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "author (draft)",
-   "gpt_sol": "not run",
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "comment",
+   "status": "attention",
+   "attention_since": "2026-10-22T08:12:00Z",
+   "waiting_on": "Marcel: design; you: post f2",
+   "gpt_sol": "2 problems",
    "size": "S",
    "code": 36,
    "add": 114,
    "del": 4,
-   "ci": "not checked (draft)",
+   "ci": "green on 6ccc3007f (17 checks)",
    "ci_fail": false,
-   "merge_state": "not checked (draft)",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; no decision, no auto-merge",
    "head_sha": "6ccc3007f",
    "core_touched": true,
    "providers_touched": [
     "raumfeld"
    ],
    "stacked": false,
-   "tldr": "Draft, not reviewed yet. Lets a player ask for a larger lead on the flow stream (core streams controller plus a Raumfeld setting). It gets a full review once Simanias marks it ready.",
-   "summary": "",
-   "whats_new": "Opened as a draft at 07:53Z.",
+   "tldr": "An opt-in per-player setting puts the flow stream back at the pre-#6584 pace (1.03x, 3 s burst) for players that run low at a track boundary and re-request /flow/. It is on by default for Raumfeld. Simanias framed it as a proposal for Marcel. Copilot's requires_reload PROBLEM is valid (one-line patch). GPT Sol adds that the larger lead may exceed the 8 s end-of-queue lead-out. Claude: the real fix is central, resuming a re-requested /flow/ at the elapsed position.",
+   "summary": "The PR adds a FLOW_LEAD pacing profile (1.03x, 3 s burst) and a per-player advanced boolean that the flow route reads from the requesting protocol player, with Raumfeld defaulting it on. Entry injection in _get_player_config_entries is correct (HTTP-based players that support PLAY_MEDIA), and the Raumfeld override uses the same from_dict default-override pattern as flow mode, so the provider entry replaces the generic one. The Copilot PROBLEM is valid: without requires_reload the toggle has no effect on an active flow until the next stream, unlike its flow-mode siblings. In a sync group the leader's setting applies, which is consistent with other per-player stream settings, but universal groups ignore it because the UGP runner hardcodes NEAR_REALTIME. Tests pass and the change is small (36 code lines). Architecture: A per-player opt-in is a reasonable, low-risk stopgap: it is off by default, it reuses the existing pacing-profile seam, and it leaves the #6584 Chromecast rationale intact for everyone else. The real flaw is central and already on dev: since #6608, _get_flow_start_item resumes a re-requested /flow/ at the current item but from its start, so the track replays. Resuming at the elapsed position (or answering a late re-request with the next item) would fix every renderer that reconnects without a per-device knob, so this should be framed as a mitigation until Marcel decides on that. Tests: 246 passed (streams + raumfeld), 27 passed (config entry tests), ruff clean.",
+   "whats_new": "Marked ready for review at 08:12Z. Copilot 08:41Z: Changes recommended, 1 PROBLEM thread (requires_reload).",
    "blockers": [
-    "Draft."
+    "Design call for Marcel (the PR asks him): per-player opt-in vs resuming a re-requested /flow/ at the current position",
+    "Copilot PROBLEM (thread): add requires_reload=True so toggling restarts an active flow (validated one-liner)",
+    "GPT Sol PROBLEM (f2, not posted): at 1.03x the unplayed buffer can exceed FLOW_STREAM_LEAD_OUT_SECONDS at end of queue"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Copilot",
+     "severity": "PROBLEM",
+     "file": "music_assistant/constants.py",
+     "line": 411,
+     "title": "Setting lacks requires_reload, so it does not apply to an active flow (thread)",
+     "detail": "PlayerController.on_player_config_change (controllers/players/controller.py:2547) restarts an active queue only when a changed entry has requires_reload. The pace is fixed when the /flow/ ffmpeg process starts, so toggling the setting mid-play changes nothing until the next stream. A user who turns it on because the queue starts over will see it happen again at the next track end and conclude it does not work. The sibling entries CONF_ENTRY_FLOW_MODE and CONF_ENTRY_FLOW_MODE_SAMPLE_RATE both set the flag.",
+     "fix": "Add requires_reload=True to CONF_ENTRY_FLOW_STREAM_LEAD (see patch). The Raumfeld override copies it via to_dict().",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/streams/constants.py",
+     "line": 104,
+     "title": "Larger lead can exceed the 8 s end-of-queue lead-out",
+     "detail": "At 1.03x with a 3 s burst, a five-minute flow can finish sending about 12 s ahead of playback (vs about 6 s at 1.01x). _finish_flow_stream holds the connection only FLOW_STREAM_LEAD_OUT_SECONDS before force_close, which exists so players do not drop buffered audio on EOF. With the setting on, the last seconds of a queue may be cut. Unmeasured: the player's own buffer caps how far ahead it gets.",
+     "fix": "Scale the lead-out with the pacing profile, or measure the end-of-queue tail on a Raumfeld.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/universal_group/ugp_stream.py",
+     "line": 118,
+     "title": "Setting is ignored inside a universal group",
+     "detail": "The UGP runner paces the shared flow at a hardcoded NEAR_REALTIME, so a Raumfeld (or any player with the setting on) inside a universal group never gets the lead. This is expected for a shared stream with one pace, but neither the PR body nor the setting description says so. Provider-native groups (Raumfeld zones) are fine: the leader's player_id is in the /flow/ URL and its setting applies, the same as http_profile and ICY.",
+     "fix": "Say in the PR body/description that the setting applies to the player's own flow stream only, not to universal groups. Alternatively, use FLOW_LEAD in the UGP runner when any member has the setting on (only if Marcel wants that).",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/controllers/config/players.py",
+     "line": 768,
+     "title": "Entry shown for players with flow mode off",
+     "detail": "The entry is appended for every HTTP player, including ones with flow mode off, where it has no effect. CONF_ENTRY_FLOW_MODE_SAMPLE_RATE uses depends_on=CONF_FLOW_MODE for the same reason and clears it only for requires_flow_mode players.",
+     "fix": "Optional: give the entry depends_on=CONF_FLOW_MODE and clear it in the requires_flow_mode branch, mirroring forced_sample_rate_entry. Low value because plugins can also force flow.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "tests/controllers/streams/test_output_pacing.py",
+     "line": 121,
+     "title": "Exact-value pacing test overlaps the relational one",
+     "detail": "test_the_flow_lead_pacing_is_the_measured_one pins the literal args, which test_the_flow_lead_profile_gives_more_lead_and_still_banks already constrains. It will need editing on any retune. Also _flow_pacing does not use self, so it could be a module-level helper.",
+     "fix": "Drop the exact-value test or fold it into the first one. Optional: make _flow_pacing a module function.",
+     "posted": null
+    }
+   ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "",
-   "suggested_fix": null,
-   "prompt": "",
+   "copilot": {
+    "green": false,
+    "comments": 1,
+    "findings": 1,
+    "review_url": "https://github.com/music-assistant/server/pull/7147",
+    "titles": [
+     "[PROBLEM] requires_reload missing on the flow lead entry"
+    ]
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "08:41Z on 6ccc3007f: Changes recommended, 1 PROBLEM thread.",
+   "suggested_fix": {
+    "description": "Add requires_reload=True to CONF_ENTRY_FLOW_STREAM_LEAD so toggling it restarts an active flow; the Raumfeld override inherits it. git apply --check OK on 6ccc3007f; 273 tests pass.",
+    "patch": "--- a/music_assistant/constants.py\n+++ b/music_assistant/constants.py\n@@ -414,6 +414,7 @@ CONF_ENTRY_FLOW_STREAM_LEAD = ConfigEntry(\n     default_value=False,\n     category=\"protocol_generic\",\n     advanced=True,\n+    requires_reload=True,\n )\n \n \n",
+    "pushed": null
+   },
+   "prompt": "Server PR #7147 (https://github.com/music-assistant/server/pull/7147), head 6ccc3007f, by Simanias. Add requires_reload=True to CONF_ENTRY_FLOW_STREAM_LEAD in music_assistant/constants.py (patch in /tmp/prr/r1100/d7147/fix.patch). Then check the end-of-queue tail: with FLOW_LEAD (1.03x, 3 s burst) the unplayed buffer can exceed FLOW_STREAM_LEAD_OUT_SECONDS in _finish_flow_stream; scale the lead-out with the pacing profile if so. Run tests/controllers/streams and tests/providers/raumfeld. Work in a worktree from refs/remotes/pr/7147.",
    "backport": null,
    "auto_approved": null,
    "author_replied": null,
    "reporter_reply": null,
    "support": null,
    "fix_thread": null,
-   "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": null,
-   "changed_now": "new"
+   "related_prs": [
+    "#6584",
+    "#6608"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-22 11:00 CEST",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
@@ -7385,31 +7453,30 @@
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7146",
    "draft": false,
-   "verdict": "almost",
-   "assessment": "comment",
+   "verdict": "ready",
+   "assessment": "approve",
    "status": "attention",
    "attention_since": "2026-10-22T07:16:00Z",
-   "waiting_on": "you: post f1 or decline",
-   "gpt_sol": "2 problems (we rate both lower)",
+   "waiting_on": "you: approve",
+   "gpt_sol": "clean",
    "size": "M",
    "code": 55,
    "add": 167,
    "del": 17,
-   "ci": "green on 26fbdbf18 (14 checks)",
+   "ci": "green on a362a0550 (15 checks)",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 42a39108c; review required, no auto-merge",
-   "head_sha": "26fbdbf18",
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
+   "head_sha": "a362a0550",
    "core_touched": false,
    "providers_touched": [
     "raumfeld"
    ],
    "stacked": false,
-   "tldr": "Choosing a Raumfeld station button now re-reads the room's buttons first, so a reassigned button plays its new item. A failed read keeps the buttons, and the check runs every minute. Simanias fixed Copilot's CRITICAL within minutes, and Claude finds it ready (179 tests pass). Copilot's 08:07Z review has no open threads but a body-only PROBLEM: the metadata cache never expires, so a same-id title change never shows. That blocks auto-approval.",
+   "tldr": "Choosing a Raumfeld station button now re-reads the room's buttons first, so a reassigned button plays its new item. A failed read keeps the buttons, and the check runs every minute. Simanias moved the button metadata into mass.cache with a 5 min expiry (Copilot's body-only PROBLEM), and Claude and GPT Sol confirm it. 180 tests pass. Copilot has no open issues but still says \"Needs a closer look\", so it waits on your approve.",
    "summary": "Checked against the code, the claims hold. select_source re-reads the room's buttons before playing, refuses a button that is now empty, and raises PlayerCommandFailed when BrowseMetadata returns nothing; hassfeld returns None for a missing object, so that check is reachable. A failed read now returns None, and both the on-demand and the periodic path go through refresh_station_buttons, which leaves the buttons alone in that case. That fixes the Copilot CRITICAL, which also existed on dev at the 300 s interval, and a regression test covers it. _button_items is cleared on every (re)connect, and set_station_buttons only calls update_state when something changed, so a check every minute does not spam events. The diff only touches providers/raumfeld and its tests; the one old test that changed (failed read: [] -> None) follows the intended contract change. GPT Sol raises two PROBLEMs we rate lower: overlapping reads can put an older title back (playback is unaffected, since select_source plays from its own read), and a failed BrowseMetadata drops the button (already the case on dev).",
-   "whats_new": "New at 07:16Z. Copilot's 07:36Z CRITICAL (a failed periodic read wiped the buttons) was fixed in 26fbdbf18 at 07:42Z. Copilot re-reviewed at 08:07Z: Needs a closer look, no open threads, 1 previously-missed PROBLEM.",
+   "whats_new": "Simanias pushed a362a0550 at 08:09Z: button items now live in mass.cache for 300 s under a provider category, cleared on (re)connect. Copilot 08:38Z: Needs a closer look, no open issues, nothing previously missed.",
    "blockers": [
-    "Copilot PROBLEM (review body only): _button_items never expires, so a title change that keeps the object id never refreshes. Post it so Simanias sees it, or decline it",
-    "Copilot's verdict is \"Needs a closer look\", so no auto-approval even once that is answered"
+    "Your approve: Copilot's verdict is \"Needs a closer look\" (it could not run Python 3.14 to check failure paths), so no auto-approval"
    ],
    "findings": [
     {
@@ -7417,7 +7484,7 @@
      "severity": "PROBLEM",
      "file": "music_assistant/providers/raumfeld/provider.py",
      "line": 378,
-     "title": "Button metadata cache never expires (previously missed, body only)",
+     "title": "Button metadata cache never expires (previously missed; fixed in a362a0550)",
      "detail": "_button_items caches each object id's metadata until reconnect, bypassing mass.cache. A title change that keeps the object id never reaches the source list; the existing rename test models that case. Copilot cites the standards file asking for the shared cache.",
      "fix": "Use provider-scoped mass.cache (or @use_cache) with an expiry, cleared on reconnect.",
      "posted": null
@@ -7461,20 +7528,28 @@
      "detail": "hassfeld's async_browse runs under exception_handler, which returns None on a timeout or connection error. A new object id whose BrowseMetadata fails briefly is dropped by _read_station_buttons (that drop already exists on dev), so select_source reports 'has nothing assigned' even though the button has an item. The same applies to 'is not available on the Raumfeld host' in _play_library_item. Both are still better than the old silent send without metadata.",
      "fix": "Optional wording: 'has nothing playable assigned' / 'could not be described by the Raumfeld host'.",
      "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "tests/providers/raumfeld/test_provider.py",
+     "line": 905,
+     "title": "Cache test clears entries instead of testing the expiry",
+     "detail": "The fake cache ignores expiration and the test calls entries.clear(), so it would pass with a wrong TTL; reconnect invalidation is not covered.",
+     "fix": "Use a clock-aware fake or the real cache fixture.",
+     "posted": null
     }
    ],
    "unaddressed_comments": [],
    "copilot": {
-    "green": false,
+    "green": true,
     "comments": 0,
-    "findings": 1,
+    "findings": 0,
     "review_url": "https://github.com/music-assistant/server/pull/7146",
-    "titles": [
-     "[PROBLEM] Button metadata cache never expires (previously missed, body only)"
-    ]
+    "titles": []
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "08:07Z on 26fbdbf18 (requested as Marvin 08:01Z): Needs a closer look, no open threads, 1 previously-missed PROBLEM, 1 resolved.",
+   "copilot_note": "08:38Z on a362a0550: Needs a closer look, no open issues.",
    "suggested_fix": null,
    "prompt": "",
    "backport": {
@@ -7490,8 +7565,134 @@
     "#7141 merged base"
    ],
    "reviewed_now": true,
-   "reviewed_at": "2026-10-22 10:00 CEST",
-   "changed_now": "new"
+   "reviewed_at": "2026-10-22 11:00 CEST",
+   "changed_now": "pushed"
+  },
+  {
+   "repo": "server",
+   "number": 7148,
+   "state": "open",
+   "closed_at": null,
+   "title": "Play a Raumfeld group at a sample rate each of its rooms plays",
+   "author": "Simanias",
+   "url": "https://github.com/music-assistant/server/pull/7148",
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "comment",
+   "status": "attention",
+   "attention_since": "2026-10-22T09:04:00Z",
+   "waiting_on": "Simanias: f1; you: post f2",
+   "gpt_sol": "2 problems",
+   "size": "M",
+   "code": 71,
+   "add": 208,
+   "del": 4,
+   "ci": "green on 01d2034f4",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
+   "head_sha": "01d2034f4",
+   "core_touched": false,
+   "providers_touched": [
+    "raumfeld"
+   ],
+   "stacked": false,
+   "tldr": "When a room joins a playing Raumfeld group, the leader restarts the stream if the group can no longer play the rates it started with. Simanias fixed all three earlier Copilot CRITICALs within 20 minutes, and 181 tests pass. Copilot's 09:13Z re-review opens a new CRITICAL: the check runs before it takes the playback lock (GPT Sol agrees). Opus adds that an app-driven regroup can take over a zone playing other content (validated patch). The gate will draft it.",
+   "summary": "The PR keeps a Raumfeld group playable after a join by intersecting every room's configured rates and restarting the leader's stream when the rates it was offered at start are no longer all available. All three Copilot criticals are fixed on 01d2034f4: joins from the Raumfeld app now run the check, the check compares against the rates recorded when the stream started, and radio restarts live via resume. There is no restart loop, because each restart re-records the rates in play_media, and the settle window keeps the zone watcher out of MA joins. One new problem: the background check after a join from the Raumfeld app trusts the cached plays_own_queue, so it can re-point a zone that actually plays another room's content to MA's queue. Confirming the zone's TrackURI first with the existing plays_queue_in fixes it (patch validated). The diff only touches providers/raumfeld and its tests, and the 181 raumfeld tests pass. GPT Sol raises the same lock race Copilot opened, plus a narrow window where the rate snapshot is taken before the stream format is chosen.",
+   "whats_new": "Opened as a draft at 08:14Z; Copilot 08:43Z: 3 CRITICAL threads; gate drafted it 08:47Z. Simanias answered all three in 01d2034f4 and marked it ready at 09:04Z. Copilot 09:13Z: Changes recommended, 1 new CRITICAL thread, 3 resolved.",
+   "blockers": [
+    "Copilot CRITICAL r4346541793 (thread): the app-driven check decides and captures the seek position before seek()/resume() take the playback lock, so it can restart after a Stop. Simanias has it; the gate will draft",
+    "Claude PROBLEM f2 (not posted): after an app regroup, the cached plays_own_queue can make the leader take over a zone that plays another room's content. Post it, or `fix 7148` pushes the validated patch"
+   ],
+   "findings": [
+    {
+     "model": "Copilot",
+     "severity": "CRITICAL",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 1255,
+     "title": "Restart check runs before the playback lock (r4346541793)",
+     "detail": "The app-driven check decides to restart and captures the seek position before seek() or resume() acquires the playback lock, so a queued check can seek stale or restart radio after Stop completed. GPT Sol found the same race and adds that two app joins can restart twice.",
+     "fix": "Take the playback lock before checking ownership, compatibility and position; dedupe pending checks per leader.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 378,
+     "title": "App regroup can restart MA's queue over a zone playing other content",
+     "detail": "The task only checks plays_own_queue, which is cached state. Room A plays its MA queue alone. In the Raumfeld app the user adds A to B's zone, where B plays Line-In, Spotify or Raumfeld content, so A now plays B's stream. The watcher confirms the layout within about 2-4 s (ZONE_WATCH_INTERVAL 2, two matching looks), but A's playing poll runs only every 5 s. So A still claims its own queue, _pick_leader makes A the leader, and set_group_members(A, B) starts the task. If A's configured rates include a pair B lacks, the task seeks A's queue, play_media re-points the shared zone, and B's playback is replaced by MA's queue. The same happens to a former follower that becomes leader in _leave_group or _sync_groups while it still names its own queue as source (the comment in _pick_leader says followers do) and holds a stale _stream_rates. On origin/dev the stale leader pick only mislabels the group until the next poll. Here it actively takes over the zone.",
+     "fix": "On the watcher path, confirm before restarting that the zone really plays this room's queue, using the existing plays_queue_in/_zone_plays_queue (TrackURI carries the queue id). The MA set_members path keeps restarting without the read, because the stream is known to be ours there and the zone may still be TRANSITIONING. See patch.",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 552,
+     "title": "Rate snapshot is taken before the stream format is chosen",
+     "detail": "_stream_rates is recorded before URL resolution and the zone/transport calls; the streams controller picks the format later from the then-current group. A room leaving in that window can leave the snapshot narrower than the real stream, so a later rejoin skips a needed restart. Narrow window.",
+     "fix": "Record the format actually selected, or re-snapshot when the stream is requested.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 421,
+     "title": "A room that joins while paused is not checked on resume",
+     "detail": "plays_own_queue requires PLAYING, so a join while paused skips the check. play() then sends zone Play, which resumes the existing stream at its old format, and the joined room drops out as before. This is a coverage gap, not a regression: origin/dev has no check at all. Restarting from set_members while paused would start playback, so the check belongs in play().",
+     "fix": "After a resume of the MA queue in play() (no external source), call `await self._restart_for_group_rates()`. Or leave it as a follow-up.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 1255,
+     "title": "Restarts on rate-set narrowing, not on the format streamed",
+     "detail": "The check compares the full offered set, so a 44.1/16 flow restarts with an audible gap when a room joins whose narrower setting still includes 44.1/16. This only happens when the rooms' settings differ (the defaults are equal, so no restart). The author's comment acknowledges that MA does not expose the chosen format. It is safe but conservative.",
+     "fix": "Acceptable as is. A core hook that exposes the running flow format would let the provider compare the real format, which is out of scope for a provider-only PR.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 1274,
+     "title": "A failed restart is logged at debug only",
+     "detail": "If seek or resume fails, the joined room drops out silently, and the only trace is a debug line.",
+     "fix": "Log at warning level.",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": false,
+    "comments": 1,
+    "findings": 1,
+    "review_url": "https://github.com/music-assistant/server/pull/7148#discussion_r4346541793",
+    "titles": [
+     "[CRITICAL] Restart check runs before the playback lock (r4346541793)"
+    ]
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "09:13Z on 01d2034f4: Changes recommended, 1 new CRITICAL thread, 3 resolved.",
+   "suggested_fix": {
+    "description": "On the zone-watcher path, confirm the zone really plays this room's queue (plays_queue_in) before restarting. git apply --check OK on 01d2034f4; 181 raumfeld tests pass.",
+    "patch": "diff --git a/music_assistant/providers/raumfeld/player.py b/music_assistant/providers/raumfeld/player.py\nindex ec08be3f59..3481dae6d7 100644\n--- a/music_assistant/providers/raumfeld/player.py\n+++ b/music_assistant/providers/raumfeld/player.py\n@@ -375,7 +375,7 @@ class RaumfeldPlayer(Player):\n         self.update_state()\n         if added and self.leads_group and self.plays_own_queue:\n             # rooms grouped in the Raumfeld app join the running stream just the same\n-            self.mass.create_task(self._restart_for_group_rates())\n+            self.mass.create_task(self._restart_for_group_rates(confirm_zone=True))\n \n     @property\n     def leads_group(self) -> bool:\n@@ -1246,7 +1246,7 @@ class RaumfeldPlayer(Player):\n                 rates.append((int(sample_rate), int(bit_depth)))\n         return rates or [(44100, 16)]\n \n-    async def _restart_for_group_rates(self) -> None:\n+    async def _restart_for_group_rates(self, confirm_zone: bool = False) -> None:\n         \"\"\"Restart this room's queue where it is, if a room that joined cannot play its stream.\"\"\"\n         # the host pulls a joining room into the running stream as it is; a room that\n         # cannot play its format drops out after a moment (measured). The stream can be at\n@@ -1256,6 +1256,12 @@ class RaumfeldPlayer(Player):\n             self.get_supported_sample_rates()\n         ):\n             return\n+        # a zone made in the Raumfeld app may play another room's stream, which plays_own_queue\n+        # does not show until the next poll\n+        if confirm_zone and (\n+            (zone := self._active_zone()) is None or not await self.plays_queue_in(zone)\n+        ):\n+            return\n         queue = self.mass.player_queues.get(self.player_id)\n         if queue is None or queue.current_item is None:\n             return\n",
+    "pushed": null
+   },
+   "prompt": "Server PR #7148 (https://github.com/music-assistant/server/pull/7148), head 01d2034f4, by Simanias. Apply /tmp/prr/r1100/d7148/claude_fix.diff: before _restart_for_group_rates restarts from set_group_members, confirm with plays_queue_in that the zone plays this room's queue. Also answer Copilot r4346541793: take the playback lock before the ownership, compatibility and position checks. Run tests/providers/raumfeld. Work in a worktree from refs/remotes/pr/7148.",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-22 11:00 CEST",
+   "changed_now": "ready for review"
   }
  ]
 }
