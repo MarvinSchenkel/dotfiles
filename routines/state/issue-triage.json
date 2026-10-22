@@ -89,7 +89,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:21Z",
@@ -147,7 +147,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:23Z",
@@ -209,7 +209,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "jaycollett",
      "at": "2026-10-22T02:19:29Z",
@@ -269,7 +269,7 @@
    "action": "Local fix ready (fix/wiim-seek-transient-position, 633cfc8). Test a seek-then-pause on a WiiM with an Audiobookshelf book; if it holds, say so and I open the PR with backport (cherry-picks cleanly onto stable).",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "riskywhat",
      "at": "2026-10-21T13:06:34Z",
@@ -327,7 +327,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T10:43:09Z",
@@ -400,7 +400,7 @@
    ],
    "milestone": "2.10.7",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T13:54:33Z",
@@ -470,7 +470,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-21T13:26:39Z",
@@ -530,7 +530,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "NasaGeek",
      "at": "2026-10-21T16:04:47Z",
@@ -604,7 +604,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "dunxd",
      "at": "2026-10-20T19:23:52Z",
@@ -672,7 +672,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "Cyberlytical-LLC",
      "at": "2026-10-21T15:30:35Z",
@@ -753,7 +753,7 @@
    "action": "janoj (10-21 17:44 UTC) reports server#7132 also fixes jerky starts on a Denon Home 150 and an AVR-X1800H. amodig hasn't tested yet. Your call: mark #7132 ready and merge, or wait for amodig.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "janoj",
      "at": "2026-10-21T17:44:07Z",
@@ -835,7 +835,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-21T12:51:00Z",
@@ -896,13 +896,14 @@
     "10-20 16:38 run: maisun (13:59 UTC) declined OzGav's UI web player toggle since it hides the web players from MA too; they want them in MA with only 'expose to Home Assistant' off. That's the intended use, so the bug stands. Reply drops the toggle workaround.",
     "10-20 17:38 run: OzGav (15:00 UTC) tried it and leans to the stale entity theory: check whether the HA entity is unavailable, tick and untick 'expose to Home Assistant', and confirm it's gone. That doesn't match maisun's 12:49 report (the entity goes online whenever MA is open in Safari), so the pre-registration race is still the better fit. Our reply hasn't been posted yet.",
     "10-21 09:11 run: maisun (06:11 UTC) disabled Sendspin for web players and the entities stopped coming back (a workaround, they want Sendspin), and listed exact steps. They don't mind web player devices in HA, they mind unavailable leftovers and _2/_3 entity ids. Reply redrafted: drops the debug log ask, notes the leftover request as separate.",
-    "10-21 14:30 run: OzGav (12:31 UTC) suggested trying Chrome instead of Safari. The draft still holds (maisun already showed turning off Sendspin for web players stops it, which fits the pre-registration race rather than a Safari quirk), so it stays for you."
+    "10-21 14:30 run: OzGav (12:31 UTC) suggested trying Chrome instead of Safari. The draft still holds (maisun already showed turning off Sendspin for web players stops it, which fits the pre-registration race rather than a Safari quirk), so it stays for you.",
+    "10-22 08:40 repro: repro session started on your main account (WebKit + Chromium against a throwaway MA, event stream like HA, Sendspin on and off). Reply draft on hold until it reports."
    ],
    "action": "maisun gave deterministic steps and found that turning off Sendspin for web players stops it, which fits the pre-registration race. Post the updated reply (it no longer asks for a debug log) and decide whether to start a fix session.",
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "maisun",
      "at": "2026-10-21T12:49:48Z",
@@ -920,6 +921,12 @@
      "hass",
      "needs-attention"
     ]
+   },
+   "fix_thread": {
+    "id": "mcp:5b65578b-c7b3-4e5d-b294-7a693655405c",
+    "title": "Repro: web players show up in HA with exposure off (#6822)",
+    "kind": "repro",
+    "done": false
    }
   },
   {
@@ -961,7 +968,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:07Z",
@@ -1018,7 +1025,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:36:49Z",
@@ -1070,7 +1077,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "Anto79-ops",
      "at": "2026-10-10T18:07:20Z",
@@ -1143,7 +1150,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "bdeprez",
      "at": "2026-10-13T20:17:14Z",
@@ -1211,7 +1218,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "jetpacktuxedo",
      "at": "2026-10-09T18:36:05Z",
@@ -1280,7 +1287,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:45:17Z",
@@ -1342,7 +1349,7 @@
    "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-10T16:01:24Z",
@@ -1414,7 +1421,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T07:54:30Z",
@@ -1510,7 +1517,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:14:26Z",
@@ -1604,7 +1611,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:16:29Z",
@@ -1684,7 +1691,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "kiwipaulrob",
      "at": "2026-10-17T22:19:56Z",
@@ -1760,7 +1767,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-08T14:40:21Z",
@@ -1898,7 +1905,7 @@
    "ask": "reply-answer",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-18T05:28:39Z",
@@ -2158,7 +2165,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:17:32Z",
@@ -2251,7 +2258,7 @@
    "ask": "nudge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "CDrummond",
      "at": "2026-10-10T06:44:22Z",
@@ -2346,7 +2353,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "davidfi01",
      "at": "2026-10-14T14:12:59Z",
@@ -2413,7 +2420,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-12T13:38:14Z",
@@ -2487,7 +2494,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "PipTheBirb",
      "at": "2026-10-13T13:28:36Z",
@@ -2570,7 +2577,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T10:06:51Z",
@@ -2650,7 +2657,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T09:29:17Z",
@@ -2711,7 +2718,7 @@
    },
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:20:45Z",
@@ -2770,7 +2777,7 @@
    "ask": "reply-test",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "johnp3004",
      "at": "2026-09-13T18:24:58Z",
@@ -2836,7 +2843,7 @@
    },
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:19:58Z",
@@ -2887,7 +2894,7 @@
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "Dragon-Creature",
      "at": "2026-10-18T02:31:00Z",
@@ -2950,7 +2957,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "Geweldich",
      "at": "2026-09-30T11:09:20Z",
@@ -3076,7 +3083,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:49:03Z",
@@ -3140,7 +3147,7 @@
    "action": null,
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:19:23Z",
@@ -3211,7 +3218,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-06T13:51:35Z",
@@ -3262,7 +3269,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "marcelveldt",
      "at": "2026-08-26T21:48:58Z",
@@ -3326,7 +3333,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:18:47Z",
@@ -3395,7 +3402,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "salanki",
      "at": "2026-08-29T17:15:18Z",
@@ -3475,7 +3482,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T06:29:16Z",
@@ -3560,7 +3567,7 @@
    "summary": "QQ Music lists music but full-stream URL resolution fails with 104003 and the preview fallback gets a 403, so tracks are skipped. The reporter has a local endpoint correction that works. xiasi0, the provider maintainer, will fix it after their vacation.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "xiasi0",
      "at": "2026-10-06T18:49:41Z",
@@ -3636,7 +3643,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-15T08:41:56Z",
@@ -3704,7 +3711,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:36:19Z",
@@ -3786,7 +3793,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T12:45:57Z",
@@ -3857,7 +3864,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T17:20:50Z",
@@ -3929,7 +3936,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-15T08:23:30Z",
@@ -4008,7 +4015,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "olifoss",
      "at": "2026-10-17T21:13:56Z",
@@ -4125,7 +4132,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T11:12:58Z",
@@ -4226,7 +4233,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "moodwrench",
      "at": "2026-10-20T17:43:15Z",
@@ -4311,7 +4318,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-15T14:12:24Z",
@@ -4377,7 +4384,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "tylernolf",
      "at": "2026-10-21T00:49:25Z",
@@ -4450,7 +4457,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:06Z",
@@ -4526,7 +4533,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "marklam",
      "at": "2026-10-15T15:27:32Z",
@@ -4587,7 +4594,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "suporte640",
      "at": "2026-10-19T00:58:04Z",
@@ -4658,7 +4665,7 @@
    "ask": "design",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:15:21Z",
@@ -4731,7 +4738,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "Thyraz",
      "at": "2026-10-18T18:56:10Z",
@@ -4793,7 +4800,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "axsuul",
      "at": "2026-10-18T04:08:57Z",
@@ -4850,7 +4857,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:50:16Z",
@@ -4918,7 +4925,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "patrick131",
      "at": "2026-10-19T01:09:06Z",
@@ -5001,7 +5008,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T07:10:09Z",
@@ -5075,7 +5082,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "Vivi92821",
      "at": "2026-10-21T14:34:40Z",
@@ -5132,7 +5139,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:42:54Z",
@@ -5192,7 +5199,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T15:23:02Z",
@@ -5277,7 +5284,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-17T15:30:42Z",
@@ -5356,7 +5363,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T22:06:21Z",
@@ -5416,7 +5423,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T21:30:55Z",
@@ -5468,7 +5475,7 @@
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T19:54:23Z",
@@ -5534,7 +5541,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:32:52Z",
@@ -5595,7 +5602,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "kmycek",
      "at": "2026-10-17T17:36:42Z",
@@ -5653,7 +5660,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T16:29:06Z",
@@ -5712,7 +5719,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "marapavelka",
      "at": "2026-10-17T09:58:35Z",
@@ -5770,7 +5777,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:52:28Z",
@@ -5839,7 +5846,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "TubeCrafterYT",
      "at": "2026-10-18T08:05:15Z",
@@ -5919,7 +5926,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:47:03Z",
@@ -5997,7 +6004,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-19T05:54:08Z",
@@ -6086,7 +6093,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:35:53Z",
@@ -6179,7 +6186,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T06:30:07Z",
+    "at": "2026-10-22T06:40:59Z",
     "last_human": {
      "login": "profLewis",
      "at": "2026-10-21T00:18:32Z",
