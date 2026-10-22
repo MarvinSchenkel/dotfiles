@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-22 10:30 CEST",
+ "last_run": "2026-10-22 11:30 CEST",
  "columns": [
   [
    "info",
@@ -89,7 +89,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:21Z",
@@ -147,7 +147,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:23Z",
@@ -209,7 +209,7 @@
    "diff": "diff --git a/aioaudiobookshelf/schema/audio.py b/aioaudiobookshelf/schema/audio.py\nindex 28ade35..16fa8af 100644\n--- a/aioaudiobookshelf/schema/audio.py\n+++ b/aioaudiobookshelf/schema/audio.py\n@@ -44,7 +44,8 @@ class AudioTrack(_BaseModel):\n class AudioFile(_BaseModel):\n     \"\"\"Audiofile.\"\"\"\n \n-    index: int\n+    # null for podcast episodes abs scanned in before its v2.21.0\n+    index: int | None = None\n     ino: str\n     metadata: FileMetadata\n     added_at: Annotated[int, Alias(\"addedAt\")]\ndiff --git a/tests/test_podcasts.py b/tests/test_podcasts.py\nnew file mode 100644\nindex 0000000..dff6ea6\n--- /dev/null\n+++ b/tests/test_podcasts.py\n@@ -0,0 +1,100 @@\n+\"\"\"Tests for decoding podcast payloads.\"\"\"\n+\n+import json\n+from typing import Any\n+\n+from aioaudiobookshelf.schema.library import LibraryItemExpandedPodcast\n+\n+_FILE_METADATA = {\n+    \"filename\": \"episode1.mp3\",\n+    \"ext\": \".mp3\",\n+    \"path\": \"/podcasts/show1/episode1.mp3\",\n+    \"relPath\": \"episode1.mp3\",\n+    \"size\": 1000,\n+    \"mtimeMs\": 1700000000000,\n+    \"ctimeMs\": 1700000000000,\n+    \"birthtimeMs\": 0,\n+}\n+\n+\n+def _episode() -> dict[str, Any]:\n+    \"\"\"Build an episode as abs sends it for a file scanned in before abs v2.21.0.\"\"\"\n+    audio_file = {\n+        \"index\": None,\n+        \"ino\": \"2\",\n+        \"metadata\": _FILE_METADATA,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"manuallyVerified\": False,\n+        \"exclude\": False,\n+        \"error\": None,\n+        \"format\": \"MP2/3 (MPEG audio layer 2/3)\",\n+        \"duration\": 60.0,\n+        \"bitRate\": 128000,\n+        \"codec\": \"mp3\",\n+        \"channels\": 2,\n+        \"channelLayout\": \"stereo\",\n+        \"mimeType\": \"audio/mpeg\",\n+    }\n+    return {\n+        \"libraryItemId\": \"item1\",\n+        \"podcastId\": \"podcast1\",\n+        \"id\": \"episode1\",\n+        \"index\": None,\n+        \"title\": \"Episode 1\",\n+        \"chapters\": [],\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"audioFile\": audio_file,\n+        \"audioTrack\": {\n+            \"index\": None,\n+            \"startOffset\": 0,\n+            \"duration\": 60.0,\n+            \"title\": \"episode1.mp3\",\n+            \"contentUrl\": \"/api/items/item1/file/2\",\n+            \"mimeType\": \"audio/mpeg\",\n+            \"metadata\": _FILE_METADATA,\n+        },\n+        \"duration\": 60.0,\n+        \"size\": 1000,\n+    }\n+\n+\n+def _podcast_item(episode: dict[str, Any]) -> bytes:\n+    item = {\n+        \"id\": \"item1\",\n+        \"ino\": \"1\",\n+        \"libraryId\": \"library1\",\n+        \"folderId\": \"folder1\",\n+        \"path\": \"/podcasts/show1\",\n+        \"relPath\": \"show1\",\n+        \"isFile\": False,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"isMissing\": False,\n+        \"isInvalid\": False,\n+        \"mediaType\": \"podcast\",\n+        \"libraryFiles\": [],\n+        \"size\": 1000,\n+        \"media\": {\n+            \"id\": \"podcast1\",\n+            \"libraryItemId\": \"item1\",\n+            \"autoDownloadEpisodes\": False,\n+            \"maxEpisodesToKeep\": 0,\n+            \"maxNewEpisodesToDownload\": 3,\n+            \"tags\": [],\n+            \"size\": 1000,\n+            \"metadata\": {\"title\": \"Show 1\", \"genres\": [], \"explicit\": False},\n+            \"episodes\": [episode],\n+        },\n+    }\n+    return json.dumps(item).encode()\n+\n+\n+def test_an_episode_scanned_before_abs_2_21_has_no_audio_file_index() -> None:\n+    \"\"\"Abs never backfilled the null index of older scans, see support#6842.\"\"\"\n+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(_episode()))\n+\n+    audio_file = item.media.episodes[0].audio_file\n+    assert audio_file is not None\n+    assert audio_file.index is None\n",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "jaycollett",
      "at": "2026-10-22T02:19:29Z",
@@ -250,7 +250,7 @@
    "repo": "music-assistant/support",
    "discussion": false,
    "title": "WiiM: a seek can briefly move the queue to the end of the item, and a stop then marks it fully played",
-   "col": "pr",
+   "col": "merged",
    "area": "server / providers/wiim/player.py position guard; player_queues position jump; playback_tracker; audiobookshelf on_played",
    "since": "2026-10-21 15:30",
    "last": "riskywhat 2026-10-21 13:06",
@@ -264,30 +264,36 @@
    "summary": "Follow-up from #6749 (riskywhat). After a seek on a WiiM the chapter progress briefly jumps to the end of the item; a pause or stop within a few seconds saves the end as resume point and marks the item fully played, which Audiobookshelf then marks as finished. The reporter attached two tests that fail on dev.",
    "fix": "WiiM provider: keep ignoring the device's position after a seek until it reports our new stream at a position that isn't its length (position != duration; != so radio with duration 0 still shows progress). Progress stays at the 0 set by play_media until a normal reading arrives. Provider-only, no core change, no time window.",
    "checked": "Opus subagent on origin/dev and backport/2.10.8 (same on stable 2.10.7, which lacks #7022). A queue seek starts a new stream at the seek point (player_queues/controller.py:959-983) whose length the WiiM is told is the remaining time (helpers/upnp.py:214). For ~0.5 s after taking it, the WiiM reports STOPPED with position = that full length; wiim/player.py:595-596 lifts the old-position guard as soon as the new URI shows, :598-600 adopts the position, and the state stays PLAYING (LOADING maps to PLAYING, :42-47). The position-jump handler (controller.py:1417-1455) adds the seek offset, so the queue lands at the end; #7022's check (:1428-1430) only skips stopped/idle players. A stop then saves the end (:2078-2080) and playback_tracker reports it fully played (:686-693, 752), reaching Audiobookshelf via on_played is_finished (audiobookshelf/__init__.py:1276-1406). Reporter's tests: 3 pass, 3 fail on dev and backport/2.10.8. Code-only repro. Fix A/B: the new WiiM test fails without the fix (1080 == 0) and passes with it; wiim 223 passed, wiim + related queue tests 252 passed, no existing test changed; cherry-picks cleanly onto origin/stable (221 wiim tests pass). Opus + GPT Sol self-review clean. The reporter's queue tests feed a PLAYING 1080 straight into the queue, so they only pass with a core guard, which the fix-at-source rule rules out. 10-22 discussion (Fable, raw captures on your Mancave WiiM Amp 5.2.830149 and WiiM Keuken 5.2.829356, plus the reporter's Ultra 5.2.829661): after SetAVTransportURI+Play the device answers GetPositionInfo with RelTime == TrackDuration while TransportState is STOPPED for ~0.7-0.9 s (same clamp after a Stop, cf. #7022); HTTP getPlayerStatusEx is honest (status=load, totlen=0). Firmware, not SDK. The position SDK is `wiim` (Linkplay2020/wiim, 0.3.1 dev, 0.1.9 stable), not pywiim; it passes RelTime through and sets PLAYING optimistically.",
-   "plan": "Ship the provider fix with backport (2.10.x can't take an SDK bump): rebase fix/wiim-seek-transient-position onto origin/dev, open the PR. Upstream `wiim` SDK issue optional.",
+   "plan": "Closes with 2.10.8 (cherry-pick in your pre-release batch). Upstream `wiim` SDK issue is drafted in /tmp/ma6839/upstream_wiim_sdk, not posted.",
    "branch": "fix/wiim-seek-transient-position @ 633cfc8839, worktree server/.claude/worktrees/wiim-seek-transient-position (local, not pushed)",
-   "prs": [],
+   "prs": [
+    {
+     "url": "https://github.com/music-assistant/server/pull/7149",
+     "label": "server#7149 (yours, merged 10-22 09:19 UTC, bugfix + backport-to-stable)"
+    }
+   ],
    "badges": [
     [
-     "warn",
-     "Local fix",
-     "local fix"
+     "ok",
+     "FtbC + 2.10.8 booked",
+     "booked"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, this is a really clear report, and both your tests fail on current dev for me too. After a seek the WiiM briefly reports the full length of the new stream, and Music Assistant takes that over as soon as it sees the new stream. I'm making the WiiM provider ignore that position until the device really plays from the new start, so the queue and Audiobookshelf no longer see the end of the book.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-21 15:30 run: new issue (follow-up to #6749). Reproduced code-only with the reporter's tests on dev and backport/2.10.8: the WiiM guard lifts on the URI alone and adopts a transient end-of-stream position. A gogogo subagent is building the local fix (no PR until you test it on a WiiM).",
     "10-21 15:30 run: local fix committed (633cfc8, not pushed). Waiting for your hardware test before the PR; reply draft stays until then.",
     "10-22 09:05 discuss: discussion session started on your main account with Fable 5.1: pywiim SDK vs WiiM firmware as the source of position == duration, and where the fix belongs (local provider fix 633cfc8 stays as is meanwhile).",
-    "10-22 09:30 run: discussion done: firmware clamp confirmed on your Mancave and Keuken WiiMs and the reporter's Ultra; the SDK just passes it through. Provider fix + backport is the way."
+    "10-22 09:30 run: discussion done: firmware clamp confirmed on your Mancave and Keuken WiiMs and the reporter's Ultra; the SDK just passes it through. Provider fix + backport is the way.",
+    "10-22 11:30 run: you merged server#7149 (09:19 UTC). Labelled Fix to be Confirmed, milestone 2.10.8. Reply draft dropped."
    ],
    "diff": "diff --git a/music_assistant/providers/wiim/player.py b/music_assistant/providers/wiim/player.py\nindex 073a969d60..c24d173d06 100644\n--- a/music_assistant/providers/wiim/player.py\n+++ b/music_assistant/providers/wiim/player.py\n@@ -591,8 +591,13 @@ class WiimPlayer(Player):\n             self.logger.debug(\"Failed to sync position for %s: %s\", self._attr_name, err)\n             return\n         media = self.device.current_media\n-        device_uri = media.uri if media else None\n-        if device_uri and device_uri == self._ma_stream_uri:\n+        # Right after taking our stream the device briefly reports it as being at its end.\n+        if (\n+            media is not None\n+            and media.uri\n+            and media.uri == self._ma_stream_uri\n+            and media.position != media.duration\n+        ):\n             self._ma_stream_uri = None\n         # The device reports its previous content's position until it loads our stream URI.\n         if self._ma_stream_uri is None and media is not None and media.position is not None:\ndiff --git a/tests/providers/wiim/test_player.py b/tests/providers/wiim/test_player.py\nindex 2df7624768..c7e153965c 100644\n--- a/tests/providers/wiim/test_player.py\n+++ b/tests/providers/wiim/test_player.py\n@@ -747,6 +747,37 @@ class TestStalePositionOnNewStream:\n \n         assert player._attr_elapsed_time == 55\n \n+    @pytest.mark.asyncio\n+    async def test_sync_position_ignores_new_stream_reported_at_its_end(\n+        self, mock_provider: MagicMock, mock_wiim_device: MagicMock\n+    ) -> None:\n+        \"\"\"Right after a seek the device reports our new stream at its full length.\"\"\"\n+        stream_url = \"http://192.168.1.80:8097/single/abc/queue/item/uuid:test.flac\"\n+        mock_provider.mass.streams.resolve_stream_url = AsyncMock(return_value=stream_url)\n+        mock_wiim_device.play_mode = SOURCE_NETWORK\n+        player = self._make_player(mock_provider, mock_wiim_device)\n+\n+        # a seek to 120 in a 1200 s item hands over a 1080 s stream\n+        await player.play_media(\n+            PlayerMedia(uri=\"library://audiobook/1\", title=\"Book\", stream_duration=1080)\n+        )\n+        device_media = MagicMock()\n+        device_media.uri = stream_url\n+        device_media.title = \"Book\"\n+        device_media.duration = 1080\n+        device_media.position = 1080\n+        mock_wiim_device.current_media = device_media\n+        mock_wiim_device.playing_status = PlayingStatus.PLAYING\n+\n+        await player._sync_position()\n+\n+        assert player._attr_elapsed_time == 0\n+\n+        device_media.position = 3\n+        await player._sync_position()\n+\n+        assert player._attr_elapsed_time == 3\n+\n     @pytest.mark.asyncio\n     async def test_sync_position_accepts_device_when_ma_not_driving_playback(\n         self, mock_provider: MagicMock, mock_wiim_device: MagicMock\n",
-   "ask": "input",
-   "action": "Firmware quirk confirmed on 3 devices, so the local provider fix is the right place. Say `fix 6839` and I open the PR (rebase first) with backport-to-stable.",
-   "milestone": null,
+   "ask": null,
+   "action": "",
+   "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "riskywhat",
      "at": "2026-10-21T13:06:34Z",
@@ -297,7 +303,16 @@
     "reporter_new": false,
     "team_new": false,
     "closed": false,
-    "pr": [],
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7149,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-22T09:19:27Z",
+      "own": true
+     }
+    ],
     "test_ask": null,
     "after_test_ask_reporter": false,
     "labels": [
@@ -351,7 +366,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T10:43:09Z",
@@ -405,7 +420,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-21T13:26:39Z",
@@ -465,7 +480,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "NasaGeek",
      "at": "2026-10-21T16:04:47Z",
@@ -539,7 +554,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "dunxd",
      "at": "2026-10-20T19:23:52Z",
@@ -607,7 +622,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "Cyberlytical-LLC",
      "at": "2026-10-21T15:30:35Z",
@@ -688,7 +703,7 @@
    "action": "janoj (10-21 17:44 UTC) reports server#7132 also fixes jerky starts on a Denon Home 150 and an AVR-X1800H. amodig hasn't tested yet. Your call: mark #7132 ready and merge, or wait for amodig.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "janoj",
      "at": "2026-10-21T17:44:07Z",
@@ -770,7 +785,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-21T12:51:00Z",
@@ -851,7 +866,7 @@
    "ask": null,
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "maisun",
      "at": "2026-10-21T12:49:48Z",
@@ -875,6 +890,7 @@
     "after_test_ask_reporter": false,
     "labels": [
      "triage",
+     "Fix to be Confirmed",
      "hass",
      "needs-attention"
     ]
@@ -925,7 +941,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:07Z",
@@ -982,7 +998,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:36:49Z",
@@ -1034,7 +1050,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "Anto79-ops",
      "at": "2026-10-10T18:07:20Z",
@@ -1107,7 +1123,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "bdeprez",
      "at": "2026-10-13T20:17:14Z",
@@ -1175,7 +1191,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "jetpacktuxedo",
      "at": "2026-10-09T18:36:05Z",
@@ -1244,7 +1260,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:45:17Z",
@@ -1306,7 +1322,7 @@
    "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-10T16:01:24Z",
@@ -1378,7 +1394,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T07:54:30Z",
@@ -1474,7 +1490,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:14:26Z",
@@ -1568,7 +1584,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:16:29Z",
@@ -1648,7 +1664,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "kiwipaulrob",
      "at": "2026-10-17T22:19:56Z",
@@ -1724,7 +1740,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-08T14:40:21Z",
@@ -1862,7 +1878,7 @@
    "ask": "reply-answer",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-18T05:28:39Z",
@@ -2122,7 +2138,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:17:32Z",
@@ -2215,7 +2231,7 @@
    "ask": "nudge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "CDrummond",
      "at": "2026-10-10T06:44:22Z",
@@ -2310,7 +2326,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "davidfi01",
      "at": "2026-10-14T14:12:59Z",
@@ -2377,7 +2393,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-12T13:38:14Z",
@@ -2408,11 +2424,11 @@
    "col": "merged",
    "area": "airplay-cli / src/ap2_client.c ap2cl_pause + ap2cl_play (buffered AirPlay 2)",
    "since": "2026-10-09 07:40",
-   "last": "MarvinSchenkel 2026-10-22 08:00",
+   "last": "PipTheBirb 2026-10-22 08:49",
    "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-22T08:00:21Z",
+    "login": "PipTheBirb",
+    "team": false,
+    "at": "2026-10-22T08:49:52Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -2450,7 +2466,7 @@
      "backport?"
     ]
    ],
-   "reply": "",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nNo problem. The nightly runs as a separate app next to your normal one, with its own settings, so it can't change your current install. To go back you stop the nightly app and start your normal one again. You'd have to add the Roku and your music provider in the nightly once. If you'd rather not, that's fine too.",
    "bookkeeping": [],
    "notes": [
     "10-09 07:40 run: new issue. Static triage: pause/resume is lossless by design unless the Roku buffers more than it reports. Diagnostics lack player config and show no AirPlay pause. Reply asks for streaming mode, output protocol and a debug log.",
@@ -2461,20 +2477,21 @@
     "10-15 11:40 run: You reverted Copilot's post-response sample in f43c73a after the WiiM Amp retest (every SETRATEANCHORTIME takes ~207 ms, so a post-response sample anchored resumes 207 ms late). Copilot re-reviewed f43c73a at 08:38 UTC: approval recommended, 0 open findings, CI green. No reply until the fix is in a dev build.",
     "10-21 13:35: you merged airplay-cli#91 at 11:08 UTC. Next is the airplay-cli release and pin bump.",
     "10-21 13:30 run: you merged airplay-cli#91 (11:08/11:15 UTC). Next: one airplay-cli release covers #6672 and #6812, then the pin bump.",
-    "10-22 (on request): airplay-cli v0.5.9 (both fixes) is pinned by server#7137 and in nightly 2.11.0.dev2026102203. Posted the nightly test ask, labelled Fix to be Confirmed. No milestone: server#7137 has no backport label, so backport is your call."
+    "10-22 (on request): airplay-cli v0.5.9 (both fixes) is pinned by server#7137 and in nightly 2.11.0.dev2026102203. Posted the nightly test ask, labelled Fix to be Confirmed. No milestone: server#7137 has no backport label, so backport is your call.",
+    "10-22 11:30 run: PipTheBirb (08:49 UTC): 'sorry, can't test nightly. worried I'll break something'. Drafted a short reassurance that the nightly is a separate app."
    ],
-   "action": "Test ask on nightly 2.11.0.dev2026102203 posted 10-22. Waiting on the reporter.",
-   "ask": null,
+   "action": "PipTheBirb won't test the nightly (worried it breaks something). Reassurance drafted; or drop it and let the release confirm.",
+   "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-22T08:00:21Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6672#issuecomment-6335805250"
+     "login": "PipTheBirb",
+     "at": "2026-10-22T08:49:52Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6672#issuecomment-6336707941"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [
@@ -2491,13 +2508,13 @@
      "at": "2026-10-22T08:00:21Z",
      "url": "https://github.com/music-assistant/support/issues/6672#issuecomment-6335805250"
     },
-    "after_test_ask_reporter": false,
+    "after_test_ask_reporter": true,
     "labels": [
      "airplay",
      "triage",
      "Fix to be Confirmed",
      "hass",
-     "waiting-for-user"
+     "needs-attention"
     ]
    },
    "waiting_on": "reporter"
@@ -2555,7 +2572,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T10:06:51Z",
@@ -2602,19 +2619,13 @@
    "since": "2026-09-27 marathon",
    "summary": "The new capture shows Spotify failing for every track from 18:09:31 (librespot 503s, 'Tried too many access points', then a 504 on EIKELI after a 15 s hang). The flow generator skips each item that produced no audio, so for about 43 s the Cast flow stream carries no new audio. The speaker drains its buffer, reports MEDIA_DECODE 102 at 18:10:14, advances to the flow-mode 'next' command item and GETs it, which is why the queue jumps ahead. MA isn't sending corrupt data, it sends nothing. Nothing on dev changes this.",
    "fix": "",
-   "checked": "Downloaded the 12 MB log to scratchpad/F/d6512. 14:41:04 Gjestebad PLAYING 'Sweater Weather' at currentTime 4043. 14:41:47.250 two ERROR detailedErrorCode 102 itemId 1, then IDLE/ERROR with loadingItemId 2 = /command/.../next.mp3, an APP_ERROR reply to request 4276, GET next.mp3 at 14:41:47.289, new flow LOAD with the next queue item at 14:41:48. Before the error MA logged nothing for Gjestebad's flow stream: no source error, no disconnect, no 'Finished Streaming' (the capture doesn't reach back to that track's start). No SpotifyError/503 anywhere. The 'media playback error for .../next.mp3' warning names the loading item, not the stream that failed (chromecast/player.py:735). Byte count at failure ~163 MB at 320 kbps, so not the #6748 24 MiB figure.",
-   "plan": "Ask for one A/B: HTTP profile 2 on Gjestebad for a few days. If the 102s stop, it's the same forced Content-Length issue as #6748. If not, it's receiver-side decoding on the 2026 speaker, so cantfix.",
+   "checked": "Downloaded the 12 MB log to scratchpad/F/d6512. 14:41:04 Gjestebad PLAYING 'Sweater Weather' at currentTime 4043. 14:41:47.250 two ERROR detailedErrorCode 102 itemId 1, then IDLE/ERROR with loadingItemId 2 = /command/.../next.mp3, an APP_ERROR reply to request 4276, GET next.mp3 at 14:41:47.289, new flow LOAD with the next queue item at 14:41:48. Before the error MA logged nothing for Gjestebad's flow stream: no source error, no disconnect, no 'Finished Streaming' (the capture doesn't reach back to that track's start). No SpotifyError/503 anywhere. The 'media playback error for .../next.mp3' warning names the loading item, not the stream that failed (chromecast/player.py:735). Byte count at failure ~163 MB at 320 kbps, so not the #6748 24 MiB figure. 10-22 capture (log 10:23:51-11:00, scratchpad /tmp/it-run/d6512b): profile 2 on Gjestebad, 102 again at 10:47:55 at currentTime 7543 s, same pattern (IDLE/ERROR, loads queued next.mp3, new flow LOAD 10:47:56). No MA stream error, no source error; the flow generator had moved on to the next track at 10:45:55 as usual. Gjestebad's flow URL is .mp3, Google Bad's is .flac (MP3 is not the default codec, so it was set on purpose); Google Bad ran 8237 s in this log with no error, and the only 102 is Gjestebad's. The 10-16 failure was also Gjestebad on MP3 (4085 s). The APP_ERROR replies to the metadata PLAY are normal: the receiver answers each one when the next arrives.",
+   "plan": "Profile 2 ruled out. Next A/B: Gjestebad output codec flac (like Google Bad). If the 102s stop, the 2026 speaker trips over our long MP3 flow stream (look at MP3 encoding/frame continuity in flow mode). If not, receiver-side, cantfix.",
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [
-    [
-     "info",
-     "Waiting for user",
-     "waiting"
-    ]
-   ],
-   "reply": "",
+   "badges": [],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, that rules out the HTTP profile. One difference stands out in both of your captures: Google Gjestebad gets MP3, while Google Bad gets FLAC. In this log Google Bad was more than 8,000 seconds into its stream without a single error, and the only 102 is on Gjestebad, same as on 10-16.\n\nCould you set \"Output codec to use for streaming audio to the player\" on Google Gjestebad to flac for a few days? It's in the player's settings under \"Show advanced settings\". Is Google Bad the same 2026 Google Home Speaker model?",
    "bookkeeping": [],
    "notes": [
     "Your queued reply was posted 2026-09-29 15:45.",
@@ -2622,27 +2633,28 @@
     "10-15 10:15 run: only a bot reminder (03:31 UTC), nothing new.",
     "10-19 07:38 run: Howard0000 (10-16 15:54 UTC) attached a DEBUG capture of a fresh MEDIA_DECODE 102 at 14:41:47 on Google Gjestebad. Log starts only 57 s earlier. No Spotify or source error, no MA stream error, the FLAC 'Google Bad' kept playing the same content. Gjestebad (MP3) was 4085 s into one flow stream, errored on item 1, the receiver loaded the queued next.mp3 and MA moved to the next track, which is the queue jump. So not the Sep 29 starvation. Possibly the same forced Content-Length problem as #6748 (other byte count), so asking for a profile 2 A/B. Moved to info.",
     "10-20 17:38 run: server#7120 (Cast default back to profile 2) merged 15:38 UTC. Its description says it doesn't fix this one (MEDIA_DECODE 102 on the 2026 Google Home Speaker also shows up on chunked), so this card stays as it is.",
-    "10-21 11:32 run: you posted the HTTP profile 2 test ask yourself (09:29 UTC). Waiting for Howard0000."
+    "10-21 11:32 run: you posted the HTTP profile 2 test ask yourself (09:29 UTC). Waiting for Howard0000.",
+    "10-22 11:30 run: Howard0000 (09:01 UTC): profile 2 didn't help, 102 again at 7543 s. Capture points at MP3 on Gjestebad vs FLAC on Google Bad. Drafted a flac A/B ask for you (it answers his question, so not auto-posted)."
    ],
-   "last": "MarvinSchenkel 2026-10-21 09:29",
+   "last": "Howard0000 2026-10-22 09:01",
    "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-21T09:29:17Z",
+    "login": "Howard0000",
+    "team": false,
+    "at": "2026-10-22T09:01:54Z",
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "",
+   "action": "Profile 2 didn't help. Gjestebad is on MP3 and is the only one with 102s; Google Bad on FLAC is clean. Drafted a flac A/B ask (answers his 'different targeted test?' question).",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-21T09:29:17Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6512#issuecomment-6312671788"
+     "login": "Howard0000",
+     "at": "2026-10-22T09:01:54Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6512#issuecomment-6336928875"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -2651,9 +2663,10 @@
     "labels": [
      "Chromecast",
      "spotify",
-     "waiting-for-user"
+     "needs-attention"
     ]
-   }
+   },
+   "ask": "reply-answer"
   },
   {
    "n": 6490,
@@ -2696,7 +2709,7 @@
    },
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:20:45Z",
@@ -2755,7 +2768,7 @@
    "ask": "reply-test",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "johnp3004",
      "at": "2026-09-13T18:24:58Z",
@@ -2821,7 +2834,7 @@
    },
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:19:58Z",
@@ -2872,7 +2885,7 @@
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T06:43:54Z",
@@ -2935,7 +2948,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "Geweldich",
      "at": "2026-09-30T11:09:20Z",
@@ -3061,7 +3074,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:49:03Z",
@@ -3125,7 +3138,7 @@
    "action": null,
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:19:23Z",
@@ -3196,7 +3209,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-06T13:51:35Z",
@@ -3247,7 +3260,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "marcelveldt",
      "at": "2026-08-26T21:48:58Z",
@@ -3311,7 +3324,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:18:47Z",
@@ -3380,7 +3393,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "salanki",
      "at": "2026-08-29T17:15:18Z",
@@ -3460,7 +3473,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T06:29:16Z",
@@ -3548,7 +3561,7 @@
    "summary": "QQ Music lists music but full-stream URL resolution fails with 104003 and the preview fallback gets a 403, so tracks are skipped. The reporter has a local endpoint correction that works. xiasi0, the provider maintainer, will fix it after their vacation.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "xiasi0",
      "at": "2026-10-06T18:49:41Z",
@@ -3624,7 +3637,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-15T08:41:56Z",
@@ -3692,7 +3705,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:36:19Z",
@@ -3774,7 +3787,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T12:45:57Z",
@@ -3845,7 +3858,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T17:20:50Z",
@@ -3917,7 +3930,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-15T08:23:30Z",
@@ -3996,7 +4009,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "olifoss",
      "at": "2026-10-17T21:13:56Z",
@@ -4113,7 +4126,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T11:12:58Z",
@@ -4214,7 +4227,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "moodwrench",
      "at": "2026-10-20T17:43:15Z",
@@ -4299,7 +4312,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-15T14:12:24Z",
@@ -4367,7 +4380,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "tylernolf",
      "at": "2026-10-21T00:49:25Z",
@@ -4446,7 +4459,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:06Z",
@@ -4522,7 +4535,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "marklam",
      "at": "2026-10-15T15:27:32Z",
@@ -4583,7 +4596,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "suporte640",
      "at": "2026-10-19T00:58:04Z",
@@ -4654,7 +4667,7 @@
    "ask": "design",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:15:21Z",
@@ -4727,7 +4740,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "Thyraz",
      "at": "2026-10-18T18:56:10Z",
@@ -4789,7 +4802,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "axsuul",
      "at": "2026-10-18T04:08:57Z",
@@ -4846,7 +4859,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:50:16Z",
@@ -4925,7 +4938,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T08:00:22Z",
@@ -5013,7 +5026,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T07:10:09Z",
@@ -5087,7 +5100,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "Vivi92821",
      "at": "2026-10-21T14:34:40Z",
@@ -5144,7 +5157,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:42:54Z",
@@ -5204,7 +5217,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T15:23:02Z",
@@ -5289,7 +5302,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-17T15:30:42Z",
@@ -5368,7 +5381,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T22:06:21Z",
@@ -5428,7 +5441,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T21:30:55Z",
@@ -5496,7 +5509,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:32:52Z",
@@ -5557,7 +5570,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "kmycek",
      "at": "2026-10-17T17:36:42Z",
@@ -5615,7 +5628,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T16:29:06Z",
@@ -5674,7 +5687,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "marapavelka",
      "at": "2026-10-17T09:58:35Z",
@@ -5732,7 +5745,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:52:28Z",
@@ -5801,7 +5814,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "TubeCrafterYT",
      "at": "2026-10-18T08:05:15Z",
@@ -5881,7 +5894,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:47:03Z",
@@ -5959,7 +5972,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-19T05:54:08Z",
@@ -6048,7 +6061,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:35:53Z",
@@ -6141,7 +6154,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T08:30:06Z",
+    "at": "2026-10-22T09:30:11Z",
     "last_human": {
      "login": "profLewis",
      "at": "2026-10-21T00:18:32Z",
@@ -6216,7 +6229,36 @@
    "action": "",
    "notes": [
     "10-22 10:30 run: new issue, already fixed on dev by server#6929 (2.11). Labelled Fix to be Confirmed, milestone 2.11.0. No reply per the no-'fixed in next release' rule."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-22T09:30:11Z",
+    "last_human": {
+     "login": "tomhnatt",
+     "at": "2026-10-22T08:23:12Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6844#issuecomment-6336222851"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 6929,
+      "state": "MERGED",
+      "draft": false,
+      "merged_at": "2026-10-13T19:24:11Z",
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Fix to be Confirmed",
+     "needs-attention"
+    ]
+   }
   }
  ],
  "design": [
@@ -6424,6 +6466,14 @@
     "title": "Home Assistant plugin stays in error after an HA restart ('search_control_entities is already registered')",
     "prs": [
      "server#7131"
+    ],
+    "on_stable": false
+   },
+   {
+    "n": 6822,
+    "title": "Web players still show up in Home Assistant with exposure disabled",
+    "prs": [
+     "server#7145"
     ],
     "on_stable": false
    },
@@ -6641,6 +6691,14 @@
      "frontend#3031"
     ],
     "on_stable": null
+   },
+   {
+    "n": 6844,
+    "title": "Storytel: Norwegian missing from the content languages",
+    "prs": [
+     "server#6929"
+    ],
+    "on_stable": false
    }
   ]
  },
@@ -6649,8 +6707,10 @@
   6329,
   6400,
   6419,
+  6512,
   6602,
   6645,
+  6672,
   6688,
   6695,
   6709,
@@ -6664,7 +6724,6 @@
   6808,
   6810,
   6831,
-  6837,
-  6839
+  6837
  ]
 }
