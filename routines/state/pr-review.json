@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-22T08:00:00+02:00",
- "dev": "f4650192d",
- "run_note": "Simanias fixed OzGav's zone-watcher finding on #7079 and it is ready for your approve; Copilot still asks for a final human look, so it was not auto-approved. The critical gate drafted #6901 over the openai_compatible download CRITICAL, which is on ryanmac8. Dev did not move and nothing merged.",
+ "last_run": "2026-10-22T09:00:00+02:00",
+ "dev": "019c1345e",
+ "run_note": "OzGav approved and merged #7079 at 06:16Z. You declined the beets provider (#6762) and it waits for stellar-aria to close it. No pushes, no new reviews and no reporter replies.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -50,7 +50,7 @@
    "providers_touched": [
     "sonos"
    ],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; review required, no auto-merge",
    "head_sha": "05cc0aeb5",
    "tldr": "_leads_moved_group is now re-checked synchronously after the wait, connection included, so a role given up again is left alone. The flow-load timeout decline holds, because aiosonos create_session can hand back the same session id. Our PROBLEM still stands: a play preparing audio on either player has not bumped cloud_queue_item_generation yet, so the hand-over transfers over it. Checking ATTR_PLAY_ACTION_IN_PROGRESS on both queues fixes it without touching core. Copilot resolved all three threads and has no open issues. Sonos is excluded from auto-approve.",
    "summary": "r4333309129: commit 07c354954 moves the readiness predicate into _leads_moved_group (connected, client.player.is_coordinator, group subscribed). _hand_over_moved_group calls it again after _wait_for_moved_group, with no await between that check, the generation/_plays_queue checks and the start of the hand-over. Parametrised tests cover role, status and connection loss, so the fix is verified. r4333309191 (declined): aiosonos 0.1.15 _play_stream_url runs create_session and then load_stream_url, and create_session can return the previously used session id. After a CommandTimeout, the provider cannot tell a timed-out create (old session still active) from a timed-out load into a reused session. Forgetting the queue is the conservative choice. The play command already raised, so the user sees the failure. Decline OK. r4333309171 (declined): holding core playback locks from a provider risks lock-order inversion with transfer_queue's own cmd_ungroup/stop calls, so fixing it in core transfer_queue is the right home. The justification is only half-true, though: core's _transfer_ad_hoc_leadership runs inside cmd_set_members under the old leader's PLAYBACK lock (players/controller.py:1404), and only the new leader is unguarded there. Our PROBLEM is the concrete harm from that gap. Scenario: the user starts a play on either speaker right after the move, and handle_play_action holds the lock and sets ATTR_PLAY_ACTION_IN_PROGRESS while audio prepares. play_media has not run yet, so neither generation has moved. The hand-over then forgets our queue, transfer_queue clears and moves it, and play_index cancels the user's pending play or moves their new items to the other speaker. The suggested patch bails when either queue has the flag set. It is a synchronous check right before the transfer and has been validated: 195 sonos tests pass, and the new test fails without the fix.",
@@ -311,7 +311,7 @@
    "auto_approved": null,
    "stacked": false,
    "related_prs": [],
-   "attention_since": "2026-10-19T12:54:50Z",
+   "attention_since": null,
    "reviewed_now": false,
    "reviewed_at": "2026-10-08",
    "title": "Add beets provider",
@@ -335,7 +335,7 @@
    "tldr": "stellar-aria worked through all 9 points of OzGav's change list in da20b6484 and the provider shrank by about 530 lines net. Merge handling, the write lock, the TaskManager and sync_running are gone, errors use ProviderUnavailableError, the import except is narrowed, ids are plain beets ids with is_unique=True, and the docs link is in the manifest. The two Copilot CRITICALs on SQLite rowid reuse are real in mechanism (beets uses INTEGER PRIMARY KEY without AUTOINCREMENT) but have low practical impact and match how Local files behaves when a path is reused, so I would decline them. The open question now is OzGav's: whether MA wants to depend on the beets database layout at all. CI is green and there are no conflicts.",
    "summary": "Fetched da20b6484 and diffed it against 5c1652160 (11 files, +206/-737) and against the origin/dev merge-base (17 files, +3913). Checked OzGav's 01:42Z list point by point by grepping for the removed symbols and reading the new __init__.py, parsers.py, library.py and manifest.json. Read Copilot's 03:56Z review and its 3 inline comments. Checked the beets upstream schema (dbcore/types.py: id is 'INTEGER PRIMARY KEY', no AUTOINCREMENT) and how core treats is_unique (base.py matches on provider_instance instead of domain). Compared with filesystem_local, which uses relative_path as item id and the same overwrite_existing=prev_checksum pattern. Ran merge-tree against origin/dev and checked gh pr checks.",
    "blockers": [
-    "Maintainer decision pending: OzGav said the team still has to decide how much of the beets database layout and copied Local files sync logic MA wants to carry."
+    "You declined it at 06:39Z; waiting for stellar-aria to close it."
    ],
    "findings": [
     {
@@ -383,16 +383,16 @@
     "description": "stellar-aria worked through all 9 points of OzGav's list in da20b6484, so the open question is the maintainer one: do we accept a provider that reads the beets DB layout directly? If yes, decline Copilot's 3 threads before approving. Rowid reuse (both CRITICALs): beets uses INTEGER PRIMARY KEY without AUTOINCREMENT, so an id comes back only when the newest rows are deleted and replaced between two syncs, and those rarely carry favorites or history yet; Local files has the same property for a path. Malformed image path: the provider builds that path itself, and OzGav asked to drop checks for ids it built, so a crafted URL getting a 500 is acceptable."
    },
    "prompt": "music-assistant/server PR #6762 (beets provider, stellar-aria, head da20b6484) addressed all 9 points of OzGav's 01:42Z list. Copilot's 03:56Z review left 2 CRITICALs (beets SQLite rowid reuse for items and albums) and 1 PROBLEM (raw ValueError on a malformed album image path). Draft three short decline replies for those threads, each starting with '> [!NOTE] This comment was written by Claude on Marvin's behalf' (rowid reuse only hits the newest rows deleted and replaced between syncs, same as Local files per path; image path is provider-built). Show them to Marvin and post nothing without his OK.",
-   "whats_new": "stellar-aria answered your 10:31Z question at 12:54Z: loading a beets Library runs one-way schema migrations on open, so it would alter the DB of users who pin an older beets for plugin compatibility. They want the provider to never write to the user's database and keep raw read-only SQL, accepting some duplicated query code. Your call on whether that is acceptable; still a draft.",
+   "whats_new": "You declined the provider at 06:39Z: beets writes tags to the files by default, so Local files already covers most users, and the direct database integration is a niche. Waiting for stellar-aria to close it.",
    "backport": {
     "rec": false,
     "why": "New provider feature; goes out with the next regular release."
    },
-   "status": "attention",
+   "status": "waiting",
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you",
-   "changed_now": null
+   "waiting_on": "stellar-aria (declined)",
+   "changed_now": "declined"
   },
   {
    "repo": "server",
@@ -1457,7 +1457,7 @@
    "providers_touched": [
     "fastmcp_server"
    ],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; no decision, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; no decision, no auto-merge",
    "head_sha": "8071325c1",
    "tldr": "dmoo500 rebased onto dev: DB schema 71, podcast episodes in the default history, Copilot's availability CRITICAL fixed. He declined the album-credit CRITICAL because you asked for track-to-album aggregation (r4324084923). Dev's #7073 now counts album plays from where a track was played from, so the two album numbers will disagree. Your call. Still open: API_SCHEMA_VERSION 100 and the diagnostics hook (validated patch ready).",
    "summary": "Head 8071325c1 merges dev cleanly (merge-tree clean, dev is an ancestor). The merge commit also carries real changes: DB_SCHEMA_VERSION 71, the play-history index migration moved under `prev_version <= 70` with dev's `<= 69` Apple Music block kept, and a new provider-mapping pass in `_set_library_item_availability`. That pass answers Copilot's 'previously missed' critical: provider-keyed history and ranking rows now go unavailable when their exact-instance mapping is unavailable, or when none of their domain mappings is available on a loaded instance. Same rule as dev's `_summary_available`/MediaItem.available. A933be9bd adds PODCAST_EPISODE to the default history types, with a test. Still open: API_SCHEMA_VERSION is 99 even though the PR adds 8 statistics/* API commands (also exposed through the MCP policy), and StatisticsController.get_diagnostics is never collected because 'statistics' is not in CORE_CONTROLLER_ATTRS. Minor: the new provider-mapping lookup filters only on media_type plus provider_item_id, so it scans every mapping of that media type per history page. The migration test still passes prev_version=69, and its docstring says 'Schema 70'.",
@@ -1617,7 +1617,7 @@
     "wled_audio_sync",
     "sendspin_lights"
    ],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; changes requested, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; changes requested, no auto-merge",
    "head_sha": "76c74c929",
    "tldr": "OzGav reviewed at 21:46Z: asked netmindz to update the PR description (path is now providers/wled_audio_sync, drop the 'Sendspin visualizer API unreleased' line) and left three optional notes: drop _ensure_client_unclaimed() or give it the port_in_use key, and two try/except blocks in bridge.py that aren't needed. Waiting on netmindz. Our review stays as it was (head unchanged).",
    "summary": "Delta 447c10ed3..46ce632a0 (9d5c29d40, 5e922fb91, 9134204c4, 177bc704a, 46c70cd00, dev merge a27927846, 222b89aad, 5a0ba9aea, 46ce632a0). (1) base.py now takes a VisualizerStatePayload plus buffer_capacity, passes the request to setup_visualizer() and sends only buffer_capacity in the hello. That matches BridgeVisualizerRole.setup_visualizer(request) on dev. (2) bridge.py sends one zero packet in _on_stream_end and stop(), guarded by transport.is_closing(), and stop() and the start() failure path use nested try/finally so unregister and close always run. (3) New _ensure_client_unclaimed() refuses to start if wled-zone-{port} is already registered. There is no await between the check and register_client(), and the failure path is safe: unregister_client() is a no-op because _sendspin_client is still None, so it cannot remove the other zone's client. (4) Scaling mode options drop the hardcoded titles so strings.json translations show. (5) setup_flow now prefills via value= (default_value stays DEFAULT_PORT), keeps the submitted port when the form is shown again, and passes the SetupFlowError through so its translation key, owner and args reach the form. Dev's SessionSetup.form() accepts str | SetupFlowError, so this is correct. (6) en.json regenerated. Copilot review 5558709689 on the head reports no open issues and one previously missed PROBLEM: the render tick catches every Exception. That is the same pattern as hue_entertainment/bridge.py:417 on dev, and asyncio datagram sendto reports send errors through error_received instead of raising, so log spam on network loss is unlikely. Not worth a change, but it should get a reply. netmindz answered the packet layout and sendspin reload threads correctly (44-byte packed struct; depends_on sendspin tears the provider down on a sendspin reload). All review threads are resolved and there are no new human comments. Tests not run locally: the shared .venv has a stale music_assistant_models (ListingType import error). CI pytest is green.",
@@ -2477,7 +2477,7 @@
    "providers_touched": [
     "ai_radio"
    ],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; no decision, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; no decision, no auto-merge",
    "head_sha": "7b9eed31e",
    "whats_new": "jpittelkow answered Marcel at 20:30Z. He scored Marcel's guard on the 38 tracks: it doesn't separate them (11 right, 0 over the singer, 27 too early), because the strict config opens at the same second almost everywhere. A 'voice never stops' guard scores 22/0/16 and is ready on a branch, but he left it out because it was found on the same 4 late-lyrics tracks. He also fixed the title and description. Now Marcel's call.",
    "tldr": "Follow-up to #6866. An AI Radio post now times its overlap from the synced-lyrics onset, and the stored analysis onset only wins when it is more than 5 s later. The new commit adds the exact-5 s boundary case and a lyrics-timeout test, so the code and tests are done. Copilot cleared the boundary finding on the new head. One Copilot PROBLEM is still open: it wants the PR body trimmed. That needs a body edit or a reply, no code change.",
@@ -2689,7 +2689,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "ryanmac8: f1; you: fix, design",
-   "changed_now": "drafted",
+   "changed_now": null,
    "gpt_sol": "2 problems (1 refuted, 1 narrow race)"
   },
   {
@@ -2882,7 +2882,7 @@
    "ci": "green on 8fe7fdf72",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; review required, no auto-merge",
    "head_sha": "8fe7fdf72",
    "tldr": "szsolt declined Copilot's Smart Shuffle CRITICAL at 21:28Z (autoplay never turns shuffle off, same as Auto mode and adding the artist by hand on dev), resolved it and marked the PR ready. We leaned the same way. No open threads, CI green, Claude and GPT Sol clean on this head. Ready for your approve; core is touched, so no auto-approval.",
    "summary": "In `_fill_autoplay_music_tracks` the delta resolves the mode first and dispatches SIMILAR_ARTISTS to `_fill_autoplay_similar_artist` before `if not queue_data.enqueued_media_items: return`. It is the same change as our prepared patch. The similar-artists path seeds from the last Track in `queue_data.items` and doesn't read enqueued_media_items, so it doesn't need the guard. With no Track in the queue, `get_similar_artists` returns [] and the fill logs and returns. `resolve_mode` only reads config (with an AUTO fallback), so moving it earlier has no side effects. SIMILAR, LIBRARY, PLAYLIST and AUTO still hit the seed guard and run unchanged. Dynamic queues are still routed to `_fill_dynamic_tracks` by the callers, so the new early branch can't fire on them.\n\nThe new test `test_adds_a_similar_artist_to_a_queue_started_from_a_genre` clears enqueued_media_items and checks that the refill loads the similar artist's track. Copilot r4333307177 (queued artists compared by name) was declined by the author because the queue holds library and provider copies with different ids, and we agreed. The only nit: the 'Filling autoplay tracks (mode: ...)' debug line no longer logs for this mode. API_SCHEMA_VERSION is 99 on both sides and constants.py is not touched.",
@@ -2988,7 +2988,7 @@
    "ci": "All green on 306c090ad (lint, pytest 1-3/3, provider-scope, test).",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; review required, no auto-merge",
    "head_sha": "306c090ad",
    "tldr": "thelad-dev fixed both Copilot CRITICALs: volume_set errors are now wrapped to PlayerCommandFailed like handle_player_command, and the config reads moved under the VOLUME lock with a race test. Copilot now has 0 inline findings. Side effect: every VOLUME_SET player now waits on its VOLUME lock during register/reconnect while the global register lock is held, even with no pin. Copilot's Previously missed item (no apply on unavailable to available) is real for Chromecast. One small commit plus a reply.",
    "summary": "Delta e2882279a..306c090ad, one commit, controller.py and the pin test file. (1) _apply_native_volume_pin now catches non-MusicAssistantError from player.volume_set and raises PlayerCommandFailed, same pattern as handle_player_command in players/helpers.py. Register and register_or_update keep their MusicAssistantError catch, so device errors no longer abort registration. This resolves our previous blocker and Copilot r4280705863 without touching providers. (2) The CONF_VOLUME_CONTROL and CONF_NATIVE_VOLUME reads moved inside the per-player VOLUME lock, which resolves r4280705925. save_player_config writes storage before calling on_player_config_change, so the recheck sees the new values. get_player_lock is per-task reentrant, so no self-deadlock, and the pin only takes the member lock, so no group/member inversion. The new asyncio test does catch the old ordering: after sleep(0) the old code had already read the pin before blocking. (3) New issue from (2): the early return now happens inside the lock, so every VOLUME_SET player takes its VOLUME lock on each register/register_or_update. Both calls run under the global _register_lock. If a volume command is stuck on that player (likely on a reconnect after a drop), registration of every player waits up to PLAYER_LOCK_TIMEOUT (30s), even though the pin is not configured. GPT Sol flagged the same thing as PROBLEM. Fix: cheap pre-check before the lock, recheck inside (patch below). (4) Pin before set_config: author kept it and replied on the resolved thread r4254688831. Fine. Copilot 06:20Z on 306c090ad: 0 open inline findings, both old threads resolved in its overview (the GitHub threads are still unresolved). Previously missed (1) [CRITICAL]: no pin apply on unavailable to available. Checked: chromecast/player.py sets _attr_available = False at init and flips it in the connection-status handler via update_state, never re-registering. So for Cast the pin is skipped at register and never applied at startup, only on config save while online. Cast into an AVR is a typical setup for this feature, so this is worth fixing in the PR: in signal_player_state_update, when 'available' changed to True on an initialized player, schedule _apply_native_volume_pin as a task that logs errors. The Universal Player item from the last review was not repeated. Our depends_on_value_not = PLAYER_CONTROL_NATIVE suggestion is still unposted. Local tests could not run: the shared .venv has stale models (SortField.FAVORITE_TIMESTAMP missing). CI green. Marvin has not commented on this PR.",
@@ -3083,7 +3083,7 @@
    "providers_touched": [
     "dlna_receiver"
    ],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; changes requested, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; changes requested, no auto-merge",
    "head_sha": "0d643083b",
    "tldr": "Out of draft again since 08:52Z and OzGav is re-requested. All 58 review threads are resolved, and the three OzGav points from September (owner_player_id rename, conftest.py removed, deferred import removed) are done in the code. Scope is clean: only the new provider, its tests and en.json keys. Two real bugs remain against the current AudioSource session model. The plugin never calls deselect_source, so a second cast on the same renderer reuses the first cast's cached stream details (with the codec ffmpeg detected), and a DLNA Stop leaves the player showing the DLNA source. Also, any stream teardown during Pause is treated as Stop.",
    "summary": "New plugin provider synced from ma-provider-dlna-receiver v1.2.8. It runs one aiohttp UPnP server per MA player (ports from 8298 upward, on one detected IPv4) and one SSDP advertiser per renderer, each with its own UDP 1900 socket (SO_REUSEPORT). Playback goes through play_media with an AUDIO_SOURCE uri, and get_audio_stream proxies the sender's URL. Files touched: only music_assistant/providers/dlna_receiver/*, tests/providers/dlna_receiver/* and 9 new keys in translations/en.json. No core changes. Conventions are mostly fine: get_config_entries is an instance method on dev's model, the registry uses the event bus, tasks go through mass.create_task, and narrow excepts are used. The VERSION file matches other synced providers (yandex_*, kion_music, msx_bridge). The docs URL in the manifest returns 404 until music-assistant.io#626 merges. Unload cancels the metadata task, unsubscribes the player events, sends byebye, closes both UDP transports, stops the aiohttp runner, cancels GENA tasks and leaves mass.http_session open. GPT Sol and I found no leak. Security of the unauthenticated endpoint is reasonable for DLNA: SetAVTransportURI and GENA callbacks are validated against loopback, link-local, multicast and reserved addresses on every redirect hop, redirects are capped at 5, GENA is capped at 32 subs per service with a 1800 s TIMEOUT clamp, and SOAP/DIDL parsing rejects DOCTYPE/ENTITY and anything over 64 KiB. Anyone on the LAN can still play to and set the volume of every exposed player. That is inherent to DLNA and the plugin is opt-in. The remaining issues are about the newer AudioSource session contract. Sessions survive cmd_stop and keep session.streamdetails on re-select (_start_audio_source_session with preserve_details). ffmpeg writes the detected codec into that AudioFormat in place, so the next cast on the same renderer is launched with the old -acodec. Other receivers (airplay_receiver, spotify_connect, ariacast, sendspin_source) call deselect_source with the session's playback_session_id when their session ends. This plugin does not. on_source_unselected also sets STOPPED and clears elapsed on every stream teardown, but dev documents that a paused source's stream can be torn down while the source stays selected.",
@@ -3192,7 +3192,7 @@
    "ci": "All green on 2ebd50161: lint, pytest 1-3, CodeQL, codecov patch and project. Bot workflows skipped as usual.",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; review required, no auto-merge",
    "head_sha": "2ebd50161",
    "tldr": "Reporter amsound says the fix doesn't work, but the attached log shows the DEV add-on never got to run it: installing requirements failed with 'No space left on device' while building aiolibdatachannel from its git branch. Ask them to free disk space and retry. Code side unchanged: Copilot green, CI green, waiting on a second maintainer.",
    "summary": "Fixes support#6731: TuneIn's signed Apple Music HLS url expires after 5-6 h, the playlist reload gets HTTP 433, ffmpeg exits non-zero and playback stops. get_media_stream now routes MediaType.RADIO through _get_restarting_radio_media_stream. After a run that yielded audio fails with MusicAssistantError/ClientError/TimeoutError, it calls the same provider instance's get_stream_details, resolves it via the new shared _resolve_radio_stream_details helper and copies path, stream_type, audio_format and data into the existing StreamDetails, so the queue item keeps its object. A failure before any audio still raises, so provider fallback is unchanged. ProviderStreamLimitError, CancelledError and GeneratorExit propagate. The restart budget now counts PCM seconds of the current run (fix from Copilot's second review), so a slow failing refresh cannot reset it. The reporter's log shows the media_stream warning dump, which only happens on the error path, so the 433 case does reach the restart loop. Copilot threads: r4258226164 (copy the HLS metadata callback on refresh) was declined with a reply and is resolved; r4258280565 (budget reset on refresh latency) was fixed in 2ebd501 and is resolved. Latest Copilot review on 2ebd50161 at 11:59:39Z: Approval recommended, 0 open findings. GPT Sol flagged a clean EOF as CRITICAL: _get_media_stream returns normally when ffmpeg exits 0, and the loop then returns without a restart. That is real for the legacy Shoutcast reader, which turns IncompleteReadError into EOF, but it is pre-existing behavior and not the reported failure, so we log it as a suggestion and do not block on it. Tests not run locally; CI covers them.",
@@ -3422,7 +3422,7 @@
    "providers_touched": [
     "web_kiosk"
    ],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; review required, no auto-merge",
    "head_sha": "257e3ae8b",
    "tldr": "v1.1.0 drops ENQUEUE and plays core's flow stream, which removes the provider's own successor logic and with it the seek-to-end bug (Copilot r4302797493 resolved, page clamp verified, server seeks now safe via flow). Copilot is clean on the head. New: Repeat One leaves the page clock stuck at the end. The 9 older PROBLEMs and the maintainer question remain. Not ready.",
    "summary": "Delta b852cf2f7..257e3ae8b (v1.1.0, +894/-1285): the kiosk drops PlayerFeature.ENQUEUE, so core serves queue media as one /flow/ stream. Removed: the /flow/ to /single/ rewrite, enqueue_next_media, start_enqueued_media, QueueWalk, playback_reached_end and the short-end detection; a browser 'ended' now just reports IDLE. play_media checks resolve_stream_url to set serves_flow. refresh_stream rebuilds the flow at the queue's item and position via cmd_seek with resume_position(). New PlaybackClaim replaces transport_mark/still_plays/take_over_output (GPT Sol found no ownership or pause bug in it). _publish_flow_item sends title, duration and a stream-clock start (queue elapsed minus stream elapsed x speed; GPT Sol confirmed the formula) when the queue's item changes inside the flow. Closing a page that got the current play message rebuilds the flow for the remaining pages. web.js caps seekToSong at floor(dur) - end_margin from the welcome message, clamps its clock to the song duration, and reports position every 2 s. Effect on old findings: fixed or gone are the seek-to-end CRITICAL, the /flow/ rewrite limitation (crossfade and overlays now apply), one-item Repeat All, paused successor resume_pos, radio jumping to the next item, end report during the snapshot seek, and the short complete file stopping the queue. The failed-playback teardown is downgraded to SUGGESTION since there are no enqueue tasks now. The other 9 PROBLEMs are untouched. New PROBLEM: Repeat One (and one-item Repeat All) never sends a new media message, so the page clock and lyrics stay at the end.",
@@ -4496,7 +4496,7 @@
    "providers_touched": [
     "sendspin"
    ],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; review required, no auto-merge",
    "head_sha": "31e6c701c",
    "tldr": "Code is clean and CI is green, but Marcel questioned the approach at 11:29Z: he would rather have the Sendspin client flag itself as private or shared than add a server-side toggle. That likely means a client-side redesign, so it waits on teancom and Marcel.",
    "summary": "New boolean entry shared_player, offered only to web/app players and never to virtual players. _apply_standalone_visibility runs from _refresh_client_info and on_config_updated, so the toggle applies without a reconnect. The websocket event filter re-reads player.private on each event, matching auth_middleware.is_own_client_player. Since the last card the only code change is the rebase: the .constants import block in sendspin/player.py now keeps dev's CONF_SOURCE_INPUT_DECLINED and adds CONF_SHARED_PLAYER; every imported name exists in constants.py and lint passed. merge-tree against origin/dev is clean. The author's rebuttal to Copilot holds: WebserverController.update_active_user_filters (controller.py:537) already changes a live user's access without notifying the client, so the stale cache for a restricted owner is an existing limitation, not new. Server-side auth still checks current privacy, so the stale UI grants no access. Config save needs CONFIG_PLAYERS_WRITE, so only an admin can trigger the case. Copilot re-reviewed the new head and marked the finding resolved with 0 open findings. 10-17: Marcel suggested the Sendspin client should flag privacy itself; teancom replied that needs a spec change and pinged maximmaxim345.",
@@ -5222,8 +5222,8 @@
   {
    "repo": "server",
    "number": 7079,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-22T06:16:28Z",
    "title": "Follow Raumfeld zone changes and speed up regrouping",
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7079",
@@ -5242,7 +5242,7 @@
    "providers_touched": [
     "raumfeld"
    ],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; review required, no auto-merge",
    "head_sha": "e2079a682",
    "tldr": "Simanias fixed OzGav's finding in e2079a682: the zone watcher now logs any unexpected error with its traceback and keeps looking, and a cancel still ends it; a new test fails without the fix. Raumfeld tests pass (173). No open threads, Copilot has no open issues. One small point: a persistent error logs a full traceback every 2 s. Copilot still asks for a final human review, so this waits on your approve rather than auto-approval.",
    "summary": "Delta a60205a47..e2079a682 adds `except asyncio.CancelledError: raise` (redundant, CancelledError is a BaseException) and `except Exception: self.logger.exception(...)` inside _watch_zones, plus a test that the loop survives one RuntimeError and stops on cancel. Fix verified; tests/providers/raumfeld: 173 passed. GPT Sol and Claude both note that a deterministic error in _follow_zones would log a traceback every ZONE_WATCH_INTERVAL (2 s). GPT Sol rates it a PROBLEM; we rate it a suggestion because it needs an unknown persistent bug, and the log is what would surface it. Copilot 05:55Z: Needs a closer look (final human review of zone reconciliation and queue handover), no open issues.",
@@ -5298,8 +5298,8 @@
     "why": "Enhancement, and the Raumfeld provider is not on stable."
    },
    "prompt": "",
-   "whats_new": "Simanias pushed e2079a682 at 05:49Z with OzGav's second option (catch and log inside the loop), replied and resolved the thread. Copilot 05:55Z: no open issues.",
-   "reviewed_now": true,
+   "whats_new": "OzGav approved and merged it at 06:16Z.",
+   "reviewed_now": false,
    "reviewed_at": "2026-10-22 08:00 CEST",
    "auto_approved": null,
    "stacked": null,
@@ -5311,7 +5311,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "you: approve",
-   "changed_now": "pushed",
+   "changed_now": "merged",
    "gpt_sol": "1 problem (log flood, we rate it a suggestion)"
   },
   {
@@ -5337,7 +5337,7 @@
    "providers_touched": [
     "party"
    ],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; no decision, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; no decision, no auto-merge",
    "head_sha": "33c048aa2",
    "tldr": "33c048aa2 fixes both Copilot findings and Copilot is now clean. One thing left from our side: a guest whose screen still shows song A, and whose vote arrives after the skip, now counts against song B. GPT Sol flags the same. Small patch on card plus frontend#3014 sending the item id.",
    "summary": "Delta 28b8fc4ed..33c048aa2. skip_current records the playing item before any await, then holds _queue_lock and get_group_and_player_lock(queue_id, strict=True) through next(), and rejects the vote if the item changed. The player lock is re-entrant per task, so next() taking it again is fine; no inverse lock order found. Stale tallies: unload() clears the votes and their tally, and _remove_stale_skip_tally drops a tally no live vote belongs to on load and on every QUEUE_UPDATED (terminates, the pop removes the trigger). New tests cover both waits, the held lock and the three tally paths. Left: the item is captured on arrival at the server, so a late vote from a stale UI still lands on B. The author notes a natural track end can still slip between check and next(); that window is milliseconds and fine to accept. CI green, Copilot 09:19Z no open issues.",
@@ -5739,7 +5739,7 @@
    "ci": "green on b22cc7e1d",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; review required, no auto-merge",
    "head_sha": "b22cc7e1d",
    "tldr": "The play_index fast path now keys on source_current_item, captured before the source is stopped, and only fires if that item still exists in the target. If it is gone, update_items -> _resync_position moves the target to the item at the index and zeroes resume_pos/elapsed_time, then resume() starts it from 0. Full player_queues suite passes. Ready. Copilot recommends approval. Core touched, so it's your approve.",
    "summary": "Delta 3073fb3ab..b22cc7e1d replaces target_queue.current_item with source_current_item in the auto_play guard. Previously update_items could resync the target's current_item to a replacement item, which then passed the index_by_id check and got play_index at the missing item's offset. Now a missing source item fails the guard, and the elif auto_play path calls resume(). Two sub-cases. When the target has a buffered index, update_items calls _resync_position, which sets resume_pos=0 and elapsed_time=0. resume() then computes resume_pos = 0 or _last_played_position() = 0, because the target's prev_state names a different queue_item_id. When the target has no buffered index, resume() sees the parked item missing and takes its explicit 'no valid current item' branch with resume_pos=0. Radio and ended handling are unchanged. The new test covers the buffered-index case and asserts play_index is not awaited and resume_pos is 0.",
@@ -5812,7 +5812,7 @@
    "providers_touched": [
     "musicbrainz"
    ],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; review required, no auto-merge",
    "head_sha": "3ac44a43d",
    "tldr": "get_url_data now deletes the 30-day settled entry when a lookup finds the URL unknown or ambiguous. Keys match the set call and cache.get honours BYPASS_CACHE, so a refresh really re-asks and clears it. The declined CRITICAL needs three rare conditions at once, and the harm is a duplicate rather than a wrong merge. Ready. Copilot recommends approval on the head. Core touched, so it's your approve.",
    "summary": "Delta 80c73af04..3ac44a43d adds an else branch in MusicBrainzAPIClient.get_url_data that calls mass.cache.delete(settled_key, provider=self.domain) whenever the lookup does not resolve to exactly one entity. The key and provider are the same as in the set call. delete() with category None matches any category, and set uses the default 0, so the entry is removed. cache.get_with_freshness returns a miss under BYPASS_CACHE for non-persistent entries, so a bypassing refresh skips the settled entry, re-queries and now drops it. That closes r4337198057. Concurrent lookups for one URL are last-writer-wins, and both writers reflect MusicBrainz at their own time, so no harmful race. A 400/401/404 response (None) also drops the settled entry, which is right for 404 and harmless otherwise because the 1-day cache re-asks. The new test drives the real set/delete sequence with BYPASS_CACHE. On the declined r4337197972: the recovered MBID is only applied at insert, after _get_library_item_by_match has run its external-id pass without it. A duplicate therefore needs a same-provider name clash, a MusicBrainz URL link, and a third library artist carrying that MBID under a name that normalises differently (localised names, P!nk/Pink). OzGav's premise that library artists carry the MusicBrainz name is not quite right: names come from the first provider. Even so the combination is rare, and the outcome (a duplicate with the same MBID, mergeable by hand) is better than the pre-PR behaviour, which merged the item into the wrong same-name artist. Decline accepted. A cheap follow-up would look up the recovered MBID before inserting.",
@@ -6818,7 +6818,7 @@
    "del": 2,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; review required, no auto-merge",
    "head_sha": "0c1f198da",
    "core_touched": true,
    "providers_touched": [],
@@ -7202,7 +7202,7 @@
    "del": 1,
    "ci": "green on 1efe76b06 (23 checks)",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev 019c1345e; review required, no auto-merge",
    "head_sha": "1efe76b06",
    "core_touched": true,
    "providers_touched": [],
