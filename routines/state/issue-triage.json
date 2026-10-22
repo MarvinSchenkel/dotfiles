@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-22 12:30 CEST",
+ "last_run": "2026-10-22 13:30 CEST",
  "columns": [
   [
    "info",
@@ -89,7 +89,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:21Z",
@@ -147,7 +147,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:23Z",
@@ -209,7 +209,7 @@
    "diff": "diff --git a/aioaudiobookshelf/schema/audio.py b/aioaudiobookshelf/schema/audio.py\nindex 28ade35..16fa8af 100644\n--- a/aioaudiobookshelf/schema/audio.py\n+++ b/aioaudiobookshelf/schema/audio.py\n@@ -44,7 +44,8 @@ class AudioTrack(_BaseModel):\n class AudioFile(_BaseModel):\n     \"\"\"Audiofile.\"\"\"\n \n-    index: int\n+    # null for podcast episodes abs scanned in before its v2.21.0\n+    index: int | None = None\n     ino: str\n     metadata: FileMetadata\n     added_at: Annotated[int, Alias(\"addedAt\")]\ndiff --git a/tests/test_podcasts.py b/tests/test_podcasts.py\nnew file mode 100644\nindex 0000000..dff6ea6\n--- /dev/null\n+++ b/tests/test_podcasts.py\n@@ -0,0 +1,100 @@\n+\"\"\"Tests for decoding podcast payloads.\"\"\"\n+\n+import json\n+from typing import Any\n+\n+from aioaudiobookshelf.schema.library import LibraryItemExpandedPodcast\n+\n+_FILE_METADATA = {\n+    \"filename\": \"episode1.mp3\",\n+    \"ext\": \".mp3\",\n+    \"path\": \"/podcasts/show1/episode1.mp3\",\n+    \"relPath\": \"episode1.mp3\",\n+    \"size\": 1000,\n+    \"mtimeMs\": 1700000000000,\n+    \"ctimeMs\": 1700000000000,\n+    \"birthtimeMs\": 0,\n+}\n+\n+\n+def _episode() -> dict[str, Any]:\n+    \"\"\"Build an episode as abs sends it for a file scanned in before abs v2.21.0.\"\"\"\n+    audio_file = {\n+        \"index\": None,\n+        \"ino\": \"2\",\n+        \"metadata\": _FILE_METADATA,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"manuallyVerified\": False,\n+        \"exclude\": False,\n+        \"error\": None,\n+        \"format\": \"MP2/3 (MPEG audio layer 2/3)\",\n+        \"duration\": 60.0,\n+        \"bitRate\": 128000,\n+        \"codec\": \"mp3\",\n+        \"channels\": 2,\n+        \"channelLayout\": \"stereo\",\n+        \"mimeType\": \"audio/mpeg\",\n+    }\n+    return {\n+        \"libraryItemId\": \"item1\",\n+        \"podcastId\": \"podcast1\",\n+        \"id\": \"episode1\",\n+        \"index\": None,\n+        \"title\": \"Episode 1\",\n+        \"chapters\": [],\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"audioFile\": audio_file,\n+        \"audioTrack\": {\n+            \"index\": None,\n+            \"startOffset\": 0,\n+            \"duration\": 60.0,\n+            \"title\": \"episode1.mp3\",\n+            \"contentUrl\": \"/api/items/item1/file/2\",\n+            \"mimeType\": \"audio/mpeg\",\n+            \"metadata\": _FILE_METADATA,\n+        },\n+        \"duration\": 60.0,\n+        \"size\": 1000,\n+    }\n+\n+\n+def _podcast_item(episode: dict[str, Any]) -> bytes:\n+    item = {\n+        \"id\": \"item1\",\n+        \"ino\": \"1\",\n+        \"libraryId\": \"library1\",\n+        \"folderId\": \"folder1\",\n+        \"path\": \"/podcasts/show1\",\n+        \"relPath\": \"show1\",\n+        \"isFile\": False,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"isMissing\": False,\n+        \"isInvalid\": False,\n+        \"mediaType\": \"podcast\",\n+        \"libraryFiles\": [],\n+        \"size\": 1000,\n+        \"media\": {\n+            \"id\": \"podcast1\",\n+            \"libraryItemId\": \"item1\",\n+            \"autoDownloadEpisodes\": False,\n+            \"maxEpisodesToKeep\": 0,\n+            \"maxNewEpisodesToDownload\": 3,\n+            \"tags\": [],\n+            \"size\": 1000,\n+            \"metadata\": {\"title\": \"Show 1\", \"genres\": [], \"explicit\": False},\n+            \"episodes\": [episode],\n+        },\n+    }\n+    return json.dumps(item).encode()\n+\n+\n+def test_an_episode_scanned_before_abs_2_21_has_no_audio_file_index() -> None:\n+    \"\"\"Abs never backfilled the null index of older scans, see support#6842.\"\"\"\n+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(_episode()))\n+\n+    audio_file = item.media.episodes[0].audio_file\n+    assert audio_file is not None\n+    assert audio_file.index is None\n",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "jaycollett",
      "at": "2026-10-22T02:19:29Z",
@@ -293,7 +293,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "riskywhat",
      "at": "2026-10-21T13:06:34Z",
@@ -337,18 +337,18 @@
    "col": "info",
    "area": "server / providers/sonos player.py _on_playback_error, streams controller (port 8097); airplay/player.py volume (with #6664)",
    "since": "2026-10-21 12:30",
-   "last": "MarvinSchenkel 2026-10-21 10:43",
+   "last": "innerskyone 2026-10-22 10:36",
    "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-21T10:43:09Z",
+    "login": "innerskyone",
+    "team": false,
+    "at": "2026-10-22T10:36:37Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "2.10.7 HA add-on, Sonos Port 'Office' (line-out Variable). Native playback fails at once ('Speaker Office could not play None and reported ERROR_PLAYBACK_NO_CONTENT'), with MP3 and radio, Flow mode on and off, publish IP auto or the HA LAN IP. On AirPlay it plays, but volume changes from MA or the Sonos app snap back after a few seconds until MA clears the AirPlay output. Same error as the bot-closed support#5721.",
    "fix": "",
-   "checked": "Opus subagent, 2.10.7 = dev on these paths. 'None' is the speaker's own trackName/itemId in the playbackError event (player.py:1028-1034 on 2.10.7), so it failed before resolving any item; no httpStatus, so most likely no HTTP answer from MA. Flow on (play_stream_url) and off (play_cloud_queue) both need the Port to fetch http://<publish_ip>:8097; Sonos app, AirPlay and the browser don't, so likely a reachability problem (VLAN/firewall/port 8097), about 65%. Volume: Port on Variable has VOLUME_SET, so __control_for_output returns NATIVE and owns_volume is False (same as #6664); the Sonos provider doesn't push volume back. MA-side snap-back candidates: AirPlay DACP device-volume > update_volume_from_device > _adopt_device_volume writes VOLUME= back without an owns_volume check (airplay/provider.py:1111-1135, airplay/player.py:828-839, 1031-1044), or _enforce_volume_limits if a min/max volume is set (players/controller.py:2150).",
-   "plan": "Need a Verbose SONOS + AirPlay + Streams log of one native start and one AirPlay volume change, the diagnostics, the network layout and any min/max volume. No 'Cloud Queue request' line = network; itemWindow items=0 = MA bug.",
+   "checked": "Opus subagent, 2.10.7 = dev on these paths. 'None' is the speaker's own trackName/itemId in the playbackError event (player.py:1028-1034 on 2.10.7), so it failed before resolving any item; no httpStatus, so most likely no HTTP answer from MA. Flow on (play_stream_url) and off (play_cloud_queue) both need the Port to fetch http://<publish_ip>:8097; Sonos app, AirPlay and the browser don't, so likely a reachability problem (VLAN/firewall/port 8097), about 65%. Volume: Port on Variable has VOLUME_SET, so __control_for_output returns NATIVE and owns_volume is False (same as #6664); the Sonos provider doesn't push volume back. MA-side snap-back candidates: AirPlay DACP device-volume > update_volume_from_device > _adopt_device_volume writes VOLUME= back without an owns_volume check (airplay/provider.py:1111-1135, airplay/player.py:828-839, 1031-1044), or _enforce_volume_limits if a min/max volume is set (players/controller.py:2150). 10-22 log (last 1000 lines, to 12:35:01): stream server 192.168.1.134:8097, Port at 192.168.3.10 (other VLAN; reporter: 'gave full access', no min/max volume). SONOS + AirPlay Verbose from 12:31; native at 12:33:40, playbackError ERROR_PLAYBACK_NO_CONTENT at 12:33:50 (serviceId -1), with no 'Cloud Queue request' (provider.py:273, VERBOSE) and no 'Start Queue Flow stream' in between: no queue or flow request reached MA. Streams wasn't Verbose. No volume changes in the captured lines.",
+   "plan": "Waiting on the reachability test from the Port VLAN to 192.168.1.134:8097. Timeout = firewall (user side, close as config). Response = look at what the Port is sent (Streams Verbose). Volume part stays with #6664.",
    "branch": "",
    "prs": [],
    "badges": [
@@ -363,18 +363,19 @@
    "bookkeeping": [],
    "notes": [
     "10-21 12:30 run: new issue. Native failure most likely the Port not reaching MA's stream server on 8097; AirPlay volume snap-back is the #6664 family, plus an MA-side DACP write-back lead. Info ask drafted.",
-    "10-21 13:45 reply: you posted the info ask from the board (10:43 UTC, https://github.com/music-assistant/support/issues/6838). Waiting for innerskyone."
+    "10-21 13:45 reply: you posted the info ask from the board (10:43 UTC, https://github.com/music-assistant/support/issues/6838). Waiting for innerskyone.",
+    "10-22 13:30 run: innerskyone sent a log and confirmed the Port is on another VLAN, no min/max volume. Log shows no queue or flow request reaching MA on the native attempt. Posted on your behalf (https://github.com/music-assistant/support/issues/6838#issuecomment-6339699120), GPT: revise twice, accepted GPT's second text as is: dropped the claim that no request at all arrived and the second firewall ask, kept one reachability test."
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-21T10:43:09Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6838#issuecomment-6314013477"
+     "login": "innerskyone",
+     "at": "2026-10-22T10:36:37Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6838#issuecomment-6338694092"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -384,9 +385,10 @@
      "airplay",
      "triage",
      "sonos",
-     "waiting-for-user"
+     "needs-attention"
     ]
-   }
+   },
+   "ask": null
   },
   {
    "n": 6837,
@@ -421,7 +423,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-21T13:26:39Z",
@@ -481,7 +483,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "NasaGeek",
      "at": "2026-10-21T16:04:47Z",
@@ -555,7 +557,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "dunxd",
      "at": "2026-10-20T19:23:52Z",
@@ -623,7 +625,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "Cyberlytical-LLC",
      "at": "2026-10-21T15:30:35Z",
@@ -704,7 +706,7 @@
    "action": "janoj (10-21 17:44 UTC) reports server#7132 also fixes jerky starts on a Denon Home 150 and an AVR-X1800H. amodig hasn't tested yet. Your call: mark #7132 ready and merge, or wait for amodig.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "janoj",
      "at": "2026-10-21T17:44:07Z",
@@ -742,11 +744,11 @@
    "col": "merged",
    "area": "server / providers/raumfeld player.py + constants.py SUPPORTED_SAMPLE_RATES, controllers/config/players.py",
    "since": "2026-10-20 07:38",
-   "last": "Simanias 2026-10-21 12:51",
+   "last": "Simanias 2026-10-22 10:30",
    "gh": {
     "login": "Simanias",
     "team": true,
-    "at": "2026-10-21T12:51:00Z",
+    "at": "2026-10-22T10:30:10Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -781,20 +783,21 @@
     "10-20 10:38 run: Simanias (07:52 UTC) will add a per-device max sample rate setting and asked jo-che which devices fail. Off your plate, no reply needed.",
     "10-20 11:38 run: jo-che (09:27 UTC) posted a per-room table: One S Gen 2/3 play 192/24; Stereo Cubes Gen 2, Connector Gen 2 (Wi-Fi) and One M Gen 1 (fw 2.17.4) top out at 96/24. Retested on pr-7112. New: in a group led by a One S at 192 kHz, the One M and Connector drop after ~2 s, because only the leader's sample rate setting counts. Ball is with Simanias, no action for you.",
     "10-20 14:38 run: Simanias (11:49 UTC) will add a per-device max sample rate plus a PR so a group follows its lowest member's rate (not today, he's abroad). He has a Connector Gen 2 without problems and suggests jo-che moves the Raumfeld host to a wired device. No action for you.",
-    "10-21 15:30 run: Simanias merged server#7138 (13:17 UTC), written against this issue. The Raumfeld provider isn't on stable (cherry-pick conflicts: files deleted there), so I set Fix to be Confirmed + milestone 2.11.0. No reply: you close it at release."
+    "10-21 15:30 run: Simanias merged server#7138 (13:17 UTC), written against this issue. The Raumfeld provider isn't on stable (cherry-pick conflicts: files deleted there), so I set Fix to be Confirmed + milestone 2.11.0. No reply: you close it at release.",
+    "10-22 13:30 run: Simanias (10:30 UTC) asked jo-che whether server#7138 solves it. Nothing for you."
    ],
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "Simanias",
-     "at": "2026-10-21T12:51:00Z",
+     "at": "2026-10-22T10:30:10Z",
      "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6821#issuecomment-6316427209"
+     "url": "https://github.com/music-assistant/support/issues/6821#issuecomment-6338578207"
     },
     "reporter_new": false,
-    "team_new": false,
+    "team_new": true,
     "closed": false,
     "pr": [
      {
@@ -867,7 +870,7 @@
    "ask": null,
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "maisun",
      "at": "2026-10-21T12:49:48Z",
@@ -942,7 +945,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:07Z",
@@ -999,7 +1002,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:36:49Z",
@@ -1051,7 +1054,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "Anto79-ops",
      "at": "2026-10-10T18:07:20Z",
@@ -1124,7 +1127,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "bdeprez",
      "at": "2026-10-13T20:17:14Z",
@@ -1192,7 +1195,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "jetpacktuxedo",
      "at": "2026-10-09T18:36:05Z",
@@ -1261,7 +1264,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:45:17Z",
@@ -1323,7 +1326,7 @@
    "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-10T16:01:24Z",
@@ -1395,7 +1398,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T07:54:30Z",
@@ -1491,7 +1494,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:14:26Z",
@@ -1585,7 +1588,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:16:29Z",
@@ -1665,7 +1668,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "kiwipaulrob",
      "at": "2026-10-17T22:19:56Z",
@@ -1741,7 +1744,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-08T14:40:21Z",
@@ -1879,7 +1882,7 @@
    "ask": "reply-answer",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-18T05:28:39Z",
@@ -2139,7 +2142,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:17:32Z",
@@ -2232,7 +2235,7 @@
    "ask": "nudge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "CDrummond",
      "at": "2026-10-10T06:44:22Z",
@@ -2327,7 +2330,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "davidfi01",
      "at": "2026-10-14T14:12:59Z",
@@ -2394,7 +2397,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-12T13:38:14Z",
@@ -2485,7 +2488,7 @@
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "PipTheBirb",
      "at": "2026-10-22T08:49:52Z",
@@ -2573,7 +2576,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T10:06:51Z",
@@ -2656,14 +2659,14 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "Howard0000",
      "at": "2026-10-22T10:01:15Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6512#issuecomment-6338047887"
     },
-    "reporter_new": true,
+    "reporter_new": false,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -2718,7 +2721,7 @@
    },
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:20:45Z",
@@ -2777,7 +2780,7 @@
    "ask": "reply-test",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "johnp3004",
      "at": "2026-09-13T18:24:58Z",
@@ -2843,7 +2846,7 @@
    },
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:19:58Z",
@@ -2894,7 +2897,7 @@
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T06:43:54Z",
@@ -2957,7 +2960,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "Geweldich",
      "at": "2026-09-30T11:09:20Z",
@@ -3083,7 +3086,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:49:03Z",
@@ -3147,7 +3150,7 @@
    "action": null,
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:19:23Z",
@@ -3218,7 +3221,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-06T13:51:35Z",
@@ -3269,7 +3272,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "marcelveldt",
      "at": "2026-08-26T21:48:58Z",
@@ -3333,7 +3336,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:18:47Z",
@@ -3402,7 +3405,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "salanki",
      "at": "2026-08-29T17:15:18Z",
@@ -3482,7 +3485,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T06:29:16Z",
@@ -3570,7 +3573,7 @@
    "summary": "QQ Music lists music but full-stream URL resolution fails with 104003 and the preview fallback gets a 403, so tracks are skipped. The reporter has a local endpoint correction that works. xiasi0, the provider maintainer, will fix it after their vacation.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "xiasi0",
      "at": "2026-10-06T18:49:41Z",
@@ -3646,7 +3649,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-15T08:41:56Z",
@@ -3714,7 +3717,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:36:19Z",
@@ -3796,7 +3799,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T12:45:57Z",
@@ -3867,7 +3870,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T17:20:50Z",
@@ -3939,7 +3942,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-15T08:23:30Z",
@@ -4018,7 +4021,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "olifoss",
      "at": "2026-10-17T21:13:56Z",
@@ -4135,7 +4138,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T11:12:58Z",
@@ -4236,7 +4239,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "moodwrench",
      "at": "2026-10-20T17:43:15Z",
@@ -4321,7 +4324,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-15T14:12:24Z",
@@ -4389,7 +4392,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "tylernolf",
      "at": "2026-10-21T00:49:25Z",
@@ -4468,7 +4471,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:06Z",
@@ -4544,7 +4547,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "marklam",
      "at": "2026-10-15T15:27:32Z",
@@ -4605,7 +4608,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "suporte640",
      "at": "2026-10-19T00:58:04Z",
@@ -4676,7 +4679,7 @@
    "ask": "design",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:15:21Z",
@@ -4749,7 +4752,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "Thyraz",
      "at": "2026-10-18T18:56:10Z",
@@ -4811,7 +4814,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "axsuul",
      "at": "2026-10-18T04:08:57Z",
@@ -4868,7 +4871,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:50:16Z",
@@ -4947,7 +4950,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T08:00:22Z",
@@ -5035,7 +5038,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T07:10:09Z",
@@ -5109,7 +5112,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "Vivi92821",
      "at": "2026-10-21T14:34:40Z",
@@ -5166,7 +5169,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:42:54Z",
@@ -5226,7 +5229,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T15:23:02Z",
@@ -5311,7 +5314,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-17T15:30:42Z",
@@ -5390,7 +5393,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T22:06:21Z",
@@ -5450,7 +5453,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T21:30:55Z",
@@ -5518,7 +5521,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:32:52Z",
@@ -5579,7 +5582,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "kmycek",
      "at": "2026-10-17T17:36:42Z",
@@ -5637,7 +5640,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T16:29:06Z",
@@ -5696,7 +5699,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "marapavelka",
      "at": "2026-10-17T09:58:35Z",
@@ -5754,7 +5757,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:52:28Z",
@@ -5823,7 +5826,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "TubeCrafterYT",
      "at": "2026-10-18T08:05:15Z",
@@ -5903,7 +5906,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:47:03Z",
@@ -5981,7 +5984,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-19T05:54:08Z",
@@ -6070,7 +6073,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:35:53Z",
@@ -6163,7 +6166,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "profLewis",
      "at": "2026-10-21T00:18:32Z",
@@ -6246,7 +6249,7 @@
     "10-22 11:45 (on request): backport check. Clean except that test file; you chose backport: labelled server#6929 backport-to-stable, #6844 moved to 2.10.8."
    ],
    "sync": {
-    "at": "2026-10-22T10:30:07Z",
+    "at": "2026-10-22T11:30:05Z",
     "last_human": {
      "login": "tomhnatt",
      "at": "2026-10-22T08:23:12Z",
@@ -6281,13 +6284,13 @@
    "col": "cantfix",
    "area": "server / providers/fully_kiosk player.py CONF_ENTRY_OUTPUT_CODEC_DEFAULT_AAC; hass_players/player.py _update_attributes",
    "since": "2026-10-22 12:30",
-   "last": "cooljimy84 2026-10-22 10:02",
+   "last": "cooljimy84 2026-10-22 10:34",
    "gh": {
     "login": "cooljimy84",
     "team": false,
-    "at": "2026-10-22T10:19:55Z",
-    "pr_open": false,
-    "pr_draft": false
+    "at": "2026-10-22T10:34:02Z",
+    "pr_open": true,
+    "pr_draft": true
    },
    "summary": "2.10.7 HA add-on, Fully Kiosk on a rooted Echo Show 8 (FK firmware 1.61.4, from 11/2025). Playing to the Fully Kiosk player shows playing but stays silent, no error. The reporter found himself that forcing the output codec to MP3 works (5-8 s start), and a 17 min megamix kept playing.",
    "fix": "Side bug only: hass_players treats a non-text media_content_id as 'not our URL' instead of crashing (local fix 11ca7c45c6). The codec default is the design row.",
@@ -6295,29 +6298,58 @@
    "plan": "Design: one default codec can't fit every Fully Kiosk device (MP3 dies at ~8m45s on some, AAC doesn't start on this Echo, AAC radio stopped on #6720). Options: (a) pick the codec from FK getDeviceInfo (Android/WebView version); (b) detect a failed start (FK keeps reporting not playing) and retry with MP3; (c) keep AAC and document MP3 as the fallback. Reply tells him to keep MP3 and asks for Fire OS + FK versions.",
    "branch": "fix/hass-players-non-str-media-content-id @ 11ca7c45c6 (worktree ~/git/music-assistant/server-fix-hass-media-content-id, not pushed)",
    "diff": "diff --git a/music_assistant/providers/hass_players/player.py b/music_assistant/providers/hass_players/player.py\nindex 93a4a57342..0b9d723a51 100644\n--- a/music_assistant/providers/hass_players/player.py\n+++ b/music_assistant/providers/hass_players/player.py\n@@ -463,7 +463,10 @@ class HomeAssistantPlayer(Player):\n         # entities that were seen echoing it can be judged by it - for the others the\n         # play command we issued is what tells the two sources apart. Without either\n         # signal the source stays as it was.\n-        media_content_id = self._hass_attributes.get(\"media_content_id\", \"\")\n+        media_content_id = self._hass_attributes.get(\"media_content_id\")\n+        if not isinstance(media_content_id, str):\n+            # some integrations (e.g. Kodi) report a library id here, which is never our URL\n+            media_content_id = \"\"\n         if media_content_id.startswith(self.mass.streams.base_url):\n             self._reports_stream_url = True\n             is_ma_playback = True\ndiff --git a/tests/providers/hass_players/test_external_playback.py b/tests/providers/hass_players/test_external_playback.py\nindex 253d10bf55..fc53d3380a 100644\n--- a/tests/providers/hass_players/test_external_playback.py\n+++ b/tests/providers/hass_players/test_external_playback.py\n@@ -6,6 +6,7 @@ import logging\n from typing import Any\n from unittest.mock import AsyncMock, MagicMock\n \n+import pytest\n from music_assistant_models.enums import PlaybackState\n from music_assistant_models.player import PlayerMedia\n \n@@ -196,3 +197,17 @@ async def test_stop_ends_the_ma_session() -> None:\n     await player.stop()\n \n     assert player._ma_playback_active is False\n+\n+\n+@pytest.mark.parametrize(\"content_id\", [42, {\"id\": 42, \"type\": \"movie\"}], ids=[\"int\", \"dict\"])\n+async def test_non_text_media_content_id_is_ignored(content_id: object) -> None:\n+    \"\"\"An entity reporting a library id instead of a URL does not break its state updates.\"\"\"\n+    player = _make_player()\n+\n+    player.update_from_compressed_state(\n+        {\"s\": \"playing\", \"a\": {\"media_content_id\": content_id, \"media_title\": \"Some Movie\"}}\n+    )\n+\n+    assert player._reports_stream_url is False\n+    assert player._attr_active_source is None\n+    assert player._attr_current_media is None",
-   "prs": [],
-   "badges": [
-    [
-     "warn",
-     "Local fix (hass_players crash)",
-     "local fix"
-    ]
+   "prs": [
+    {
+     "url": "https://github.com/music-assistant/server/pull/7152",
+     "label": "server#7152 (yours, draft, hass_players crash only, CI green, Copilot reviewed, 0 open threads, bugfix + backport-to-stable)"
+    }
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for testing, you found the cause already. The Fully Kiosk player defaults to AAC because on other devices Fully Kiosk drops a long MP3 stream after about 9 minutes. On your Echo Show 8 it's the other way round: AAC doesn't start at all, while MP3 plays (17 minutes and counting), so keep the output codec on MP3 for this player.\n\nCould you tell us the Android (Fire OS) version and the Fully Kiosk version from Fully Kiosk's device info? We're looking at picking the codec per device instead of one default for everyone.\n\nThe Home Assistant player for the Echo didn't disappear, by the way: Music Assistant links it to the Fully Kiosk player as one of its output protocols.",
+   "badges": [],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for testing, you found the cause already. The Fully Kiosk player defaults to AAC because on other devices Fully Kiosk drops a long MP3 stream after about 9 minutes. On your Echo Show 8 it's the other way round: AAC doesn't start at all, while MP3 plays (17 minutes and counting), so keep the output codec on MP3 for this player.\n\nDetecting this automatically is what we're looking at, so one default doesn't have to fit every device. Could you tell us the Android (Fire OS) version and the Fully Kiosk version from Fully Kiosk's device info? That tells us whether there's a clean version split to go on.\n\nThe Home Assistant player for the Echo didn't disappear, by the way: Music Assistant links it to the Fully Kiosk player as one of its output protocols.",
    "bookkeeping": [],
    "ask": "design",
    "milestone": null,
-   "action": "Design call: Fully Kiosk codec default (AAC silent on this Echo, MP3 dies at ~9 min elsewhere). Reply draft ready. Separate int media_content_id crash in hass_players: local fix ready (11ca7c45c6, needs your OK for a PR).",
+   "action": "Design call: Fully Kiosk codec default (lean: detect a failed start, retry MP3). Reply draft updated for his 'can you detect it?' question. server#7152 (hass_players crash) is a clean draft for your review.",
    "notes": [
     "10-22 12:30 run: new issue. Reporter found MP3 works where the AAC default stays silent. Design row for the codec default; reply drafted. Spotted a separate hass_players crash (int/dict media_content_id) in the log, local fix with an Opus subagent.",
     "10-22 12:40: Opus subagent built the hass_players local fix (11ca7c45c6), A/B clean, stable cherry-pick clean. No PR until you say so.",
-    "10-22 12:50 fix: fix session launched on your second Claude instance (claudeAgent_claude_2, Opus 5.5, your call) to PR the hass_players local fix with backport. Codec design stays open."
+    "10-22 12:50 fix: fix session launched on your second Claude instance (claudeAgent_claude_2, Opus 5.5, your call) to PR the hass_players local fix with backport. Codec design stays open.",
+    "10-22 13:30 run: cooljimy84 (10:34 UTC): AAC still silent, asks whether these devices can be detected and switched to MP3. Reply draft updated. Fix session done: server#7152 draft, CI green, Copilot clean."
    ],
    "fix_thread": {
     "id": "mcp:54661029-8377-44a2-8aa7-dd9ea1d8a516",
     "title": "Fix: HA players crash on a non-text media_content_id (#6845)",
     "kind": "fix",
-    "done": false
+    "done": true
+   },
+   "sync": {
+    "at": "2026-10-22T11:30:05Z",
+    "last_human": {
+     "login": "cooljimy84",
+     "at": "2026-10-22T10:34:02Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6845#issuecomment-6338647054"
+    },
+    "reporter_new": true,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7152,
+      "state": "OPEN",
+      "draft": true,
+      "merged_at": null,
+      "own": true
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "fully_kiosk",
+     "needs-attention"
+    ]
    }
   }
  ],
