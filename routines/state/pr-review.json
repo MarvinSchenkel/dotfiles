@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-22T07:00:00+02:00",
+ "last_run": "2026-10-22T08:00:00+02:00",
  "dev": "f4650192d",
- "run_note": "szsolt declined the Smart Shuffle CRITICAL on #6940 and marked it ready, so it waits on your approve. dmoo500 declined the album-credit CRITICAL on #5700 because you asked for it, but dev's #7073 now counts album plays differently. ryanmac8's three overnight fixes on #6901 check out, but Copilot found the same download gap in openai_compatible and the 3.14.4 fixture still fails. janoj reports #7132 fixes jerky HEOS starts. #7068, #7135, #7137 and models#442 merged.",
+ "run_note": "Simanias fixed OzGav's zone-watcher finding on #7079 and it is ready for your approve; Copilot still asks for a final human look, so it was not auto-approved. The critical gate drafted #6901 over the openai_compatible download CRITICAL, which is on ryanmac8. Dev did not move and nothing merged.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -1591,7 +1591,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "you: album call, fix",
-   "changed_now": "author replied",
+   "changed_now": null,
    "fix_thread": "[Cache benchmark discussion](t3-thread://v1/mcp:86e76b02-68f1-4956-9579-2147ce8dc226), started 10-21: cache-DB hit vs uncached instead of warm memory",
    "gpt_sol": "0 critical, 2 problems"
   },
@@ -1702,7 +1702,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "author",
-   "changed_now": "pushed"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -2552,7 +2552,7 @@
    "title": "Add AI generated covers and descriptions to the Playlist Metadata provider",
    "author": "ryanmac8",
    "url": "https://github.com/music-assistant/server/pull/6901",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "attention",
@@ -2574,7 +2574,7 @@
    "tldr": "ryanmac8 pushed three fixes overnight: no preview description or concept after unload, cached covers and descriptions put back without waiting, and a 408/5xx image download now pauses the engine. Claude confirms all three. Copilot's 05:07Z review finds the same download gap in openai_compatible (verified, CRITICAL, gate will draft). Left on our side: the 3.14.4 fixture (68 tests) plus two small checks in one validated patch, and your AI_QUERY design call.",
    "summary": "All three Address-review commits do what they claim, and the Copilot CRITICAL is resolved: no preview description or concept query can start after unload, because the engine lookups never yield between the _stopped check and ai_query. The restore-without-waiting path and the per-engine pause are correct, and the pause state does not leak. The HA 408/5xx mapping pauses the image engine without exposing the signed link. One small gap remains: an unload during the preview concept query still persists a description slot, fixed by one more _stopped check. The Python 3.14.4 test fixture issue is still there, now failing 68 tests; the loop= one-liner fixes all of them, and with it the provider suites pass (236). GPT Sol says concept generation can start after unload during engine discovery; Claude refutes it (select_ai_engine never yields). GPT Sol's second point holds as a narrow race: the text pause is not rechecked after the _record await in _preview_description.",
    "blockers": [
-    "Copilot CRITICAL r4344750743 (verified): openai_compatible image downloads still raise InvalidDataError on 408/429/5xx; ryanmac8 has the thread",
+    "Draft (critical gate) over Copilot CRITICAL r4344750743 (verified): openai_compatible image downloads still raise InvalidDataError on 408/429/5xx; ryanmac8 has the thread",
     "Test fixture fails 68 tests on Python 3.14.4: `fix 6901` pushes the loop= one-liner plus two small unload/pause checks (validated)",
     "Your design call: keep image engines under AI_QUERY or add a dedicated ProviderFeature (needs a models release)"
    ],
@@ -2678,8 +2678,8 @@
    },
    "backport": null,
    "prompt": "Server PR #6901 (https://github.com/music-assistant/server/pull/6901), head 05ea062a6, by ryanmac8. Apply /tmp/prr/r0700/d6901/suggested.patch: in tests/providers/playlist_metadata/test_ai.py pass loop=asyncio.get_running_loop() to the worker fake's asyncio.Task (68 tests fail on Python 3.14.4 without it); in music_assistant/providers/playlist_metadata/ai.py raise ActionUnavailable when _stopped right after _concept() in preview(), and recheck _text_engine_paused() next to _stopped after the _record await in _preview_description. Run tests/providers/playlist_metadata and tests/providers/hass. Work in a worktree from refs/remotes/pr/6901.",
-   "whats_new": "ryanmac8 pushed 38e8b7af7a, 839144b71b (00:39Z Copilot: needs a closer look, 2 previously-missed in code that had not changed) and 05ea062a6 (after Copilot's 04:42Z CRITICAL, gate drafted 04:44Z, ready again 04:55Z).",
-   "reviewed_now": true,
+   "whats_new": "The critical gate drafted it at 05:20Z over Copilot's CRITICAL r4344750743 (openai_compatible image download errors). Earlier overnight: ryanmac8 pushed 38e8b7af7a, 839144b71b and 05ea062a6.",
+   "reviewed_now": false,
    "reviewed_at": "2026-10-22 07:00 CEST",
    "auto_approved": null,
    "stacked": false,
@@ -2688,8 +2688,8 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you: fix, design; ryanmac8: f1",
-   "changed_now": "pushed",
+   "waiting_on": "ryanmac8: f1; you: fix, design",
+   "changed_now": "drafted",
    "gpt_sol": "2 problems (1 refuted, 1 narrow race)"
   },
   {
@@ -2964,7 +2964,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "you: approve",
-   "changed_now": "ready for review",
+   "changed_now": null,
    "gpt_sol": "clean"
   },
   {
@@ -4848,7 +4848,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: decide f1, OzGav",
-   "changed_now": "merged",
+   "changed_now": null,
    "gpt_sol": "0 critical, 1 problem"
   },
   {
@@ -5228,27 +5228,27 @@
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7079",
    "draft": false,
-   "verdict": "almost",
+   "verdict": "ready",
    "assessment": "approve",
-   "status": "waiting",
-   "attention_since": null,
+   "status": "attention",
+   "attention_since": "2026-10-21T11:55:08Z",
    "size": "L",
    "code": 636,
    "add": 540,
    "del": 96,
    "ci_fail": false,
-   "ci": "green on a60205a47 (14 checks)",
+   "ci": "green on e2079a682 (14 checks)",
    "core_touched": false,
    "providers_touched": [
     "raumfeld"
    ],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; no decision, no auto-merge",
-   "head_sha": "a60205a47",
-   "tldr": "_poll_zone now drops readings when the room's zone changed during the reads, so a split no longer marks a playing room idle. _sync_groups clears the queued next item of every follower when mirroring zones, so a follower that goes solo cannot start an abandoned track. Followers could never advance anyway, so nothing needed is dropped. Ready, zero open CRITICAL/PROBLEM. Copilot has no open issues but rates it 'Needs a closer look' and asks for final human review of the zone reconciliation, so the routine left the approve to you although the rules would allow auto-approval.",
-   "summary": "r4337196254: after the gather, _poll_zone checks _active_zone() != zone and returns before applying transport/position. get_zone_for_room returns host.get_zones() lists, which are sorted, so list equality is stable and an unchanged zone never drops a read. A transient roomlst_to_zoneudn miss only skips one poll. The only await left after the check is _read_zone_actions in _update_zone_source. That only runs for non-MA (external) sources, where no auto-advance is armed, so there is no new stale-advance window. r4337196341: _sync_groups builds the follower set from groups[leader][1:] and calls drop_next_item(), which clears _advance_armed/_next_media and cancels the end-watch timer. Dropping cannot lose a needed item, for three reasons. First, a follower already short-circuits in poll() (synced_to) and in _watch_for_track_end (_follows_or_held clears next), so it could never have advanced. Second, a claimant passed over when owners are unresolved becomes a follower whose queue MA no longer shows. Third, the real leader is never in the follower set. An end watch in flight re-checks _follows_or_held after its await and returns. MA-initiated grouping (set_members) still relies on core stopping the child queue and on _follows_or_held, as before. Tests cover both scenarios.",
+   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "head_sha": "e2079a682",
+   "tldr": "Simanias fixed OzGav's finding in e2079a682: the zone watcher now logs any unexpected error with its traceback and keeps looking, and a cancel still ends it; a new test fails without the fix. Raumfeld tests pass (173). No open threads, Copilot has no open issues. One small point: a persistent error logs a full traceback every 2 s. Copilot still asks for a final human review, so this waits on your approve rather than auto-approval.",
+   "summary": "Delta a60205a47..e2079a682 adds `except asyncio.CancelledError: raise` (redundant, CancelledError is a BaseException) and `except Exception: self.logger.exception(...)` inside _watch_zones, plus a test that the loop survives one RuntimeError and stops on cancel. Fix verified; tests/providers/raumfeld: 173 passed. GPT Sol and Claude both note that a deterministic error in _follow_zones would log a traceback every ZONE_WATCH_INTERVAL (2 s). GPT Sol rates it a PROBLEM; we rate it a suggestion because it needs an unknown persistent bug, and the log is what would surface it. Copilot 05:55Z: Needs a closer look (final human review of zone reconciliation and queue handover), no open issues.",
    "blockers": [
-    "OzGav's review comment (r4338158196): any non-host exception in _follow_zones() ends the zone watcher for good; restart it from _supervise() or catch inside the loop",
-    "Copilot asked for a final human review of the zone reconciliation (no open findings)"
+    "Your approve: Copilot's verdict is \"Needs a closer look\" (final human review of the zone reconciliation), so no auto-approval",
+    "Optional f3: a persistent error logs a traceback every 2 s; log the first of a run of failures only"
    ],
    "findings": [
     {
@@ -5256,7 +5256,7 @@
      "severity": "PROBLEM",
      "file": "music_assistant/providers/raumfeld/provider.py",
      "line": 361,
-     "title": "Zone watcher dies on any non-host exception (r4338158196)",
+     "title": "Zone watcher dies on any non-host exception (r4338158196, fixed in e2079a682)",
      "detail": "_watch_zones only catches HOST_ERRORS and nothing restarts it, so an exception from the handover path, mass.players or a PlayerCommandFailed ends it for good, silently, until the host reconnects.",
      "fix": "Recreate the task from _supervise() when done, or catch Exception inside the loop and log it (keeps _pending_zones/_undecided_since).",
      "posted": null
@@ -5270,28 +5270,19 @@
      "detail": "GPT Sol rated this a PROBLEM: when a merge of two playing groups stays inconclusive for the settle time, _pick_leader picks the first claimant and later watcher passes don't revisit ownership because the room sets match. Needs ownership reads failing for 10 s during a merge; we see it as rare (same family as the earlier fallback note).",
      "fix": "Keep unresolved ownership pending separately and retry it even when memberships match.",
      "posted": null
-    }
-   ],
-   "unaddressed_comments": [
-    {
-     "author": "Copilot",
-     "at": "2026-10-18T15:28:58Z",
-     "url": "https://github.com/music-assistant/server/pull/7079#discussion_r4307598959",
-     "summary": "Protect detached leader polling during settling"
     },
     {
-     "author": "Copilot",
-     "at": "2026-10-18T15:28:58Z",
-     "url": "https://github.com/music-assistant/server/pull/7079#discussion_r4307598982",
-     "summary": "Defer reconciliation when transport reads fail"
-    },
-    {
-     "author": "Copilot",
-     "at": "2026-10-18T15:28:59Z",
-     "url": "https://github.com/music-assistant/server/pull/7079#discussion_r4307599011",
-     "summary": "Recheck group state after awaited transport requests"
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/raumfeld/provider.py",
+     "line": 439,
+     "title": "A persistent error logs a traceback every 2 s",
+     "detail": "GPT Sol rated this a PROBLEM. The new handler logs every failed look with logger.exception and ZONE_WATCH_INTERVAL is 2 s, so a deterministic error in _follow_zones writes about 30 tracebacks a minute for as long as it lasts. Logging the first failure of a run (and resetting after a good look) keeps the signal without the flood.",
+     "fix": "Track a `failing` flag: log.exception only when it flips to failing, clear it after a successful look.",
+     "posted": null
     }
    ],
+   "unaddressed_comments": [],
    "copilot": {
     "green": true,
     "comments": 0,
@@ -5300,24 +5291,28 @@
     "titles": []
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "23:37Z on a60205a47: Needs a closer look, no open issues.",
+   "copilot_note": "05:55Z on e2079a682: Needs a closer look, no open issues.",
    "suggested_fix": null,
    "backport": {
     "rec": false,
     "why": "Enhancement, and the Raumfeld provider is not on stable."
    },
    "prompt": "",
-   "whats_new": "Simanias merged dev (with #7140 and #7141) at 22:44Z; the conflict resolution keeps both sides' imports and tests, nothing else changed. OzGav's zone-watcher thread is still open. Copilot 23:37Z: Needs a closer look, no open issues.",
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-21 16:10 CEST",
+   "whats_new": "Simanias pushed e2079a682 at 05:49Z with OzGav's second option (catch and log inside the loop), replied and resolved the thread. Copilot 05:55Z: no open issues.",
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-22 08:00 CEST",
    "auto_approved": null,
    "stacked": null,
    "related_prs": [],
-   "author_replied": null,
+   "author_replied": {
+    "at": "2026-10-22T05:54:00Z",
+    "url": "https://github.com/music-assistant/server/pull/7079#discussion_r4345000644",
+    "summary": "Fixed OzGav's zone-watcher finding with the catch-and-log option, plus a test."
+   },
    "reporter_reply": null,
-   "waiting_on": "Simanias",
+   "waiting_on": "you: approve",
    "changed_now": "pushed",
-   "gpt_sol": "not reviewed"
+   "gpt_sol": "1 problem (log flood, we rate it a suggestion)"
   },
   {
    "repo": "server",
@@ -6207,7 +6202,7 @@
     }
    ],
    "waiting_on": "you: reporter replied",
-   "changed_now": "reporter replied"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -6799,7 +6794,7 @@
    "fix_thread": null,
    "related_prs": [],
    "reviewed_now": false,
-   "changed_now": "merged",
+   "changed_now": null,
    "reviewed_at": null
   },
   {
@@ -6992,7 +6987,7 @@
    "fix_thread": null,
    "related_prs": [],
    "reviewed_now": false,
-   "changed_now": "merged",
+   "changed_now": null,
    "reviewed_at": null
   },
   {
@@ -7062,7 +7057,7 @@
    "fix_thread": null,
    "related_prs": [],
    "reviewed_now": false,
-   "changed_now": "merged",
+   "changed_now": null,
    "reviewed_at": "2026-10-21 17:15 CEST"
   },
   {
@@ -7124,7 +7119,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -7184,7 +7179,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -7248,9 +7243,9 @@
    ],
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-22 07:00 CEST",
-   "changed_now": "new"
+   "changed_now": null
   }
  ]
 }
