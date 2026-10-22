@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-22 16:30 CEST",
+ "last_run": "2026-10-22 17:30 CEST",
  "columns": [
   [
    "info",
@@ -89,7 +89,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:23Z",
@@ -151,7 +151,7 @@
    "diff": "diff --git a/aioaudiobookshelf/schema/audio.py b/aioaudiobookshelf/schema/audio.py\nindex 28ade35..16fa8af 100644\n--- a/aioaudiobookshelf/schema/audio.py\n+++ b/aioaudiobookshelf/schema/audio.py\n@@ -44,7 +44,8 @@ class AudioTrack(_BaseModel):\n class AudioFile(_BaseModel):\n     \"\"\"Audiofile.\"\"\"\n \n-    index: int\n+    # null for podcast episodes abs scanned in before its v2.21.0\n+    index: int | None = None\n     ino: str\n     metadata: FileMetadata\n     added_at: Annotated[int, Alias(\"addedAt\")]\ndiff --git a/tests/test_podcasts.py b/tests/test_podcasts.py\nnew file mode 100644\nindex 0000000..dff6ea6\n--- /dev/null\n+++ b/tests/test_podcasts.py\n@@ -0,0 +1,100 @@\n+\"\"\"Tests for decoding podcast payloads.\"\"\"\n+\n+import json\n+from typing import Any\n+\n+from aioaudiobookshelf.schema.library import LibraryItemExpandedPodcast\n+\n+_FILE_METADATA = {\n+    \"filename\": \"episode1.mp3\",\n+    \"ext\": \".mp3\",\n+    \"path\": \"/podcasts/show1/episode1.mp3\",\n+    \"relPath\": \"episode1.mp3\",\n+    \"size\": 1000,\n+    \"mtimeMs\": 1700000000000,\n+    \"ctimeMs\": 1700000000000,\n+    \"birthtimeMs\": 0,\n+}\n+\n+\n+def _episode() -> dict[str, Any]:\n+    \"\"\"Build an episode as abs sends it for a file scanned in before abs v2.21.0.\"\"\"\n+    audio_file = {\n+        \"index\": None,\n+        \"ino\": \"2\",\n+        \"metadata\": _FILE_METADATA,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"manuallyVerified\": False,\n+        \"exclude\": False,\n+        \"error\": None,\n+        \"format\": \"MP2/3 (MPEG audio layer 2/3)\",\n+        \"duration\": 60.0,\n+        \"bitRate\": 128000,\n+        \"codec\": \"mp3\",\n+        \"channels\": 2,\n+        \"channelLayout\": \"stereo\",\n+        \"mimeType\": \"audio/mpeg\",\n+    }\n+    return {\n+        \"libraryItemId\": \"item1\",\n+        \"podcastId\": \"podcast1\",\n+        \"id\": \"episode1\",\n+        \"index\": None,\n+        \"title\": \"Episode 1\",\n+        \"chapters\": [],\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"audioFile\": audio_file,\n+        \"audioTrack\": {\n+            \"index\": None,\n+            \"startOffset\": 0,\n+            \"duration\": 60.0,\n+            \"title\": \"episode1.mp3\",\n+            \"contentUrl\": \"/api/items/item1/file/2\",\n+            \"mimeType\": \"audio/mpeg\",\n+            \"metadata\": _FILE_METADATA,\n+        },\n+        \"duration\": 60.0,\n+        \"size\": 1000,\n+    }\n+\n+\n+def _podcast_item(episode: dict[str, Any]) -> bytes:\n+    item = {\n+        \"id\": \"item1\",\n+        \"ino\": \"1\",\n+        \"libraryId\": \"library1\",\n+        \"folderId\": \"folder1\",\n+        \"path\": \"/podcasts/show1\",\n+        \"relPath\": \"show1\",\n+        \"isFile\": False,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"isMissing\": False,\n+        \"isInvalid\": False,\n+        \"mediaType\": \"podcast\",\n+        \"libraryFiles\": [],\n+        \"size\": 1000,\n+        \"media\": {\n+            \"id\": \"podcast1\",\n+            \"libraryItemId\": \"item1\",\n+            \"autoDownloadEpisodes\": False,\n+            \"maxEpisodesToKeep\": 0,\n+            \"maxNewEpisodesToDownload\": 3,\n+            \"tags\": [],\n+            \"size\": 1000,\n+            \"metadata\": {\"title\": \"Show 1\", \"genres\": [], \"explicit\": False},\n+            \"episodes\": [episode],\n+        },\n+    }\n+    return json.dumps(item).encode()\n+\n+\n+def test_an_episode_scanned_before_abs_2_21_has_no_audio_file_index() -> None:\n+    \"\"\"Abs never backfilled the null index of older scans, see support#6842.\"\"\"\n+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(_episode()))\n+\n+    audio_file = item.media.episodes[0].audio_file\n+    assert audio_file is not None\n+    assert audio_file.index is None\n",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "jaycollett",
      "at": "2026-10-22T02:19:29Z",
@@ -235,7 +235,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "riskywhat",
      "at": "2026-10-21T13:06:34Z",
@@ -313,7 +313,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T12:40:56Z",
@@ -367,7 +367,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-21T13:26:39Z",
@@ -427,7 +427,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "NasaGeek",
      "at": "2026-10-21T16:04:47Z",
@@ -501,7 +501,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "dunxd",
      "at": "2026-10-20T19:23:52Z",
@@ -569,7 +569,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "Cyberlytical-LLC",
      "at": "2026-10-21T15:30:35Z",
@@ -629,7 +629,7 @@
     ],
     [
      "info",
-     "Test asked 10-22 (nightly)",
+     "Test asked 10-21",
      "test asked"
     ],
     [
@@ -656,7 +656,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T14:18:18Z",
@@ -664,7 +664,7 @@
      "url": "https://github.com/music-assistant/support/issues/6831#issuecomment-6343016794"
     },
     "reporter_new": false,
-    "team_new": true,
+    "team_new": false,
     "closed": false,
     "pr": [
      {
@@ -682,6 +682,7 @@
     },
     "after_test_ask_reporter": true,
     "labels": [
+     "Fix to be Confirmed",
      "waiting-for-user",
      "HEOS"
     ]
@@ -739,7 +740,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-22T10:30:10Z",
@@ -820,7 +821,7 @@
    "ask": null,
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "maisun",
      "at": "2026-10-21T12:49:48Z",
@@ -895,7 +896,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:07Z",
@@ -952,7 +953,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:36:49Z",
@@ -1004,7 +1005,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "Anto79-ops",
      "at": "2026-10-10T18:07:20Z",
@@ -1077,7 +1078,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "bdeprez",
      "at": "2026-10-13T20:17:14Z",
@@ -1145,7 +1146,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "jetpacktuxedo",
      "at": "2026-10-09T18:36:05Z",
@@ -1214,7 +1215,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:45:17Z",
@@ -1276,7 +1277,7 @@
    "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-10T16:01:24Z",
@@ -1348,7 +1349,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T07:54:30Z",
@@ -1444,7 +1445,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:14:26Z",
@@ -1538,7 +1539,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:16:29Z",
@@ -1618,7 +1619,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "kiwipaulrob",
      "at": "2026-10-17T22:19:56Z",
@@ -1694,7 +1695,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-08T14:40:21Z",
@@ -1832,7 +1833,7 @@
    "ask": "reply-answer",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-18T05:28:39Z",
@@ -2092,7 +2093,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:17:32Z",
@@ -2185,7 +2186,7 @@
    "ask": "nudge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "CDrummond",
      "at": "2026-10-10T06:44:22Z",
@@ -2280,7 +2281,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "davidfi01",
      "at": "2026-10-14T14:12:59Z",
@@ -2347,7 +2348,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-12T13:38:14Z",
@@ -2439,7 +2440,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-22T12:35:10Z",
@@ -2527,7 +2528,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T10:06:51Z",
@@ -2610,7 +2611,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "Howard0000",
      "at": "2026-10-22T10:01:15Z",
@@ -2672,7 +2673,7 @@
    },
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:20:45Z",
@@ -2697,7 +2698,7 @@
   {
    "n": 6419,
    "title": "Sendspin→AirPlay bridge drops 1.7-3.3 s at stream start, and schedules each player at a different lead — a fixed, audible offset between RAOP players in one sync group",
-   "col": "norepro",
+   "col": "dev",
    "area": "server / airplay (sendspin_bridge) + sendspin (playback live-source lead)",
    "since": "2026-09-27 marathon",
    "summary": "The dropped intro is real: on a realtime source (Spotify via soloist, YouTube Music, radio) Sendspin ignores the bridge's 4500 ms cold-start lead and schedules only min_buffer_ms (1000 ms) ahead, while the bridge can never anchor sooner than connect time + 2500 ms, so ~1.7-2.2 s is always cut on a cold start. The \"per-player lead = audible offset\" claim is disproved by the reporter's own log: the start_unix_ms gap (188 ms) equals the content-shift gap (2188-2000), so both players map the same sample to the same instant. The constant ~199 ms echo is device output latency, which is what sync_adjust is for. Code is identical between 2.10.3 and origin/dev.",
@@ -2706,7 +2707,12 @@
    "plan": "",
    "branch": "",
    "diff": "",
-   "prs": [],
+   "prs": [
+    {
+     "url": "https://github.com/music-assistant/server/pull/7160",
+     "label": "server#7160 (maximmaxim345, ready: YTM and Soloist tracks get the buffered lead in Sendspin groups with AirPlay, undoes #5918's realtime check)"
+    }
+   ],
    "badges": [
     [
      "muted",
@@ -2717,7 +2723,8 @@
    "reply": "",
    "bookkeeping": [],
    "notes": [
-    "10-21 15:45 discuss: discussion session started on your main account. Your question first: did the Sendspin 1.0 work on stable/dev change the live-source lead or the bridge anchor floor (the 09-27 'identical code' check predates it)?"
+    "10-21 15:45 discuss: discussion session started on your main account. Your question first: did the Sendspin 1.0 work on stable/dev change the live-source lead or the bridge anchor floor (the 09-27 'identical code' check predates it)?",
+    "10-22 17:30 run: maximmaxim345 opened server#7160 (related to this issue): YouTube Music and Soloist tracks get the buffered lead instead of the radio one. Moved to Already fixed on dev / someone else's PR; the stale test-ask slot is cleared."
    ],
    "last": "johnp3004 2026-09-13 18:24",
    "gh": {
@@ -2727,11 +2734,11 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "Ask the reporter to retest the Sendspin to AirPlay bridge start on current dev. No small safe fix exists for the anchor floor.",
-   "ask": "reply-test",
+   "action": "maximmaxim345's server#7160 covers the start cut-off (buffered lead for YTM/Soloist, agreed on Discord). Test ask once it merges.",
+   "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "johnp3004",
      "at": "2026-09-13T18:24:58Z",
@@ -2741,7 +2748,16 @@
     "reporter_new": false,
     "team_new": false,
     "closed": false,
-    "pr": [],
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7160,
+      "state": "OPEN",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     }
+    ],
     "test_ask": null,
     "after_test_ask_reporter": false,
     "labels": [
@@ -2755,7 +2771,8 @@
     "title": "Discuss: Sendspin→AirPlay bridge drops the stream start (#6419)",
     "kind": "discuss",
     "done": false
-   }
+   },
+   "waiting_on": "team"
   },
   {
    "n": 6402,
@@ -2797,7 +2814,7 @@
    },
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:19:58Z",
@@ -2848,7 +2865,7 @@
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T06:43:54Z",
@@ -2911,7 +2928,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "Geweldich",
      "at": "2026-09-30T11:09:20Z",
@@ -3037,7 +3054,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:49:03Z",
@@ -3101,7 +3118,7 @@
    "action": null,
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:19:23Z",
@@ -3172,7 +3189,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-06T13:51:35Z",
@@ -3223,7 +3240,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "marcelveldt",
      "at": "2026-08-26T21:48:58Z",
@@ -3287,7 +3304,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:18:47Z",
@@ -3356,7 +3373,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "salanki",
      "at": "2026-08-29T17:15:18Z",
@@ -3437,14 +3454,14 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "rwlove",
      "at": "2026-10-22T14:17:05Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6023#issuecomment-6342990156"
     },
-    "reporter_new": true,
+    "reporter_new": false,
     "team_new": false,
     "closed": false,
     "pr": [
@@ -3475,9 +3492,9 @@
      {
       "repo": "rwlove/home-ops",
       "n": 15216,
-      "state": "OPEN",
+      "state": "MERGED",
       "draft": false,
-      "merged_at": null,
+      "merged_at": "2026-10-22T14:35:50Z",
       "own": false
      }
     ],
@@ -3541,7 +3558,7 @@
    "summary": "QQ Music lists music but full-stream URL resolution fails with 104003 and the preview fallback gets a 403, so tracks are skipped. The reporter has a local endpoint correction that works. xiasi0, the provider maintainer, will fix it after their vacation.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "xiasi0",
      "at": "2026-10-06T18:49:41Z",
@@ -3617,7 +3634,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-15T08:41:56Z",
@@ -3690,7 +3707,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:36:19Z",
@@ -3780,7 +3797,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T12:45:57Z",
@@ -3851,7 +3868,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T17:20:50Z",
@@ -3923,7 +3940,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-15T08:23:30Z",
@@ -4002,7 +4019,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "olifoss",
      "at": "2026-10-17T21:13:56Z",
@@ -4119,7 +4136,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T11:12:58Z",
@@ -4220,7 +4237,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "moodwrench",
      "at": "2026-10-20T17:43:15Z",
@@ -4305,7 +4322,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-15T14:12:24Z",
@@ -4383,7 +4400,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "tylernolf",
      "at": "2026-10-21T00:49:25Z",
@@ -4484,7 +4501,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "marklam",
      "at": "2026-10-15T15:27:32Z",
@@ -4545,7 +4562,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "suporte640",
      "at": "2026-10-19T00:58:04Z",
@@ -4616,7 +4633,7 @@
    "ask": "design",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:15:21Z",
@@ -4689,7 +4706,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "Thyraz",
      "at": "2026-10-18T18:56:10Z",
@@ -4751,7 +4768,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "axsuul",
      "at": "2026-10-18T04:08:57Z",
@@ -4808,7 +4825,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:50:16Z",
@@ -4887,7 +4904,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T08:00:22Z",
@@ -4975,7 +4992,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T07:10:09Z",
@@ -5049,7 +5066,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "Vivi92821",
      "at": "2026-10-21T14:34:40Z",
@@ -5106,7 +5123,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:42:54Z",
@@ -5166,7 +5183,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T15:23:02Z",
@@ -5251,7 +5268,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-17T15:30:42Z",
@@ -5330,7 +5347,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T22:06:21Z",
@@ -5390,7 +5407,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T21:30:55Z",
@@ -5458,7 +5475,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:32:52Z",
@@ -5519,7 +5536,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "kmycek",
      "at": "2026-10-17T17:36:42Z",
@@ -5577,7 +5594,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T16:29:06Z",
@@ -5636,7 +5653,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "marapavelka",
      "at": "2026-10-17T09:58:35Z",
@@ -5694,7 +5711,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:52:28Z",
@@ -5763,7 +5780,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "TubeCrafterYT",
      "at": "2026-10-18T08:05:15Z",
@@ -5843,7 +5860,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:47:03Z",
@@ -5921,7 +5938,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-19T05:54:08Z",
@@ -6010,7 +6027,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:35:53Z",
@@ -6103,7 +6120,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "profLewis",
      "at": "2026-10-21T00:18:32Z",
@@ -6185,7 +6202,7 @@
     "done": true
    },
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T12:09:02Z",
@@ -6223,11 +6240,11 @@
    "col": "pr",
    "area": "server / providers/bluesound provider.py _musp discovery (get_mac_address); controllers/players/protocol_linking.py _identifiers_match",
    "since": "2026-10-22 14:30",
-   "last": "coorenskevin 2026-10-22 12:31",
+   "last": "MarvinSchenkel 2026-10-22 14:35",
    "gh": {
-    "login": "coorenskevin",
-    "team": false,
-    "at": "2026-10-22T12:31:24Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-22T14:35:19Z",
     "pr_open": true,
     "pr_draft": true
    },
@@ -6248,35 +6265,41 @@
      "muted",
      "cyanogenbot's area",
      "owner"
+    ],
+    [
+     "info",
+     "Test asked 10-22",
+     "test asked"
     ]
    ],
    "reply": "",
    "bookkeeping": [],
    "ask": null,
    "milestone": null,
-   "action": "server#7159 (draft) covers the ARP part. Zone-aware linking still open, see the discussion session.",
+   "action": "",
    "notes": [
     "10-22 14:30 run: new issue, detailed report with a local hotfix. ARP dependency confirmed on dev; linking part plausible, #7100 doesn't cover native zones without an AirPlay id. Needs your call on who builds it.",
     "10-22 14:45 discuss: discussion session started on your main account (Opus 5.5): map all ARP/MAC lookups, can Bluesound take the MAC from /SyncStatus, does a provider-level MAC hook for the generic controller make sense, zone-aware linking.",
     "10-22 15:30 run: coorenskevin follow-up: 28 zones registered with his local patch, 3 chassis need explicit addresses (no multicast). Discussion session still running.",
-    "10-22 16:30 run: draft server#7159 opened from the discussion session: keep ARP first, fall back to the chassis MAC from /SyncStatus. Answer draft dropped until the PR lands."
+    "10-22 16:30 run: draft server#7159 opened from the discussion session: keep ARP first, fall back to the chassis MAC from /SyncStatus. Answer draft dropped until the PR lands.",
+    "10-22 17:30 run: DEV test ask for server#7159 (pr-7159) posted at 14:35 UTC from the session. The AirPlay-id linking PR is on hold. Waiting for coorenskevin."
    ],
    "fix_thread": {
     "id": "mcp:f7d28c07-9476-4b7e-948b-d69404f40716",
     "title": "Discuss: Bluesound multi-zone identity without ARP (#6847)",
     "kind": "discuss",
-    "done": false
+    "done": true
    },
    "sync": {
-    "at": "2026-10-22T14:30:08Z",
+    "at": "2026-10-22T15:30:06Z",
     "last_human": {
-     "login": "coorenskevin",
-     "at": "2026-10-22T12:31:24Z",
-     "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6847#issuecomment-6340800840"
+     "login": "MarvinSchenkel",
+     "at": "2026-10-22T14:35:19Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6847#issuecomment-6343380913"
     },
     "reporter_new": false,
-    "team_new": false,
+    "team_new": true,
     "closed": false,
     "pr": [
      {
@@ -6288,11 +6311,14 @@
       "own": true
      }
     ],
-    "test_ask": null,
+    "test_ask": {
+     "at": "2026-10-22T14:35:19Z",
+     "url": "https://github.com/music-assistant/support/issues/6847#issuecomment-6343380913"
+    },
     "after_test_ask_reporter": false,
     "labels": [
      "triage",
-     "needs-attention",
+     "waiting-for-user",
      "Bluesound"
     ]
    }
@@ -6748,7 +6774,6 @@
   5018,
   6329,
   6400,
-  6419,
   6602,
   6645,
   6688,
