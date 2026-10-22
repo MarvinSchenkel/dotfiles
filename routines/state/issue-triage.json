@@ -6201,13 +6201,13 @@
    "summary": "2.10.7 Docker. The Storytel content language setting has no Norwegian.",
    "fix": "server#6929 (jonasbp2011, merged 10-13, new-feature, not on stable): the options now come from the account's own allLanguageObjects, and Norwegian (nn) is in the fallback list.",
    "checked": "origin/dev: storytel/constants.py ALL_LANGUAGES has \"Norwegian\": \"nn\"; __init__.py:122-133 offers self._api.available_languages once logged in. origin/stable has no Norwegian and no #6929. #6929's body names this exact case (Norwegian accounts weren't offered Norwegian). In the 2.11 nightlies/beta.",
-   "plan": "Ships with 2.11.0, no backport (new-feature). You close it at release.",
+   "plan": "Backport to 2.10.8 (your call 10-22). Code cherry-picks cleanly onto stable; tests/providers/storytel/test_storytel_helper.py is modify/delete (added on dev by #6784, not on stable): create it with only #6929's 7 language tests, drop the episode_number tests and _episode_data. Verified: 26 Storytel tests pass on stable + cherry-pick.",
    "branch": "",
    "diff": "",
    "prs": [
     {
      "url": "https://github.com/music-assistant/server/pull/6929",
-     "label": "server#6929 (jonasbp2011, merged 10-13, 2.11 only)"
+     "label": "server#6929 (jonasbp2011, merged 10-13, backport-to-stable added 10-22)"
     }
    ],
    "badges": [
@@ -6218,17 +6218,23 @@
     ],
     [
      "ok",
-     "FtbC + 2.11.0 booked",
+     "FtbC + 2.10.8 booked",
      "booked"
+    ],
+    [
+     "muted",
+     "backport? test conflict",
+     "backport?"
     ]
    ],
    "reply": "",
    "bookkeeping": [],
    "ask": null,
-   "milestone": "2.11.0",
+   "milestone": "2.10.8",
    "action": "",
    "notes": [
-    "10-22 10:30 run: new issue, already fixed on dev by server#6929 (2.11). Labelled Fix to be Confirmed, milestone 2.11.0. No reply per the no-'fixed in next release' rule."
+    "10-22 10:30 run: new issue, already fixed on dev by server#6929 (2.11). Labelled Fix to be Confirmed, milestone 2.11.0. No reply per the no-'fixed in next release' rule.",
+    "10-22 11:45 (on request): backport check. Clean except that test file; you chose backport: labelled server#6929 backport-to-stable, #6844 moved to 2.10.8."
    ],
    "sync": {
     "at": "2026-10-22T09:30:11Z",
