@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-22 13:30 CEST",
+ "last_run": "2026-10-22 14:30 CEST",
  "columns": [
   [
    "info",
@@ -53,64 +53,6 @@
  ],
  "cards": [
   {
-   "n": 6841,
-   "repo": "music-assistant/support",
-   "discussion": false,
-   "title": "Add-on exits with code 137 (OOM kill) after a few minutes of music",
-   "col": "info",
-   "area": "host / HA OS memory, Sendspin Bluetooth Bridge add-on",
-   "since": "2026-10-22 07:30",
-   "last": "MarvinSchenkel 2026-10-22 05:36",
-   "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-22T05:36:21Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "2.10.7 HA OS add-on on an HP EliteBook (~5.9 GB RAM, 29 add-ons), HA core dev channel. The add-on restarts with exit 137 after ~5 minutes of music. Same reporter filed home-assistant/core#187937 (closed).",
-   "fix": "",
-   "checked": "Opus subagent on the attachments: MA RSS ~194 MB (75-115 MB RSS + swap in the OOM dumps); swap full; OOM victims spread across add-ons since 10-18 (MA 33x, Matter, CUPS, Calibre-Web, motionEye, Jellyfin, BT Bridge). A growing swarm of 30-70 python3 processes (60-70 MB RSS each, 1.6-2.4 GB) fills memory; MA spawns no python children, the Sendspin BT Bridge (2.76.4) runs one per speaker (likely, medium-low confidence). Only one play_media in the log; smart fades not loaded. No MA fix needed on this path.",
-   "plan": "Wait for docker stats per container; if the python swarm belongs to the BT Bridge, point the reporter to trudenboy/sendspin-bt-bridge.",
-   "branch": "",
-   "prs": [],
-   "badges": [
-    [
-     "info",
-     "Waiting for user",
-     "waiting"
-    ]
-   ],
-   "reply": "",
-   "action": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-22 07:30 run: new issue. Not an MA leak: host memory exhaustion by a python process swarm (likely the Sendspin BT Bridge). Posted on your behalf (https://github.com/music-assistant/support/issues/6841#issuecomment-6333592792): docker stats per container during playback. GPT: revise (one ask, no attribution before evidence), accepted."
-   ],
-   "milestone": null,
-   "sync": {
-    "at": "2026-10-22T11:30:05Z",
-    "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-22T05:36:21Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6841#issuecomment-6333592792"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "triage",
-     "hass",
-     "sendspin",
-     "waiting-for-user"
-    ]
-   }
-  },
-  {
    "n": 6840,
    "repo": "music-assistant/support",
    "discussion": false,
@@ -147,7 +89,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:23Z",
@@ -209,7 +151,7 @@
    "diff": "diff --git a/aioaudiobookshelf/schema/audio.py b/aioaudiobookshelf/schema/audio.py\nindex 28ade35..16fa8af 100644\n--- a/aioaudiobookshelf/schema/audio.py\n+++ b/aioaudiobookshelf/schema/audio.py\n@@ -44,7 +44,8 @@ class AudioTrack(_BaseModel):\n class AudioFile(_BaseModel):\n     \"\"\"Audiofile.\"\"\"\n \n-    index: int\n+    # null for podcast episodes abs scanned in before its v2.21.0\n+    index: int | None = None\n     ino: str\n     metadata: FileMetadata\n     added_at: Annotated[int, Alias(\"addedAt\")]\ndiff --git a/tests/test_podcasts.py b/tests/test_podcasts.py\nnew file mode 100644\nindex 0000000..dff6ea6\n--- /dev/null\n+++ b/tests/test_podcasts.py\n@@ -0,0 +1,100 @@\n+\"\"\"Tests for decoding podcast payloads.\"\"\"\n+\n+import json\n+from typing import Any\n+\n+from aioaudiobookshelf.schema.library import LibraryItemExpandedPodcast\n+\n+_FILE_METADATA = {\n+    \"filename\": \"episode1.mp3\",\n+    \"ext\": \".mp3\",\n+    \"path\": \"/podcasts/show1/episode1.mp3\",\n+    \"relPath\": \"episode1.mp3\",\n+    \"size\": 1000,\n+    \"mtimeMs\": 1700000000000,\n+    \"ctimeMs\": 1700000000000,\n+    \"birthtimeMs\": 0,\n+}\n+\n+\n+def _episode() -> dict[str, Any]:\n+    \"\"\"Build an episode as abs sends it for a file scanned in before abs v2.21.0.\"\"\"\n+    audio_file = {\n+        \"index\": None,\n+        \"ino\": \"2\",\n+        \"metadata\": _FILE_METADATA,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"manuallyVerified\": False,\n+        \"exclude\": False,\n+        \"error\": None,\n+        \"format\": \"MP2/3 (MPEG audio layer 2/3)\",\n+        \"duration\": 60.0,\n+        \"bitRate\": 128000,\n+        \"codec\": \"mp3\",\n+        \"channels\": 2,\n+        \"channelLayout\": \"stereo\",\n+        \"mimeType\": \"audio/mpeg\",\n+    }\n+    return {\n+        \"libraryItemId\": \"item1\",\n+        \"podcastId\": \"podcast1\",\n+        \"id\": \"episode1\",\n+        \"index\": None,\n+        \"title\": \"Episode 1\",\n+        \"chapters\": [],\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"audioFile\": audio_file,\n+        \"audioTrack\": {\n+            \"index\": None,\n+            \"startOffset\": 0,\n+            \"duration\": 60.0,\n+            \"title\": \"episode1.mp3\",\n+            \"contentUrl\": \"/api/items/item1/file/2\",\n+            \"mimeType\": \"audio/mpeg\",\n+            \"metadata\": _FILE_METADATA,\n+        },\n+        \"duration\": 60.0,\n+        \"size\": 1000,\n+    }\n+\n+\n+def _podcast_item(episode: dict[str, Any]) -> bytes:\n+    item = {\n+        \"id\": \"item1\",\n+        \"ino\": \"1\",\n+        \"libraryId\": \"library1\",\n+        \"folderId\": \"folder1\",\n+        \"path\": \"/podcasts/show1\",\n+        \"relPath\": \"show1\",\n+        \"isFile\": False,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"isMissing\": False,\n+        \"isInvalid\": False,\n+        \"mediaType\": \"podcast\",\n+        \"libraryFiles\": [],\n+        \"size\": 1000,\n+        \"media\": {\n+            \"id\": \"podcast1\",\n+            \"libraryItemId\": \"item1\",\n+            \"autoDownloadEpisodes\": False,\n+            \"maxEpisodesToKeep\": 0,\n+            \"maxNewEpisodesToDownload\": 3,\n+            \"tags\": [],\n+            \"size\": 1000,\n+            \"metadata\": {\"title\": \"Show 1\", \"genres\": [], \"explicit\": False},\n+            \"episodes\": [episode],\n+        },\n+    }\n+    return json.dumps(item).encode()\n+\n+\n+def test_an_episode_scanned_before_abs_2_21_has_no_audio_file_index() -> None:\n+    \"\"\"Abs never backfilled the null index of older scans, see support#6842.\"\"\"\n+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(_episode()))\n+\n+    audio_file = item.media.episodes[0].audio_file\n+    assert audio_file is not None\n+    assert audio_file.index is None\n",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "jaycollett",
      "at": "2026-10-22T02:19:29Z",
@@ -293,7 +235,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "riskywhat",
      "at": "2026-10-21T13:06:34Z",
@@ -334,49 +276,44 @@
    "repo": "music-assistant/support",
    "discussion": false,
    "title": "Sonos Port: native playback fails with ERROR_PLAYBACK_NO_CONTENT, AirPlay volume snaps back",
-   "col": "info",
+   "col": "user",
    "area": "server / providers/sonos player.py _on_playback_error, streams controller (port 8097); airplay/player.py volume (with #6664)",
    "since": "2026-10-21 12:30",
-   "last": "innerskyone 2026-10-22 10:36",
+   "last": "innerskyone 2026-10-22 11:51",
    "gh": {
     "login": "innerskyone",
     "team": false,
-    "at": "2026-10-22T10:36:37Z",
+    "at": "2026-10-22T11:51:15Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "2.10.7 HA add-on, Sonos Port 'Office' (line-out Variable). Native playback fails at once ('Speaker Office could not play None and reported ERROR_PLAYBACK_NO_CONTENT'), with MP3 and radio, Flow mode on and off, publish IP auto or the HA LAN IP. On AirPlay it plays, but volume changes from MA or the Sonos app snap back after a few seconds until MA clears the AirPlay output. Same error as the bot-closed support#5721.",
    "fix": "",
-   "checked": "Opus subagent, 2.10.7 = dev on these paths. 'None' is the speaker's own trackName/itemId in the playbackError event (player.py:1028-1034 on 2.10.7), so it failed before resolving any item; no httpStatus, so most likely no HTTP answer from MA. Flow on (play_stream_url) and off (play_cloud_queue) both need the Port to fetch http://<publish_ip>:8097; Sonos app, AirPlay and the browser don't, so likely a reachability problem (VLAN/firewall/port 8097), about 65%. Volume: Port on Variable has VOLUME_SET, so __control_for_output returns NATIVE and owns_volume is False (same as #6664); the Sonos provider doesn't push volume back. MA-side snap-back candidates: AirPlay DACP device-volume > update_volume_from_device > _adopt_device_volume writes VOLUME= back without an owns_volume check (airplay/provider.py:1111-1135, airplay/player.py:828-839, 1031-1044), or _enforce_volume_limits if a min/max volume is set (players/controller.py:2150). 10-22 log (last 1000 lines, to 12:35:01): stream server 192.168.1.134:8097, Port at 192.168.3.10 (other VLAN; reporter: 'gave full access', no min/max volume). SONOS + AirPlay Verbose from 12:31; native at 12:33:40, playbackError ERROR_PLAYBACK_NO_CONTENT at 12:33:50 (serviceId -1), with no 'Cloud Queue request' (provider.py:273, VERBOSE) and no 'Start Queue Flow stream' in between: no queue or flow request reached MA. Streams wasn't Verbose. No volume changes in the captured lines.",
-   "plan": "Waiting on the reachability test from the Port VLAN to 192.168.1.134:8097. Timeout = firewall (user side, close as config). Response = look at what the Port is sent (Streams Verbose). Volume part stays with #6664.",
+   "checked": "Opus subagent, 2.10.7 = dev on these paths. 'None' is the speaker's own trackName/itemId in the playbackError event (player.py:1028-1034 on 2.10.7), so it failed before resolving any item; no httpStatus, so most likely no HTTP answer from MA. Flow on (play_stream_url) and off (play_cloud_queue) both need the Port to fetch http://<publish_ip>:8097; Sonos app, AirPlay and the browser don't, so likely a reachability problem (VLAN/firewall/port 8097), about 65%. Volume: Port on Variable has VOLUME_SET, so __control_for_output returns NATIVE and owns_volume is False (same as #6664); the Sonos provider doesn't push volume back. MA-side snap-back candidates: AirPlay DACP device-volume > update_volume_from_device > _adopt_device_volume writes VOLUME= back without an owns_volume check (airplay/provider.py:1111-1135, airplay/player.py:828-839, 1031-1044), or _enforce_volume_limits if a min/max volume is set (players/controller.py:2150). 10-22 log (last 1000 lines, to 12:35:01): stream server 192.168.1.134:8097, Port at 192.168.3.10 (other VLAN; reporter: 'gave full access', no min/max volume). SONOS + AirPlay Verbose from 12:31; native at 12:33:40, playbackError ERROR_PLAYBACK_NO_CONTENT at 12:33:50 (serviceId -1), with no 'Cloud Queue request' (provider.py:273, VERBOSE) and no 'Start Queue Flow stream' in between: no queue or flow request reached MA. Streams wasn't Verbose. No volume changes in the captured lines. 10-22 11:51 UTC: reporter: opening http://192.168.1.134:8097 from the Port's VLAN 'will give a timeout'. So the inter-VLAN firewall blocks 192.168.3.x -> 192.168.1.134:8097.",
+   "plan": "User config: allow the Port VLAN to reach MA on TCP 8097. Volume snap-back stays with #6664. Close once he confirms native plays.",
    "branch": "",
    "prs": [],
-   "badges": [
-    [
-     "info",
-     "Waiting for user",
-     "waiting"
-    ]
-   ],
-   "reply": "",
-   "action": "",
+   "badges": [],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThat explains it. Native playback needs the Port to open a connection to Music Assistant's stream server, and your firewall drops that. Could you add a rule that allows the 192.168.3.x VLAN to connect to 192.168.1.134 on TCP port 8097? After that, native playback on Office should start.\n\nThe AirPlay volume snapping back is a separate problem, we keep that in #6664.",
+   "action": "Firewall blocks the Port VLAN -> 192.168.1.134:8097 (his browser test timed out). Answer drafted: open TCP 8097 from 192.168.3.x.",
    "bookkeeping": [],
    "notes": [
     "10-21 12:30 run: new issue. Native failure most likely the Port not reaching MA's stream server on 8097; AirPlay volume snap-back is the #6664 family, plus an MA-side DACP write-back lead. Info ask drafted.",
     "10-21 13:45 reply: you posted the info ask from the board (10:43 UTC, https://github.com/music-assistant/support/issues/6838). Waiting for innerskyone.",
-    "10-22 13:30 run: innerskyone sent a log and confirmed the Port is on another VLAN, no min/max volume. Log shows no queue or flow request reaching MA on the native attempt. Posted on your behalf (https://github.com/music-assistant/support/issues/6838#issuecomment-6339699120), GPT: revise twice, accepted GPT's second text as is: dropped the claim that no request at all arrived and the second firewall ask, kept one reachability test."
+    "10-22 13:30 run: innerskyone sent a log and confirmed the Port is on another VLAN, no min/max volume. Log shows no queue or flow request reaching MA on the native attempt. Posted on your behalf (https://github.com/music-assistant/support/issues/6838#issuecomment-6339699120), GPT: revise twice, accepted GPT's second text as is: dropped the claim that no request at all arrived and the second firewall ask, kept one reachability test.",
+    "10-22 14:30 run: innerskyone (11:51 UTC): the browser test from the Port VLAN times out. Network config, moved to User or config error with an answer draft."
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "innerskyone",
-     "at": "2026-10-22T10:36:37Z",
+     "at": "2026-10-22T11:51:15Z",
      "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6838#issuecomment-6338694092"
+     "url": "https://github.com/music-assistant/support/issues/6838#issuecomment-6340042456"
     },
     "reporter_new": true,
-    "team_new": false,
+    "team_new": true,
     "closed": false,
     "pr": [],
     "test_ask": null,
@@ -388,7 +325,7 @@
      "needs-attention"
     ]
    },
-   "ask": null
+   "ask": "reply-answer"
   },
   {
    "n": 6837,
@@ -423,7 +360,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-21T13:26:39Z",
@@ -483,7 +420,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "NasaGeek",
      "at": "2026-10-21T16:04:47Z",
@@ -557,7 +494,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "dunxd",
      "at": "2026-10-20T19:23:52Z",
@@ -625,7 +562,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "Cyberlytical-LLC",
      "at": "2026-10-21T15:30:35Z",
@@ -706,7 +643,7 @@
    "action": "janoj (10-21 17:44 UTC) reports server#7132 also fixes jerky starts on a Denon Home 150 and an AVR-X1800H. amodig hasn't tested yet. Your call: mark #7132 ready and merge, or wait for amodig.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "janoj",
      "at": "2026-10-21T17:44:07Z",
@@ -789,7 +726,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-22T10:30:10Z",
@@ -797,7 +734,7 @@
      "url": "https://github.com/music-assistant/support/issues/6821#issuecomment-6338578207"
     },
     "reporter_new": false,
-    "team_new": true,
+    "team_new": false,
     "closed": false,
     "pr": [
      {
@@ -870,7 +807,7 @@
    "ask": null,
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "maisun",
      "at": "2026-10-21T12:49:48Z",
@@ -945,7 +882,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:07Z",
@@ -1002,7 +939,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:36:49Z",
@@ -1054,7 +991,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "Anto79-ops",
      "at": "2026-10-10T18:07:20Z",
@@ -1127,7 +1064,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "bdeprez",
      "at": "2026-10-13T20:17:14Z",
@@ -1195,7 +1132,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "jetpacktuxedo",
      "at": "2026-10-09T18:36:05Z",
@@ -1264,7 +1201,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:45:17Z",
@@ -1326,7 +1263,7 @@
    "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-10T16:01:24Z",
@@ -1398,7 +1335,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T07:54:30Z",
@@ -1494,7 +1431,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:14:26Z",
@@ -1588,7 +1525,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:16:29Z",
@@ -1668,7 +1605,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "kiwipaulrob",
      "at": "2026-10-17T22:19:56Z",
@@ -1744,7 +1681,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-08T14:40:21Z",
@@ -1882,7 +1819,7 @@
    "ask": "reply-answer",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-18T05:28:39Z",
@@ -2142,7 +2079,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:17:32Z",
@@ -2235,7 +2172,7 @@
    "ask": "nudge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "CDrummond",
      "at": "2026-10-10T06:44:22Z",
@@ -2330,7 +2267,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "davidfi01",
      "at": "2026-10-14T14:12:59Z",
@@ -2397,7 +2334,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-12T13:38:14Z",
@@ -2488,7 +2425,7 @@
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "PipTheBirb",
      "at": "2026-10-22T08:49:52Z",
@@ -2576,7 +2513,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T10:06:51Z",
@@ -2659,7 +2596,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "Howard0000",
      "at": "2026-10-22T10:01:15Z",
@@ -2721,7 +2658,7 @@
    },
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:20:45Z",
@@ -2780,7 +2717,7 @@
    "ask": "reply-test",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "johnp3004",
      "at": "2026-09-13T18:24:58Z",
@@ -2846,7 +2783,7 @@
    },
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:19:58Z",
@@ -2897,7 +2834,7 @@
    "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T06:43:54Z",
@@ -2960,7 +2897,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "Geweldich",
      "at": "2026-09-30T11:09:20Z",
@@ -3086,7 +3023,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:49:03Z",
@@ -3150,7 +3087,7 @@
    "action": null,
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:19:23Z",
@@ -3221,7 +3158,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-06T13:51:35Z",
@@ -3272,7 +3209,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "marcelveldt",
      "at": "2026-08-26T21:48:58Z",
@@ -3336,7 +3273,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-12T13:18:47Z",
@@ -3405,7 +3342,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "salanki",
      "at": "2026-08-29T17:15:18Z",
@@ -3485,7 +3422,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T06:29:16Z",
@@ -3573,7 +3510,7 @@
    "summary": "QQ Music lists music but full-stream URL resolution fails with 104003 and the preview fallback gets a 403, so tracks are skipped. The reporter has a local endpoint correction that works. xiasi0, the provider maintainer, will fix it after their vacation.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "xiasi0",
      "at": "2026-10-06T18:49:41Z",
@@ -3649,7 +3586,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-15T08:41:56Z",
@@ -3717,7 +3654,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:36:19Z",
@@ -3799,7 +3736,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T12:45:57Z",
@@ -3870,7 +3807,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T17:20:50Z",
@@ -3942,7 +3879,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-15T08:23:30Z",
@@ -4021,7 +3958,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "olifoss",
      "at": "2026-10-17T21:13:56Z",
@@ -4138,7 +4075,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T11:12:58Z",
@@ -4239,7 +4176,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "moodwrench",
      "at": "2026-10-20T17:43:15Z",
@@ -4324,7 +4261,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-15T14:12:24Z",
@@ -4392,7 +4329,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "tylernolf",
      "at": "2026-10-21T00:49:25Z",
@@ -4471,7 +4408,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:06Z",
@@ -4547,7 +4484,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "marklam",
      "at": "2026-10-15T15:27:32Z",
@@ -4608,7 +4545,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "suporte640",
      "at": "2026-10-19T00:58:04Z",
@@ -4679,7 +4616,7 @@
    "ask": "design",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:15:21Z",
@@ -4752,7 +4689,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "Thyraz",
      "at": "2026-10-18T18:56:10Z",
@@ -4814,7 +4751,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "axsuul",
      "at": "2026-10-18T04:08:57Z",
@@ -4871,7 +4808,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:50:16Z",
@@ -4950,7 +4887,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T08:00:22Z",
@@ -5038,7 +4975,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-19T07:10:09Z",
@@ -5112,7 +5049,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "Vivi92821",
      "at": "2026-10-21T14:34:40Z",
@@ -5169,7 +5106,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:42:54Z",
@@ -5229,7 +5166,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T15:23:02Z",
@@ -5314,7 +5251,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-17T15:30:42Z",
@@ -5393,7 +5330,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T22:06:21Z",
@@ -5453,7 +5390,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T21:30:55Z",
@@ -5521,7 +5458,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:32:52Z",
@@ -5582,7 +5519,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "kmycek",
      "at": "2026-10-17T17:36:42Z",
@@ -5640,7 +5577,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T16:29:06Z",
@@ -5699,7 +5636,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "marapavelka",
      "at": "2026-10-17T09:58:35Z",
@@ -5757,7 +5694,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:52:28Z",
@@ -5826,7 +5763,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "TubeCrafterYT",
      "at": "2026-10-18T08:05:15Z",
@@ -5906,7 +5843,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:47:03Z",
@@ -5984,7 +5921,7 @@
    "action": "",
    "milestone": "2.10.8",
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-19T05:54:08Z",
@@ -6073,7 +6010,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:35:53Z",
@@ -6166,7 +6103,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
      "login": "profLewis",
      "at": "2026-10-21T00:18:32Z",
@@ -6197,105 +6134,23 @@
    }
   },
   {
-   "n": 6844,
-   "title": "Storytel: Norwegian missing from the content languages",
-   "col": "dev",
-   "area": "server / providers/storytel constants.py ALL_LANGUAGES, __init__.py CONF_LANGUAGES",
-   "since": "2026-10-22 10:30",
-   "last": "tomhnatt 2026-10-22 08:23",
-   "gh": {
-    "login": "tomhnatt",
-    "team": false,
-    "at": "2026-10-22T08:23:12Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "2.10.7 Docker. The Storytel content language setting has no Norwegian.",
-   "fix": "server#6929 (jonasbp2011, merged 10-13, new-feature, not on stable): the options now come from the account's own allLanguageObjects, and Norwegian (nn) is in the fallback list.",
-   "checked": "origin/dev: storytel/constants.py ALL_LANGUAGES has \"Norwegian\": \"nn\"; __init__.py:122-133 offers self._api.available_languages once logged in. origin/stable has no Norwegian and no #6929. #6929's body names this exact case (Norwegian accounts weren't offered Norwegian). In the 2.11 nightlies/beta.",
-   "plan": "Backport to 2.10.8 (your call 10-22). Code cherry-picks cleanly onto stable; tests/providers/storytel/test_storytel_helper.py is modify/delete (added on dev by #6784, not on stable): create it with only #6929's 7 language tests, drop the episode_number tests and _episode_data. Verified: 26 Storytel tests pass on stable + cherry-pick.",
-   "branch": "",
-   "diff": "",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/server/pull/6929",
-     "label": "server#6929 (jonasbp2011, merged 10-13, backport-to-stable added 10-22)"
-    }
-   ],
-   "badges": [
-    [
-     "muted",
-     "jonasbp2011's area",
-     "owner"
-    ],
-    [
-     "ok",
-     "FtbC + 2.10.8 booked",
-     "booked"
-    ],
-    [
-     "muted",
-     "backport? test conflict",
-     "backport?"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "ask": null,
-   "milestone": "2.10.8",
-   "action": "",
-   "notes": [
-    "10-22 10:30 run: new issue, already fixed on dev by server#6929 (2.11). Labelled Fix to be Confirmed, milestone 2.11.0. No reply per the no-'fixed in next release' rule.",
-    "10-22 11:45 (on request): backport check. Clean except that test file; you chose backport: labelled server#6929 backport-to-stable, #6844 moved to 2.10.8."
-   ],
-   "sync": {
-    "at": "2026-10-22T11:30:05Z",
-    "last_human": {
-     "login": "tomhnatt",
-     "at": "2026-10-22T08:23:12Z",
-     "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6844#issuecomment-6336222851"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/server",
-      "n": 6929,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-10-13T19:24:11Z",
-      "own": false
-     }
-    ],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "triage",
-     "Fix to be Confirmed",
-     "needs-attention"
-    ]
-   }
-  },
-  {
    "n": 6845,
    "title": "Fully Kiosk on an Echo Show 8: AAC (the default) doesn't play, MP3 does",
    "col": "cantfix",
    "area": "server / providers/fully_kiosk player.py CONF_ENTRY_OUTPUT_CODEC_DEFAULT_AAC; hass_players/player.py _update_attributes",
    "since": "2026-10-22 12:30",
-   "last": "cooljimy84 2026-10-22 10:34",
+   "last": "MarvinSchenkel 2026-10-22 12:09",
    "gh": {
-    "login": "cooljimy84",
-    "team": false,
-    "at": "2026-10-22T10:34:02Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-22T12:09:02Z",
     "pr_open": true,
     "pr_draft": true
    },
    "summary": "2.10.7 HA add-on, Fully Kiosk on a rooted Echo Show 8 (FK firmware 1.61.4, from 11/2025). Playing to the Fully Kiosk player shows playing but stays silent, no error. The reporter found himself that forcing the output codec to MP3 works (5-8 s start), and a 17 min megamix kept playing.",
    "fix": "Side bug only: hass_players treats a non-text media_content_id as 'not our URL' instead of crashing (local fix 11ca7c45c6). The codec default is the design row.",
    "checked": "origin/dev and stable: fully_kiosk/player.py defaults the output codec to AAC since #6112 (08-31), because on other devices Fully Kiosk dropped a long MP3 flow stream after ~8m45s (#6248, A/B: AAC 2 h fine). #6720 (closed) then had AAC radio stop after 10-11 min. playSound(url) result isn't checked, so a codec the device can't play fails silently. Log (10-21 09:57 to 10-22 10:28): FK player registered as fully_kiosk_192.168.1.175_2323/Echo Show 8; the HA entity for the same device is linked as its output protocol (log: 'Setting active output protocol on Echo Show 8 to Native'), which is why it no longer shows as a separate HA player. Separate bug in the same log: 368x AttributeError in hass_players/player.py _update_attributes (`media_content_id.startswith`): some HA entity (probably the Kodi one) reports media_content_id as int (302) or dict (66). Present on dev (line 467, from #5713). Not reported elsewhere. Local fix being built by an Opus subagent. Local fix: regression test (int + dict) fails on origin/dev with the log's AttributeError, passes with the fix; hass_players 19 passed; cherry-picks cleanly onto stable. The crash dates back to #3015, not #5713. Side effect: a Kodi-like entity playing something MA didn't start shows no 'External' now-playing (it never did, the update crashed first).",
-   "plan": "Design: one default codec can't fit every Fully Kiosk device (MP3 dies at ~8m45s on some, AAC doesn't start on this Echo, AAC radio stopped on #6720). Options: (a) pick the codec from FK getDeviceInfo (Android/WebView version); (b) detect a failed start (FK keeps reporting not playing) and retry with MP3; (c) keep AAC and document MP3 as the fallback. Reply tells him to keep MP3 and asks for Fire OS + FK versions.",
+   "plan": "Design: codec default (lean: detect a failed start, retry MP3). When he answers the DEV test, ask for his Fire OS + Fully Kiosk versions too. server#7152 test asked.",
    "branch": "fix/hass-players-non-str-media-content-id @ 11ca7c45c6 (worktree ~/git/music-assistant/server-fix-hass-media-content-id, not pushed)",
    "diff": "diff --git a/music_assistant/providers/hass_players/player.py b/music_assistant/providers/hass_players/player.py\nindex 93a4a57342..0b9d723a51 100644\n--- a/music_assistant/providers/hass_players/player.py\n+++ b/music_assistant/providers/hass_players/player.py\n@@ -463,7 +463,10 @@ class HomeAssistantPlayer(Player):\n         # entities that were seen echoing it can be judged by it - for the others the\n         # play command we issued is what tells the two sources apart. Without either\n         # signal the source stays as it was.\n-        media_content_id = self._hass_attributes.get(\"media_content_id\", \"\")\n+        media_content_id = self._hass_attributes.get(\"media_content_id\")\n+        if not isinstance(media_content_id, str):\n+            # some integrations (e.g. Kodi) report a library id here, which is never our URL\n+            media_content_id = \"\"\n         if media_content_id.startswith(self.mass.streams.base_url):\n             self._reports_stream_url = True\n             is_ma_playback = True\ndiff --git a/tests/providers/hass_players/test_external_playback.py b/tests/providers/hass_players/test_external_playback.py\nindex 253d10bf55..fc53d3380a 100644\n--- a/tests/providers/hass_players/test_external_playback.py\n+++ b/tests/providers/hass_players/test_external_playback.py\n@@ -6,6 +6,7 @@ import logging\n from typing import Any\n from unittest.mock import AsyncMock, MagicMock\n \n+import pytest\n from music_assistant_models.enums import PlaybackState\n from music_assistant_models.player import PlayerMedia\n \n@@ -196,3 +197,17 @@ async def test_stop_ends_the_ma_session() -> None:\n     await player.stop()\n \n     assert player._ma_playback_active is False\n+\n+\n+@pytest.mark.parametrize(\"content_id\", [42, {\"id\": 42, \"type\": \"movie\"}], ids=[\"int\", \"dict\"])\n+async def test_non_text_media_content_id_is_ignored(content_id: object) -> None:\n+    \"\"\"An entity reporting a library id instead of a URL does not break its state updates.\"\"\"\n+    player = _make_player()\n+\n+    player.update_from_compressed_state(\n+        {\"s\": \"playing\", \"a\": {\"media_content_id\": content_id, \"media_title\": \"Some Movie\"}}\n+    )\n+\n+    assert player._reports_stream_url is False\n+    assert player._attr_active_source is None\n+    assert player._attr_current_media is None",
    "prs": [
@@ -6304,17 +6159,24 @@
      "label": "server#7152 (yours, draft, hass_players crash only, CI green, Copilot reviewed, 0 open threads, bugfix + backport-to-stable)"
     }
    ],
-   "badges": [],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for testing, you found the cause already. The Fully Kiosk player defaults to AAC because on other devices Fully Kiosk drops a long MP3 stream after about 9 minutes. On your Echo Show 8 it's the other way round: AAC doesn't start at all, while MP3 plays (17 minutes and counting), so keep the output codec on MP3 for this player.\n\nDetecting this automatically is what we're looking at, so one default doesn't have to fit every device. Could you tell us the Android (Fire OS) version and the Fully Kiosk version from Fully Kiosk's device info? That tells us whether there's a clean version split to go on.\n\nThe Home Assistant player for the Echo didn't disappear, by the way: Music Assistant links it to the Fully Kiosk player as one of its output protocols.",
+   "badges": [
+    [
+     "info",
+     "Test asked 10-22",
+     "test asked"
+    ]
+   ],
+   "reply": "",
    "bookkeeping": [],
    "ask": "design",
    "milestone": null,
-   "action": "Design call: Fully Kiosk codec default (lean: detect a failed start, retry MP3). Reply draft updated for his 'can you detect it?' question. server#7152 (hass_players crash) is a clean draft for your review.",
+   "action": "Design call: Fully Kiosk codec default (lean: detect a failed start, retry MP3). server#7152 test ask is out (posted 12:09 UTC).",
    "notes": [
     "10-22 12:30 run: new issue. Reporter found MP3 works where the AAC default stays silent. Design row for the codec default; reply drafted. Spotted a separate hass_players crash (int/dict media_content_id) in the log, local fix with an Opus subagent.",
     "10-22 12:40: Opus subagent built the hass_players local fix (11ca7c45c6), A/B clean, stable cherry-pick clean. No PR until you say so.",
     "10-22 12:50 fix: fix session launched on your second Claude instance (claudeAgent_claude_2, Opus 5.5, your call) to PR the hass_players local fix with backport. Codec design stays open.",
-    "10-22 13:30 run: cooljimy84 (10:34 UTC): AAC still silent, asks whether these devices can be detected and switched to MP3. Reply draft updated. Fix session done: server#7152 draft, CI green, Copilot clean."
+    "10-22 13:30 run: cooljimy84 (10:34 UTC): AAC still silent, asks whether these devices can be detected and switched to MP3. Reply draft updated. Fix session done: server#7152 draft, CI green, Copilot clean.",
+    "10-22 14:30 run: a DEV test ask for server#7152 (pr-7152) went out at 12:09 UTC from your other session. Dropped the unposted MP3/versions draft (it would be two comments in a row); versions ask folded into the plan."
    ],
    "fix_thread": {
     "id": "mcp:54661029-8377-44a2-8aa7-dd9ea1d8a516",
@@ -6323,15 +6185,15 @@
     "done": true
    },
    "sync": {
-    "at": "2026-10-22T11:30:05Z",
+    "at": "2026-10-22T12:30:09Z",
     "last_human": {
-     "login": "cooljimy84",
-     "at": "2026-10-22T10:34:02Z",
-     "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6845#issuecomment-6338647054"
+     "login": "MarvinSchenkel",
+     "at": "2026-10-22T12:09:02Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6845#issuecomment-6340369819"
     },
-    "reporter_new": true,
-    "team_new": false,
+    "reporter_new": false,
+    "team_new": true,
     "closed": false,
     "pr": [
      {
@@ -6343,14 +6205,54 @@
       "own": true
      }
     ],
-    "test_ask": null,
+    "test_ask": {
+     "at": "2026-10-22T12:09:02Z",
+     "url": "https://github.com/music-assistant/support/issues/6845#issuecomment-6340369819"
+    },
     "after_test_ask_reporter": false,
     "labels": [
      "triage",
      "fully_kiosk",
-     "needs-attention"
+     "waiting-for-user"
     ]
    }
+  },
+  {
+   "n": 6847,
+   "title": "Bluesound CI580v2: extra zones skipped when ARP fails, and AirPlay outputs link to the wrong zone",
+   "col": "cantfix",
+   "area": "server / providers/bluesound provider.py _musp discovery (get_mac_address); controllers/players/protocol_linking.py _identifiers_match",
+   "since": "2026-10-22 14:30",
+   "last": "coorenskevin 2026-10-22 12:14",
+   "gh": {
+    "login": "coorenskevin",
+    "team": false,
+    "at": "2026-10-22T12:14:15Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.6 HA add-on, 7 NAD CI580v2 (4 streamers per chassis on one IP, _musc on 11000, _musp on 11010/11020/11030), routed network with mDNS forwarding. Extra zones don't register because MA can't ARP the chassis MAC; one native player also collects several zones' AirPlay/Sendspin outputs. Detailed AI-assisted analysis with a local hotfix (SyncStatus MAC + zone-aware linking), no diagnostics on purpose.",
+   "fix": "",
+   "checked": "origin/dev bluesound/provider.py:64-77: for _musp the player id is f'{get_mac_address(ip)}:{port}' (ARP); no MAC = debug 'Ignoring mdns discovery ... without MAC address' and return, so extra zones vanish silently on routed setups (reporter admits routed is outside the supported topology). /SyncStatus returns the chassis mac per zone port (pyblu 2.1.0), which would remove the ARP need. Linking: protocol_linking.py _identifiers_match matches MAC > serial > UUID > CAST_UUID > AIRPLAY_ID. server#7100 (10-21, dev only) rejects a match when both sides have different AIRPLAY_IDs, but a native Bluesound zone has no AIRPLAY_ID, so a zone's AirPlay output (ARP MAC = chassis MAC) can still link to a sibling zone. Plausible on flat networks too, not verified with a test. Owner: cyanogenbot. Earlier #3695 (closed 2025-03) 'does not show all zones'.",
+   "plan": "Two parts: (1) take the zone MAC from /SyncStatus instead of ARP for _musp (provider-only, cyanogenbot's area); (2) zone-aware linking for multi-zone chassis (core, needs a code-only repro first). Ask cyanogenbot or run a repro session.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [
+    [
+     "muted",
+     "cyanogenbot's area",
+     "owner"
+    ]
+   ],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the thorough write-up. You're right that zones from `_musp` only register when MA can look up the chassis MAC through ARP, so on a routed network they're skipped without a visible error. Taking the MAC from `/SyncStatus` instead would remove that dependency. The AirPlay outputs ending up on the wrong zone is a separate problem in how MA links protocol players to a native player when several zones share one IP and MAC; we'll look at both.",
+   "bookkeeping": [],
+   "ask": "input",
+   "milestone": null,
+   "action": "Real on dev: ARP-only zone identity (provider) + multi-zone linking (core). Say `repro 6847` for a code-only repro of the linking part, or hand part 1 to cyanogenbot. Answer drafted.",
+   "notes": [
+    "10-22 14:30 run: new issue, detailed report with a local hotfix. ARP dependency confirmed on dev; linking part plausible, #7100 doesn't cover native zones without an AirPlay id. Needs your call on who builds it."
+   ]
   }
  ],
  "design": [
@@ -6551,7 +6453,7 @@
    ]
   ]
  },
- "gone": "The 30 issues that shipped in 2.10.5, closed with the release comment: #6585, #6583, #6581, #6579, #6573, #6570, #6567, #6561, #6560, #6550, #6542, #6527, #6523, #6517, #6516, #6511, #6496, #6492, #6491, #6478, #6469, #6463, #6462, #6461, #6440, #6345, #6328, #6323, #6273, #4892. Dropped 10-05 as closed: #6470 (closed by reporter 10-02 (Bandcamp back in search)), #6460 (closed 10-02), #6458 (auto-closed 10-03 (no reply)), #6394 (closed 10-02), #6380 (closed by OzGav 10-03 after menaker12 confirmed on beta), #6338 (closed by reporter 10-03 (workaround holds)). Dropped 10-05 08:40: #6517 (auto-closed when you merged server#6702 at 06:31 UTC; booked Fix to be Confirmed + milestone 2.10.6 from its backport-to-stable label). Booked 10-05 09:40 (not on the board): #6629 FtbC + 2.10.6 (server#6691, backport-to-stable), #6620 FtbC (server#6685, backportable, see follow-ups). Dropped 10-05 10:40: #6635 (closed 06:19 UTC after your 2.11 beta reply). #6026 closed 08:03 UTC by your server#5175 merge; card kept in Fix merged until the bookkeeping is queued. Dropped 10-05 14:00: #6636 (closed by Soukyuu 11:40 UTC after your works-as-designed reply and OzGav's follow-up; going back to LMS). Dropped 10-05 15:40: #6026 (bookkeeping landed 12:40 UTC: Fix to be Confirmed + milestone 2.11.0). Dropped 10-06 09:00: #6559 (closed 06:40 UTC with your reply after the AirConnect removal fixed sync; reporter asked to file new issues); #6224 (closed 06:35 UTC when you merged server#6715; booked Fix to be Confirmed, milestone 2.11.0 was already set (migration, no backport)). Dropped 10-06 09:40: #6373 (you closed it 07:11 UTC when server#6611 merged with backport-to-stable; milestone 2.10.6 was set, I added Fix to be Confirmed); #6440 (you closed it 07:10 UTC after explaining Spotify's 1.1x headroom for crossfades); #6616 (you closed it 07:10 UTC as fixed in 2.11, milestone 2.11.0). Dropped 10-06 12:55: #6617 (assigned to jdaberkow, who is iterating on the Deezer family-profile branch with budius). Dropped 10-06 14:40: #6633 (howels closed it at 12:04 UTC, user error: a duplicate HA entity without volume_level). Dropped 10-06 15:40: #6247 (you milestoned and closed it at 13:21 UTC). #6647 closed 14:06 UTC after frontend#2924 merged. Dropped 10-07 as closed: #6641 (you merged server#6726 17:32 UTC, milestone 2.10.6, closed; already in backport/2.10.6). Dropped 10-07 as closed: #6646 (frontend#2923 merged), #6524 (fixed by frontend#2900). Dropped 10-07 13:40: #4377 (you closed it 10:58 UTC; LaneaLucy replied 11:23 UTC that the internal Snapcast server showed it too). #6613 closed 10-08 by the reporter (PO token 2.0.1 + cookie fixed it). Dropped 10-08 13:40 as closed: #6662 (server#6760 merged 11:26 UTC, auto-closed; I set Fix to be Confirmed; no backport label, but it cherry-picks cleanly onto backport/2.10.6 incl. the aiosonos 0.1.14 bump).; #6611 (closed by the reporter 10-09 06:12 UTC, keeps the opt-out on their fork) Dropped 10-12 07:40: #5723 (OzGav closed it 10-10 00:03 UTC as fixed. The reporter split the player-type part into #6688); #6063 (you closed it 10-10 with the 2.10.6 release comment); #6154 (you closed it 10-10 with the 2.10.6 release comment); #6425 (you closed it 10-10 with the 2.10.6 release comment); #6487 (OzGav closed it 10-09 23:58 UTC after parski confirmed the fix); #6562 (you closed it 10-10 with the 2.10.6 release comment); #6570 (you closed it 10-10 with the 2.10.6 release comment); #6571 (you closed it 10-10 with the 2.10.6 release comment); #6624 (closed after server#5868 + server#6858 (MSX Bridge, backport-to-stable) merged 10-10); #6627 (you closed it with the 2.10.6 release comment. magdalar commented 10-11 16:52 UTC that pause still jumps the progress back on Sonos with Audiobookshelf, mostly cosmetic now (see follow-ups)); #6642 (Annikadk confirmed 2.10.6 fixes it and closed it 10-10); #6648 (you closed it 10-10 with the 2.10.6 release comment); #6658 (dentedbread closed it 10-11 11:48 UTC, no repro on 2.11.0b4); #6669 (you closed it 10-10 with the 2.10.6 release comment); #6676 (OzGav closed it 10-11 11:47 UTC as by design: both editions sit in one Local files source, so a rescan of one file drops the other file's link. Advice is a separate source per edition. Our triage-6676 fix branch was never pushed); #6683 (megawubs closed it 10-09 17:33 UTC: 2.10.6 changed Deezer family accounts to one ARL, and the new ARL works); #6659 (now assigned to OzGav, who is working it with dentedbread). Dropped 10-12 09:40: #6493 (you closed it 07:09 UTC, fixed in 2.11). Dropped 10-12 14:40: #6714 (closed by you after server#6910 merged), #6464 (closed by you after server#6613 merged), #6451 (closed by you after server#6528 merged). #6671 and #6481 closed 10-12. Dropped 10-12 16:40: #6722 (Hypopheralcus fixed the Nextcloud proxy setting after your reply and closed it 13:49 UTC). Dropped 10-13 07:40: #6724 (OzGav closed it 22:53 UTC: 4 GB host OOM, reporter stopped Frigate and Grafana and MA kept running). Dropped 10-13 09:40: #6721 (closed 06:40 UTC, jdaberkow had taken it over). Dropped 10-13 10:40: #6577 (you closed it 08:07 UTC, no flip since the last update; reopen if it happens after an HA integration update). Dropped 10-13 15:40: #6666 (lupurs confirmed 2.10.6 fixed it and closed 12:42 UTC). Dropped 10-14 11:40: #6406 (bot auto-closed 03:31 UTC after two reminders) and #6667 (you closed it 18:14 UTC as a side effect of #6645; server#6968 closed with it). Dropped 10-14 13:40: #6725 (whc2001 confirmed the fix on the DEV add-on and closed it 11:02 UTC; server#6810 backport call moved to follow-ups). Dropped 10-14 15:40: #6643 (Asrem2 traced the Voice PE dropouts to a busy 2.4 GHz Wi-Fi channel, 13 h clean on Sendspin after moving the AP, closed 13:34 UTC). Dropped 10-15 10:15: #6186 (endevour confirmed the latest beta fixes it and closed it 10-14 19:36 UTC); #6547 (bot auto-closed 10-15 03:31 UTC after two reminders); #6732 (you closed it 10-15 07:23 UTC as a duplicate). Dropped 10-19 as closed after the 2.10.7 release: #6759, #6704, #6712, #6655, #6601, #6528, #6744 (you closed them 10-18), #6729 (sydlexius confirmed chrisuthe's fix), #6679 (dekiesel: switching to parallel fixed it). Dropped 10-19 08:38: #6811 (assigned to OzGav 06:37 UTC, he is handling the Sendspin Opus stutter). New #6813 and #6814 (ChrisB85, kiwipaulrob) were assigned to OzGav on arrival, not on the board. Dropped 10-20 07:38: #6407 (bot auto-closed 03:32 UTC after two reminders); #6102 (bot auto-closed 03:32 UTC after two reminders, our draft server#6706 is still open (see follow-ups)); #6002 (bot auto-closed 03:32 UTC after two reminders); #6782 (OzGav closed it 01:24 UTC as a feature request (Jellyfin genres were never implemented)); #6653 (anthonws closed the discussion 21:23 UTC, no time to work on it); #6508 (you assigned marcelveldt 10-20 11:50 UTC). #6673 (you closed it 12:56 UTC after the 2.11 provider sharing reply); #6668 (you closed it 12:50 UTC, resolved with the recommended tagging procedure); #6552 (OzGav closed it 13:21 UTC after sragot confirmed server#6425 fixes it on 2.11.0b5). #6682 (assigned to stvncode 13:39 UTC); #6684 (assigned to stvncode 13:39 UTC); #6777 (you closed it 13:45 UTC as duplicate of #6776); #6785 (you closed it 14:34 UTC after frontend#3032 split the review key). Dropped 10-21 07:38: #6639 (bot auto-closed 10-21 03:32 UTC after two reminders); #6663 (limitless-code confirmed the DEV app fixes all scenarios (19:02 UTC) and you closed it 22:30 UTC; FtbC + 2.11.0 were set); #6823 (jo-che confirmed on dev and closed it 19:58 UTC). Dropped 10-21 12:40: #6720 (you posted the thanks from the board 09:50 UTC and closed it). Dropped 10-22 07:30: #6819 (closed as completed by OzGav 10-21 22:53 UTC). Dropped 10-22 07:30: #6395 (closed as not planned by musicassistant-bot 10-22 03:32 UTC). Dropped 10-22 09:30: #6772 (closed as completed by MarvinSchenkel 10-22 06:58 UTC). Dropped 10-22 10:00: #6671 (closed as completed by dekiesel 10-22 07:58 UTC).",
+ "gone": "The 30 issues that shipped in 2.10.5, closed with the release comment: #6585, #6583, #6581, #6579, #6573, #6570, #6567, #6561, #6560, #6550, #6542, #6527, #6523, #6517, #6516, #6511, #6496, #6492, #6491, #6478, #6469, #6463, #6462, #6461, #6440, #6345, #6328, #6323, #6273, #4892. Dropped 10-05 as closed: #6470 (closed by reporter 10-02 (Bandcamp back in search)), #6460 (closed 10-02), #6458 (auto-closed 10-03 (no reply)), #6394 (closed 10-02), #6380 (closed by OzGav 10-03 after menaker12 confirmed on beta), #6338 (closed by reporter 10-03 (workaround holds)). Dropped 10-05 08:40: #6517 (auto-closed when you merged server#6702 at 06:31 UTC; booked Fix to be Confirmed + milestone 2.10.6 from its backport-to-stable label). Booked 10-05 09:40 (not on the board): #6629 FtbC + 2.10.6 (server#6691, backport-to-stable), #6620 FtbC (server#6685, backportable, see follow-ups). Dropped 10-05 10:40: #6635 (closed 06:19 UTC after your 2.11 beta reply). #6026 closed 08:03 UTC by your server#5175 merge; card kept in Fix merged until the bookkeeping is queued. Dropped 10-05 14:00: #6636 (closed by Soukyuu 11:40 UTC after your works-as-designed reply and OzGav's follow-up; going back to LMS). Dropped 10-05 15:40: #6026 (bookkeeping landed 12:40 UTC: Fix to be Confirmed + milestone 2.11.0). Dropped 10-06 09:00: #6559 (closed 06:40 UTC with your reply after the AirConnect removal fixed sync; reporter asked to file new issues); #6224 (closed 06:35 UTC when you merged server#6715; booked Fix to be Confirmed, milestone 2.11.0 was already set (migration, no backport)). Dropped 10-06 09:40: #6373 (you closed it 07:11 UTC when server#6611 merged with backport-to-stable; milestone 2.10.6 was set, I added Fix to be Confirmed); #6440 (you closed it 07:10 UTC after explaining Spotify's 1.1x headroom for crossfades); #6616 (you closed it 07:10 UTC as fixed in 2.11, milestone 2.11.0). Dropped 10-06 12:55: #6617 (assigned to jdaberkow, who is iterating on the Deezer family-profile branch with budius). Dropped 10-06 14:40: #6633 (howels closed it at 12:04 UTC, user error: a duplicate HA entity without volume_level). Dropped 10-06 15:40: #6247 (you milestoned and closed it at 13:21 UTC). #6647 closed 14:06 UTC after frontend#2924 merged. Dropped 10-07 as closed: #6641 (you merged server#6726 17:32 UTC, milestone 2.10.6, closed; already in backport/2.10.6). Dropped 10-07 as closed: #6646 (frontend#2923 merged), #6524 (fixed by frontend#2900). Dropped 10-07 13:40: #4377 (you closed it 10:58 UTC; LaneaLucy replied 11:23 UTC that the internal Snapcast server showed it too). #6613 closed 10-08 by the reporter (PO token 2.0.1 + cookie fixed it). Dropped 10-08 13:40 as closed: #6662 (server#6760 merged 11:26 UTC, auto-closed; I set Fix to be Confirmed; no backport label, but it cherry-picks cleanly onto backport/2.10.6 incl. the aiosonos 0.1.14 bump).; #6611 (closed by the reporter 10-09 06:12 UTC, keeps the opt-out on their fork) Dropped 10-12 07:40: #5723 (OzGav closed it 10-10 00:03 UTC as fixed. The reporter split the player-type part into #6688); #6063 (you closed it 10-10 with the 2.10.6 release comment); #6154 (you closed it 10-10 with the 2.10.6 release comment); #6425 (you closed it 10-10 with the 2.10.6 release comment); #6487 (OzGav closed it 10-09 23:58 UTC after parski confirmed the fix); #6562 (you closed it 10-10 with the 2.10.6 release comment); #6570 (you closed it 10-10 with the 2.10.6 release comment); #6571 (you closed it 10-10 with the 2.10.6 release comment); #6624 (closed after server#5868 + server#6858 (MSX Bridge, backport-to-stable) merged 10-10); #6627 (you closed it with the 2.10.6 release comment. magdalar commented 10-11 16:52 UTC that pause still jumps the progress back on Sonos with Audiobookshelf, mostly cosmetic now (see follow-ups)); #6642 (Annikadk confirmed 2.10.6 fixes it and closed it 10-10); #6648 (you closed it 10-10 with the 2.10.6 release comment); #6658 (dentedbread closed it 10-11 11:48 UTC, no repro on 2.11.0b4); #6669 (you closed it 10-10 with the 2.10.6 release comment); #6676 (OzGav closed it 10-11 11:47 UTC as by design: both editions sit in one Local files source, so a rescan of one file drops the other file's link. Advice is a separate source per edition. Our triage-6676 fix branch was never pushed); #6683 (megawubs closed it 10-09 17:33 UTC: 2.10.6 changed Deezer family accounts to one ARL, and the new ARL works); #6659 (now assigned to OzGav, who is working it with dentedbread). Dropped 10-12 09:40: #6493 (you closed it 07:09 UTC, fixed in 2.11). Dropped 10-12 14:40: #6714 (closed by you after server#6910 merged), #6464 (closed by you after server#6613 merged), #6451 (closed by you after server#6528 merged). #6671 and #6481 closed 10-12. Dropped 10-12 16:40: #6722 (Hypopheralcus fixed the Nextcloud proxy setting after your reply and closed it 13:49 UTC). Dropped 10-13 07:40: #6724 (OzGav closed it 22:53 UTC: 4 GB host OOM, reporter stopped Frigate and Grafana and MA kept running). Dropped 10-13 09:40: #6721 (closed 06:40 UTC, jdaberkow had taken it over). Dropped 10-13 10:40: #6577 (you closed it 08:07 UTC, no flip since the last update; reopen if it happens after an HA integration update). Dropped 10-13 15:40: #6666 (lupurs confirmed 2.10.6 fixed it and closed 12:42 UTC). Dropped 10-14 11:40: #6406 (bot auto-closed 03:31 UTC after two reminders) and #6667 (you closed it 18:14 UTC as a side effect of #6645; server#6968 closed with it). Dropped 10-14 13:40: #6725 (whc2001 confirmed the fix on the DEV add-on and closed it 11:02 UTC; server#6810 backport call moved to follow-ups). Dropped 10-14 15:40: #6643 (Asrem2 traced the Voice PE dropouts to a busy 2.4 GHz Wi-Fi channel, 13 h clean on Sendspin after moving the AP, closed 13:34 UTC). Dropped 10-15 10:15: #6186 (endevour confirmed the latest beta fixes it and closed it 10-14 19:36 UTC); #6547 (bot auto-closed 10-15 03:31 UTC after two reminders); #6732 (you closed it 10-15 07:23 UTC as a duplicate). Dropped 10-19 as closed after the 2.10.7 release: #6759, #6704, #6712, #6655, #6601, #6528, #6744 (you closed them 10-18), #6729 (sydlexius confirmed chrisuthe's fix), #6679 (dekiesel: switching to parallel fixed it). Dropped 10-19 08:38: #6811 (assigned to OzGav 06:37 UTC, he is handling the Sendspin Opus stutter). New #6813 and #6814 (ChrisB85, kiwipaulrob) were assigned to OzGav on arrival, not on the board. Dropped 10-20 07:38: #6407 (bot auto-closed 03:32 UTC after two reminders); #6102 (bot auto-closed 03:32 UTC after two reminders, our draft server#6706 is still open (see follow-ups)); #6002 (bot auto-closed 03:32 UTC after two reminders); #6782 (OzGav closed it 01:24 UTC as a feature request (Jellyfin genres were never implemented)); #6653 (anthonws closed the discussion 21:23 UTC, no time to work on it); #6508 (you assigned marcelveldt 10-20 11:50 UTC). #6673 (you closed it 12:56 UTC after the 2.11 provider sharing reply); #6668 (you closed it 12:50 UTC, resolved with the recommended tagging procedure); #6552 (OzGav closed it 13:21 UTC after sragot confirmed server#6425 fixes it on 2.11.0b5). #6682 (assigned to stvncode 13:39 UTC); #6684 (assigned to stvncode 13:39 UTC); #6777 (you closed it 13:45 UTC as duplicate of #6776); #6785 (you closed it 14:34 UTC after frontend#3032 split the review key). Dropped 10-21 07:38: #6639 (bot auto-closed 10-21 03:32 UTC after two reminders); #6663 (limitless-code confirmed the DEV app fixes all scenarios (19:02 UTC) and you closed it 22:30 UTC; FtbC + 2.11.0 were set); #6823 (jo-che confirmed on dev and closed it 19:58 UTC). Dropped 10-21 12:40: #6720 (you posted the thanks from the board 09:50 UTC and closed it). Dropped 10-22 07:30: #6819 (closed as completed by OzGav 10-21 22:53 UTC). Dropped 10-22 07:30: #6395 (closed as not planned by musicassistant-bot 10-22 03:32 UTC). Dropped 10-22 09:30: #6772 (closed as completed by MarvinSchenkel 10-22 06:58 UTC). Dropped 10-22 10:00: #6671 (closed as completed by dekiesel 10-22 07:58 UTC). Dropped 10-22 14:30: #6841 (closed as completed by stormsnsnow 10-22 12:20 UTC). Dropped 10-22 14:30: #6844 (closed as completed by OzGav 10-22 12:11 UTC).",
  "actions_applied_at": "2026-10-22T09:47:15Z",
  "auto_post": {
   "enabled": true
@@ -6683,14 +6585,6 @@
     "title": "Local files: folder_name album artist fallback breaks albums in the share root",
     "prs": [
      "server#7102"
-    ],
-    "on_stable": false
-   },
-   {
-    "n": 6844,
-    "title": "Storytel: Norwegian missing from the content languages",
-    "prs": [
-     "server#6929"
     ],
     "on_stable": false
    }
@@ -6829,6 +6723,8 @@
   6810,
   6831,
   6837,
-  6845
+  6838,
+  6845,
+  6847
  ]
 }
