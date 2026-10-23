@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-23T11:00:00+02:00",
+ "last_run": "2026-10-23T12:00:00+02:00",
  "dev": "7dfa5d85c",
- "run_note": "Auto-approved and merged client#323, dependabot's pinned bump of the PyPI publish action to v1.14.3 (security fix). Otherwise only drafts moved: nyakaspeter pushed to #7143 and caraar12345 to #6345.",
+ "run_note": "#7143 (Alexa position) is out of draft but now changes core, and that change breaks other players (non-flow played time, announcements); Claude, GPT Sol and Copilot agree, patch ready, scope is your call. trudenboy answered your question on #6948. Auto-approved and merged models#443 (PyPI action pin).",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -1114,7 +1114,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "author",
-   "changed_now": "pushed"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -3413,8 +3413,8 @@
    "draft": false,
    "verdict": "not_ready",
    "assessment": "request_changes",
-   "status": "waiting",
-   "attention_since": null,
+   "status": "attention",
+   "attention_since": "2026-10-23T09:00:37Z",
    "size": "XL",
    "code": 5516,
    "add": 11253,
@@ -3430,7 +3430,7 @@
    "tldr": "v1.1.0 drops ENQUEUE and plays core's flow stream, which removes the provider's own successor logic and with it the seek-to-end bug (Copilot r4302797493 resolved, page clamp verified, server seeks now safe via flow). Copilot is clean on the head. New: Repeat One leaves the page clock stuck at the end. The 9 older PROBLEMs and the maintainer question remain. Not ready.",
    "summary": "Delta b852cf2f7..257e3ae8b (v1.1.0, +894/-1285): the kiosk drops PlayerFeature.ENQUEUE, so core serves queue media as one /flow/ stream. Removed: the /flow/ to /single/ rewrite, enqueue_next_media, start_enqueued_media, QueueWalk, playback_reached_end and the short-end detection; a browser 'ended' now just reports IDLE. play_media checks resolve_stream_url to set serves_flow. refresh_stream rebuilds the flow at the queue's item and position via cmd_seek with resume_position(). New PlaybackClaim replaces transport_mark/still_plays/take_over_output (GPT Sol found no ownership or pause bug in it). _publish_flow_item sends title, duration and a stream-clock start (queue elapsed minus stream elapsed x speed; GPT Sol confirmed the formula) when the queue's item changes inside the flow. Closing a page that got the current play message rebuilds the flow for the remaining pages. web.js caps seekToSong at floor(dur) - end_margin from the welcome message, clamps its clock to the song duration, and reports position every 2 s. Effect on old findings: fixed or gone are the seek-to-end CRITICAL, the /flow/ rewrite limitation (crossfade and overlays now apply), one-item Repeat All, paused successor resume_pos, radio jumping to the next item, end report during the snapshot seek, and the short complete file stopping the queue. The failed-playback teardown is downgraded to SUGGESTION since there are no enqueue tasks now. The other 9 PROBLEMs are untouched. New PROBLEM: Repeat One (and one-item Repeat All) never sends a new media message, so the page clock and lyrics stay at the end.",
    "blockers": [
-    "Your question (06:50Z): what does this add over Sendspin in a browser plus the built-in dashboard?"
+    "Decide whether MA wants this provider, given trudenboy's answer"
    ],
    "findings": [
     {
@@ -3634,7 +3634,7 @@
    },
    "backport": null,
    "prompt": "Context: music-assistant/server PR #6948 (trudenboy, 'Add Web Kiosk browser player provider', head 257e3ae8b, provider v1.1.0, XL, ready for review since 18:44Z, CI green except the pending Dependency Security Review, clean against origin/dev 1dfa0929d, Copilot clean on the head). v1.1.0 drops PlayerFeature.ENQUEUE so core serves the kiosk a /flow/ stream; the provider's own successor logic is gone and the seek-to-end CRITICAL (Copilot r4302797493) is resolved: the page caps seeks at length minus END_MARGIN and server seeks go through core's flow. New PROBLEM from GPT Sol, confirmed: in _publish_flow_item (http_server.py:453) Repeat One keeps the same queue_item_id and generation, so no media message is sent for later passes and the page clock and lyrics stay at the end. Still open from earlier reviews: socket reconnect after HTML5 fallback re-enables Sendspin (web.js connectWS), muted kiosk plays Sendspin after reload, fallback holds the playback lock across a universal group resume, late old-socket close misses the HTML5 move, /ws ownership proves the Sendspin key not the kiosk, sendspinStreaming not restored after stream/clear, on_protocol_player_updated re-asserts Sendspin without an equality guard, universal_player internals coupling, MA credentials over plain HTTP on 8098. Plus the maintainer decision on shipping a second HTTP server and kiosk UI in server. The card's suggested_fix patch covers mute and announcement lyrics. Task: help Marvin decide on the design question, then draft a short review comment listing the Repeat One clock bug and the remaining PROBLEMs. Any comment must start with '> [!NOTE] This comment was written by Claude on Marvin's behalf'. Post nothing on GitHub without Marvin's OK.",
-   "whats_new": "You asked at 06:50Z why the provider is needed: Sendspin already turns any browser into a player, and the built-in dashboard shows now playing. Waiting on trudenboy.",
+   "whats_new": "trudenboy answered your question at 09:00Z (no-login, old-browser kiosk/TV audio output, complements FullyKiosk and MSX).",
    "reviewed_now": false,
    "reviewed_at": "2026-10-17 21:30 CEST",
    "auto_approved": null,
@@ -3644,10 +3644,14 @@
     "trudenboy/ma-provider-web-kiosk#44 (deferred universal_player claim API)",
     "trudenboy/ma-provider-web-kiosk#81 (continuous /flow/ stream support, now done in v1.1.0)"
    ],
-   "author_replied": null,
+   "author_replied": {
+    "at": "2026-10-23T09:00:37Z",
+    "url": "https://github.com/music-assistant/server/pull/6948#issuecomment-6361329952",
+    "summary": "The Web Kiosk page runs outside the MA frontend with no login, targets old browsers (ES2015, Chromium 53+) on tablets, kiosks and smart TVs, works with a TV remote, uses Sendspin when the browser supports it and plain HTML5 audio otherwise. Positions it next to FullyKiosk and MSX."
+   },
    "reporter_reply": null,
-   "waiting_on": "trudenboy: answer your question",
-   "changed_now": null
+   "waiting_on": "you: decide on the provider",
+   "changed_now": "author replied"
   },
   {
    "repo": "server",
@@ -7059,125 +7063,115 @@
    "title": "Correct the Alexa player's position from the Echo's own reports",
    "author": "nyakaspeter",
    "url": "https://github.com/music-assistant/server/pull/7143",
-   "draft": true,
-   "verdict": "almost",
-   "assessment": "comment",
+   "draft": false,
+   "verdict": "not_ready",
+   "assessment": "request_changes",
    "status": "attention",
-   "attention_since": "2026-10-22T07:34:00Z",
-   "waiting_on": "nyakaspeter: f1; you: post f2, core call",
-   "gpt_sol": "2 critical, 1 problem",
+   "attention_since": "2026-10-23T09:49:00Z",
+   "waiting_on": "you: core scope call",
+   "gpt_sol": "4 problems",
    "size": "M",
-   "code": 152,
+   "code": 203,
    "add": 415,
    "del": 26,
-   "ci": "green on 492ce3580 (15 checks)",
+   "ci": "green on 688ad6345",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
-   "head_sha": "6cc2a39f5",
-   "core_touched": false,
+   "merge_state": "merge-tree clean on origin/dev 7dfa5d85c; review required, no auto-merge",
+   "head_sha": "688ad6345",
+   "core_touched": true,
    "providers_touched": [
     "alexa"
    ],
    "stacked": false,
-   "tldr": "Alexa now takes the Echo's real stream offset from the companion skill API, so voice requests no longer push the queue ahead. Both earlier Copilot CRITICALs are only partly fixed. A stop race can still revive a stopped player (Opus reproduced it, GPT Sol agrees; 6-line patch). A paused correction can leave the queue on the next track (Copilot's new CRITICAL r4345952554), and a real fix needs core. 57 alexa tests pass.",
-   "summary": "The PR adds a quiet GET /alexa/playback-state read per poll and applies the Echo's offset and play/pause state with an age-based anchor. The anchor math, repeat suppression, IDLE guard and old-stream filtering are correct, and paused players poll every 5 s while the Amazon volume read stays at the 30 s pace. CRITICAL 2 is fixed. CRITICAL 1 is only mostly fixed: the generation counter is bumped at the start of each command, so a poll that starts during stop()'s Amazon call can still revive the player (reproduced). The PAUSED pre-step also flips an already-paused player to PLAYING and back, emitting real state events. A 6-line patch fixes both, and 57/57 alexa tests still pass with it. GPT Sol rates the stop race and the track-boundary case CRITICAL, and adds that an unseen older report fetched after a pause could undo it. Copilot's 08:08Z review opens r4345952554 (queue keeps the drifted track with the paused offset) and adds a body-only PROBLEM: the 5 s skill-API timeout runs inside the shared serial poll loop.",
-   "whats_new": "nyakaspeter pushed 2a61aedb3 at 21:45Z while in draft; not re-reviewed (draft). nyakaspeter marked it ready at 12:16Z after pushing d194f4cfa; Copilot 12:43Z opened a CRITICAL (a lookup started during stop() can revive the player, our f2), and the gate drafted it again at 12:57Z.",
+   "tldr": "nyakaspeter fixed the stop race (f2) and the poll blocking (f4), and fixed the drifted-track CRITICAL (f1) by changing core: 25 lines in player_queues/controller.py. That core change breaks other players: a non-flow track change wipes the previous track's played time (no playlog, scrobble or audiobook mark), and an announcement overwrites the parked resume position. Opus reproduced both, GPT Sol and Copilot (two new CRITICALs) agree. The f3 PLAYING blip is still there, and the resume fix now depends on it.",
+   "summary": "The delta fixes f2 (a second generation bump after each command's await), f4 (60 s back-off on an unreachable skill API) and f1. f1 is fixed through a core change: on_player_elapsed_time_corrected now moves the flow queue's track on a jump. The PR now carries 25 lines of core that Marvin has not agreed to. The index move is fine for other flow players, but the new resume_pos/last_playing rewrite regresses every non-flow player: at a gapless track change it wipes the previous item's played time before the debounced queue update, so that item is never logged or scrobbled (reproduced). Announcements can also overwrite the parked resume position and move the flow index (reproduced). f3's PAUSED blip is unchanged and is now what feeds the paused offset into the resume fix. A 37-line patch with 3 regression tests closes the core regressions and the GPT Sol stale-report case. Core: The provider PR now changes core (25 lines in player_queues/controller.py plus a new core test file), and Marvin did not ask for that. Flag it to him to decide: either a separate core PR, or explicit sign-off here. (1) Moving the flow index on a jump is correct for other flow players. For a PLAYING player the debounced tracker computes the same index 0.5 s later on dev anyway, and for PAUSED _get_flow_queue_stream_index returns the current index unchanged. The exception is announcements (see (3)). (2) The resume_pos/last_playing rewrite is wrong outside flow mode. In non-flow mode queue.current_item still lags the player by the 0.5 s debounce, so a PLAYING jump at a track change (player at 1 s into B, queue still on A) overwrites A's last_playing_elapsed_time with 1. The tracker then reports A with seconds_played=1 (<5) and drops it, so no playlog entry, scrobble or audiobook/podcast fully-played mark. I reproduced this with a probe; origin/dev keeps 238. This affects every non-flow player whose position reset reaches update_state while PLAYING. (3) on_player_update skips work during ATTR_ANNOUNCEMENT_IN_PROGRESS, but on_player_elapsed_time_corrected does not. On dev that only touches queue.elapsed_time (resume uses the parked resume_pos). With the PR, an announcement jump overwrites the parked resume_pos, and in flow mode it also moves the index to the first flow-log entry. I reproduced both: resume_pos 120 -> 2, index 1 -> 0. The post-announcement resume then starts the wrong track or position. The patch limits the rewrite to flow mode and skips the queue correction during announcements. With it, 1256 tests pass and the three new regression tests fail on head.",
+   "whats_new": "nyakaspeter pushed d194f4cfa, 2a61aedb3, 6cc2a39f5 and 688ad6345 and marked it ready at 09:49Z. Copilot (requested as Marvin) 10:07Z: 2 new CRITICAL threads (cross-track paused correction, announcement jumps). The gate will draft it.",
    "blockers": [
-    "Draft (critical gate) over Copilot CRITICAL r4345952554: a paused correction keeps the drifted track. on_player_elapsed_time_corrected (core) drops the flow index, so the clean fix is in core: your call",
-    "Stop race (f2, reproduced): the generation is bumped before the Amazon await, so a poll can revive a stopped player. Post it, or `fix 7143` pushes the validated 6-line patch (also stops the PAUSED blip, f3)",
-    "Copilot previously-missed PROBLEM (body only): the 5 s skill-API timeout blocks the shared poll loop; a 1-2 s timeout is enough"
+    "Core scope: the provider PR now changes player_queues/controller.py. Ask for a separate core PR, or accept it here with the fix",
+    "Core CRITICAL (reproduced): a non-flow track change wipes the outgoing track's played position; announcements overwrite the parked resume position. Patch confines the rewrite to flow mode and skips announcements (1256 tests pass, 3 new regression tests)",
+    "f3 blip still there and now load-bearing for the resume fix: your call"
    ],
    "findings": [
     {
+     "model": "Claude",
+     "severity": "CRITICAL",
+     "file": "music_assistant/controllers/player_queues/controller.py",
+     "line": 1461,
+     "title": "Core: a non-flow track change wipes the previous item's played position",
+     "detail": "The new block sets prev_state['last_playing_elapsed_time'] = elapsed whenever a PLAYING jump fires and prev_state's item matches queue.current_item. In non-flow mode the queue item only moves in the debounced on_player_update (0.5 s), so at a gapless track change the jump (240 s -> ~1 s) arrives while the queue still shows item A. A's played time becomes 1. On the item change, _handle_playback_progress_report uses that value, hits `seconds_played < 5` and returns. A gets no playlog/scrobble entry, and audiobooks/podcasts are not marked fully played. Probe on head: 238 -> 1. origin/dev leaves 238. This hits every non-flow provider, not just Alexa (which is flow-only). GPT Sol and Copilot found the same family.",
+     "fix": "Limit the block to flow mode (`if queue.flow_mode and ... PLAYING`). There, item and position come from the same flow-log lookup. A non-flow seek already resets last_playing in play_index. See the patch and the new regression test test_non_flow_jump_keeps_the_previous_items_played_position.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/players/controller.py",
+     "line": 2041,
+     "title": "Core: an announcement jump overwrites the parked resume position and moves the flow index",
+     "detail": "Announcements stop the queue to park resume_pos and set ATTR_ANNOUNCEMENT_IN_PROGRESS. on_player_update ignores the player during that time, but on_player_position_jumped -> on_player_elapsed_time_corrected does not, and active_source stays the queue. On dev this only corrupts queue.elapsed_time. With d194f4cfa+6cc2a39, the announcement's ~0 s position rewrites resume_pos (non-flow and flow), and in flow mode it moves current_index to the first flow-log entry. _restore_after_announcement then resumes the wrong track/position. Probe on head: resume_pos 120 -> 2, index 1 -> 0. This is reachable whenever the announcement's position differs from the stopped player's by more than 1 s, or the stopped position was None. Copilot CRITICAL r4358401408.",
+     "fix": "Skip the queue correction while an announcement is in progress, mirroring on_player_update. I put the guard in on_player_position_jumped because existing queue tests pass SimpleNamespace players without extra_data, and they must not change. Regression test: test_announcement_position_jump_leaves_the_queue_alone.",
+     "posted": null
+    },
+    {
      "model": "Copilot",
      "severity": "CRITICAL",
-     "file": "music_assistant/providers/alexa/__init__.py",
-     "line": 619,
-     "title": "Paused correction keeps the drifted queue track (r4345952554)",
-     "detail": "The temporary PLAYING update corrects queue.elapsed_time but on_player_elapsed_time_corrected discards the flow index from _get_flow_queue_stream_index, and the later queue update runs after PAUSED is restored. If MA's clock reached track B while the Echo paused in A, the queue shows B with A's elapsed time and can resume wrongly. GPT Sol rates it CRITICAL too, Claude a suggestion that self-heals on the next PLAYING report. The cause is core.",
-     "fix": "Update the index in on_player_elapsed_time_corrected (core, ask first), or apply the paused offset through the queue controller.",
+     "file": "music_assistant/controllers/player_queues/controller.py",
+     "line": 1466,
+     "title": "Cross-track paused correction keeps the outgoing track's saved position (r4358401347)",
+     "detail": "When the correction selects another flow item and ends paused, the newly selected item inherits the previous item's last_playing_elapsed_time and resumes at the wrong offset. GPT Sol found the same.",
+     "fix": "Update the saved position for the newly selected item.",
      "posted": null
     },
     {
      "model": "Claude",
      "severity": "PROBLEM",
      "file": "music_assistant/providers/alexa/__init__.py",
-     "line": 330,
-     "title": "Stop race: generation bumped before the command's awaits (now Copilot CRITICAL, 12:43Z)",
-     "detail": "stop/play/pause/play_media increment _playback_generation before awaiting Amazon or the skill. A poll that begins inside that await window captures the already-bumped value, so a report fetched across the command's state write is not discarded. Reproduced for stop(): the player ends PLAYING after MA stopped it, then sticks at PAUSED once the Echo's STOPPED report arrives. For pause() it causes a brief PLAYING flip until the next report. Not present on origin/dev (no position polling there).",
-     "fix": "Bump the generation right before each command writes its state (after the awaits). Then any poll whose fetch spans the write is dropped, and reports applied mid-command are overwritten by the command. See patch.",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "PROBLEM",
-     "file": "music_assistant/providers/alexa/__init__.py",
-     "line": 612,
-     "title": "PAUSED to PLAYING to PAUSED blip on every MA pause",
-     "detail": "After MA pause() the player is already PAUSED. When the Echo's STOPPED report arrives, the 'move the queue first' step sets PLAYING and calls update_state, which emits a real PLAYER_UPDATED with playback_state PAUSED->PLAYING and then PLAYING->PAUSED. The queue tracker gets the same flip, which triggers extra playback progress reports, and HA sees a playing blip. Verified by counting signal_player_state_update calls: two state changes. The step is only needed when the player is still PLAYING, which is the voice-request case the PR targets.",
-     "fix": "Guard the pre-step with `and self.playback_state == PlaybackState.PLAYING`. For an MA pause, the queue then keeps the clock estimate until the Echo resumes and its PLAYING report corrects it (see patch). The clean alternative is core-side: let _get_flow_queue_stream_index follow a paused player's offset. That needs core changes, so ask before doing it.",
-     "posted": null
-    },
-    {
-     "model": "Copilot",
-     "severity": "PROBLEM",
-     "file": "music_assistant/providers/alexa/__init__.py",
-     "line": 380,
-     "title": "Skill-API timeout blocks the shared poll loop (previously missed, body only)",
-     "detail": "PlayerController._poll_players awaits each poll in turn; a skill API that drops packets costs up to 5 s per Echo every round and delays queue updates for every player. Claude flagged the same.",
-     "fix": "Use a 1-2 s timeout for this best-effort read; optionally stop asking after a 404 until reload.",
+     "line": 628,
+     "title": "PAUSED to PLAYING to PAUSED blip still there, now load-bearing",
+     "detail": "Earlier f3 is unchanged. Each Echo STOPPED report still emits a real PLAYER_UPDATED with PLAYING (HA sees a playing blip) before PAUSED. 6cc2a39 relies on it, because core only trusts a PLAYING correction. The provider fakes PLAYING so core accepts a paused position it otherwise distrusts.",
+     "fix": "Decision for Marvin. (a) Accept the blip. (b) Guard the pre-step with `and self.playback_state == PlaybackState.PLAYING`, so an MA pause keeps the clock estimate as resume_pos (used only if the Echo later goes idle; a plain resume goes through player.play() and the Echo resumes itself). (c) Let core trust a paused flow position from players that report it authoritatively (more core). No patch included.",
      "posted": null
     },
     {
      "model": "GPT Sol",
      "severity": "SUGGESTION",
      "file": "music_assistant/providers/alexa/__init__.py",
-     "line": 601,
-     "title": "An unseen older report can undo a completed pause or resume",
-     "detail": "Generation matching marks when the GET started, not when the Echo reported. A poll right after pause() can fetch an earlier, never-applied PLAYING report for the same stream and flip MA back to PLAYING until the next report.",
-     "fix": "Reject reports older than the last playback command, using the report age.",
+     "line": 252,
+     "title": "Skill lookup still in the serial poll path (backoff only)",
+     "detail": "The 60 s backoff limits repeats, but the first request and each retry still hold up polling for every player.",
+     "fix": "Fetch the report outside the poll path.",
      "posted": null
     },
     {
      "model": "Claude",
      "severity": "SUGGESTION",
      "file": "music_assistant/providers/alexa/__init__.py",
-     "line": 349,
-     "title": "Resume after a paused report extrapolates over the pause (pre-existing)",
-     "detail": "A STOPPED report anchors elapsed=offset at last_updated=now-age. play() then sets PLAYING without re-anchoring, so corrected_elapsed_time jumps forward by the whole pause length until the Echo's PlaybackStarted report is polled (<=5 s). In flow mode that can briefly move the queue to a later track. The same happens on origin/dev after MA pause()+play(), so this is not a regression. The PR makes the paused anchor reliable, so freezing it is now cheap.",
-     "fix": "In pause()/play() re-anchor: pause sets elapsed=corrected_elapsed_time, last_updated=now; play sets last_updated=now.",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "NIT",
-     "file": "music_assistant/providers/alexa/__init__.py",
-     "line": 84,
-     "title": "BUFFER_UNDERRUN mapped to PLAYING keeps the clock running",
-     "detail": "The position does not advance during an underrun, but MA's clock keeps running from the report anchor until the next report. Harmless if underruns are short.",
-     "fix": "Optional: map it to PAUSED, or leave as is.",
+     "line": 624,
+     "title": "A report made before the last command can still undo it",
+     "detail": "The equality check on observedAt does not reject an unseen older report. After a pause and play within one poll interval, the Echo's STOPPED report from the pause reapplies PAUSED for up to 5 s.",
+     "fix": "Stamp `_command_started_at = time.time()` next to the existing start bumps and drop reports with `time.time() - age < _command_started_at`. This uses the start rather than the end of the command, so the Echo's own post-command report is kept. The age makes it independent of the skill API's clock. See the patch and test_report_made_before_the_last_command_is_ignored.",
      "posted": null
     }
    ],
    "unaddressed_comments": [],
    "copilot": {
     "green": false,
-    "comments": 1,
+    "comments": 2,
     "findings": 2,
-    "review_url": "https://github.com/music-assistant/server/pull/7143#discussion_r4345952554",
+    "review_url": "https://github.com/music-assistant/server/pull/7143#discussion_r4358401347",
     "titles": [
-     "[CRITICAL] Paused correction keeps the drifted queue track (r4345952554)",
-     "[PROBLEM] Skill-API timeout blocks the shared poll loop (previously missed)"
+     "[CRITICAL] Cross-track paused correction (r4358401347)",
+     "[CRITICAL] Announcement jumps reach the correction (r4358401408)"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "08:08Z on 492ce3580 (requested as Marvin 08:01Z): Changes recommended, 1 new CRITICAL thread, 1 previously-missed PROBLEM, 2 resolved.",
+   "copilot_note": "10:07Z on 688ad6345 (requested as Marvin 10:01Z): Changes recommended, 2 CRITICAL threads.",
    "suggested_fix": {
-    "description": "Bump the playback generation when each command writes its state (after the Amazon await), and skip the PLAYING pre-step when the player is already PAUSED. git apply --check OK on 492ce3580; 57 alexa tests pass with it, and the stop-race probe ends IDLE.",
-    "patch": "diff --git a/music_assistant/providers/alexa/__init__.py b/music_assistant/providers/alexa/__init__.py\nindex 2292f89bd6..b180dd4a26 100644\n--- a/music_assistant/providers/alexa/__init__.py\n+++ b/music_assistant/providers/alexa/__init__.py\n@@ -303,7 +303,7 @@ class AlexaPlayer(Player):\n         self._volume_read_at = -math.inf\n         # The skill API report already applied, so a repeat doesn't undo later changes.\n         self._position_observed_at: float | None = None\n-        # Bumped by every playback command, so a report fetched before it is discarded.\n+        # Bumped when a playback command sets its state, so a report fetched across it is dropped.\n         self._playback_generation = 0\n         # Keep track of the last metadata we pushed to avoid unnecessary uploads\n         self._last_meta_checksum: str | None = None\n@@ -327,37 +327,37 @@ class AlexaPlayer(Player):\n \n     async def stop(self) -> None:\n         \"\"\"Handle STOP command on the player.\"\"\"\n-        self._playback_generation += 1\n         provider = cast(\"AlexaProvider\", self.provider)\n \n         utter = await provider.get_intent_utterance(\"AMAZON.StopIntent\", \"stop\")\n         await self.api.run_custom(utter)\n \n+        self._playback_generation += 1\n         self._attr_current_media = None\n         self._attr_playback_state = PlaybackState.IDLE\n         self.update_state()\n \n     async def play(self) -> None:\n         \"\"\"Handle PLAY command on the player.\"\"\"\n-        self._playback_generation += 1\n         provider = cast(\"AlexaProvider\", self.provider)\n \n         if not await self._send_to_open_screen(\"resume\"):\n             utter = await provider.get_intent_utterance(\"AMAZON.ResumeIntent\", \"resume\")\n             await self.api.run_custom(utter)\n \n+        self._playback_generation += 1\n         self._attr_playback_state = PlaybackState.PLAYING\n         self.update_state()\n \n     async def pause(self) -> None:\n         \"\"\"Handle PAUSE command on the player.\"\"\"\n-        self._playback_generation += 1\n         provider = cast(\"AlexaProvider\", self.provider)\n \n         if not await self._send_to_open_screen(\"pause\"):\n             utter = await provider.get_intent_utterance(\"AMAZON.PauseIntent\", \"pause\")\n             await self.api.run_custom(utter)\n \n+        self._playback_generation += 1\n         self._attr_playback_state = PlaybackState.PAUSED\n         self.update_state()\n \n@@ -395,7 +395,6 @@ class AlexaPlayer(Player):\n \n     async def play_media(self, media: PlayerMedia) -> None:\n         \"\"\"Handle PLAY MEDIA on the player.\"\"\"\n-        self._playback_generation += 1\n         stream_url = await self.provider.mass.streams.resolve_stream_url(self.player_id, media)\n \n         payload = {\n@@ -443,6 +442,7 @@ class AlexaPlayer(Player):\n \n         if not screen_handled:\n             await self.api.run_custom(ALEXA_LANGUAGE_COMMANDS[ask_command_key])\n+        self._playback_generation += 1\n         self._position_observed_at = None\n         self._attr_elapsed_time = 0\n         self._attr_elapsed_time_last_updated = time.time()\n@@ -609,7 +609,7 @@ class AlexaPlayer(Player):\n         ):\n             return\n         self._position_observed_at = observed_at\n-        if state == PlaybackState.PAUSED:\n+        if state == PlaybackState.PAUSED and self.playback_state == PlaybackState.PLAYING:\n             # In flow mode the queue only follows a playing player's position (see\n             # _get_flow_queue_stream_index), so move it to the paused offset as playing\n             # first; otherwise it stays at the clock estimate until playback resumes.\n",
+    "description": "Limit the core resume rewrite to flow mode, skip the queue correction during an announcement (guard in on_player_position_jumped), and drop Echo reports made before the last command started. git apply --check OK on 688ad6345; 1256 tests pass; 3 new regression tests fail on head. Adds tests and touches core, so it needs your OK.",
+    "patch": "diff --git a/music_assistant/controllers/player_queues/controller.py b/music_assistant/controllers/player_queues/controller.py\nindex 5570a79565..24a9473837 100644\n--- a/music_assistant/controllers/player_queues/controller.py\n+++ b/music_assistant/controllers/player_queues/controller.py\n@@ -1458,10 +1458,11 @@ class PlayerQueuesController(QueueLoaderMixin, PlaybackTrackerMixin, StreamFeede\n         queue.elapsed_time = elapsed_time\n         queue.elapsed_time_last_updated = now\n         queue.playback_speed = speed\n-        if player.state.playback_state == PlaybackState.PLAYING:\n+        if queue.flow_mode and player.state.playback_state == PlaybackState.PLAYING:\n             # A playing player's corrected position is where the item really is, also\n             # when it is behind positions saved from the clock estimate; resuming from\n-            # those would skip unheard audio. A paused position stays untrusted.\n+            # those would skip unheard audio. A paused position stays untrusted, and\n+            # outside flow mode the queue item can still be the one before the jump.\n             prev_state = self._queue_data[queue_id].prev_state\n             if (\n                 prev_state\ndiff --git a/music_assistant/controllers/players/controller.py b/music_assistant/controllers/players/controller.py\nindex bd1a6c55a8..231d032314 100644\n--- a/music_assistant/controllers/players/controller.py\n+++ b/music_assistant/controllers/players/controller.py\n@@ -2038,7 +2038,9 @@ class PlayerController(AnnouncementsMixin, AudioSourceMixin, ProtocolLinkingMixi\n         \"\"\"\n         if self.mass.closing:\n             return\n-        self.mass.player_queues.on_player_elapsed_time_corrected(player)\n+        if not player.extra_data.get(ATTR_ANNOUNCEMENT_IN_PROGRESS):\n+            # an announcement's position is not the queue's (on_player_update skips it too)\n+            self.mass.player_queues.on_player_elapsed_time_corrected(player)\n         self.trigger_player_update(player.player_id)\n         self._forward_state_update(player, {})\n \ndiff --git a/music_assistant/providers/alexa/__init__.py b/music_assistant/providers/alexa/__init__.py\nindex 805a3ae758..b04cb18a0d 100644\n--- a/music_assistant/providers/alexa/__init__.py\n+++ b/music_assistant/providers/alexa/__init__.py\n@@ -313,6 +313,8 @@ class AlexaPlayer(Player):\n         self._position_observed_at: float | None = None\n         # Bumped by every playback command, so a report fetched before it is discarded.\n         self._playback_generation = 0\n+        # Reports the Echo made before the last playback command started describe the past.\n+        self._command_started_at = -math.inf\n         # Keep track of the last metadata we pushed to avoid unnecessary uploads\n         self._last_meta_checksum: str | None = None\n         # Keep last stream url pushed (set in play_media)\n@@ -336,6 +338,7 @@ class AlexaPlayer(Player):\n     async def stop(self) -> None:\n         \"\"\"Handle STOP command on the player.\"\"\"\n         self._playback_generation += 1\n+        self._command_started_at = time.time()\n         provider = cast(\"AlexaProvider\", self.provider)\n \n         utter = await provider.get_intent_utterance(\"AMAZON.StopIntent\", \"stop\")\n@@ -350,6 +353,7 @@ class AlexaPlayer(Player):\n     async def play(self) -> None:\n         \"\"\"Handle PLAY command on the player.\"\"\"\n         self._playback_generation += 1\n+        self._command_started_at = time.time()\n         provider = cast(\"AlexaProvider\", self.provider)\n \n         if not await self._send_to_open_screen(\"resume\"):\n@@ -364,6 +368,7 @@ class AlexaPlayer(Player):\n     async def pause(self) -> None:\n         \"\"\"Handle PAUSE command on the player.\"\"\"\n         self._playback_generation += 1\n+        self._command_started_at = time.time()\n         provider = cast(\"AlexaProvider\", self.provider)\n \n         if not await self._send_to_open_screen(\"pause\"):\n@@ -410,6 +415,7 @@ class AlexaPlayer(Player):\n     async def play_media(self, media: PlayerMedia) -> None:\n         \"\"\"Handle PLAY MEDIA on the player.\"\"\"\n         self._playback_generation += 1\n+        self._command_started_at = time.time()\n         stream_url = await self.provider.mass.streams.resolve_stream_url(self.player_id, media)\n \n         payload = {\n@@ -622,6 +628,7 @@ class AlexaPlayer(Player):\n             or not isinstance(offset_ms, (int, float))\n             or not isinstance(age, (int, float))\n             or observed_at == self._position_observed_at\n+            or time.time() - age < self._command_started_at\n         ):\n             return\n         self._position_observed_at = observed_at\ndiff --git a/tests/controllers/player_queues/test_flow_position_jump.py b/tests/controllers/player_queues/test_flow_position_jump.py\nindex 501c8295b2..672136452a 100644\n--- a/tests/controllers/player_queues/test_flow_position_jump.py\n+++ b/tests/controllers/player_queues/test_flow_position_jump.py\n@@ -124,3 +124,15 @@ def test_paused_position_leaves_the_resume_position_alone() -> None:\n     prev_state = ctrl._queue_data[QUEUE_ID].prev_state\n     assert prev_state is not None\n     assert prev_state[\"last_playing_elapsed_time\"] == 120\n+\n+\n+def test_non_flow_jump_keeps_the_previous_items_played_position() -> None:\n+    \"\"\"Outside flow mode the queue can still hold the item the player just moved on from.\"\"\"\n+    ctrl = _controller()\n+    queue = _played_120_s_into_the_second_track(ctrl)\n+    queue.flow_mode = False\n+    ctrl.on_player_elapsed_time_corrected(_player(PlaybackState.PLAYING, 1))\n+    assert queue.resume_pos == 120\n+    prev_state = ctrl._queue_data[QUEUE_ID].prev_state\n+    assert prev_state is not None\n+    assert prev_state[\"last_playing_elapsed_time\"] == 120\ndiff --git a/tests/controllers/players/test_player_controller.py b/tests/controllers/players/test_player_controller.py\nindex eb11750350..d9afd43601 100644\n--- a/tests/controllers/players/test_player_controller.py\n+++ b/tests/controllers/players/test_player_controller.py\n@@ -51,6 +51,7 @@ from music_assistant_models.player_queue import PlayerQueue\n \n from music_assistant.constants import (\n     ANNOUNCE_ALERT_FILE,\n+    ATTR_ANNOUNCEMENT_IN_PROGRESS,\n     ATTR_FAKE_MUTE,\n     ATTR_MUTE_LOCK,\n     ATTR_POWER_OFF_IN_PROGRESS,\n@@ -5286,6 +5287,17 @@ class TestCurrentMediaTimeUpdates:\n         cast(\"MagicMock\", controller._forward_state_update).assert_called_once()\n         assert player.state.elapsed_time == 61\n \n+    def test_announcement_position_jump_leaves_the_queue_alone(self, mock_mass: MagicMock) -> None:\n+        \"\"\"The position of an announcement playing on the player does not move its queue.\"\"\"\n+        _controller, player = self._make_player(mock_mass)\n+        player.extra_data[ATTR_ANNOUNCEMENT_IN_PROGRESS] = True\n+\n+        player._attr_elapsed_time = 0\n+        player._attr_elapsed_time_last_updated = time.time()\n+        player.update_state()\n+\n+        mock_mass.player_queues.on_player_elapsed_time_corrected.assert_not_called()\n+\n     def test_simultaneous_player_and_media_jump_emits_immediately(\n         self, mock_mass: MagicMock\n     ) -> None:\ndiff --git a/tests/providers/alexa/test_echo_position.py b/tests/providers/alexa/test_echo_position.py\nindex 921d66d3e8..6da696e9a5 100644\n--- a/tests/providers/alexa/test_echo_position.py\n+++ b/tests/providers/alexa/test_echo_position.py\n@@ -116,6 +116,15 @@ async def test_same_report_is_applied_once() -> None:\n     update_state.assert_not_called()\n \n \n+async def test_report_made_before_the_last_command_is_ignored() -> None:\n+    \"\"\"A pause report made before MA resumed playback must not pause it again.\"\"\"\n+    player, _ = _player()\n+    player._command_started_at = NOW - 1  # MA resumed after the Echo paused 2 s ago\n+    update_state = await _correct(player, _report(activity=\"STOPPED\"))\n+    assert player.playback_state == PlaybackState.PLAYING\n+    update_state.assert_not_called()\n+\n+\n async def test_stopped_player_is_not_revived() -> None:\n     \"\"\"After MA stops the player, the skill API is not asked and nothing changes.\"\"\"\n     player, _ = _player(PlaybackState.IDLE)\n",
     "pushed": null
    },
-   "prompt": "Server PR #7143 (https://github.com/music-assistant/server/pull/7143), head 492ce3580, by nyakaspeter. Apply /tmp/prr/r1000b/d7143/claude_fix.patch to music_assistant/providers/alexa/__init__.py: move `self._playback_generation += 1` in stop/play/pause/play_media to just before each command writes its state, and guard the PAUSED pre-step with `self.playback_state == PlaybackState.PLAYING`. Add a regression test where a poll's fetch spans stop() and the player must end IDLE. Optionally lower the skill-API playback-state timeout to 2 s. Run tests/providers/alexa. Work in a worktree from refs/remotes/pr/7143.",
+   "prompt": "",
    "backport": null,
    "auto_approved": null,
    "author_replied": null,
@@ -7185,9 +7179,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-22 10:00 CEST",
-   "changed_now": "pushed"
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-23 12:00 CEST",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
@@ -8772,8 +8766,59 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-23 11:00 CEST",
+   "changed_now": null
+  },
+  {
+   "repo": "models",
+   "number": 443,
+   "state": "merged",
+   "closed_at": "2026-10-23T10:00:43Z",
+   "title": "Build(deps): Bump pypa/gh-action-pypi-publish from 1.14.2 to 1.14.3",
+   "author": "dependabot",
+   "url": "https://github.com/music-assistant/models/pull/443",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "merged",
+   "gpt_sol": "not run (CI action pin)",
+   "size": "S",
+   "code": 2,
+   "add": 1,
+   "del": 1,
+   "ci": "green on b0d1fbc34",
+   "ci_fail": false,
+   "merge_state": "merged",
+   "head_sha": "b0d1fbc34",
+   "core_touched": false,
+   "providers_touched": [],
+   "stacked": false,
+   "tldr": "Pinned patch bump of the PyPI publish action (security fix release). Auto-approved and merged.",
+   "summary": "",
+   "whats_new": "Auto-approved and merged at 10:00Z.",
+   "blockers": [],
+   "findings": [],
+   "unaddressed_comments": [],
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": null,
+   "auto_approved": {
+    "at": "2026-10-23 12:00 CEST",
+    "note": "Dependabot pinned patch bump of a CI action, checks green."
+   },
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-23 12:00 CEST",
    "changed_now": "auto-approved"
   }
  ]
