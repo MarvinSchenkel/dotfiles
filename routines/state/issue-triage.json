@@ -6379,7 +6379,7 @@
   {
    "n": 6854,
    "title": "Radio (DR P1 Icecast): 6-10 s dropouts every 1000 s on Sendspin→AirPlay bridges",
-   "col": "info",
+   "col": "cantfix",
    "area": "server / streams audio.py radio input (ffmpeg -reconnect, get_reconnecting_radio_stream); airplay bridge Sendspin timeline realign",
    "since": "2026-10-23 14:30",
    "last": "BlochHansen 2026-10-23 11:46",
@@ -6392,19 +6392,20 @@
    },
    "summary": "2.10.7 HA add-on (Pi). DR P1 (https://live-icy.gss.dr.dk/A/A03H.mp3) and other Danish stations on Argon FORTE A4 WiFi and Argon SOLO (AirPlay via the Sendspin bridge): 5-10 s dropouts roughly every 15 min, exactly when MA logs 'Realigned X µs of Sendspin timeline drift'. NAS music on the same players is clean for 45+ min. RAOP instead didn't help.",
    "fix": "",
-   "checked": "Diagnostics log_tail: the big realigns (6.2-10.3 s) come every 1000 s to the second on both bridges: Argon SOLO 06:09:47, 06:26:27, 06:43:08, 06:59:48, 07:16:28, 07:33:08, 07:49:50; FORTE A4 08:23:11, 08:39:51, 08:56:31, ... 11:09:53 (UTC 10-21). A fixed 16:40 period that follows the stream, not the player, points at the source: likely DR's Icecast closes the connection every 1000 s and the reconnect (ffmpeg -reconnect in helpers/ffmpeg.py:648-661, or get_reconnecting_radio_stream audio.py:1024) leaves a multi-second gap that the bridge then realigns away. Unconfirmed: a 21 min curl of the DR URL is running to check for a server-side cut at ~1000 s. Unrelated in the same log: AP2 control channel loss on the FORTE at 08:05 (one-off), 'AirPlay start dropped ~1.6 s' start warnings, hass 502 at startup.",
-   "plan": "If DR cuts at 1000 s: reproduce locally with the DR URL on a web player/AirPlay and fix the reconnect gap (keep the timeline fed during an Icecast reconnect). If not: ask for a Streams + AirPlay Verbose log around one dropout.",
+   "checked": "Diagnostics log_tail: the big realigns (6.2-10.3 s) come every 1000 s to the second on both bridges: Argon SOLO 06:09:47, 06:26:27, 06:43:08, 06:59:48, 07:16:28, 07:33:08, 07:49:50; FORTE A4 08:23:11, 08:39:51, 08:56:31, ... 11:09:53 (UTC 10-21). A fixed 16:40 period that follows the stream, not the player, points at the source: likely DR's Icecast closes the connection every 1000 s and the reconnect (ffmpeg -reconnect in helpers/ffmpeg.py:648-661, or get_reconnecting_radio_stream audio.py:1024) leaves a multi-second gap that the bridge then realigns away. Unconfirmed: a 21 min curl of the DR URL is running to check for a server-side cut at ~1000 s. Unrelated in the same log: AP2 control channel loss on the FORTE at 08:05 (one-off), 'AirPlay start dropped ~1.6 s' start warnings, hass 502 at startup. 10-23 14:50 curl test from NL: the DR P1 URL streamed for the full 1260 s without a disconnect, 20,173,734 bytes (128 kbps, no gap). So DR doesn't cut at 1000 s, at least not for us. More likely MA-side: a continuous radio stream lives longer than 1000 s while NAS tracks restart the stream every few minutes, which would explain why only radio hits it. ~7 s per 1000 s is ~0.7 % drift, corrected in one jump at a 1000 s boundary in the Sendspin to AirPlay bridge or aiosendspin timeline.",
+   "plan": "Reproduce locally: any continuous radio stream to an AirPlay speaker through the Sendspin bridge for 17+ min, watch for a 'Realigned ~7 s' at 1000 s. Then find the 1000 s boundary (bridge/aiosendspin) and why drift builds up to seconds. Sendspin side: maximmaxim345.",
    "branch": "",
    "diff": "",
    "prs": [],
    "badges": [],
    "reply": "",
    "bookkeeping": [],
-   "ask": null,
+   "ask": "input",
    "milestone": null,
-   "action": "Checking whether DR's Icecast server cuts connections every 1000 s (curl running). Next run decides repro vs info ask.",
+   "action": "DR's server doesn't cut at 1000 s (21 min curl, no gap), so the 1000 s realign looks MA-side on long streams. Say `repro 6854` (17+ min radio on an AirPlay speaker via the Sendspin bridge) or hand it to maximmaxim345.",
    "notes": [
-    "10-23 14:30 run: new issue. Realigns of 6-10 s every 1000 s exactly in the diagnostics, on both bridges. Curl test of the DR stream started."
+    "10-23 14:30 run: new issue. Realigns of 6-10 s every 1000 s exactly in the diagnostics, on both bridges. Curl test of the DR stream started.",
+    "10-23 14:50: curl ran 1260 s clean against DR. Moved to Reproduced, cannot fix (pending repro) with an input ask."
    ]
   }
  ],
@@ -6876,6 +6877,7 @@
   6831,
   6837,
   6845,
-  6850
+  6850,
+  6854
  ]
 }
