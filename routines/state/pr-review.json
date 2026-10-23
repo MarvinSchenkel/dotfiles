@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-23T10:00:00+02:00",
+ "last_run": "2026-10-23T11:00:00+02:00",
  "dev": "7dfa5d85c",
- "run_note": "Your #7165 (Apple Music storefront token) merged. Your #7156 (Universal Player keeps its id) is ready for another maintainer: Claude and Copilot are clean, and GPT Sol's partial-claim note was already argued in the Copilot thread. Your new draft #7166 is the ICY alternative to the closed #7147.",
+ "run_note": "Auto-approved and merged client#323, dependabot's pinned bump of the PyPI publish action to v1.14.3 (security fix). Otherwise only drafts moved: nyakaspeter pushed to #7143 and caraar12345 to #6345.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -1024,7 +1024,7 @@
     "sendspin"
    ],
    "merge_state": "DIRTY (conflict: sendspin/player.py)",
-   "head_sha": "8724e4350",
+   "head_sha": "30a366589",
    "tldr": "Recomputes the Sendspin flow timeline anchor on every commit, so the reported position and the beat schedule follow aiosendspin's forward rebase after a producer stall. It also prunes late-join history against the push-stream clock. The core one-line anchor fix is sound. The beat-schedule refresh machinery around it still has four open Copilot CRITICALs on the head. OzGav moved it back to draft on 09-23 for those, and the author has been silent since. It also conflicts with dev's #6271 metadata-generation guard in _send_beat_schedule.",
    "summary": "The central change is _timeline_start_us = commit_start_us - produced_audio_us on every commit. It holds steady when nothing stalls and absorbs a rebase on the next commit, which is correct and minimal. flow_track_anchor_us benefits automatically. The pruning change is also right: chunk start_time_us is already on the push-stream clock, so cutting at now - _HISTORY_KEEP_PAST_US keeps committed-but-unplayed audio for late joiners. The old formula effectively cut relative to the commit tail. The weak part is the beat-schedule re-publish (on_flow_timeline_rebased, _pending_anchor_delta_us, _anchor_rebase_pending). It runs in a separate task id from the metadata refresh, so a same-track refresh that captured the pre-rebase anchor can finish after the rebase refresh, overwrite it and clear the pending state. The live_media check only catches track changes. The 500 ms per-commit threshold also never fires for repeated smaller same-direction shifts. Copilot's sub-second update_state point is acknowledged in the code comment and is acceptable. The retry-exit case (analysis unavailable for an item that already had beats) is real but unlikely, because analysis is cached. Dev's #6271 added a takeover generation guard in exactly the conflicting spot. The rebase should keep both checks and could reuse a refresh generation to fix the ordering. Stable has the same stale-anchor bug. The PR description is a long AI narrative, and Copilot asked for it to be trimmed.",
    "blockers": [
@@ -7073,7 +7073,7 @@
    "ci": "green on 492ce3580 (15 checks)",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 56eabe897; review required, no auto-merge",
-   "head_sha": "2a61aedb3",
+   "head_sha": "6cc2a39f5",
    "core_touched": false,
    "providers_touched": [
     "alexa"
@@ -7187,7 +7187,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-22 10:00 CEST",
-   "changed_now": null
+   "changed_now": "pushed"
   },
   {
    "repo": "server",
@@ -8183,9 +8183,9 @@
    ],
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-23 10:00 CEST",
-   "changed_now": "ready for review"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -8723,7 +8723,58 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": null
+  },
+  {
+   "repo": "client",
+   "number": 323,
+   "state": "merged",
+   "closed_at": "2026-10-23T09:01:05Z",
+   "title": "chore(deps): bump pypa/gh-action-pypi-publish from 1.14.2 to 1.14.3",
+   "author": "dependabot",
+   "url": "https://github.com/music-assistant/client/pull/323",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "merged",
+   "gpt_sol": "not run (CI action pin)",
+   "size": "S",
+   "code": 2,
+   "add": 1,
+   "del": 1,
+   "ci": "green on 998d5772f",
+   "ci_fail": false,
+   "merge_state": "merged",
+   "head_sha": "998d5772f",
+   "core_touched": false,
+   "providers_touched": [],
+   "stacked": false,
+   "tldr": "Pinned patch bump of the PyPI publish action in the release workflow; v1.14.3 carries the GHSA-5xjx-3w67-w9x9 fix. Auto-approved and merged.",
+   "summary": "",
+   "whats_new": "Opened 08:12Z; auto-approved by the routine and merged at 09:01Z.",
+   "blockers": [],
+   "findings": [],
+   "unaddressed_comments": [],
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "Not requested (dependabot action pin).",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": null,
+   "auto_approved": {
+    "at": "2026-10-23 11:01 CEST",
+    "note": "Dependabot pinned patch bump of a CI action, checks green."
+   },
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-23 11:00 CEST",
+   "changed_now": "auto-approved"
   }
  ]
 }
