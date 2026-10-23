@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-23T16:00:00+02:00",
+ "last_run": "2026-10-23T17:00:00+02:00",
  "dev": "d18d41a82",
- "run_note": "OzGav's #7168 (no metadata to md-less legacy AirPlay receivers, FiiO R7) is ready for your approve; AirPlay is excluded from auto-approval. You closed your #7154 and #7155 to test them yourself, and pinged three stale drafts. stellar-aria reworked the beets draft #6762.",
+ "run_note": "sanderboele's #7169 (Sonos radio via stream url) is ready for your approve; Sonos is excluded from auto-approval, and the backport dry-run is clean. You posted two problems on #6779, so it waits on mnestrud.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -38,8 +38,8 @@
    "draft": false,
    "verdict": "almost",
    "assessment": "comment",
-   "status": "attention",
-   "attention_since": "2026-10-21T12:58:18Z",
+   "status": "waiting",
+   "attention_since": null,
    "size": "L",
    "code": 571,
    "add": 507,
@@ -55,8 +55,7 @@
    "tldr": "_leads_moved_group is now re-checked synchronously after the wait, connection included, so a role given up again is left alone. The flow-load timeout decline holds, because aiosonos create_session can hand back the same session id. Our PROBLEM still stands: a play preparing audio on either player has not bumped cloud_queue_item_generation yet, so the hand-over transfers over it. Checking ATTR_PLAY_ACTION_IN_PROGRESS on both queues fixes it without touching core. Copilot resolved all three threads and has no open issues. Sonos is excluded from auto-approve.",
    "summary": "r4333309129: commit 07c354954 moves the readiness predicate into _leads_moved_group (connected, client.player.is_coordinator, group subscribed). _hand_over_moved_group calls it again after _wait_for_moved_group, with no await between that check, the generation/_plays_queue checks and the start of the hand-over. Parametrised tests cover role, status and connection loss, so the fix is verified. r4333309191 (declined): aiosonos 0.1.15 _play_stream_url runs create_session and then load_stream_url, and create_session can return the previously used session id. After a CommandTimeout, the provider cannot tell a timed-out create (old session still active) from a timed-out load into a reused session. Forgetting the queue is the conservative choice. The play command already raised, so the user sees the failure. Decline OK. r4333309171 (declined): holding core playback locks from a provider risks lock-order inversion with transfer_queue's own cmd_ungroup/stop calls, so fixing it in core transfer_queue is the right home. The justification is only half-true, though: core's _transfer_ad_hoc_leadership runs inside cmd_set_members under the old leader's PLAYBACK lock (players/controller.py:1404), and only the new leader is unguarded there. Our PROBLEM is the concrete harm from that gap. Scenario: the user starts a play on either speaker right after the move, and handle_play_action holds the lock and sets ATTR_PLAY_ACTION_IN_PROGRESS while audio prepares. play_media has not run yet, so neither generation has moved. The hand-over then forgets our queue, transfer_queue clears and moves it, and play_index cancels the user's pending play or moves their new items to the other speaker. The suggested patch bails when either queue has the flag set. It is a synchronous check right before the transfer and has been validated: 195 sonos tests pass, and the new test fails without the fix.",
    "blockers": [
-    "Our PROBLEM f1 still stands: the hand-over can override a user play still preparing audio. `fix 6779` pushes the validated patch (skip the hand-over while either queue shows a play in progress), or post it",
-    "GPT Sol's new point (f2): stream resolution changes queue ownership before the URL is resolved"
+    "mnestrud: your two posted PROBLEMs (docstrings r4360377514, hand-over overriding a fresh play r4360415807)"
    ],
    "findings": [
     {
@@ -125,7 +124,7 @@
     "pushed": null
    },
    "prompt": "Server PR #6779 (https://github.com/music-assistant/server/pull/6779), head 05cc0aeb5, by mnestrud. In music_assistant/providers/sonos/player.py the coordinator hand-over can run while a user play is still preparing audio on either the old or new coordinator (cloud_queue_item_generation only moves inside play_media). Skip or defer the hand-over while either queue has ATTR_PLAY_ACTION_IN_PROGRESS set, re-checked right before transfer_queue, with a regression test. Also resolve the stream URL in _play_stream before changing queue ownership. Work in a worktree from refs/remotes/pr/6779.",
-   "whats_new": "mnestrud fixed r4333309129 in 07c354954 and declined r4333309171 (core follow-up for transfer_queue locking) and r4333309191 at 12:58-13:00Z, then took it out of draft. Copilot requested as Marvin 14:01Z, landed 14:05Z: 3 resolved, no open issues.",
+   "whats_new": "You posted two PROBLEMs at 14:03Z and 14:07Z: private-method docstrings with :param: blocks (r4360377514), and the hand-over can override a play the user just started while play_index holds the lock (r4360415807). Core transfer_queue lock follow-up in chip mcp:25511fac.",
    "backport": {
     "rec": false,
     "why": "L-sized Sonos behaviour change that needs the aiosonos 0.1.15 bump (stable pins 0.1.13); ship in the next minor."
@@ -141,8 +140,8 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you: fix or post",
-   "changed_now": null,
+   "waiting_on": "mnestrud",
+   "changed_now": "reviewed by you",
    "gpt_sol": "0 critical, 3 problems"
   },
   {
@@ -396,7 +395,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "stellar-aria",
-   "changed_now": "pushed"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -7999,7 +7998,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "closed"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -8055,7 +8054,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "closed"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -8834,8 +8833,80 @@
    "related_prs": [
     "discussion #6594"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-23 16:00 CEST",
+   "changed_now": null
+  },
+  {
+   "repo": "server",
+   "number": 7169,
+   "state": "open",
+   "closed_at": null,
+   "title": "Play radio on Sonos as a stream url, not as a cloud queue track",
+   "author": "sanderboele",
+   "url": "https://github.com/music-assistant/server/pull/7169",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "attention",
+   "attention_since": "2026-10-23T14:30:00Z",
+   "waiting_on": "you: approve",
+   "gpt_sol": "1 problem (declared limitation)",
+   "size": "S",
+   "code": 9,
+   "add": 37,
+   "del": 1,
+   "ci": "green on 1ab929b44",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev d18d41a82; review required, no auto-merge",
+   "head_sha": "1ab929b44",
+   "core_touched": false,
+   "providers_touched": [
+    "sonos"
+   ],
+   "stacked": false,
+   "tldr": "With flow mode off, radio played directly on Sonos now takes the existing stream-url path (forced AAC) instead of the cloud queue, where it became a duration-less FLAC track that Sonos drops (\"reported 200\"). Tracks keep the cloud queue. 126 Sonos tests pass. Claude, Copilot (Approval recommended) and Bot-MArley are clean. GPT Sol's one PROBLEM is the limitation the PR already states: radio reached by auto-advance inside a cloud queue is not covered. Sonos is excluded from auto-approval.",
+   "summary": "The stream-url path clears cloud_queue_id, keeps a mass:<queue>:<item> object id for queue items, and sweeps superseded streams after the speaker accepts. The new test covers a direct radio load. The track-to-radio auto-advance inside a cloud queue still serves FLAC without duration (declared in the PR body).",
+   "whats_new": "New at 14:30Z. Bot-MArley 14:35Z: nothing to change. Copilot 14:36Z: Approval recommended (one PROBLEM on the PR description, answered by sanderboele).",
+   "blockers": [
+    "Your approve: Sonos is excluded from auto-approval"
+   ],
+   "findings": [
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/sonos/player.py",
+     "line": 498,
+     "title": "Radio reached by auto-advance in a cloud queue still goes out as duration-less FLAC",
+     "detail": "Sonos advances the cloud queue itself, so play_media and the new exclusion are not reached; build_cloud_queue_window serves the radio item as FLAC. The PR body lists this as a known limitation. GPT Sol rates it a PROBLEM.",
+     "fix": "Follow-up: serve radio items in the cloud queue window as AAC, or end the cloud queue before a radio item.",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7169",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "14:36Z on 1ab929b44: Approval recommended.",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": {
+    "rec": true,
+    "why": "Bugfix for radio skipping on Sonos with flow mode off; tiny and provider-only, the stable dry-run is clean."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-23 17:00 CEST",
    "changed_now": "new"
   }
  ]
