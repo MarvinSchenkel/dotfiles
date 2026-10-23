@@ -2721,12 +2721,13 @@
      "backport?"
     ]
    ],
-   "reply": "",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@johnp3004 the cut-off start on AirPlay speakers in a Sendspin group is fixed in music-assistant/server#7160: YouTube Music and Spotify (Soloist) tracks now wait for the slowest speaker instead of starting with the short radio lead. It's in tonight's nightly build. Could you give it a try?\n\n## HAOS\n- Stop your current Music Assistant app\n- Install the \"Music Assistant (NIGHTLY)\" app from the same app repository and start it. It keeps its own settings, separate from your normal install\n\nTo test: play a Spotify or YouTube Music track to the same Sendspin group with your AirPlay speakers, and check that the first seconds are no longer cut off. Starting can take a moment longer now.",
    "bookkeeping": [],
    "notes": [
     "10-21 15:45 discuss: discussion session started on your main account. Your question first: did the Sendspin 1.0 work on stable/dev change the live-source lead or the bridge anchor floor (the 09-27 'identical code' check predates it)?",
     "10-22 17:30 run: maximmaxim345 opened server#7160 (related to this issue): YouTube Music and Soloist tracks get the buffered lead instead of the radio one. Moved to Already fixed on dev / someone else's PR; the stale test-ask slot is cleared.",
-    "10-23 09:30 run: maximmaxim345 merged server#7160. Labelled Fix to be Confirmed. No milestone: no backport label but it cherry-picks cleanly onto stable, so backport is your call."
+    "10-23 09:30 run: maximmaxim345 merged server#7160. Labelled Fix to be Confirmed. No milestone: no backport label but it cherry-picks cleanly onto stable, so backport is your call.",
+    "10-23 15:40 (on request): server#7160 isn't in the latest nightly 2.11.0.dev2026102303 (built 33 min before the merge) or beta 6. Nightly test ask drafted; you approved posting it, the first run after the next nightly checks inclusion and posts."
    ],
    "last": "johnp3004 2026-09-13 18:24",
    "gh": {
@@ -2736,8 +2737,8 @@
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "",
-   "ask": null,
+   "action": "Test ask approved by you (10-23 15:40) once a nightly includes server#7160. Not in 2.11.0.dev2026102303 (built 06:19 UTC, merge 06:52 UTC). Post when the next nightly lands.",
+   "ask": "reply-test",
    "milestone": null,
    "sync": {
     "at": "2026-10-23T13:30:09Z",
