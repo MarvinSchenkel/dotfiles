@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-23T07:00:00+02:00",
+ "last_run": "2026-10-23T08:00:00+02:00",
  "dev": "04434955a",
- "run_note": "Overnight: your #7157 merged without our queue-item guard (follow-up), and Simanias closed #7147. #7148 is approved by Bot-MArley and Copilot-clean; only our f2 is open. New: #7160 (Sendspin lead, Sendspin is excluded from auto-approval) and #7161 (aioaudiobookshelf bump) are ready for your approve, and #7162 (Tidal reorder) waits on its PR checklist.",
+ "run_note": "Quiet hour: no new or changed non-draft PRs. caraar12345 pushed to the #6345 draft, and OzGav gave kees the go-ahead on the #6458 draft. Everything from the 07:00 run still stands: #7160 and #7161 wait on your approve, and #7148 on our f2.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -788,7 +788,8 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "author",
-   "changed_now": null
+   "changed_now": null,
+   "whats_new": "OzGav told kees to go ahead at 05:29Z (asks MedievalApple for comments). Still a draft. "
   },
   {
    "repo": "server",
@@ -1023,7 +1024,7 @@
     "sendspin"
    ],
    "merge_state": "DIRTY (conflict: sendspin/player.py)",
-   "head_sha": "f801a1f12",
+   "head_sha": "5d3734d5a",
    "tldr": "Recomputes the Sendspin flow timeline anchor on every commit, so the reported position and the beat schedule follow aiosendspin's forward rebase after a producer stall. It also prunes late-join history against the push-stream clock. The core one-line anchor fix is sound. The beat-schedule refresh machinery around it still has four open Copilot CRITICALs on the head. OzGav moved it back to draft on 09-23 for those, and the author has been silent since. It also conflicts with dev's #6271 metadata-generation guard in _send_beat_schedule.",
    "summary": "The central change is _timeline_start_us = commit_start_us - produced_audio_us on every commit. It holds steady when nothing stalls and absorbs a rebase on the next commit, which is correct and minimal. flow_track_anchor_us benefits automatically. The pruning change is also right: chunk start_time_us is already on the push-stream clock, so cutting at now - _HISTORY_KEEP_PAST_US keeps committed-but-unplayed audio for late joiners. The old formula effectively cut relative to the commit tail. The weak part is the beat-schedule re-publish (on_flow_timeline_rebased, _pending_anchor_delta_us, _anchor_rebase_pending). It runs in a separate task id from the metadata refresh, so a same-track refresh that captured the pre-rebase anchor can finish after the rebase refresh, overwrite it and clear the pending state. The live_media check only catches track changes. The 500 ms per-commit threshold also never fires for repeated smaller same-direction shifts. Copilot's sub-second update_state point is acknowledged in the code comment and is acceptable. The retry-exit case (analysis unavailable for an item that already had beats) is real but unlikely, because analysis is cached. Dev's #6271 added a takeover generation guard in exactly the conflicting spot. The rebase should keep both checks and could reuse a refresh generation to fix the ordering. Stable has the same stale-anchor bug. The PR description is a long AI narrative, and Copilot asked for it to be trimmed.",
    "blockers": [
@@ -1099,7 +1100,7 @@
     "patch": ""
    },
    "prompt": "In /Users/marvin/git/music-assistant/server, fetch PR #6345 (git fetch origin '+pull/6345/head:refs/prreview/6345') and create a worktree on it. Rebase onto origin/dev and resolve the conflict in music_assistant/providers/sendspin/player.py _send_beat_schedule by keeping both dev's _metadata_publish_allowed(generation) guard (#6271) and the PR's live_media queue-item check. Then fix two Copilot findings: (1) add a beat-refresh generation counter that on_flow_timeline_rebased and the metadata/seek refresh paths bump, capture it before the get_audio_analysis await, and drop stale results after it; (2) in playback.py, accumulate the anchor drift since the last reported rebase and fire on_flow_timeline_rebased when that total crosses ANCHOR_REBASE_SIGNIFICANT_US, then reset it. Add regression tests for two consecutive 400 ms rebases and for an older same-track refresh finishing after a rebase refresh in tests/providers/sendspin/test_beat_anchor_rebase.py. Shorten the long comments to one or two lines. Run only tests/providers/sendspin with /Users/marvin/git/music-assistant/server/.venv/bin/python -m pytest --no-cov -p no:cacheprovider. Do not push or post without Marvin's approval.",
-   "whats_new": "Sendspin players keep reporting the right playback position and beat timing after a short audio stall.",
+   "whats_new": "caraar12345 pushed 5d3734d5a at 05:42Z while in draft; not reviewed (draft). Sendspin players keep reporting the right playback position and beat timing after a short audio stall.",
    "backport": {
     "rec": false,
     "why": "Stable has the same stale anchor (playback.py:908 sets it once). Only the anchor recompute and pruning lines would be worth backporting, and only after this lands and settles. The beat-refresh machinery is too fresh."
@@ -1113,7 +1114,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "author",
-   "changed_now": null
+   "changed_now": "pushed"
   },
   {
    "repo": "server",
@@ -2693,7 +2694,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "ryanmac8: f1; you: fix, design",
-   "changed_now": "pushed",
+   "changed_now": null,
    "gpt_sol": "2 problems (1 refuted, 1 narrow race)"
   },
   {
@@ -4388,7 +4389,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "author",
-   "changed_now": "pushed"
+   "changed_now": null
   },
   {
    "repo": "aioslimproto",
@@ -5413,7 +5414,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "martinbuergi: Copilot CRITICAL",
-   "changed_now": "drafted"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -7196,7 +7197,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-22 10:00 CEST",
-   "changed_now": "pushed"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -7441,7 +7442,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-22 13:00 CEST",
-   "changed_now": "closed"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -7659,7 +7660,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-22 15:00 CEST",
-   "changed_now": "pushed"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -8174,7 +8175,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "pushed"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -8273,7 +8274,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-22 17:00 CEST",
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -8411,9 +8412,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-23 07:00 CEST",
-   "changed_now": "new",
+   "changed_now": null,
    "prompt": "",
    "verdict": "ready",
    "assessment": "approve",
@@ -8482,9 +8483,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-23 07:00 CEST",
-   "changed_now": "new",
+   "changed_now": null,
    "prompt": "",
    "verdict": "ready",
    "assessment": "approve",
@@ -8542,9 +8543,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-23 07:00 CEST",
-   "changed_now": "new",
+   "changed_now": null,
    "prompt": "",
    "verdict": "almost",
    "assessment": "comment",
@@ -8660,7 +8661,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": null
   }
  ]
 }
