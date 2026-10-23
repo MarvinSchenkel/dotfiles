@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-23T13:00:00+02:00",
+ "last_run": "2026-10-23T14:00:00+02:00",
  "dev": "7dfa5d85c",
- "run_note": "#6345 (Sendspin position after a stall) is out of draft and ready: maximmaxim345 reshaped and hardware-tested it, Claude and Copilot are clean, and Sendspin needs a human approve. The gate drafted #7143 over the core regressions; your scope call there still stands.",
+ "run_note": "Quiet hour, only drafts moved. nyakaspeter pushed a fix for the core findings to the #7143 draft (not reviewed until it is ready), you answered stellar-aria on #6762, and Yagoor replied to OzGav on the #7142 draft.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -311,7 +311,7 @@
    "auto_approved": null,
    "stacked": false,
    "related_prs": [],
-   "attention_since": "2026-10-22T12:13:00Z",
+   "attention_since": null,
    "reviewed_now": false,
    "reviewed_at": "2026-10-08",
    "title": "Add beets provider",
@@ -335,7 +335,7 @@
    "tldr": "stellar-aria worked through all 9 points of OzGav's change list in da20b6484 and the provider shrank by about 530 lines net. Merge handling, the write lock, the TaskManager and sync_running are gone, errors use ProviderUnavailableError, the import except is narrowed, ids are plain beets ids with is_unique=True, and the docs link is in the manifest. The two Copilot CRITICALs on SQLite rowid reuse are real in mechanism (beets uses INTEGER PRIMARY KEY without AUTOINCREMENT) but have low practical impact and match how Local files behaves when a path is reused, so I would decline them. The open question now is OzGav's: whether MA wants to depend on the beets database layout at all. CI is green and there are no conflicts.",
    "summary": "Fetched da20b6484 and diffed it against 5c1652160 (11 files, +206/-737) and against the origin/dev merge-base (17 files, +3913). Checked OzGav's 01:42Z list point by point by grepping for the removed symbols and reading the new __init__.py, parsers.py, library.py and manifest.json. Read Copilot's 03:56Z review and its 3 inline comments. Checked the beets upstream schema (dbcore/types.py: id is 'INTEGER PRIMARY KEY', no AUTOINCREMENT) and how core treats is_unique (base.py matches on provider_instance instead of domain). Compared with filesystem_local, which uses relative_path as item id and the same overwrite_existing=prev_checksum pattern. Ran merge-tree against origin/dev and checked gh pr checks.",
    "blockers": [
-    "Answer stellar-aria: codeownership offer vs your decline (no third-party provider path exists)"
+    "You answered the codeownership offer at 11:53Z; waiting on stellar-aria"
    ],
    "findings": [
     {
@@ -383,20 +383,20 @@
     "description": "stellar-aria worked through all 9 points of OzGav's list in da20b6484, so the open question is the maintainer one: do we accept a provider that reads the beets DB layout directly? If yes, decline Copilot's 3 threads before approving. Rowid reuse (both CRITICALs): beets uses INTEGER PRIMARY KEY without AUTOINCREMENT, so an id comes back only when the newest rows are deleted and replaced between two syncs, and those rarely carry favorites or history yet; Local files has the same property for a path. Malformed image path: the provider builds that path itself, and OzGav asked to drop checks for ids it built, so a crafted URL getting a 500 is acceptable."
    },
    "prompt": "music-assistant/server PR #6762 (beets provider, stellar-aria, head da20b6484) addressed all 9 points of OzGav's 01:42Z list. Copilot's 03:56Z review left 2 CRITICALs (beets SQLite rowid reuse for items and albums) and 1 PROBLEM (raw ValueError on a malformed album image path). Draft three short decline replies for those threads, each starting with '> [!NOTE] This comment was written by Claude on Marvin's behalf' (rowid reuse only hits the newest rows deleted and replaced between syncs, same as Local files per path; image path is provider-built). Show them to Marvin and post nothing without his OK.",
-   "whats_new": "stellar-aria answered your decline at 12:13Z: offers codeownership of the provider and asks about maintenance burden, since MA has no external plugin catalog.",
+   "whats_new": "You answered stellar-aria at 11:53Z: MA has no HACS-like path, and maintainer churn is why provider requests are weighed carefully.",
    "backport": {
     "rec": false,
     "why": "New provider feature; goes out with the next regular release."
    },
-   "status": "attention",
+   "status": "waiting",
    "author_replied": {
     "at": "2026-10-22T12:13:00Z",
     "url": "https://github.com/music-assistant/server/pull/6762#issuecomment-6340462733",
     "summary": "Asks what maintenance burden you expect, offers to take codeownership, and notes MA has no way to ship third-party providers outside this repo."
    },
    "reporter_reply": null,
-   "waiting_on": "you: answer stellar-aria",
-   "changed_now": null
+   "waiting_on": "stellar-aria",
+   "changed_now": "reviewed by you"
   },
   {
    "repo": "server",
@@ -1093,14 +1093,14 @@
    },
    "draft": false,
    "stacked": false,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-23 13:00 CEST",
    "auto_approved": null,
    "attention_since": "2026-10-23T10:32:00Z",
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you or maximmaxim345: approve",
-   "changed_now": "ready for review",
+   "changed_now": null,
    "gpt_sol": "1 problem (we rate a suggestion)"
   },
   {
@@ -7064,7 +7064,7 @@
    "ci": "green on 688ad6345",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 7dfa5d85c; review required, no auto-merge",
-   "head_sha": "688ad6345",
+   "head_sha": "45c6ed175",
    "core_touched": true,
    "providers_touched": [
     "alexa"
@@ -7072,7 +7072,7 @@
    "stacked": false,
    "tldr": "nyakaspeter fixed the stop race (f2) and the poll blocking (f4), and fixed the drifted-track CRITICAL (f1) by changing core: 25 lines in player_queues/controller.py. That core change breaks other players: a non-flow track change wipes the previous track's played time (no playlog, scrobble or audiobook mark), and an announcement overwrites the parked resume position. Opus reproduced both, GPT Sol and Copilot (two new CRITICALs) agree. The f3 PLAYING blip is still there, and the resume fix now depends on it.",
    "summary": "The delta fixes f2 (a second generation bump after each command's await), f4 (60 s back-off on an unreachable skill API) and f1. f1 is fixed through a core change: on_player_elapsed_time_corrected now moves the flow queue's track on a jump. The PR now carries 25 lines of core that Marvin has not agreed to. The index move is fine for other flow players, but the new resume_pos/last_playing rewrite regresses every non-flow player: at a gapless track change it wipes the previous item's played time before the debounced queue update, so that item is never logged or scrobbled (reproduced). Announcements can also overwrite the parked resume position and move the flow index (reproduced). f3's PAUSED blip is unchanged and is now what feeds the paused offset into the resume fix. A 37-line patch with 3 regression tests closes the core regressions and the GPT Sol stale-report case. Core: The provider PR now changes core (25 lines in player_queues/controller.py plus a new core test file), and Marvin did not ask for that. Flag it to him to decide: either a separate core PR, or explicit sign-off here. (1) Moving the flow index on a jump is correct for other flow players. For a PLAYING player the debounced tracker computes the same index 0.5 s later on dev anyway, and for PAUSED _get_flow_queue_stream_index returns the current index unchanged. The exception is announcements (see (3)). (2) The resume_pos/last_playing rewrite is wrong outside flow mode. In non-flow mode queue.current_item still lags the player by the 0.5 s debounce, so a PLAYING jump at a track change (player at 1 s into B, queue still on A) overwrites A's last_playing_elapsed_time with 1. The tracker then reports A with seconds_played=1 (<5) and drops it, so no playlog entry, scrobble or audiobook/podcast fully-played mark. I reproduced this with a probe; origin/dev keeps 238. This affects every non-flow player whose position reset reaches update_state while PLAYING. (3) on_player_update skips work during ATTR_ANNOUNCEMENT_IN_PROGRESS, but on_player_elapsed_time_corrected does not. On dev that only touches queue.elapsed_time (resume uses the parked resume_pos). With the PR, an announcement jump overwrites the parked resume_pos, and in flow mode it also moves the index to the first flow-log entry. I reproduced both: resume_pos 120 -> 2, index 1 -> 0. The post-announcement resume then starts the wrong track or position. The patch limits the rewrite to flow mode and skips the queue correction during announcements. With it, 1256 tests pass and the three new regression tests fail on head.",
-   "whats_new": "The critical gate drafted it at 10:19Z over Copilot's two new CRITICALs. nyakaspeter pushed d194f4cfa, 2a61aedb3, 6cc2a39f5 and 688ad6345 and marked it ready at 09:49Z. Copilot (requested as Marvin) 10:07Z: 2 new CRITICAL threads (cross-track paused correction, announcement jumps). The gate will draft it.",
+   "whats_new": "nyakaspeter pushed 45c6ed175 at 11:12Z in draft (\"Keep resume positions through announcements and corrections into another track\"), aimed at the core findings; not re-reviewed (draft). The critical gate drafted it at 10:19Z over Copilot's two new CRITICALs. nyakaspeter pushed d194f4cfa, 2a61aedb3, 6cc2a39f5 and 688ad6345 and marked it ready at 09:49Z. Copilot (requested as Marvin) 10:07Z: 2 new CRITICAL threads (cross-track paused correction, announcement jumps). The gate will draft it.",
    "blockers": [
     "Core scope: the provider PR now changes player_queues/controller.py. Ask for a separate core PR, or accept it here with the fix",
     "Core CRITICAL (reproduced): a non-flow track change wipes the outgoing track's played position; announcements overwrite the parked resume position. Patch confines the rewrite to flow mode and skips announcements (1256 tests pass, 3 new regression tests)",
@@ -7168,7 +7168,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-23 12:00 CEST",
-   "changed_now": "drafted"
+   "changed_now": "pushed"
   },
   {
    "repo": "server",
