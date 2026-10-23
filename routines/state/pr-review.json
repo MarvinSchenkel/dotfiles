@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-23T15:00:00+02:00",
+ "last_run": "2026-10-23T16:00:00+02:00",
  "dev": "d18d41a82",
- "run_note": "Your #7167 (backport workflow race) merged. nyakaspeter fixed two of the three core problems on #7143 (announcements, cross-track pause), but a non-flow track change still wipes the outgoing track's played time, for every non-flow player. The rebased one-line guard is ready; the scope call is yours.",
+ "run_note": "OzGav's #7168 (no metadata to md-less legacy AirPlay receivers, FiiO R7) is ready for your approve; AirPlay is excluded from auto-approval. You closed your #7154 and #7155 to test them yourself, and pinged three stale drafts. stellar-aria reworked the beets draft #6762.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -222,7 +222,7 @@
    "suggested_fix": null,
    "backport": null,
    "prompt": "music-assistant/server PR #6776 (mattamays-ai, first-time contributor, branch claude/smart-dj-clap-integration, XL) looks like a personal fork branch opened against upstream. It changes core default ports to 18095/18097/18094 and adds HA add-on repo files, a Dockerfile, install scripts and workflows next to a new smart_dj plugin. Draft a short friendly comment for Marvin starting with \"> [!NOTE] This comment was written by Claude on Marvin's behalf\" asking whether this was meant for upstream, and if so to cut it down to the provider plus tests and fill in the template (AI policy included). Post nothing without his OK.",
-   "whats_new": "The author pushed again (head 3e618627e, ~19:09Z) and the PR is still a draft. Nobody has answered your 11:10Z Smart Fades question. Not re-reviewed while it's a draft.",
+   "whats_new": "You pinged the author at 13:3xZ for an update. The author pushed again (head 3e618627e, ~19:09Z) and the PR is still a draft. Nobody has answered your 11:10Z Smart Fades question. Not re-reviewed while it's a draft.",
    "del": 3,
    "author_replied": null,
    "reporter_reply": null,
@@ -331,7 +331,7 @@
     "beets"
    ],
    "merge_state": "MERGEABLE, no conflicts with origin/dev; BLOCKED on required review",
-   "head_sha": "a4d1a819a",
+   "head_sha": "190cd50f5",
    "tldr": "stellar-aria worked through all 9 points of OzGav's change list in da20b6484 and the provider shrank by about 530 lines net. Merge handling, the write lock, the TaskManager and sync_running are gone, errors use ProviderUnavailableError, the import except is narrowed, ids are plain beets ids with is_unique=True, and the docs link is in the manifest. The two Copilot CRITICALs on SQLite rowid reuse are real in mechanism (beets uses INTEGER PRIMARY KEY without AUTOINCREMENT) but have low practical impact and match how Local files behaves when a path is reused, so I would decline them. The open question now is OzGav's: whether MA wants to depend on the beets database layout at all. CI is green and there are no conflicts.",
    "summary": "Fetched da20b6484 and diffed it against 5c1652160 (11 files, +206/-737) and against the origin/dev merge-base (17 files, +3913). Checked OzGav's 01:42Z list point by point by grepping for the removed symbols and reading the new __init__.py, parsers.py, library.py and manifest.json. Read Copilot's 03:56Z review and its 3 inline comments. Checked the beets upstream schema (dbcore/types.py: id is 'INTEGER PRIMARY KEY', no AUTOINCREMENT) and how core treats is_unique (base.py matches on provider_instance instead of domain). Compared with filesystem_local, which uses relative_path as item id and the same overwrite_existing=prev_checksum pattern. Ran merge-tree against origin/dev and checked gh pr checks.",
    "blockers": [
@@ -383,7 +383,7 @@
     "description": "stellar-aria worked through all 9 points of OzGav's list in da20b6484, so the open question is the maintainer one: do we accept a provider that reads the beets DB layout directly? If yes, decline Copilot's 3 threads before approving. Rowid reuse (both CRITICALs): beets uses INTEGER PRIMARY KEY without AUTOINCREMENT, so an id comes back only when the newest rows are deleted and replaced between two syncs, and those rarely carry favorites or history yet; Local files has the same property for a path. Malformed image path: the provider builds that path itself, and OzGav asked to drop checks for ids it built, so a crafted URL getting a 500 is acceptable."
    },
    "prompt": "music-assistant/server PR #6762 (beets provider, stellar-aria, head da20b6484) addressed all 9 points of OzGav's 01:42Z list. Copilot's 03:56Z review left 2 CRITICALs (beets SQLite rowid reuse for items and albums) and 1 PROBLEM (raw ValueError on a malformed album image path). Draft three short decline replies for those threads, each starting with '> [!NOTE] This comment was written by Claude on Marvin's behalf' (rowid reuse only hits the newest rows deleted and replaced between syncs, same as Local files per path; image path is provider-built). Show them to Marvin and post nothing without his OK.",
-   "whats_new": "You answered stellar-aria at 11:53Z: MA has no HACS-like path, and maintainer churn is why provider requests are weighed carefully.",
+   "whats_new": "stellar-aria pushed 190cd50f5 at 13:38Z in draft: reads the beets library through the beets Python library on query-only connections, refusing a database that would need migrations. Copilot was over quota. You answered stellar-aria at 11:53Z: MA has no HACS-like path, and maintainer churn is why provider requests are weighed carefully.",
    "backport": {
     "rec": false,
     "why": "New provider feature; goes out with the next regular release."
@@ -396,7 +396,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "stellar-aria",
-   "changed_now": null
+   "changed_now": "pushed"
   },
   {
    "repo": "server",
@@ -862,7 +862,7 @@
    "reviewed_now": false,
    "head_sha": "2ed44aa05",
    "attention_since": null,
-   "whats_new": " Now conflicts with dev 92feb5f67 in scripts/lint_baselines/oversized_provider_icons.txt.",
+   "whats_new": "You pinged the author at 13:3xZ for an update.  Now conflicts with dev 92feb5f67 in scripts/lint_baselines/oversized_provider_icons.txt.",
    "providers_touched": [],
    "author_replied": null,
    "reporter_reply": null,
@@ -986,7 +986,7 @@
     "patch": "diff --git a/music_assistant/providers/audiobookshelf/constants.py b/music_assistant/providers/audiobookshelf/constants.py\nindex 0ae6da592..ff186dc05 100644\n--- a/music_assistant/providers/audiobookshelf/constants.py\n+++ b/music_assistant/providers/audiobookshelf/constants.py\n@@ -14,8 +14,11 @@ STREAMDETAILS_EXPIRATION_S = 300\n \n # CONFIG\n CONF_URL = \"url\"\n+CONF_USERNAME = \"username\"\n+CONF_PASSWORD = \"password\"\n CONF_OLD_TOKEN = \"token\"\n CONF_API_TOKEN = \"api_token\"  # with jwt api token (>= v2.26)\n+CONF_VERIFY_SSL = \"verify_ssl\"\n # optionally hide podcasts with no episodes\n CONF_HIDE_EMPTY_PODCASTS = \"hide_empty_podcasts\"\n \ndiff --git a/music_assistant/providers/audiobookshelf/setup_flow.py b/music_assistant/providers/audiobookshelf/setup_flow.py\nindex 79fa531f3..d2f6cd306 100644\n--- a/music_assistant/providers/audiobookshelf/setup_flow.py\n+++ b/music_assistant/providers/audiobookshelf/setup_flow.py\n@@ -8,12 +8,14 @@ from typing import TYPE_CHECKING\n from music_assistant_models.config_entries import ConfigEntry\n from music_assistant_models.enums import ConfigEntryType\n \n-from music_assistant.constants import CONF_USERNAME, CONF_PASSWORD, CONF_VERIFY_SSL\n from music_assistant.models.setup_flow import SetupFlowError\n from music_assistant.providers.audiobookshelf.constants import (\n     CONF_API_TOKEN,\n     CONF_OLD_TOKEN,\n+    CONF_PASSWORD,\n     CONF_URL,\n+    CONF_USERNAME,\n+    CONF_VERIFY_SSL,\n )\n \n if TYPE_CHECKING:\ndiff --git a/music_assistant/providers/gpodder/__init__.py b/music_assistant/providers/gpodder/__init__.py\nindex 51acc00d9..51202b6d6 100644\n--- a/music_assistant/providers/gpodder/__init__.py\n+++ b/music_assistant/providers/gpodder/__init__.py\n@@ -19,7 +19,6 @@ from collections.abc import AsyncGenerator\n from datetime import datetime\n from typing import TYPE_CHECKING, Any, cast\n \n-from music_assistant.constants import CONF_USERNAME, CONF_PASSWORD, CONF_VERIFY_SSL\n from music_assistant_models.config_entries import ConfigEntry, ProviderConfig\n from music_assistant_models.enums import (\n     ConfigEntryType,\n@@ -59,6 +58,8 @@ if TYPE_CHECKING:\n \n # Config for \"classic\" gpodder api\n CONF_URL = \"url\"\n+CONF_USERNAME = \"username\"\n+CONF_PASSWORD = \"password\"\n CONF_DEVICE_ID = \"device_id\"\n \n # Config for nextcloud\n@@ -66,6 +67,7 @@ CONF_TOKEN_NC = \"token\"\n CONF_URL_NC = \"url_nc\"\n \n # General config\n+CONF_VERIFY_SSL = \"verify_ssl\"\n CONF_MAX_NUM_EPISODES = \"max_num_episodes\"\n \n \ndiff --git a/music_assistant/providers/jellyfin/__init__.py b/music_assistant/providers/jellyfin/__init__.py\nindex 166fabf49..cef235398 100644\n--- a/music_assistant/providers/jellyfin/__init__.py\n+++ b/music_assistant/providers/jellyfin/__init__.py\n@@ -5,10 +5,8 @@ from __future__ import annotations\n import asyncio\n import hashlib\n import socket\n-import urllib.parse\n from asyncio import TaskGroup\n from collections.abc import AsyncGenerator\n-from types import MethodType\n from typing import TYPE_CHECKING\n from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit\n \n@@ -27,7 +25,13 @@ from music_assistant_models.media_items import (\n )\n from music_assistant_models.streamdetails import StreamDetails\n \n-from music_assistant.constants import CONF_USERNAME, CONF_PASSWORD, CONF_VERIFY_SSL, UNKNOWN_ARTIST, UNKNOWN_ARTIST_ID_MBID\n+from music_assistant.constants import (\n+    CONF_PASSWORD,\n+    CONF_USERNAME,\n+    CONF_VERIFY_SSL,\n+    UNKNOWN_ARTIST,\n+    UNKNOWN_ARTIST_ID_MBID,\n+)\n from music_assistant.controllers.cache import use_cache\n from music_assistant.mass import MusicAssistant\n from music_assistant.models import ProviderInstanceType\n@@ -86,20 +90,6 @@ async def setup(\n     return JellyfinProvider(mass, manifest, config, SUPPORTED_FEATURES)\n \n \n-class JellyfinConnection(Connection):\n-    \"\"\"Jellyfin connection that uses the current URL authentication parameter.\"\"\"\n-\n-    def _build_url(self, url: str, params: dict[str, str | int]) -> str:\n-        assert url.startswith(\"/\")\n-        params.setdefault(\"ApiKey\", self._access_token)\n-        return f\"{self.base_url}{url}?{urllib.parse.urlencode(params)}\"\n-\n-\n-def _use_current_url_authentication(client: Connection) -> None:\n-    \"\"\"Update a connection to use Jellyfin's supported URL auth parameter.\"\"\"\n-    client._build_url = MethodType(JellyfinConnection._build_url, client)\n-\n-\n async def initiate_quick_connect(session_config: SessionConfiguration) -> tuple[str, str]:\n     \"\"\"Start a Jellyfin Quick Connect request and return its secret and approval code.\"\"\"\n     base_url = session_config.url.rstrip(\"/\")\n@@ -202,7 +192,6 @@ class JellyfinProvider(MusicProvider):\n                     username,\n                     str(self.get_setup_value(CONF_PASSWORD) or \"\"),\n                 )\n-            _use_current_url_authentication(client)\n             self._client = client\n         except Exception as err:\n             raise LoginFailed(f\"Authentication failed: {err}\") from err\ndiff --git a/music_assistant/providers/jellyfin/setup_flow.py b/music_assistant/providers/jellyfin/setup_flow.py\nindex dcc8a1480..481159d73 100644\n--- a/music_assistant/providers/jellyfin/setup_flow.py\n+++ b/music_assistant/providers/jellyfin/setup_flow.py\n@@ -10,17 +10,15 @@ from aiojellyfin.session import SessionConfiguration\n from music_assistant_models.config_entries import ConfigEntry, ConfigValueOption, ConfigValueType\n from music_assistant_models.enums import ConfigEntryType\n \n+from music_assistant.constants import CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL\n from music_assistant.models.setup_flow import SetupFlowError, StepExpiredError\n from music_assistant.providers.jellyfin import (\n     AUTH_METHOD_PASSWORD,\n     AUTH_METHOD_QUICK_CONNECT,\n     CONF_ACCESS_TOKEN,\n     CONF_DEVICE_ID,\n-    CONF_PASSWORD,\n     CONF_URL,\n     CONF_USER_ID,\n-    CONF_USERNAME,\n-    CONF_VERIFY_SSL,\n     authenticate_with_quick_connect,\n     initiate_quick_connect,\n )\n@@ -68,8 +66,9 @@ async def run_setup(session: SetupSession) -> None:\n \n     errors: dict[str, str] | None = None\n     setup_data = dict(session.context.setup_data)\n-    setup_data.pop(CONF_ACCESS_TOKEN, None)\n-    setup_data.pop(CONF_USER_ID, None)\n+    # reconfigure merges into the stored setup_data, so overwrite rather than drop\n+    setup_data[CONF_ACCESS_TOKEN] = None\n+    setup_data[CONF_USER_ID] = None\n     while True:\n         entries = [\n             replace(entry, value=setup_data.get(entry.key, entry.value)) for entry in _ENTRIES\n@@ -87,8 +86,8 @@ async def _run_quick_connect(session: SetupSession) -> None:\n     \"\"\"Connect to Jellyfin through its Quick Connect device flow.\"\"\"\n     errors: dict[str, str] | None = None\n     setup_data: dict[str, ConfigValueType] = dict(session.context.setup_data)\n-    setup_data.pop(CONF_USERNAME, None)\n-    setup_data.pop(CONF_PASSWORD, None)\n+    setup_data[CONF_USERNAME] = None\n+    setup_data[CONF_PASSWORD] = None\n     while True:\n         entries = [\n             replace(entry, value=setup_data.get(entry.key, entry.value))\ndiff --git a/music_assistant/providers/storytel/constants.py b/music_assistant/providers/storytel/constants.py\nindex 0a67b8319..13ed587c4 100644\n--- a/music_assistant/providers/storytel/constants.py\n+++ b/music_assistant/providers/storytel/constants.py\n@@ -40,6 +40,8 @@ API_DEFAULT_RESOURCE_VERSION = (\n \n \n # Provider configuration keys\n+CONF_USERNAME = \"username\"\n+CONF_PASSWORD = \"password\"\n CONF_LANGUAGES = \"languages\"\n CONF_KIDS_MODE = \"kids_mode\"\n \ndiff --git a/music_assistant/providers/storytel/setup_flow.py b/music_assistant/providers/storytel/setup_flow.py\nindex 60f712421..032290fa5 100644\n--- a/music_assistant/providers/storytel/setup_flow.py\n+++ b/music_assistant/providers/storytel/setup_flow.py\n@@ -9,8 +9,10 @@ from music_assistant_models.config_entries import ConfigEntry\n from music_assistant_models.enums import ConfigEntryType\n \n from music_assistant.models.setup_flow import SetupFlowError\n-from music_assistant.constants import CONF_USERNAME, CONF_PASSWORD\n-\n+from music_assistant.providers.storytel.constants import (\n+    CONF_PASSWORD,\n+    CONF_USERNAME,\n+)\n \n if TYPE_CHECKING:\n     from music_assistant.models.setup_flow import SetupSession\ndiff --git a/tests/providers/jellyfin/test_init.py b/tests/providers/jellyfin/test_init.py\nindex b4b655cdf..3ba4f3603 100644\n--- a/tests/providers/jellyfin/test_init.py\n+++ b/tests/providers/jellyfin/test_init.py\n@@ -181,6 +181,8 @@ async def test_password_setup_clears_quick_connect_credentials() -> None:\n         CONF_USERNAME: \"user\",\n         CONF_PASSWORD: \"password\",\n         \"verify_ssl\": True,\n+        CONF_ACCESS_TOKEN: None,\n+        CONF_USER_ID: None,\n     }\n \n \n@@ -224,6 +226,8 @@ async def test_quick_connect_setup_clears_password_credentials() -> None:\n     assert collected == {\n         \"url\": \"https://jellyfin.example\",\n         \"verify_ssl\": True,\n+        CONF_USERNAME: None,\n+        CONF_PASSWORD: None,\n         CONF_ACCESS_TOKEN: \"new-token\",\n         CONF_USER_ID: \"new-user\",\n         \"device_id\": \"server-id\",\n"
    },
    "prompt": "In /Users/marvin/git/music-assistant/server, fetch PR #6368 (git fetch origin '+pull/6368/head:refs/prreview/6368') and create a worktree on it. Then: 1) Revert all changes to music_assistant/providers/audiobookshelf, gpodder and storytel to the merge-base with origin/dev. 2) In jellyfin/setup_flow.py, replace the setup_data.pop(...) calls with assignments to None (the reconfigure finish handler in controllers/config/flows.py merges setup_data, so pop does not clear stored keys), and update the two clear-credentials tests in tests/providers/jellyfin/test_init.py to expect None. 3) Remove JellyfinConnection and _use_current_url_authentication from jellyfin/__init__.py; _normalize_jellyfin_media_url already covers Jellyfin 12. 4) Import CONF_USERNAME/CONF_PASSWORD/CONF_VERIFY_SSL from music_assistant.constants in jellyfin/setup_flow.py. 5) Give Quick Connect a per-instance device id (uuid4().hex when CONF_DEVICE_ID is unset) instead of mass.server_id. 6) Rebase on origin/dev, resolve the jellyfin/setup_flow.py and en.json conflicts, and adopt the #6382 errors pattern. If #6268 has merged, drop this PR's models/setup_flow.py hunk. Run only tests/providers/jellyfin and tests/controllers/config/test_setup_flows.py with /Users/marvin/git/music-assistant/server/.venv/bin/python -m pytest --no-cov -p no:cacheprovider. Ignore the jellyfin parser snapshot failures, which also happen on the base. Do not push or post without Marvin's approval.",
-   "whats_new": "Jellyfin can be added by approving a Quick Connect code instead of typing a username and password.",
+   "whats_new": "You pinged the author at 13:3xZ for an update. Jellyfin can be added by approving a Quick Connect code instead of typing a username and password.",
    "backport": {
     "rec": false,
     "why": "New feature, not a fix."
@@ -7133,9 +7133,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-23 15:00 CEST",
-   "changed_now": "ready for review"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -7948,8 +7948,8 @@
   {
    "repo": "server",
    "number": 7154,
-   "state": "open",
-   "closed_at": null,
+   "state": "closed",
+   "closed_at": "2026-10-23T13:22:54Z",
    "title": "Skip to the next track right away on a single next/previous press",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7154",
@@ -7973,7 +7973,7 @@
    "stacked": false,
    "tldr": "Your draft for support#6756 (Soloist skip latency), not reviewed by the routine.",
    "summary": "",
-   "whats_new": "Opened as a draft.",
+   "whats_new": "You closed it at 13:23Z to test it yourself first.",
    "blockers": [
     "Your draft."
    ],
@@ -7999,13 +7999,13 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": null
+   "changed_now": "closed"
   },
   {
    "repo": "server",
    "number": 7155,
-   "state": "open",
-   "closed_at": null,
+   "state": "closed",
+   "closed_at": "2026-10-23T13:23:15Z",
    "title": "Keep a cancelled playback start from running on through the audio buffer reset",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7155",
@@ -8029,7 +8029,7 @@
    "stacked": false,
    "tldr": "Your draft for support#6756 (Soloist skip latency), not reviewed by the routine.",
    "summary": "",
-   "whats_new": "Opened as a draft.",
+   "whats_new": "You closed it at 13:23Z to test it yourself first.",
    "blockers": [
     "Your draft."
    ],
@@ -8055,7 +8055,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": null
+   "changed_now": "closed"
   },
   {
    "repo": "server",
@@ -8774,6 +8774,69 @@
    "reviewed_now": false,
    "reviewed_at": "2026-10-23 12:00 CEST",
    "changed_now": null
+  },
+  {
+   "repo": "server",
+   "number": 7168,
+   "state": "open",
+   "closed_at": null,
+   "title": "Stop pushing metadata to legacy AirPlay receivers that advertise no metadata support",
+   "author": "OzGav",
+   "url": "https://github.com/music-assistant/server/pull/7168",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "attention",
+   "attention_since": "2026-10-23T13:20:00Z",
+   "waiting_on": "you: approve",
+   "gpt_sol": "clean",
+   "size": "S",
+   "code": 9,
+   "add": 44,
+   "del": 1,
+   "ci": "green on 4eca8772d",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev d18d41a82; review required, no auto-merge",
+   "head_sha": "4eca8772d",
+   "core_touched": false,
+   "providers_touched": [
+    "airplay"
+   ],
+   "stacked": false,
+   "tldr": "Legacy RAOP receivers without an md TXT key now get an empty --md, so cliairplay stops pushing text, artwork and progress they never asked for. The FiiO R7 answered that push with a 500 and dropped the stream. AirPlay 2 flows keep the binary default (Sonos needs metadata first). I checked cliairplay: it stores the empty value and passes it to libraop. Claude, GPT Sol, Copilot (Approval recommended) and Bot-MArley are clean, and 889 AirPlay tests pass. AirPlay is excluded from auto-approval.",
+   "summary": "The condition passes --md for forced and auto-selected RAOP, and for any receiver that advertises md; AP2 including compat mode keeps the default; missing raop_info means AP2-only, so no flag. AsyncProcess passes the empty string through to create_subprocess_exec. Three tests cover advertised, absent on RAOP and absent on AP2. Not runtime-verified on a receiver.",
+   "whats_new": "New at 13:20Z. Copilot 13:22Z: Approval recommended. Bot-MArley 13:37Z: no requested changes.",
+   "blockers": [
+    "Your approve: AirPlay is excluded from auto-approval"
+   ],
+   "findings": [],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7168",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "13:22Z on 4eca8772d: Approval recommended.",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": {
+    "rec": true,
+    "why": "Bugfix (FiiO R7 and other md-less RAOP receivers fail to play); small and provider-only. Check the stable dry-run result in the summary."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "discussion #6594"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-23 16:00 CEST",
+   "changed_now": "new"
   }
  ]
 }
