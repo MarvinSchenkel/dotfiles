@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-23T12:00:00+02:00",
+ "last_run": "2026-10-23T13:00:00+02:00",
  "dev": "7dfa5d85c",
- "run_note": "#7143 (Alexa position) is out of draft but now changes core, and that change breaks other players (non-flow played time, announcements); Claude, GPT Sol and Copilot agree, patch ready, scope is your call. trudenboy answered your question on #6948. Auto-approved and merged models#443 (PyPI action pin).",
+ "run_note": "#6345 (Sendspin position after a stall) is out of draft and ready: maximmaxim345 reshaped and hardware-tested it, Claude and Copilot are clean, and Sendspin needs a human approve. The gate drafted #7143 over the core regressions; your scope call there still stands.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -1010,61 +1010,56 @@
    "title": "Stop a Sendspin player reporting a position ahead of what it is playing",
    "author": "caraar12345",
    "url": "https://github.com/music-assistant/server/pull/6345",
-   "verdict": "not_ready",
-   "assessment": "request_changes",
-   "status": "waiting",
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "attention",
    "size": "M",
-   "code": 151,
+   "code": 156,
    "add": 762,
    "del": 27,
    "ci_fail": false,
-   "ci": "All green on the head (lint, test 2m17s), but that run predates dev's #6271 and the branch now conflicts.",
+   "ci": "green on d454fe47d",
    "core_touched": false,
    "providers_touched": [
     "sendspin"
    ],
-   "merge_state": "DIRTY (conflict: sendspin/player.py)",
-   "head_sha": "30a366589",
-   "tldr": "Recomputes the Sendspin flow timeline anchor on every commit, so the reported position and the beat schedule follow aiosendspin's forward rebase after a producer stall. It also prunes late-join history against the push-stream clock. The core one-line anchor fix is sound. The beat-schedule refresh machinery around it still has four open Copilot CRITICALs on the head. OzGav moved it back to draft on 09-23 for those, and the author has been silent since. It also conflicts with dev's #6271 metadata-generation guard in _send_beat_schedule.",
-   "summary": "The central change is _timeline_start_us = commit_start_us - produced_audio_us on every commit. It holds steady when nothing stalls and absorbs a rebase on the next commit, which is correct and minimal. flow_track_anchor_us benefits automatically. The pruning change is also right: chunk start_time_us is already on the push-stream clock, so cutting at now - _HISTORY_KEEP_PAST_US keeps committed-but-unplayed audio for late joiners. The old formula effectively cut relative to the commit tail. The weak part is the beat-schedule re-publish (on_flow_timeline_rebased, _pending_anchor_delta_us, _anchor_rebase_pending). It runs in a separate task id from the metadata refresh, so a same-track refresh that captured the pre-rebase anchor can finish after the rebase refresh, overwrite it and clear the pending state. The live_media check only catches track changes. The 500 ms per-commit threshold also never fires for repeated smaller same-direction shifts. Copilot's sub-second update_state point is acknowledged in the code comment and is acceptable. The retry-exit case (analysis unavailable for an item that already had beats) is real but unlikely, because analysis is cached. Dev's #6271 added a takeover generation guard in exactly the conflicting spot. The rebase should keep both checks and could reuse a refresh generation to fix the ordering. Stable has the same stale-anchor bug. The PR description is a long AI narrative, and Copilot asked for it to be trimmed.",
+   "merge_state": "merge-tree clean on origin/dev 7dfa5d85c; review required, no auto-merge",
+   "head_sha": "d454fe47d",
+   "tldr": "Sendspin now recomputes its timeline anchor on every commit, so the reported position and the beat schedule follow aiosendspin's rebase after a producer stall. Pruning keeps unplayed audio for late joiners. maximmaxim345 (Sendspin owner) slimmed it, tested it on hardware and answered every thread. Claude finds it ready (412 tests pass), and Copilot has no open issues. Sendspin is excluded from auto-approval.",
+   "summary": "I checked the anchor math against aiosendspin 10.2.1 and it holds. _resolve_channel_play_start only shifts _channel_timing forward when the timeline falls behind now + min_send_ahead, and commit_start_us minus produced_audio_us is exact for 100 ms slices at every common rate (tail truncation is under 1 us and only at chunk tails). The join rebases only touch channels without committed audio, so the main channel is unaffected. Each history chunk keeps its own anchor, and the playing-chunk lookup and queued-move lookup use the same boundary (end > now and start > now), so an early timer just reschedules itself. The timer has a per-run uuid task id, call_later debounces it, and the finally block cancels the timer and task after the EOF drain on seek, track change, cancel and close; cancel() awaits the old run before a new one starts. The new pruning cutoff (push clock now minus 1 s) keeps all committed-but-unplayed audio plus 1 s of warm-up for late-join backfill, where the old anchor-based cutoff ran ahead by the initial send-ahead. The beat refresh only fires on moves of 500 ms or more, is guarded against track change and generation bumps, and _flow_track_offset_us now resolves the pass playing now instead of log[-1], which also fixes beats being dropped to the fallback while the producer runs ahead. Maintainer: Yes. maximmaxim345 did not ask the author for changes. He merged dev, slimmed the PR himself (beat refresh now just re-runs _refresh_beat_schedule; first-commit refresh covers a slow source start) and tested it on an ESPHome player and the Sendspin CLI with a forced producer stall. Each of his thread replies points at a fix commit (5d3734d playing-track lookup, 3145a75 cumulative threshold, af833ba repeat pass, d7ca9fae7 per-chunk anchor, d454fe47d drain timer). He deferred two Copilot CRITICALs to a separate PR as dev already has the same behaviour: concurrent beat publishers racing, and analysis vanishing mid-refresh. He also explained pause = stop bumping the metadata generation. All 11 review threads are resolved, CI is SUCCESS, the branch is 0 commits behind origin/dev, labelled bugfix, not draft. reviewDecision is still REVIEW_REQUIRED (no formal approval).",
    "blockers": [
-    "Merge conflict with dev #6271 in sendspin/player.py _send_beat_schedule (keep the _metadata_publish_allowed(generation) guard).",
-    "Copilot CRITICAL: concurrent same-track beat refreshes can publish a pre-rebase anchor (player.py:2254, valid, open).",
-    "Copilot CRITICAL: sub-threshold rebases never accumulate toward the 500 ms beat refresh (playback.py:923, valid, open).",
-    "OzGav drafted on 09-23 for outstanding Copilot comments. No author activity since."
+    "Your approve (Sendspin is excluded from auto-approval), or leave it to maximmaxim345"
    ],
    "findings": [
     {
-     "severity": "PROBLEM",
-     "file": "music_assistant/providers/sendspin/player.py",
-     "line": 2254,
-     "title": "Beat refreshes are not ordered within a track",
-     "detail": "The rebase refresh (task sendspin_beat_rebase_*) and the metadata/retry refresh use different task ids. Both await get_audio_analysis. The post-await check only compares queue_item_id, so an older same-track refresh, or one from before a seek, can publish last and clear _pending_anchor_delta_us.",
-     "fix": "Bump a beat-refresh generation on every rebase, seek or media update. Capture it before the await and drop the result if it changed. Or route all refreshes through one task id with abort_existing=True."
-    },
-    {
-     "severity": "PROBLEM",
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
      "file": "music_assistant/providers/sendspin/playback.py",
-     "line": 923,
-     "title": "Per-commit threshold misses cumulative small rebases",
-     "detail": "anchor_rebased compares each commit's delta with 500 ms. Two 400 ms rebases move the timeline 800 ms but never trigger on_flow_timeline_rebased, so the beat schedule stays off. Elapsed time is fine because the anchor itself updates.",
-     "fix": "Track the drift since the last reported anchor and fire when that total crosses the threshold, then reset it."
+     "line": 1539,
+     "title": "A sub-500 ms anchor move is not applied during the final drain",
+     "detail": "_queued_move_start_us_locked only schedules moves of at least 500 ms against the reported anchor, so a smaller rebase followed by no further commit leaves the reported position up to 0.5 s ahead for the buffered tail. GPT Sol rates it a PROBLEM; the threshold is the deliberate design, and the error is bounded.",
+     "fix": "Apply every queued anchor change on the timer; keep the threshold for beat refreshes only.",
+     "posted": null
     },
     {
+     "model": "Claude",
      "severity": "SUGGESTION",
      "file": "music_assistant/providers/sendspin/player.py",
-     "line": 2265,
-     "title": "Retry loop exits early after a rebase refresh with no analysis",
-     "detail": "When analysis returns None the schedule is cleared, but _last_beat_queue_item_id still names the item, so _beat_retry_loop returns immediately as if beats were pushed. Analysis is cached for an item that already had beats, so this is unlikely in practice.",
-     "fix": "Reset _last_beat_queue_item_id when clearing the schedule in that branch."
+     "line": 1863,
+     "title": "A third beat publisher at every stream start (race deferred by the maintainer)",
+     "detail": "on_flow_timeline_changed now fires on the first commit of every run, so it overlaps the play_media metadata publish (sendspin_metadata_*) at each start, on a separate task id. Only the queue-item and generation guards sit after the analysis await, so whichever finishes last wins _last_beat_anchor_us. A stale overwrite needs the metadata path to compute its fallback anchor before the first commit and then have its get_audio_analysis return after the rebase refresh's later call. Both calls are the same single-row aiosqlite query and resolve FIFO, so in practice the order is safe. The maintainer already said he would fix this race for all publishers in a separate PR. That is fine, but it now runs at every play start, not just during retries.",
+     "fix": "No change in this PR. Track the follow-up, which should serialize the metadata, retry and rebase beat publishers (one task id, or a generation check re-read after the await).",
+     "posted": null
     },
     {
+     "model": "Claude",
      "severity": "NIT",
-     "file": "music_assistant/providers/sendspin/playback.py",
-     "line": 926,
-     "title": "Very long explanatory comments",
-     "detail": "Several 10-line comments narrate the debugging. The repo prefers short why-comments.",
-     "fix": "Cut each to one or two lines and move the background to the PR description."
+     "file": "music_assistant/providers/sendspin/player.py",
+     "line": 2695,
+     "title": "flow_track_anchor_us(0) used as a timeline-start getter",
+     "detail": "_send_beat_schedule now calls playback_session.flow_track_anchor_us(0) to read the raw timeline start and adds the offset itself. The method's docstring describes it as returning the track's file-position-0 anchor, so passing 0 reads oddly.",
+     "fix": "Optional: expose a small timeline_start_us property on the session, or leave as is.",
+     "posted": null
     }
    ],
    "unaddressed_comments": [
@@ -1081,40 +1076,32 @@
     "caraar12345/music-assistant-server#2 (fork PR with CodeRabbit reviews)"
    ],
    "copilot": {
-    "green": false,
-    "comments": 6,
-    "findings": 5,
-    "review_url": "https://github.com/music-assistant/server/pull/6345#pullrequestreview-5252505682",
-    "titles": [
-     "[CRITICAL] Beat refreshes not serialized; older same-track refresh can overwrite",
-     "[CRITICAL] update_state does not publish sub-second corrections",
-     "[CRITICAL] Sub-threshold rebases never accumulate",
-     "[CRITICAL] Retry loop exits when analysis unavailable after rebase",
-     "[PROBLEM] PR description is AI narrative"
-    ]
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/6345",
+    "titles": []
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "The 09-18 review on f801a1f12 (head) is 'Changes recommended', with 3 inline and 5 suppressed comments. Most suppressed ones repeat the refresh-ordering point.",
-   "suggested_fix": {
-    "description": "Rebase on dev and keep #6271's _metadata_publish_allowed(generation) check next to the live_media check. Add a _beat_refresh_generation counter, bumped in on_flow_timeline_rebased and on media/seek refreshes, and re-checked after the analysis await. Accumulate the anchor drift since the last report in SendspinPlaybackSession and compare that total with ANCHOR_REBASE_SIGNIFICANT_US. Not provided as a patch because it has to be built on the conflict resolution.",
-    "patch": ""
-   },
-   "prompt": "In /Users/marvin/git/music-assistant/server, fetch PR #6345 (git fetch origin '+pull/6345/head:refs/prreview/6345') and create a worktree on it. Rebase onto origin/dev and resolve the conflict in music_assistant/providers/sendspin/player.py _send_beat_schedule by keeping both dev's _metadata_publish_allowed(generation) guard (#6271) and the PR's live_media queue-item check. Then fix two Copilot findings: (1) add a beat-refresh generation counter that on_flow_timeline_rebased and the metadata/seek refresh paths bump, capture it before the get_audio_analysis await, and drop stale results after it; (2) in playback.py, accumulate the anchor drift since the last reported rebase and fire on_flow_timeline_rebased when that total crosses ANCHOR_REBASE_SIGNIFICANT_US, then reset it. Add regression tests for two consecutive 400 ms rebases and for an older same-track refresh finishing after a rebase refresh in tests/providers/sendspin/test_beat_anchor_rebase.py. Shorten the long comments to one or two lines. Run only tests/providers/sendspin with /Users/marvin/git/music-assistant/server/.venv/bin/python -m pytest --no-cov -p no:cacheprovider. Do not push or post without Marvin's approval.",
-   "whats_new": "caraar12345 pushed 5d3734d5a at 05:42Z while in draft; not reviewed (draft). Sendspin players keep reporting the right playback position and beat timing after a short audio stall.",
+   "copilot_note": "10:16Z on d454fe47d: Needs a closer look, no open threads.",
+   "suggested_fix": null,
+   "prompt": "",
+   "whats_new": "caraar12345/maximmaxim345 pushed d7ca9fae7 and d454fe47d (per-chunk anchors, drain timer) and marked it ready at 10:32Z. Copilot 10:16Z: Needs a closer look, no open threads.",
    "backport": {
     "rec": false,
-    "why": "Stable has the same stale anchor (playback.py:908 sets it once). Only the anchor recompute and pruning lines would be worth backporting, and only after this lands and settles. The beat-refresh machinery is too fresh."
+    "why": "Touches timing machinery built on dev-only Sendspin code; not a simple cherry-pick."
    },
-   "draft": true,
+   "draft": false,
    "stacked": false,
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-05",
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-23 13:00 CEST",
    "auto_approved": null,
-   "attention_since": null,
+   "attention_since": "2026-10-23T10:32:00Z",
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "author",
-   "changed_now": null
+   "waiting_on": "you or maximmaxim345: approve",
+   "changed_now": "ready for review",
+   "gpt_sol": "1 problem (we rate a suggestion)"
   },
   {
    "repo": "server",
@@ -3651,7 +3638,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "you: decide on the provider",
-   "changed_now": "author replied"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -7063,7 +7050,7 @@
    "title": "Correct the Alexa player's position from the Echo's own reports",
    "author": "nyakaspeter",
    "url": "https://github.com/music-assistant/server/pull/7143",
-   "draft": false,
+   "draft": true,
    "verdict": "not_ready",
    "assessment": "request_changes",
    "status": "attention",
@@ -7085,7 +7072,7 @@
    "stacked": false,
    "tldr": "nyakaspeter fixed the stop race (f2) and the poll blocking (f4), and fixed the drifted-track CRITICAL (f1) by changing core: 25 lines in player_queues/controller.py. That core change breaks other players: a non-flow track change wipes the previous track's played time (no playlog, scrobble or audiobook mark), and an announcement overwrites the parked resume position. Opus reproduced both, GPT Sol and Copilot (two new CRITICALs) agree. The f3 PLAYING blip is still there, and the resume fix now depends on it.",
    "summary": "The delta fixes f2 (a second generation bump after each command's await), f4 (60 s back-off on an unreachable skill API) and f1. f1 is fixed through a core change: on_player_elapsed_time_corrected now moves the flow queue's track on a jump. The PR now carries 25 lines of core that Marvin has not agreed to. The index move is fine for other flow players, but the new resume_pos/last_playing rewrite regresses every non-flow player: at a gapless track change it wipes the previous item's played time before the debounced queue update, so that item is never logged or scrobbled (reproduced). Announcements can also overwrite the parked resume position and move the flow index (reproduced). f3's PAUSED blip is unchanged and is now what feeds the paused offset into the resume fix. A 37-line patch with 3 regression tests closes the core regressions and the GPT Sol stale-report case. Core: The provider PR now changes core (25 lines in player_queues/controller.py plus a new core test file), and Marvin did not ask for that. Flag it to him to decide: either a separate core PR, or explicit sign-off here. (1) Moving the flow index on a jump is correct for other flow players. For a PLAYING player the debounced tracker computes the same index 0.5 s later on dev anyway, and for PAUSED _get_flow_queue_stream_index returns the current index unchanged. The exception is announcements (see (3)). (2) The resume_pos/last_playing rewrite is wrong outside flow mode. In non-flow mode queue.current_item still lags the player by the 0.5 s debounce, so a PLAYING jump at a track change (player at 1 s into B, queue still on A) overwrites A's last_playing_elapsed_time with 1. The tracker then reports A with seconds_played=1 (<5) and drops it, so no playlog entry, scrobble or audiobook/podcast fully-played mark. I reproduced this with a probe; origin/dev keeps 238. This affects every non-flow player whose position reset reaches update_state while PLAYING. (3) on_player_update skips work during ATTR_ANNOUNCEMENT_IN_PROGRESS, but on_player_elapsed_time_corrected does not. On dev that only touches queue.elapsed_time (resume uses the parked resume_pos). With the PR, an announcement jump overwrites the parked resume_pos, and in flow mode it also moves the index to the first flow-log entry. I reproduced both: resume_pos 120 -> 2, index 1 -> 0. The post-announcement resume then starts the wrong track or position. The patch limits the rewrite to flow mode and skips the queue correction during announcements. With it, 1256 tests pass and the three new regression tests fail on head.",
-   "whats_new": "nyakaspeter pushed d194f4cfa, 2a61aedb3, 6cc2a39f5 and 688ad6345 and marked it ready at 09:49Z. Copilot (requested as Marvin) 10:07Z: 2 new CRITICAL threads (cross-track paused correction, announcement jumps). The gate will draft it.",
+   "whats_new": "The critical gate drafted it at 10:19Z over Copilot's two new CRITICALs. nyakaspeter pushed d194f4cfa, 2a61aedb3, 6cc2a39f5 and 688ad6345 and marked it ready at 09:49Z. Copilot (requested as Marvin) 10:07Z: 2 new CRITICAL threads (cross-track paused correction, announcement jumps). The gate will draft it.",
    "blockers": [
     "Core scope: the provider PR now changes player_queues/controller.py. Ask for a separate core PR, or accept it here with the fix",
     "Core CRITICAL (reproduced): a non-flow track change wipes the outgoing track's played position; announcements overwrite the parked resume position. Patch confines the rewrite to flow mode and skips announcements (1256 tests pass, 3 new regression tests)",
@@ -7179,9 +7166,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-23 12:00 CEST",
-   "changed_now": "ready for review"
+   "changed_now": "drafted"
   },
   {
    "repo": "server",
@@ -8817,9 +8804,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-23 12:00 CEST",
-   "changed_now": "auto-approved"
+   "changed_now": null
   }
  ]
 }
