@@ -6167,7 +6167,8 @@
    "action": "Apple-side block last night (several versions, token valid, Apple accepts it again). Answer drafted: reload the provider. Design idea: make catalog 401/403 retryable instead of LoginFailed.",
    "notes": [
     "10-23 07:30 run: new issue + 3 me-too reports. Apple-side, recovered by morning; providers stay down until reloaded. Answer drafted.",
-    "10-23 08:30 run: patrick131 (00:28 UTC) said a reload didn't help, during the outage; OzGav (01:29 UTC) asked for no more +1s. Draft now says a reload during the outage couldn't help, but should now."
+    "10-23 08:30 run: patrick131 (00:28 UTC) said a reload didn't help, during the outage; OzGav (01:29 UTC) asked for no more +1s. Draft now says a reload during the outage couldn't help, but should now.",
+    "10-23 08:40 repro: repro session started on your main account (Opus 5.5): mocked 401/403 on catalog and me/storefront, retry/reload behaviour, setup flow rejecting valid tokens, any MA-side request amplification; few real Apple calls (team quota). It asks you for the developer token / MUT via request_secret if the copied data dir isn't enough."
    ],
    "sync": {
     "at": "2026-10-23T06:30:14Z",
@@ -6188,6 +6189,12 @@
      "apple_music",
      "waiting-for-user"
     ]
+   },
+   "fix_thread": {
+    "id": "mcp:3a099417-4591-48f4-b158-9c68fb3e0c6a",
+    "title": "Repro: Apple Music provider stuck after Apple denied the app token (#6849)",
+    "kind": "repro",
+    "done": false
    }
   },
   {
