@@ -1,44 +1,44 @@
 {
   "thread_id": "mcp:dba76884-e5e6-48aa-aa88-914e09fa4301",
   "scheduled_task_id": "scheduled-task:command:mcp:ece76a14-da84-4b32-9dc2-e104d78297bd:schedule-task:triage-ma-nightly-setup-2026-10-21",
-  "last_run_end": "2026-10-24T05:00:10+02:00",
-  "last_run_summary": "Run 2026-10-24: WiiM #7157 resumed 5/5 first-join restarts (no rewinds); Apple Music down all day from expired stored app token (support#6849, fix #7165 in 2026102403); health flat (anon 995 MB at 20.6 h).",
+  "last_run_end": "2026-10-25T05:00:14+01:00",
+  "last_run_summary": "Run 2026-10-25: WiiM #7157 handled 9 join restarts incl. 2 prefetch (wedge) cases, all recovered; Apple Music still down on dev2026102403 despite #7165 (now music user token, needs a sign-in); health flat (anon 998 MB at 20.4 h).",
   "known": {
     "wiim:native-join-stops-leader": {
       "title": "WiiM native join re-GET rewinds Mancave",
       "severity": "low",
       "first_seen": "2026-10-08",
-      "seen": 3,
-      "last_seen": "2026-10-24",
+      "seen": 4,
+      "last_seen": "2026-10-25",
       "fix": "server#7157 in 2026102303: resumed 5/5 first-join restarts on 10-23"
     },
     "airplay:appletv-mrp-companion-reconnect": {
       "title": "Apple TV MRP + Companion reconnect loop",
       "severity": "medium",
       "first_seen": "2026-10-20",
-      "seen": 4,
-      "last_seen": "2026-10-24"
+      "seen": 5,
+      "last_seen": "2026-10-25"
     },
     "remote_access.gateway._bridge_websocket:ConnectionRefusedError@shutdown": {
       "title": "Shutdown noise: remote access bridges to unloaded Sendspin",
       "severity": "low",
       "first_seen": "2026-10-15",
-      "seen": 2,
-      "last_seen": "2026-10-24"
+      "seen": 3,
+      "last_seen": "2026-10-25"
     },
     "aiosendspin:non-compliant-client": {
       "title": "Sendspin non-compliant client warnings",
       "severity": "low",
       "first_seen": "2026-10-08",
-      "seen": 4,
-      "last_seen": "2026-10-24"
+      "seen": 5,
+      "last_seen": "2026-10-25"
     },
     "remote_access:libjuice-turn-403": {
       "title": "libjuice TURN CreatePermission 403 and send failures",
       "severity": "low",
       "first_seen": "2026-10-21",
-      "seen": 4,
-      "last_seen": "2026-10-24"
+      "seen": 5,
+      "last_seen": "2026-10-25"
     },
     "helpers.images:dlna-un_known-404": {
       "title": "DLNA un_known artwork 404 at startup",
@@ -51,31 +51,31 @@
       "title": "Startup advisories (tunein email, torch, HF Hub, WiiM SDK parse)",
       "severity": "low",
       "first_seen": "2026-10-21",
-      "seen": 3,
-      "last_seen": "2026-10-24"
+      "seen": 4,
+      "last_seen": "2026-10-25"
     },
     "LoginFailed@providers/apple_music/api_client.py:_raise_on_auth_error": {
       "first_seen": "2026-10-22",
-      "seen": 3,
+      "seen": 4,
       "title": "Apple Music signed out: every me/ endpoint returns 401/403",
       "severity": "high",
-      "last_seen": "2026-10-24",
-      "cause": "support#6849 expired stored pre-2.10 app token (exp 2026-10-22 23:28 CEST); fix server#7165 merged 2026-10-23, in nightly 2026102403"
+      "last_seen": "2026-10-25",
+      "cause": "10-22: expired stored app token (support#6849, #7165 in dev2026102403); 10-24 load still fails on me/storefront with the fix, likely the stored music user token (inferred)"
     },
     "wiim:join-prefetch-wedge": {
       "first_seen": "2026-10-19",
-      "seen": 1,
+      "seen": 2,
       "title": "WiiM join during read-ahead froze the queue, manual Next replayed the track",
-      "severity": "medium",
-      "last_seen": "2026-10-22",
-      "fix": "server#7157 in 2026102303; prefetch path not yet exercised in prod (10-23)"
+      "severity": "low",
+      "last_seen": "2026-10-25",
+      "fix": "server#7157: 2 prefetch joins on 10-24 recovered (current item resumed, queue advanced)"
     },
     "pychromecast:socket-connect-retry": {
       "first_seen": "2026-10-20",
-      "seen": 3,
+      "seen": 4,
       "title": "Overnight Cast socket drops (Amp, Living Room TV, Kantoor)",
       "severity": "low",
-      "last_seen": "2026-10-24"
+      "last_seen": "2026-10-25"
     },
     "remote_access:signaling-client-not-found": {
       "first_seen": "2026-10-22",
@@ -86,10 +86,10 @@
     },
     "RetriesExhausted@helpers/throttle_retry.py:wrapper(lrclib)": {
       "first_seen": "2026-10-20",
-      "seen": 2,
+      "seen": 3,
       "title": "LRCLIB lyrics lookups exhausted retries",
       "severity": "low",
-      "last_seen": "2026-10-24"
+      "last_seen": "2026-10-25"
     },
     "remote_access:signaling-4029-at-startup": {
       "first_seen": "2026-10-23",
@@ -107,15 +107,15 @@
     },
     "wiim.sdk:mini-http-upnp-timeout": {
       "first_seen": "2026-10-23",
-      "seen": 1,
-      "last_seen": "2026-10-23",
+      "seen": 2,
+      "last_seen": "2026-10-25",
       "title": "WiiM Mini unreachable for ~10 s",
       "severity": "low"
     },
     "wiim.sdk:amp-getstatusex-server-disconnected": {
       "first_seen": "2026-10-24",
-      "seen": 1,
-      "last_seen": "2026-10-24",
+      "seen": 2,
+      "last_seen": "2026-10-25",
       "title": "WiiM Amp drops HTTP status polls",
       "severity": "low"
     },
@@ -124,6 +124,13 @@
       "seen": 1,
       "last_seen": "2026-10-24",
       "title": "Signaling server returned 502 for 70 s",
+      "severity": "low"
+    },
+    "KeyError@controllers/config/flows.py:_get_flow": {
+      "first_seen": "2026-10-24",
+      "seen": 1,
+      "last_seen": "2026-10-25",
+      "title": "Stale setup-flow poll after the restart logs a traceback",
       "severity": "low"
     }
   },
@@ -135,10 +142,10 @@
     "ws_client": "routines/triage-ma-nightly/ma_ws.py with /usr/bin/python3, env via set -a"
   },
   "health": {
-    "rss_mb": 1661.7,
-    "rss_anon_mb": 995.2,
-    "uptime_seconds": 74262,
-    "event_loop_lag_ms": 0.6,
-    "version": "2.11.0.dev2026102303"
+    "rss_mb": 1479.8,
+    "rss_anon_mb": 998.1,
+    "uptime_seconds": 73419,
+    "event_loop_lag_ms": 1.1,
+    "version": "2.11.0.dev2026102403"
   }
 }
