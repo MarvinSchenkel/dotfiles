@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-26T14:00:00+01:00",
- "dev": "54b0bb65a",
- "run_note": "You merged #7225, #7218, #7215, #7192 and #7208 at 12:51 to 12:58Z; dependabot closed #7178 after that. OzGav's #7212 (follow MusicBrainz merges) is ready for your approve: core metadata code, Opus clean, GPT Sol's two points are suggestions and Copilot's extra-request note is accepted by OzGav. No new conflicts from the merges; the Raumfeld PRs are still drafts.",
+ "last_run": "2026-10-26T15:00:00+01:00",
+ "dev": "e970b5466",
+ "run_note": "You merged Sonos #6779 and the soco and pytest-cov bumps; no new conflicts. imoamo72 fixed the #7221 description, but Copilot now raises the MA-to-BluOS-app switch as CRITICAL; it is pre-existing on dev, so it needs your call (follow-up reply drafted). OzGav waived tests on #7226 and is handling it with genesispc.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -30,8 +30,8 @@
   {
    "repo": "server",
    "number": 6779,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-26T13:20:14Z",
    "title": "Handle Sonos coordinator moves, session takeovers and announcement clip status",
    "author": "mnestrud",
    "url": "https://github.com/music-assistant/server/pull/6779",
@@ -125,7 +125,7 @@
     "pushed": null
    },
    "prompt": "Server PR #6779 (https://github.com/music-assistant/server/pull/6779), head 05cc0aeb5, by mnestrud. In music_assistant/providers/sonos/player.py the coordinator hand-over can run while a user play is still preparing audio on either the old or new coordinator (cloud_queue_item_generation only moves inside play_media). Skip or defer the hand-over while either queue has ATTR_PLAY_ACTION_IN_PROGRESS set, re-checked right before transfer_queue, with a regression test. Also resolve the stream URL in _play_stream before changing queue ownership. Work in a worktree from refs/remotes/pr/6779.",
-   "whats_new": "mnestrud collapsed the private docstrings (bfd46db85, 10-24) and answered \"beat me to it!\" on the hand-over thread, which is resolved (your core lock fix). Copilot re-requested as Marvin.",
+   "whats_new": "Merged by you at 13:20Z.",
    "backport": {
     "rec": false,
     "why": "L-sized Sonos behaviour change that needs the aiosonos 0.1.15 bump (stable pins 0.1.13); ship in the next minor."
@@ -142,7 +142,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "Copilot, then you",
-   "changed_now": "",
+   "changed_now": "merged",
    "gpt_sol": "0 critical, 3 problems"
   },
   {
@@ -9936,7 +9936,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "closed"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -9984,13 +9984,13 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
    "number": 7207,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-26T13:01:10Z",
    "title": "Bump soco from 0.31.2 to 0.32.0",
    "author": "dependabot",
    "url": "https://github.com/music-assistant/server/pull/7207",
@@ -10014,7 +10014,7 @@
    "stacked": false,
    "tldr": "Dependabot bump, approved by the repo workflow. Merges through the workflow.",
    "summary": "",
-   "whats_new": "New over the weekend.",
+   "whats_new": "Merged by you at 13:01Z.",
    "blockers": [],
    "findings": [],
    "unaddressed_comments": [],
@@ -10032,13 +10032,13 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
    "number": 7206,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-26T13:01:10Z",
    "title": "Bump pytest-cov from 7.0.0 to 7.1.0",
    "author": "dependabot",
    "url": "https://github.com/music-assistant/server/pull/7206",
@@ -10062,7 +10062,7 @@
    "stacked": false,
    "tldr": "Dependabot bump, approved by the repo workflow. Merges through the workflow.",
    "summary": "",
-   "whats_new": "New over the weekend.",
+   "whats_new": "Merged by you at 13:01Z.",
    "blockers": [],
    "findings": [],
    "unaddressed_comments": [],
@@ -10080,7 +10080,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
@@ -10221,9 +10221,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 14:15 CET",
-   "changed_now": "ready for review"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -10461,7 +10461,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 08:00 CET",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -11268,7 +11268,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 10:20 CET",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -11329,7 +11329,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "client",
@@ -11628,48 +11628,39 @@
    "draft": false,
    "verdict": "almost",
    "assessment": "approve",
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "imoamo72: PR description (Copilot thread)",
+   "status": "attention",
+   "attention_since": "2026-10-26T13:59:00Z",
+   "waiting_on": "you: answer Copilot CRITICAL (pre-existing) or ask for the opt-in",
    "gpt_sol": "1 problem (pre-existing, we rate suggestion)",
    "size": "S",
    "code": 8,
    "add": 5,
    "del": 0,
-   "ci": "green (10 checks)",
+   "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev aec26acfd; merges cleanly with your #7159",
-   "head_sha": "8294f5387",
+   "merge_state": "merge-tree clean on origin/dev e970b5466",
+   "head_sha": "5f5dbe6ca",
    "core_touched": false,
    "providers_touched": [
     "bluesound"
    ],
    "stacked": false,
-   "tldr": "Almost, code is ready: with a BluOS service but no input_id, the source id falls back to the service (e.g. LocalMusic) or \"bluos_external\" instead of None, so MA stops showing its own empty queue and exports the BluOS track metadata (support#6889). 5 lines, provider-only, 23 tests pass and the new ones fail on dev. Copilot's only finding is the PR description template. Once that is fixed and Copilot approves, it auto-approves; backport recommended.",
+   "tldr": "Almost: the 5-line fix is unchanged and correct (imoamo72 only merged dev and fixed the description). Copilot now raises the MA-to-BluOS-app switch as CRITICAL and asks to turn on trusts_reported_source for Bluesound. Opus showed that gap exists on dev too; the opt-in would make every Bluesound preset and input count as a takeover. Your call: answer it as a follow-up (reply drafted) or ask imoamo72 to add the opt-in plus a test.",
    "summary": "The PR only changes the generic else-branch of BluesoundPlayer._resolve_source. source_id = input_id or service or 'bluos_external' now feeds both _attr_active_source and the appended passive PlayerSource, which used to be built with id=None.\n\nStability: the service name ('LocalMusic') stays the same across track changes, and input_id still takes precedence, so the id does not flip between polls. Duplicates: update_attributes resets _attr_source_list = await self._get_bluesound_sources() on every poll before _resolve_source appends, so there is one entry per poll and no growth. This is the same on origin/dev.\n\nCore handling: queue.active = state.active_source in (queue_id, None). While playing, __final_active_source returns the reported 'LocalMusic' when no MA mass source is set, so the queue goes inactive. current_media skips the own-queue fallback because the raw active_source is no longer None, and returns the native PlayerMedia from _resolve_media. That is the intended fix and matches the reporter's live test. When idle, __final_active_source ignores the reported source and falls back to the mass source or player_id, so a leftover service in an idle status does not change queue or resume behaviour. select_source back to MA (source=player_id) stops the player and sets the mass source, as before. The frontend source picker shows passive sources only when they are active, and disabled, so 'LocalMusic' never reaches BluesoundPlayer.select_source, whose split('-') would fail on it. That failure exists on dev too, for the PLAYER_SOURCE_MAP ids.\n\nMA playback: the stream_url/base_url guard runs before the new branch. If a status ever lacks streamUrl during MA playback (e.g. while 'connecting'), the new 'bluos_external'/service id cannot take over: __active_mass_source wins because Bluesound does not set trusts_reported_source and these ids are not in EXTERNAL_SOURCES.\n\nName collisions: the generic branch only runs when input_id, service and name all miss PLAYER_SOURCE_MAP, so a service name cannot shadow a map entry. 'localmusic' is not in EXTERNAL_SOURCES. Services that are in it (qobuz, deezer, iheartradio, ...) now count as a takeover of a stale MA source, which is the right behaviour.\n\nOverlap with draft #7159: none. #7159 only touches bluesound/provider.py (_musp discovery and secondary-zone registration) and tests/providers/bluesound/test_discovery.py, not player.py. The behaviours are independent.\n\nStable has the same generic branch and the same core current_media / __final_active_source semantics (pre-refactor EXTERNAL_SOURCES check). The merge-tree dry run is clean.",
-   "whats_new": "Marked ready 12:00Z. Reviewed: Opus ready, GPT Sol 1 problem (pre-existing), Copilot 1 description thread.",
+   "whats_new": "5f5dbe6ca merges dev, code unchanged; description fixed. Copilot re-review: new CRITICAL thread on the MA-to-library switch.",
    "blockers": [
-    "Copilot r4377006503: drop the extra Validation section from the PR description (imoamo72)"
+    "Copilot r4378156588 (CRITICAL): enable trusts_reported_source so an MA-to-BluOS switch counts as a takeover. Pre-existing on dev; reply drafted as a follow-up, or ask imoamo72 for the opt-in",
+    "Once the thread is answered and Copilot approves, it can be auto-approved (backport recommended)"
    ],
    "findings": [
     {
      "model": "Copilot",
-     "severity": "PROBLEM",
-     "file": "PR description",
-     "line": 0,
-     "title": "Extra Validation section breaks the PR template (r4377006503)",
-     "detail": "No functional blockers; Copilot asks to remove the section and condense the verification notes.",
-     "fix": "",
-     "posted": null
-    },
-    {
-     "model": "GPT Sol",
-     "severity": "SUGGESTION",
+     "severity": "CRITICAL",
      "file": "music_assistant/providers/bluesound/player.py",
      "line": 305,
-     "title": "Switching from MA to the BluOS app still shows the MA queue item",
-     "detail": "GPT Sol rates it a problem. Opus confirms it is pre-existing on dev: LocalMusic is not a trusted takeover and the mass source only clears after 5 s idle. Follow-up, not this PR.",
-     "fix": "",
+     "title": "MA to BluOS library switch still shows the remembered MA queue (r4378156588)",
+     "detail": "LocalMusic is not in EXTERNAL_SOURCES and Bluesound leaves trusts_reported_source off, so __final_active_source keeps the MA queue. Opus and GPT Sol flagged the same, and it is the same on dev. Chromecast, Sonos and Raumfeld opt in.",
+     "fix": "Set _attr_trusts_reported_source = True on BluesoundPlayer plus a regression test, or answer it as a follow-up.",
      "posted": null
     },
     {
@@ -11698,14 +11689,18 @@
     "green": false,
     "comments": 1,
     "findings": 1,
-    "review_url": "https://github.com/music-assistant/server/pull/7221#discussion_r4377006503",
+    "review_url": "https://github.com/music-assistant/server/pull/7221#discussion_r4378156588",
     "titles": [
-     "[PROBLEM] Remove the extra Validation section from the PR description (r4377006503)"
+     "[CRITICAL] MA to BluOS library switch still shows the remembered MA queue (r4378156588)"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "Changes recommended on 8294f5387 (12:06Z), only for the PR description template; no code blockers.",
-   "suggested_fix": null,
+   "copilot_note": "Changes recommended on 5f5dbe6ca (14:08Z): the description thread is resolved, but a new CRITICAL thread asks to enable trusts_reported_source for Bluesound. Expect the critical gate to draft it.",
+   "suggested_fix": {
+    "description": "Decline reply for r4378156588 (pre-existing, follow-up), not posted:\n\n> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThis also happens on dev today, so it isn't a regression from this PR. Turning on `trusts_reported_source` changes how every Bluesound source is treated, so let's do that in a follow-up and keep this fix small enough to backport.",
+    "patch": "",
+    "pushed": null
+   },
    "prompt": "",
    "backport": {
     "rec": true,
@@ -11721,7 +11716,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 13:15 CET",
-   "changed_now": ""
+   "changed_now": "pushed"
   },
   {
    "repo": "models",
@@ -12000,7 +11995,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -12015,7 +12010,7 @@
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "genesispc: add tests (Copilot thread)",
+   "waiting_on": "genesispc: PR checklist and docs (OzGav)",
    "gpt_sol": "clean (2 test suggestions)",
    "size": "M",
    "code": 139,
@@ -12032,18 +12027,18 @@
    "stacked": false,
    "tldr": "Almost: a state picker (default NSW) selects the local ABC feeds for Triple J, Double J, Classic and ABC Kids and the matching now-playing timezone, and now-playing moves to ABC's core-next API. Existing installs keep NSW streams and the same item ids, so favourites stay intact; Opus checked every regional URL and the new endpoint live. Only gap: no tests at all, while the checklist ticks \"tests added\". Opus wrote 9 tests that pass on the head.",
    "summary": "Adds a CONF_STATE ConfigEntry (ConfigEntryType.STRING, single value, 7 options nsw/vic/qld/sa/nt/wa/tas, default nsw) returned from the instance-level get_config_entries, which is the current provider API. Changing it reloads the provider through the default update_config. Station ids, item ids and provider mappings are unchanged (parse_radio untouched), so library items, favourites and playlists stay stable. With no stored value, the default nsw resolves to exactly the old stream URLs. The one URL change is kidslisten, abckids.m3u8 -> abckidsnsw.m3u8, and both playlists point to the same akamai abckidsnsw rendition. Per-station regions match the CDN: triplej/doublej/abckids have nsw/qld/sa/nt/wa (vic/tas 404), classic also has vic. States without a local feed fall back to the NSW stream and the Sydney tz, which is the right wall clock for VIC/TAS/ACT. National stations always use their single URL and the Sydney tz. The now-playing API moved from music.abcradio.net.au/api/v1/plays/{id}/now.json to www.abc.net.au/core-next/api/musicNowPlaying/{ID}?tz=..., using upper-cased station ids. All 9 codes return 200, tz really shifts the result (Sydney/Adelaide/Perth gave different tracks), and an unknown code gives 500, which the existing status check turns into None. mapiNow null (talk) -> None, and _update_stream_metadata clears stale info as before. Field mapping (title, artist, releaseTitle, release.artwork, primaryImage, duration, properties.year) matches live responses, and for NSW the title/artist/album/duration match the old API. The year only comes back for Classic; the PR body acknowledges this. Browse and search are unchanged and state independent, which is correct since the station list doesn't vary by state. build_translations --check passes (strings.json and en.json in sync) and mypy is clean. Nothing outside music_assistant/providers/abc_radio_network/ and music_assistant/translations/en.json changes. Note the new endpoint is the ABC website's internal Next.js backend, so it may be less stable than the old music API; that is acceptable since failures already degrade to no metadata. The PR body ticks tests, models/frontend companion and docs PR boxes, but none of those exist or are linked.",
-   "whats_new": "Opened 10:54Z. Reviewed by Opus, GPT Sol and Copilot.",
+   "whats_new": "OzGav waived tests for this provider on the Copilot thread (resolved) and asked genesispc for the docs PR and a checklist fix.",
    "blockers": [
-    "Copilot r4376590461 / ours: no tests for the state selection or the new parser (genesispc); `fix 7226` pushes our 9 tests"
+    "OzGav asked genesispc to link the docs PR and untick the models/frontend boxes"
    ],
    "findings": [
     {
      "model": "Copilot",
-     "severity": "PROBLEM",
+     "severity": "SUGGESTION",
      "file": "music_assistant/providers/abc_radio_network/provider.py",
      "line": 121,
      "title": "No tests for regional stream and timezone selection (r4376590461)",
-     "detail": "Opus and GPT Sol agree; the rewritten parse_now_playing has no fixture coverage either. The PR checklist ticks \"tests have been added\".",
+     "detail": "Opus and GPT Sol agree; the rewritten parse_now_playing has no fixture coverage either. The PR checklist ticks \"tests have been added\". OzGav waived tests for this provider (13:29Z).",
      "fix": "See suggested fix.",
      "posted": null
     },
@@ -12080,12 +12075,8 @@
    },
    "copilot_reviewed_head": true,
    "copilot_note": "Changes recommended on b035fc097, 1 PROBLEM thread (tests).",
-   "suggested_fix": {
-    "description": "Adds tests/providers/abc_radio_network/ with tests for stream URL and timezone per state (including an unconfigured install keeping the NSW feeds) and for parse_now_playing. 9 tests pass on the PR head, and the patch applies cleanly with git apply --check.",
-    "patch": "diff --git a/tests/providers/abc_radio_network/__init__.py b/tests/providers/abc_radio_network/__init__.py\nnew file mode 100644\nindex 0000000000..ff86823ca8\n--- /dev/null\n+++ b/tests/providers/abc_radio_network/__init__.py\n@@ -0,0 +1 @@\n+\"\"\"Tests for the ABC Radio Network provider.\"\"\"\ndiff --git a/tests/providers/abc_radio_network/test_provider.py b/tests/providers/abc_radio_network/test_provider.py\nnew file mode 100644\nindex 0000000000..a6758a49a5\n--- /dev/null\n+++ b/tests/providers/abc_radio_network/test_provider.py\n@@ -0,0 +1,77 @@\n+\"\"\"Tests for the ABC Radio Network provider.\"\"\"\n+\n+from __future__ import annotations\n+\n+from typing import Any\n+from unittest.mock import MagicMock\n+\n+import pytest\n+\n+from music_assistant.providers.abc_radio_network import SUPPORTED_FEATURES, ABCRadioProvider\n+from music_assistant.providers.abc_radio_network.constants import CONF_STATE\n+from music_assistant.providers.abc_radio_network.helpers import parse_now_playing\n+\n+HLS = \"https://streaming.abc-cdn.net.au/audio/hls\"\n+\n+\n+def _provider(state: str | None) -> ABCRadioProvider:\n+    \"\"\"Return a provider configured for the given state (None: never configured).\"\"\"\n+    manifest = MagicMock()\n+    manifest.domain = \"abc_radio_network\"\n+    config = MagicMock()\n+    config.instance_id = \"abc_radio_network\"\n+    config.get_value = lambda key, default=None: (\n+        state if key == CONF_STATE and state is not None else default\n+    )\n+    return ABCRadioProvider(MagicMock(), manifest, config, SUPPORTED_FEATURES)\n+\n+\n+@pytest.mark.parametrize(\n+    (\"state\", \"station_id\", \"url\", \"tz\"),\n+    [\n+        # an install from before the state option keeps the NSW streams\n+        (None, \"triplej\", f\"{HLS}/triplejnsw.m3u8\", \"Australia/Sydney\"),\n+        (None, \"kidslisten\", f\"{HLS}/abckidsnsw.m3u8\", \"Australia/Sydney\"),\n+        (\"wa\", \"triplej\", f\"{HLS}/triplejwa.m3u8\", \"Australia/Perth\"),\n+        (\"vic\", \"classic\", f\"{HLS}/classicvic.m3u8\", \"Australia/Melbourne\"),\n+        # no local stream for the state: the NSW stream and its timezone\n+        (\"vic\", \"triplej\", f\"{HLS}/triplejnsw.m3u8\", \"Australia/Sydney\"),\n+        (\"tas\", \"doublej\", f\"{HLS}/doublejnsw.m3u8\", \"Australia/Sydney\"),\n+        # single national stream\n+        (\"wa\", \"jazz\", f\"{HLS}/abcjazz.m3u8\", \"Australia/Sydney\"),\n+    ],\n+)\n+def test_stream_url_and_timezone_follow_state(\n+    state: str | None, station_id: str, url: str, tz: str\n+) -> None:\n+    \"\"\"The local stream is played when the state has one, with the matching timezone.\"\"\"\n+    provider = _provider(state)\n+    assert provider._get_stream_url(station_id) == url\n+    assert provider._get_api_timezone(station_id) == tz\n+\n+\n+def test_parse_now_playing() -> None:\n+    \"\"\"A playing track maps title, artist, album with year, full-size artwork and duration.\"\"\"\n+    data: dict[str, Any] = {\n+        \"mapiNow\": {\n+            \"title\": \"Hunter's Moon\",\n+            \"artist\": \"Vinter, Gilbert\",\n+            \"releaseTitle\": \"Vinter: Orchestral Works\",\n+            \"release\": {\"artwork\": [{\"url\": \"https://example.com/full.jpg\"}]},\n+            \"primaryImage\": \"https://example.com/340.jpg\",\n+            \"properties\": {\"year\": \"2007\"},\n+            \"duration\": 223,\n+        }\n+    }\n+    metadata = parse_now_playing(data)\n+    assert metadata is not None\n+    assert metadata.title == \"Hunter's Moon\"\n+    assert metadata.artist == \"Vinter, Gilbert\"\n+    assert metadata.album == \"Vinter: Orchestral Works (2007)\"\n+    assert metadata.image_url == \"https://example.com/full.jpg\"\n+    assert metadata.duration == 223\n+\n+\n+def test_parse_now_playing_nothing_playing() -> None:\n+    \"\"\"Talk programming (mapiNow null) gives no metadata.\"\"\"\n+    assert parse_now_playing({\"mapiNow\": None}) is None\n",
-    "pushed": null
-   },
-   "prompt": "Add tests to music-assistant/server PR #7226 (head b035fc097) on top of refs/remotes/pr/7226: tests/providers/abc_radio_network covering stream URL and timezone per state (an unconfigured install keeps NSW), and parse_now_playing on core-next fixtures. Use the validated patch from the review and run pytest tests/providers/abc_radio_network.",
+   "suggested_fix": null,
+   "prompt": "",
    "backport": {
     "rec": false,
     "why": "Enhancement."
@@ -12098,7 +12089,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": ""
+   "changed_now": "author replied"
   }
  ]
 }
