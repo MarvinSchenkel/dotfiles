@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-26 14:30 CET",
+ "last_run": "2026-10-26 15:30 CET",
  "columns": [
   [
    "info",
@@ -89,7 +89,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:23Z",
@@ -164,7 +164,7 @@
    "diff": "diff --git a/aioaudiobookshelf/schema/audio.py b/aioaudiobookshelf/schema/audio.py\nindex 28ade35..16fa8af 100644\n--- a/aioaudiobookshelf/schema/audio.py\n+++ b/aioaudiobookshelf/schema/audio.py\n@@ -44,7 +44,8 @@ class AudioTrack(_BaseModel):\n class AudioFile(_BaseModel):\n     \"\"\"Audiofile.\"\"\"\n \n-    index: int\n+    # null for podcast episodes abs scanned in before its v2.21.0\n+    index: int | None = None\n     ino: str\n     metadata: FileMetadata\n     added_at: Annotated[int, Alias(\"addedAt\")]\ndiff --git a/tests/test_podcasts.py b/tests/test_podcasts.py\nnew file mode 100644\nindex 0000000..dff6ea6\n--- /dev/null\n+++ b/tests/test_podcasts.py\n@@ -0,0 +1,100 @@\n+\"\"\"Tests for decoding podcast payloads.\"\"\"\n+\n+import json\n+from typing import Any\n+\n+from aioaudiobookshelf.schema.library import LibraryItemExpandedPodcast\n+\n+_FILE_METADATA = {\n+    \"filename\": \"episode1.mp3\",\n+    \"ext\": \".mp3\",\n+    \"path\": \"/podcasts/show1/episode1.mp3\",\n+    \"relPath\": \"episode1.mp3\",\n+    \"size\": 1000,\n+    \"mtimeMs\": 1700000000000,\n+    \"ctimeMs\": 1700000000000,\n+    \"birthtimeMs\": 0,\n+}\n+\n+\n+def _episode() -> dict[str, Any]:\n+    \"\"\"Build an episode as abs sends it for a file scanned in before abs v2.21.0.\"\"\"\n+    audio_file = {\n+        \"index\": None,\n+        \"ino\": \"2\",\n+        \"metadata\": _FILE_METADATA,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"manuallyVerified\": False,\n+        \"exclude\": False,\n+        \"error\": None,\n+        \"format\": \"MP2/3 (MPEG audio layer 2/3)\",\n+        \"duration\": 60.0,\n+        \"bitRate\": 128000,\n+        \"codec\": \"mp3\",\n+        \"channels\": 2,\n+        \"channelLayout\": \"stereo\",\n+        \"mimeType\": \"audio/mpeg\",\n+    }\n+    return {\n+        \"libraryItemId\": \"item1\",\n+        \"podcastId\": \"podcast1\",\n+        \"id\": \"episode1\",\n+        \"index\": None,\n+        \"title\": \"Episode 1\",\n+        \"chapters\": [],\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"audioFile\": audio_file,\n+        \"audioTrack\": {\n+            \"index\": None,\n+            \"startOffset\": 0,\n+            \"duration\": 60.0,\n+            \"title\": \"episode1.mp3\",\n+            \"contentUrl\": \"/api/items/item1/file/2\",\n+            \"mimeType\": \"audio/mpeg\",\n+            \"metadata\": _FILE_METADATA,\n+        },\n+        \"duration\": 60.0,\n+        \"size\": 1000,\n+    }\n+\n+\n+def _podcast_item(episode: dict[str, Any]) -> bytes:\n+    item = {\n+        \"id\": \"item1\",\n+        \"ino\": \"1\",\n+        \"libraryId\": \"library1\",\n+        \"folderId\": \"folder1\",\n+        \"path\": \"/podcasts/show1\",\n+        \"relPath\": \"show1\",\n+        \"isFile\": False,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"isMissing\": False,\n+        \"isInvalid\": False,\n+        \"mediaType\": \"podcast\",\n+        \"libraryFiles\": [],\n+        \"size\": 1000,\n+        \"media\": {\n+            \"id\": \"podcast1\",\n+            \"libraryItemId\": \"item1\",\n+            \"autoDownloadEpisodes\": False,\n+            \"maxEpisodesToKeep\": 0,\n+            \"maxNewEpisodesToDownload\": 3,\n+            \"tags\": [],\n+            \"size\": 1000,\n+            \"metadata\": {\"title\": \"Show 1\", \"genres\": [], \"explicit\": False},\n+            \"episodes\": [episode],\n+        },\n+    }\n+    return json.dumps(item).encode()\n+\n+\n+def test_an_episode_scanned_before_abs_2_21_has_no_audio_file_index() -> None:\n+    \"\"\"Abs never backfilled the null index of older scans, see support#6842.\"\"\"\n+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(_episode()))\n+\n+    audio_file = item.media.episodes[0].audio_file\n+    assert audio_file is not None\n+    assert audio_file.index is None\n",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "fmunkes",
      "at": "2026-10-23T06:57:50Z",
@@ -254,7 +254,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "innerskyone",
      "at": "2026-10-24T12:51:24Z",
@@ -314,7 +314,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "NasaGeek",
      "at": "2026-10-21T16:04:47Z",
@@ -381,7 +381,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "panda-star357",
      "at": "2026-10-24T23:34:02Z",
@@ -470,7 +470,7 @@
    "action": "amodig confirms WAV works where FLAC fails, asks (1) is WAV the recommended workaround for HEOS, (2) do you have a HEOS/Denon contact. janoj: still short stutters on b7 (also MP3 via Jellyfin). OzGav said it'll be closed soon. Your call: answer + keep open or close.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "janoj",
      "at": "2026-10-25T12:02:51Z",
@@ -542,7 +542,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:07Z",
@@ -600,7 +600,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:36:49Z",
@@ -673,7 +673,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "bdeprez",
      "at": "2026-10-13T20:17:14Z",
@@ -748,7 +748,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T12:46:25Z",
@@ -833,7 +833,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "philippecottier",
      "at": "2026-10-25T09:36:32Z",
@@ -896,7 +896,7 @@
    "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-10T16:01:24Z",
@@ -993,7 +993,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:14:26Z",
@@ -1089,7 +1089,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "tamas-unter",
      "at": "2026-10-26T09:01:10Z",
@@ -1166,7 +1166,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-08T14:40:21Z",
@@ -1198,6 +1198,7 @@
     "after_test_ask_reporter": false,
     "labels": [
      "triage",
+     "Fix to be Confirmed",
      "sonos",
      "needs-attention"
     ]
@@ -1259,7 +1260,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:17:32Z",
@@ -1294,7 +1295,7 @@
    "col": "merged",
    "area": "frontend / helpers/utils.ts imageIsUsable (+ server refresh_item overwrite)",
    "since": "2026-10-12 15:40",
-   "last": "CDrummond 2026-10-10 06:44",
+   "last": "CDrummond 2026-10-26 13:41",
    "summary": "Cause found by reading the code; not reproduced, because that needs a Navidrome with two users. Both Subsonic instances map to the same library artist. The opensubsonic parser stamps the artist cover_art thumb with provider=<instance id> and remotely_accessible=False. The frontend's imageIsUsable (src/helpers/utils.ts:364) only accepts a non-remote image if api.getProvider(img.provider) is available, and api.providers only holds the viewer's own visible sources. So maA gets the initials fallback for an image stamped with maB's instance. The flip: opening an artist runs music/refresh_item with overwrite=True, which replaces the stored images with the refreshing user's instance-stamped ones, so the other user loses them. The server side doesn't filter: /imageproxy and image serialization have no per-user checks. 10-06: CDrummond tested 2.11.0.dev2026100603, which contains server#6708, and sees no change. Artist and album covers now settle into some for one user and some for the other, never both. Likely cause: metadata_for_update (controllers/music/helpers.py:136) returns the update as is on an overwrite, images included. Opening an artist runs refresh_item with overwrite=True from the viewer's own source, so the other account's images are dropped from the stored row and server#6708 has nothing usable left to pick for that user.",
    "fix": "",
    "checked": "Subagent read server origin/dev (controllers/metadata/images.py handle_imageproxy, helpers/images.py:448, providers/opensubsonic/parsers.py artist image, controllers/music/controller.py refresh_item, music/helpers.py metadata_for_update) and frontend origin/main. I confirmed the frontend gate at utils.ts:346-367. No test written. 10-06: confirmed the nightly tag 2.11.0.dev2026100603 contains server#6708. Read metadata_for_update on origin/dev: an overwrite replaces the whole metadata, while provider_mappings_for_update right below it keeps the other instances' rows. Not reproduced (needs two Subsonic users).",
@@ -1323,7 +1324,7 @@
      "not fixed"
     ]
    ],
-   "reply": "",
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for retesting and for offering to help. Your guess is close. The Subsonic provider stores an artist's cover art as an image that belongs to its own provider instance (`music_assistant/providers/opensubsonic/parsers.py`, around line 250), not as a public URL. The web UI only shows such an image when the current user can use that provider instance (`imageIsUsable` in the frontend's `src/helpers/utils.ts`). Both of your Subsonic instances map to the same library artist, so for the second user the first user's images are filtered out. music-assistant/server#6708 tried to pick an image the current user can see. Artists that are refreshed when you open them, like the ones you first opened from search, can still end up with only the other instance's image.",
    "bookkeeping": [],
    "notes": [
     "New 11:04 UTC from CDrummond on 2.11.0b3, labelled Frontend. OzGav pinged @khers (Subsonic maintainer) at 11:32 UTC; not assigned. No draft reply because the issue already has a full repro and khers is tagged.",
@@ -1339,27 +1340,28 @@
     "16:40 run: 2.10.6 shipped without a fix for this (server#6708 never reached stable, server#6794 still open), but the issue still carries milestone 2.10.6.",
     "10-12 07:40 run: Someone moved the milestone to 2.10.7. CDrummond (10-10 06:44 UTC, 2.11.0b4): the two-user case is still broken, and on a single-user Navidrome install the two artists he first opened from search never got images, while the other ~780 have them. That fits the overwrite on open dropping images (my 10-06 comment), not a multi-user thing. Marcel's server#6794 (merged 10-09) only covers tracks.",
     "10-12 15:40 run: OzGav removed Fix to be Confirmed (13:28 UTC), matching the not-fixed state.",
-    "10-19 07:38 run: you removed the 2.10.7 milestone (10-18 05:27), since CDrummond reported the fix didn't work. Still with Marcel."
+    "10-19 07:38 run: you removed the 2.10.7 milestone (10-18 05:27), since CDrummond reported the fix didn't work. Still with Marcel.",
+    "10-26 15:30 run: CDrummond (13:41 UTC): still on the 10-26 nightly; asks where to look. Pointer answer drafted."
    ],
    "gh": {
     "login": "CDrummond",
     "team": false,
-    "at": "2026-10-10T06:44:22Z",
+    "at": "2026-10-26T13:41:31Z",
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "CDrummond says it's still broken on 2.11.0b4 and found a single-user case (artists first opened from search lose their image). Nudge Marcel on the artist overwrite, or have me take it over.",
-   "ask": "nudge",
+   "action": "CDrummond: still broken on 2.11.0.dev2026102604, offers to help and asks for code pointers. Answer drafted with pointers (parsers.py artist cover_art, frontend imageIsUsable, #6708). Marcel still owns the fix.",
+   "ask": "reply-answer",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "CDrummond",
-     "at": "2026-10-10T06:44:22Z",
+     "at": "2026-10-26T13:41:31Z",
      "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6602#issuecomment-6094771359"
+     "url": "https://github.com/music-assistant/support/issues/6602#issuecomment-6417467997"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [
@@ -1435,7 +1437,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-12T13:38:14Z",
@@ -1514,7 +1516,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "josiasmontag",
      "at": "2026-10-26T11:46:00Z",
@@ -1601,7 +1603,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T12:45:34Z",
@@ -1678,7 +1680,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-24T11:14:11Z",
@@ -1747,7 +1749,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-23T16:51:45Z",
@@ -1811,7 +1813,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "Geweldich",
      "at": "2026-09-30T11:09:20Z",
@@ -1937,7 +1939,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:49:03Z",
@@ -1996,7 +1998,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-06T13:51:35Z",
@@ -2047,7 +2049,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "marcelveldt",
      "at": "2026-08-26T21:48:58Z",
@@ -2103,7 +2105,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "salanki",
      "at": "2026-08-29T17:15:18Z",
@@ -2166,7 +2168,7 @@
    "summary": "QQ Music lists music but full-stream URL resolution fails with 104003 and the preview fallback gets a 403, so tracks are skipped. The reporter has a local endpoint correction that works. xiasi0, the provider maintainer, will fix it after their vacation.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "xiasi0",
      "at": "2026-10-06T18:49:41Z",
@@ -2242,7 +2244,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-15T08:41:56Z",
@@ -2317,7 +2319,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:36:19Z",
@@ -2408,7 +2410,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T12:45:57Z",
@@ -2484,7 +2486,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "cateim",
      "at": "2026-10-25T02:36:47Z",
@@ -2561,7 +2563,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "suporte640",
      "at": "2026-10-19T00:58:04Z",
@@ -2612,7 +2614,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "axsuul",
      "at": "2026-10-18T04:08:57Z",
@@ -2670,7 +2672,7 @@
    "action": "meggsico (Soloist, DEBUG): Soloist starts and MA connects, but 'debian | Music Assistant' never shows in the Spotify Android device list, so no first login. Asks whether Soloist reuses the provider's auth or how to pair when invisible. Soloist is Marcel's; your answer or hand off.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "meggsico",
      "at": "2026-10-23T17:51:30Z",
@@ -2733,7 +2735,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "Vivi92821",
      "at": "2026-10-21T14:34:40Z",
@@ -2791,7 +2793,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-26T06:32:20Z",
@@ -2852,7 +2854,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T15:23:02Z",
@@ -2909,7 +2911,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T21:30:55Z",
@@ -2961,7 +2963,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "kmycek",
      "at": "2026-10-17T17:36:42Z",
@@ -3019,7 +3021,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T16:29:06Z",
@@ -3078,7 +3080,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "marapavelka",
      "at": "2026-10-17T09:58:35Z",
@@ -3136,7 +3138,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:52:28Z",
@@ -3216,7 +3218,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:35:53Z",
@@ -3310,7 +3312,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "profLewis",
      "at": "2026-10-21T00:18:32Z",
@@ -3393,7 +3395,7 @@
     "done": true
    },
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T12:09:02Z",
@@ -3483,7 +3485,7 @@
     "done": true
    },
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T14:35:19Z",
@@ -3547,7 +3549,7 @@
     "10-23 07:30 run: new issue, confirmed in code (hardcoded port 1443 in aiosonos discovery and client). Fix needs aiosonos + server. Answer drafted."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "billyfw",
      "at": "2026-10-23T00:06:27Z",
@@ -3612,7 +3614,7 @@
     "10-26 07:30 run: Simanias opened draft server#7180 (reproduced with a 2-speaker room); culmat's server#7183 closed. Waiting on test/merge."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-24T12:46:43Z",
@@ -3681,7 +3683,7 @@
     "10-23 14:50: curl ran 1260 s clean against DR. Moved to Reproduced, cannot fix (pending repro) with an input ask."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "BlochHansen",
      "at": "2026-10-23T11:43:27Z",
@@ -3739,7 +3741,7 @@
     "10-23 16:30 run: you asked UnfundedNag (14:19 UTC) whether it still happens on 2.10.8. Added to the board as waiting on the reporter."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T14:19:57Z",
@@ -3790,7 +3792,7 @@
     "10-26 07:30 run: tagged discussion. Feature idea with a concrete proposal; design call for you."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-25T13:20:55Z",
@@ -3846,7 +3848,7 @@
     "10-26 08:00: local fix built and A/B'd. No PR until you say so."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "X-dark",
      "at": "2026-10-23T19:37:54Z",
@@ -3897,7 +3899,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "theomega",
      "at": "2026-10-25T14:02:42Z",
@@ -3961,7 +3963,7 @@
     "10-26 08:00: local fix built and A/B'd; needs your OK on the existing-test change."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-25T11:06:19Z",
@@ -4013,7 +4015,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "philippecottier",
      "at": "2026-10-25T09:18:35Z",
@@ -4072,7 +4074,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "Sjo3rd",
      "at": "2026-10-25T09:04:56Z",
@@ -4130,7 +4132,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-23T22:42:58Z",
@@ -4181,7 +4183,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-23T22:41:05Z",
@@ -4216,10 +4218,10 @@
     "pr_draft": false
    },
    "summary": "2.10.8, HA add-on and Docker, Sendspin/Squeezelite/AirPlay/web players: Spotify playback stops a few seconds before a track ends and doesn't continue; 2.10.7 works. Four more users confirm on Soloist. OP's librespot claim unverified (his log lines are Soloist-only).",
-   "fix": "Ignore Soloist's end-of-item pause (position 0) in _observe_external_pause.",
-   "checked": "Code-confirmed: server#7117 (1c79b553a1, in 2.10.8) added _observe_external_pause (soloist.py:1267-1283) from _handle_event (:1217-1220) on any playing->paused. At the natural end of its item the engine emits 'paused [0:00 / dur]' before exiting (Vigilo23's log) while _item_over/_engine_exited/_delivery_done are all still unset, so the queue stops; engine runs ~10 s ahead (_RUN_CUSHION_S, :143), hence the early cut. #7117's tests set the guards before the pause, so the real order was never covered. Nothing on dev. Local fix f58ee25027: _pause_ends_item() treats a pause at position <= 0 or within 2 s of the duration as the engine finishing the item; a mid-item pause still stops the queue (#7117 kept); an event without a position is still external (keeps #7117's status-only test). A/B: 3 end-of-item cases fail without, 541 spotify tests pass with. Cherry-picks clean onto stable (61 soloist tests pass). Not verified against a live paired Soloist engine. OP's librespot claim very unlikely (the stop line is Soloist-only). Gap: a real app pause in the last 2 s or at 0 is ignored (falls back to the pre-#7117 stall-skip).",
+   "fix": "Deferred external-pause check (80d2e25d0c, replaces the position heuristic f58ee25027): a playing->paused transition arms a run-scoped task that waits 2 s (_EXTERNAL_PAUSE_GRACE_S) and stops the queue (with resume position) only if the engine is still paused and the item still live. Re-armed per transition; _engine_paused tracked so a resume landing as 'buffering' isn't a pause. Covers #6860 (engine exits 2-3 ms after its end-of-item pause) and keeps #6752 (app pause no longer stalls 20 s and skips).",
+   "checked": "Code-confirmed: server#7117 (1c79b553a1, in 2.10.8) added _observe_external_pause (soloist.py:1267-1283) from _handle_event (:1217-1220) on any playing->paused. At the natural end of its item the engine emits 'paused [0:00 / dur]' before exiting (Vigilo23's log) while _item_over/_engine_exited/_delivery_done are all still unset, so the queue stops; engine runs ~10 s ahead (_RUN_CUSHION_S, :143), hence the early cut. #7117's tests set the guards before the pause, so the real order was never covered. Nothing on dev. Local fix f58ee25027: _pause_ends_item() treats a pause at position <= 0 or within 2 s of the duration as the engine finishing the item; a mid-item pause still stops the queue (#7117 kept); an event without a position is still external (keeps #7117's status-only test). A/B: 3 end-of-item cases fail without, 541 spotify tests pass with. Cherry-picks clean onto stable (61 soloist tests pass). Not verified against a live paired Soloist engine. OP's librespot claim very unlikely (the stop line is Soloist-only). Gap: a real app pause in the last 2 s or at 0 is ignored (falls back to the pre-#7117 stall-skip). Fable session 10-26: engine exits 2-3 ms after 'paused [0:00/dur]' (Vigilo23's log; Soloist docs: exits when the item finishes). Kept 'stop with resume position' for an app pause: pausing the queue instead would still hit core's 20 s stall watchdog unless the engine is resumed. No live Soloist repro (no Soloist pairing/API key in the dev data dir). #7117's existing tests changed to wait past a shortened grace: needs your OK. moodwrench's 'next track didn't trigger the stop' on the #7117 test remains unexplained.",
    "plan": "Treat a pause as external only when it carries a position inside the item (0 < pos < duration - grace); regression test with the real event order; backport to 2.10.9. Local fix building.",
-   "branch": "fix/soloist-end-of-item-pause @ f58ee25027 (worktree ~/git/music-assistant/server-fix-6860, not pushed)",
+   "branch": "fix/soloist-end-of-item-pause @ 80d2e25d0c (worktree ~/git/music-assistant/server-fix-6860, not pushed)",
    "diff": "diff --git a/music_assistant/providers/spotify/backends/soloist.py b/music_assistant/providers/spotify/backends/soloist.py\nindex c4f8c9c81b..4f080885fb 100644\n--- a/music_assistant/providers/spotify/backends/soloist.py\n+++ b/music_assistant/providers/spotify/backends/soloist.py\n@@ -143,6 +143,8 @@ _MAX_LEAD_TRIM_MS: Final[int] = int(_MAX_LEAD_TRIM_S * 1000)\n _RUN_CUSHION_S: Final[float] = 10.0\n # how close to its target a position report has to come to confirm a seek\n _SEEK_CONFIRM_GRACE_MS: Final[int] = 3000\n+# a pause reported this close to the item's end is the engine finishing it\n+_END_PAUSE_GRACE_MS: Final[int] = 2000\n \n # The sink renders exact-zero padding while the engine idles between items, and the\n # item-change event arrives after those frames landed in the outgoing item's channel.\n@@ -1218,7 +1220,9 @@ class _SingleTrackRun:\n             was_playing, self._engine_playing = self._engine_playing, playing\n             # the engine repeats a pause across events: act on the transition only\n             if was_playing and data.status == \"paused\":\n-                self._observe_external_pause()\n+                self._observe_external_pause(\n+                    data.position.position_ms if data.position is not None else None\n+                )\n             if self._started.is_set() and self._reader is not None:\n                 # pause silence stays out of the delivered PCM; the cushion gate\n                 # takes priority over resuming\n@@ -1264,7 +1268,7 @@ class _SingleTrackRun:\n             \"can only play in one place at a time\"\n         )\n \n-    def _observe_external_pause(self) -> None:\n+    def _observe_external_pause(self, position_ms: int | None) -> None:\n         \"\"\"Stop the queue when Spotify paused this run's item from outside Music Assistant.\"\"\"\n         if (\n             self.queue_id is None\n@@ -1275,6 +1279,7 @@ class _SingleTrackRun:\n             or self._engine_exited\n             or self._delivery_done\n             or self._error is not None\n+            or self._pause_ends_item(position_ms)\n         ):\n             return\n         # only the Spotify app or Web API pauses the engine, and a paused engine stalls\n@@ -1282,6 +1287,16 @@ class _SingleTrackRun:\n         self.logger.info(\"Spotify paused %s, stopping queue %s\", self.spotify_uri, self.queue_id)\n         self.mass.create_task(self.mass.player_queues.stop(self.queue_id))\n \n+    def _pause_ends_item(self, position_ms: int | None) -> bool:\n+        \"\"\"Return whether a pause at this position is the engine finishing its item.\"\"\"\n+        # at its item's end the engine pauses rewound to the start, then exits a moment\n+        # later: none of the run-ended flags is set yet\n+        if position_ms is None:\n+            return False\n+        return position_ms <= 0 or (\n+            self._duration_ms is not None and position_ms >= self._duration_ms - _END_PAUSE_GRACE_MS\n+        )\n+\n     def _observe_position(self, position_ms: int) -> None:\n         \"\"\"Confirm an armed seek once the engine reports at (or past) its target.\"\"\"\n         self._position_ms = position_ms\ndiff --git a/tests/providers/spotify/test_soloist_backend.py b/tests/providers/spotify/test_soloist_backend.py\nindex f05dacf0d7..f2f565543a 100644\n--- a/tests/providers/spotify/test_soloist_backend.py\n+++ b/tests/providers/spotify/test_soloist_backend.py\n@@ -51,6 +51,7 @@ from music_assistant.providers.spotify_connect.soloist.runtime import (\n     WS_PORT_FILE,\n     SoloistEvent,\n     SoloistPlaybackState,\n+    SoloistPosition,\n )\n \n TRACK_A = \"spotify:track:aaa\"\n@@ -724,9 +725,18 @@ def test_losing_the_device_after_the_item_is_over_is_not_a_takeover(tmp_path: Pa\n     assert run._error is None\n \n \n-def _playback_event(status: str) -> SoloistEvent:\n-    \"\"\"Return a playback_changed event carrying only the given status.\"\"\"\n-    return SoloistEvent(type=\"playback_changed\", data=SoloistPlaybackState(status=status), raw={})\n+def _playback_event(status: str, position_ms: int | None = None) -> SoloistEvent:\n+    \"\"\"Return a playback_changed event carrying the given status (and position).\"\"\"\n+    position = (\n+        SoloistPosition(position_ms=position_ms, timestamp_ms=1)\n+        if position_ms is not None\n+        else None\n+    )\n+    return SoloistEvent(\n+        type=\"playback_changed\",\n+        data=SoloistPlaybackState(status=status, position=position),\n+        raw={},\n+    )\n \n \n def _live_run(tmp_path: Path) -> _SingleTrackRun:\n@@ -771,6 +781,25 @@ async def test_a_pause_before_audio_flows_does_not_stop_the_queue(tmp_path: Path\n     cast(\"MagicMock\", run.mass).player_queues.stop.assert_not_called()\n \n \n+async def test_a_pause_inside_the_item_stops_the_queue(tmp_path: Path) -> None:\n+    \"\"\"A pause the engine places inside the item is the Spotify app pausing it.\"\"\"\n+    run = _live_run(tmp_path)\n+    await run._handle_event(_playback_event(\"playing\", 60_000))\n+    await run._handle_event(_playback_event(\"paused\", 61_000))\n+    cast(\"MagicMock\", run.mass).player_queues.stop.assert_called_once_with(\"player1\")\n+\n+\n+@pytest.mark.parametrize(\"position_ms\", [0, 179_500, 180_000])\n+async def test_the_engine_pausing_at_its_items_end_does_not_stop_the_queue(\n+    tmp_path: Path, position_ms: int\n+) -> None:\n+    \"\"\"At its item's end the engine pauses (rewound to the start) before it exits.\"\"\"\n+    run = _live_run(tmp_path)\n+    await run._handle_event(_playback_event(\"playing\", 170_000))\n+    await run._handle_event(_playback_event(\"paused\", position_ms))\n+    cast(\"MagicMock\", run.mass).player_queues.stop.assert_not_called()\n+\n+\n def test_the_engine_starting_on_the_wrong_item_fails_the_run(tmp_path: Path) -> None:\n     \"\"\"Before this run's item ever played, a foreign report is not an ending.\"\"\"\n     run = _make_run(tmp_path)",
    "prs": [],
    "badges": [
@@ -4232,21 +4234,27 @@
      "warn",
      "Local fix",
      "local fix"
+    ],
+    [
+     "warn",
+     "Changes existing tests: needs your OK",
+     "test change"
     ]
    ],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks all, the logs make this clear. The change in 2.10.8 that handles a pause from the Spotify app also reacts to the pause Soloist sends when a track finishes, so it stops the queue right at the end of the track. We're working on a fix. Until then, staying on 2.10.7 avoids it.",
    "bookkeeping": [],
-   "ask": null,
+   "ask": "input",
    "milestone": null,
-   "action": "Fix session (Fable) running: fix the regression and re-check #7117's approach against #6752 so both are solved; real Soloist event capture, then PR + backport.",
+   "action": "Fix session done: deferred-pause design on 80d2e25d0c (fixes #6860, keeps #6752). Needs your go on the design + OK on the changed #7117 tests, ideally a live Soloist check on your account; then PR + backport (2.10.9).",
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:30 run: local fix built and A/B'd; no PR until you say so.",
-    "10-26 13:40 fix: fix session started on your main account with Fable 5.1: cover both #6860 and #6752 (re-check #7117's approach), starting from local fix f58ee25027, live Soloist event capture, PR + backport."
+    "10-26 13:40 fix: fix session started on your main account with Fable 5.1: cover both #6860 and #6752 (re-check #7117's approach), starting from local fix f58ee25027, live Soloist event capture, PR + backport.",
+    "10-26 15:30 run: Fable session finished: deferred 2 s pause check on 80d2e25d0c, PR waiting for your go; #7117 tests adjusted (needs OK); no live Soloist test possible here."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "The-Flix",
      "at": "2026-10-25T13:52:35Z",
@@ -4269,7 +4277,7 @@
     "id": "mcp:a766341e-46d2-4811-b6aa-b49c8e582f61",
     "title": "Fix: Soloist end-of-track stop (2.10.8 regression) without losing the Spotify-app pause fix (#6860, #6752)",
     "kind": "fix",
-    "done": false
+    "done": true
    }
   },
   {
@@ -4313,15 +4321,15 @@
     "10-26 14:30 run: reporter confirms Profile 3 on 2.10.8 fixes it (>15 min). Regression from #7120 confirmed; design call for you."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "AkoreJepade",
      "at": "2026-10-26T12:57:02Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6882#issuecomment-6416546512"
     },
-    "reporter_new": true,
-    "team_new": true,
+    "reporter_new": false,
+    "team_new": false,
     "closed": false,
     "pr": [],
     "test_ask": null,
@@ -4371,7 +4379,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "cateim",
      "at": "2026-10-25T10:23:23Z",
@@ -4439,14 +4447,14 @@
     "10-26 14:30 run: cateim's measurements show the amp never reports a DLNA position; root cause clear, design pick for you."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "cateim",
      "at": "2026-10-26T13:01:25Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6874#issuecomment-6416632025"
     },
-    "reporter_new": true,
+    "reporter_new": false,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -4497,7 +4505,7 @@
     "10-26 07:30 run: auto-post held. GPT: marvin (bot already asked diagnostics; DLNA debug doesn't capture the metadata or device responses). Our draft stays for you."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "kprzekop",
      "at": "2026-10-25T19:20:03Z",
@@ -4549,7 +4557,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-24T21:29:00Z",
@@ -4600,7 +4608,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-24T11:51:31Z",
@@ -4659,14 +4667,14 @@
     "10-26 14:30 run: dentedbread attached a 2.11b5 diagnostics (same issue on b5/b6) and will add a b6 video + log. Waiting for that before analysing."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-26T13:05:49Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6658#issuecomment-6416719926"
     },
-    "reporter_new": true,
+    "reporter_new": false,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -4718,7 +4726,7 @@
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6888#issuecomment-6409954530), GPT: revise, accepted its text (dropped the mDNS causal framing)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-26T06:44:07Z",
@@ -4778,7 +4786,7 @@
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6887#issuecomment-6409955139), GPT: revise, accepted its text (no claim it covers #6888 too)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-26T06:44:10Z",
@@ -4838,7 +4846,7 @@
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6868#issuecomment-6409955752), GPT: revise, accepted its text (dropped the idle-timeout theory)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-26T06:44:12Z",
@@ -4894,7 +4902,7 @@
     "10-26 09:30 run: vertex0 sent solo/solo/grouped diagnostics; the real complaint is the ESP32 dropping out when grouped. Not auto-posting a follow-up: the next step is a judgement call between two tests."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "vertex0",
      "at": "2026-10-26T08:13:47Z",
@@ -4948,7 +4956,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "zcopter",
      "at": "2026-10-24T11:39:47Z",
@@ -5001,7 +5009,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "riskywhat",
      "at": "2026-10-24T13:40:54Z",
@@ -5054,7 +5062,7 @@
     "10-26 10:30 run: Cyanogenbot (09:25 UTC) will take a look (thought it was fixed with Marcel; fix may be gone). Waiting on him; design ask cleared."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "Cyanogenbot",
      "at": "2026-10-26T09:25:11Z",
@@ -5113,7 +5121,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "wanderingmoo",
      "at": "2026-10-24T10:52:30Z",
@@ -5176,7 +5184,7 @@
     "10-26 11:30 run: server#7221 is out of draft. Cyanogenbot's to review."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "imoamo72",
      "at": "2026-10-26T08:54:44Z",
@@ -5236,7 +5244,7 @@
     "10-26 11:30 run: new issue from Simanias with a precise repro and server-side proof. Follow-up to your frontend#3031."
    ],
    "sync": {
-    "at": "2026-10-26T13:30:06Z",
+    "at": "2026-10-26T14:30:14Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-26T09:40:39Z",
@@ -5447,6 +5455,15 @@
     "on_stable": false
    },
    {
+    "n": 6670,
+    "title": "Sonos coordinator changes outside MA cause stale queue, idle music",
+    "prs": [
+     "server#6779",
+     "server#6760"
+    ],
+    "on_stable": false
+   },
+   {
     "n": 6500,
     "title": "empty images has the priority",
     "prs": [
@@ -5475,6 +5492,7 @@
   6850,
   6854,
   6857,
+  6860,
   6863,
   6864,
   6865,
