@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-26T16:00:00+01:00",
+ "last_run": "2026-10-26T17:00:00+01:00",
  "dev": "e970b5466",
- "run_note": "Auto-approved imoamo72's #7221 after he added the Bluesound takeover opt-in and Copilot approved; the Test workflow still needs your approval (first-time contributor). jgruber's new #7228 would turn off URL search in the frontend (patch ready), trudenboy's #7220 has two confirmed playback regressions that Copilot also flags, and #7227 is clean but touches requirements_all.txt. On #7172, OzGav raised the same boundaries we did and dmoo500 asks how to scope it.",
+ "run_note": "Quiet end of day: the critical gate drafted #7228, #7227 and #7220, all with Copilot CRITICALs that match or extend our findings. #7221 is approved with auto-merge on but cannot merge until you approve its Test workflow (first-time contributor). Nothing new to review.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -2658,7 +2658,7 @@
    "backport": null,
    "prompt": "Server PR #6901 (https://github.com/music-assistant/server/pull/6901), head 05ea062a6, by ryanmac8. Apply /tmp/prr/r0700/d6901/suggested.patch: in tests/providers/playlist_metadata/test_ai.py pass loop=asyncio.get_running_loop() to the worker fake's asyncio.Task (68 tests fail on Python 3.14.4 without it); in music_assistant/providers/playlist_metadata/ai.py raise ActionUnavailable when _stopped right after _concept() in preview(), and recheck _text_engine_paused() next to _stopped after the _record await in _preview_description. Run tests/providers/playlist_metadata and tests/providers/hass. Work in a worktree from refs/remotes/pr/6901.",
    "whats_new": "62bc5692c applies new covers after running refreshes and pauses the image engine on a failed preview; marked ready 14:55Z. Re-reviewed: Opus almost, GPT Sol point checked and not reachable, Copilot Needs a closer look.",
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 16:25 CET",
    "auto_approved": null,
    "stacked": false,
@@ -2668,7 +2668,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: `fix 6901` and AI_QUERY design call; ryanmac8: hass 429",
-   "changed_now": "ready for review",
+   "changed_now": "",
    "gpt_sol": "2 problems (1 refuted, 1 narrow race)"
   },
   {
@@ -10803,7 +10803,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 09:00 CET",
-   "changed_now": "author replied"
+   "changed_now": ""
   },
   {
    "repo": "models",
@@ -11562,12 +11562,12 @@
    "title": "Update Yandex Music Connect (Ynison) provider to v4.4.1: Ynison go-away handling and official-client alignment",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7220",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "trudenboy: 3 Copilot CRITICAL threads (2 confirmed)",
+   "waiting_on": "trudenboy: 3 Copilot CRITICAL threads (draft)",
    "gpt_sol": "3 problems (2 confirmed)",
    "size": "XL",
    "code": 1774,
@@ -11699,9 +11699,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 16:25 CET",
-   "changed_now": "ready for review"
+   "changed_now": "drafted"
   },
   {
    "repo": "server",
@@ -11733,7 +11733,7 @@
    "stacked": false,
    "tldr": "Auto-approved: the source-id fallback plus imoamo72's new trusts_reported_source opt-in, so a BluOS-app library session takes over MA's queue and its metadata shows. Opus checked MA playback keeps its queue (flow mode, announcements, synced followers, AirPlay output); 25 tests pass. One suggestion: for one poll after switching from the library back to MA, the old native source still shows (2-line patch). The Test workflow waits for your approval because imoamo72 is a first-time contributor.",
    "summary": "Delta since the last review: BluesoundPlayer sets _attr_trusts_reported_source = True, plus a test of the published source and metadata after an MA-to-library switch.\n\nWhat trust changes: _resolve_source appends whatever it reports to source_list, so with trust on, any non-None _attr_active_source counts as a takeover in __reports_source_takeover. Checked each path on the PR head:\n- MA's own stream (queue, flow mode, announcements, plugin /source/ URLs): every URL comes from streams.base_url, and _resolve_source sets None when the stream URL contains it. None is never a takeover, so the queue stays active.\n- Grouped/synced BluOS: a follower sets the leader id as its source. That id is not in its source list, and __final_synced_to returns the leader's state before the takeover check anyway. A leader on its own library now shows LocalMusic to the whole group, which is correct.\n- MA via a linked output protocol (AirPlay): a reported native source is overruled because active_output_protocol is not native. Behaviour unchanged.\n- Presets and inputs: a preset reports its service (TuneIn and Tidal were already in EXTERNAL_SOURCES). A LocalMusic preset, Analog/Digital Input, HDMI ARC or an unknown input_id now take over the remembered MA queue as intended. Previously the MA queue kept showing over a TV or analog input.\n- Idle player whose status still names a service: the reported-source branch requires playback_state != IDLE, so the source falls back to the MA source. Paused library playback shows LocalMusic and expires through the existing external-pause timeout (raw source, not affected by trust).\n- Side effects are intended. With library or input playback active, MA's play/pause goes to the device source instead of resuming the MA queue. Announcements see the external prev_source. Protocol grouping is blocked while an external source plays.\n\nThe only path where MA's queue loses the source during MA playback is the optimistic play_media window (finding 1). The bluos_external fallback would also count as a takeover if BluOS ever reported a status with no stream URL, service or input during MA playback. I could not show that happens, so it is not flagged.\n\nHardware note: the PR body says it was verified on 2.10.8. Stable has no trust mechanism, so the takeover part has not been tested on a device. Worth asking the author to confirm on a dev build.",
-   "whats_new": "b8746c0e9 and 3ab9882db add the trusts_reported_source opt-in and a takeover test, answering Copilot's CRITICAL. Re-reviewed: Opus ready, GPT Sol 1 problem, Copilot Approval recommended. Auto-approved and queued at 15:25Z.",
+   "whats_new": "b8746c0e9 and 3ab9882db add the trusts_reported_source opt-in and a takeover test, answering Copilot's CRITICAL. Re-reviewed: Opus ready, GPT Sol 1 problem, Copilot Approval recommended. Auto-approved and queued at 15:25Z. Still blocked at 17:00: the Test workflow has waited for maintainer approval since 14:13Z.",
    "blockers": [
     "Test workflow needs your approval to run (first-time contributor); the merge waits on it"
    ],
@@ -11780,9 +11780,9 @@
    "related_prs": [
     "#7159 yours, same provider, no overlap"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 16:25 CET",
-   "changed_now": "auto-approved"
+   "changed_now": ""
   },
   {
    "repo": "models",
@@ -12165,12 +12165,12 @@
    "title": "fix(music): honor providers and media_types filters in URL-search interception",
    "author": "jgruber",
    "url": "https://github.com/music-assistant/server/pull/7228",
-   "draft": false,
+   "draft": true,
    "verdict": "not_ready",
    "assessment": "request_changes",
-   "status": "attention",
-   "attention_since": "2026-10-26T14:45:00Z",
-   "waiting_on": "you: post f1 (regression) or `fix 7228`",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "jgruber: 2 Copilot CRITICAL threads (draft)",
    "gpt_sol": "3 problems (2 = ours)",
    "size": "S",
    "code": 29,
@@ -12185,11 +12185,9 @@
    "stacked": false,
    "tldr": "Not ready: aims to stop duplicate results when a pasted share URL is searched per provider, but gating on \"providers is None\" turns URL lookup off for the frontend entirely, since progressive search always sends providers=[one target]. A pasted Spotify or Apple Music link would be text-searched everywhere and never resolve. The right gate is ownership. media_types also misses radio. Opus has a patch that fixes both and clears the lint errors; 30 tests pass.",
    "summary": "The PR adds `providers is None and` before _search_shareable_url, and masks the returned SearchResults fields not in media_types.\n\nFrontend check (frontend origin/main): useProgressiveSearch.searchTarget calls api.search(term, mediaTypes, limit, [targetId]) once per target. Targets are 'library' plus one per streaming domain, or one per instance for local providers. An empty selection still fans out per target. No frontend code detects URLs. This has shipped since frontend 2.17.218, and the server pins 2.17.349. The only unscoped callers are the smart-playlist seed searches and API/HA users. So the PR swaps 'N duplicates' for 'no result' in the main search UI.\n\nInstance vs domain: parse_uri returns the domain. search_providers is already resolved from instance ids or domains and collapsed by get_unique_providers. Matching prov.domain of each search provider against the parsed domain covers both forms. Library-only calls get an empty result, not a text search of the URL. A missing owner provider gives an empty result, same as before (get_item failed with a warning).\n\nmedia_types: _search_shareable_url can return radio (Apple Music station links, see test_search_station_share_url_returns_radio), but the mask has no RADIO entry. The mask also runs after get_item, so a lookup that gets discarded still costs a provider call.\n\nCI: mypy flags `dict[str, list]` at controller.py:692, plus two ruff autofixes. The author owns these, and the suggested patch removes that block. The suggested patch also flips the PR's first test, which asserts the regression, and passes MediaType.ALL plus a provider in the existing station test (new signature).",
-   "whats_new": "Opened 14:45Z. Reviewed by Opus and GPT Sol; CI red so no Copilot yet.",
+   "whats_new": "Copilot raised our f1 and f2 as CRITICAL threads, Bot-MArley posted the same ownership-gate fix (15:54Z), and the gate drafted it. No need to post f1.",
    "blockers": [
-    "f1: the providers gate disables URL search for the frontend's per-provider search; post it or `fix 7228` (patch gates on the URL's owning provider)",
-    "f2: media_types mask misses radio",
-    "CI: mypy bare list at controller.py:692 (the patch removes it)"
+    "Copilot CRITICAL threads (= our f1, f2) and Bot-MArley's ownership-gate suggestion are with jgruber; our patch is still available as `fix 7228`"
    ],
    "findings": [
     {
@@ -12224,9 +12222,18 @@
     }
    ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "No review: CI is red, so the poll workflow has not requested one.",
+   "copilot": {
+    "green": false,
+    "comments": 2,
+    "findings": 2,
+    "review_url": "https://github.com/music-assistant/server/pull/7228",
+    "titles": [
+     "[CRITICAL] Scoped frontend searches lose URL resolution",
+     "[CRITICAL] media_types mask omits radio"
+    ]
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Changes recommended on 0c1a3a75b (15:40Z): the same two points as our f1 and f2. Gate drafted it at 15:53Z.",
    "suggested_fix": {
     "description": "Resolve a pasted URL only on the search that targets its owning provider and only for requested media types. Other scoped calls return an empty result. Tests updated to match (owner/other/library and media_types cases), plus the existing station test for the new signature.",
     "patch": "diff --git a/music_assistant/controllers/music/controller.py b/music_assistant/controllers/music/controller.py\nindex 3a76f9bfae..994fd933da 100644\n--- a/music_assistant/controllers/music/controller.py\n+++ b/music_assistant/controllers/music/controller.py\n@@ -7,7 +7,6 @@ import logging\n from collections.abc import Awaitable, Callable, Coroutine, Iterable, Sequence\n from contextlib import suppress\n from copy import deepcopy\n-from dataclasses import replace\n from datetime import datetime\n from itertools import zip_longest\n from typing import TYPE_CHECKING, Any, Final, NamedTuple, cast\n@@ -675,31 +674,13 @@ class MusicController(MusicDatabaseSetupMixin, CoreController):\n             base_class=SearchResults,\n         ):\n             return cast(\"SearchResults\", cache)\n-        # Check if the search query is a streaming provider public shareable URL.\n-        # Only intercept on the global search path: when the caller scoped the\n-        # search to specific providers (e.g. the frontend's progressive search\n-        # dispatches one call per configured provider plus one for the library),\n-        # returning the resolved item from every scoped call turns a single\n-        # pasted URL into N duplicates in the UI.\n-        if providers is None and (\n-            url_result := await self._search_shareable_url(search_query)\n+        # Check if the search query is a streaming provider public shareable URL\n+        if (\n+            url_result := await self._search_shareable_url(\n+                search_query, media_types, search_providers\n+            )\n         ) is not None:\n-            # Respect the caller's media_types: a URL that resolves to e.g.\n-            # a playlist should not appear in results when the caller only\n-            # asked for tracks.\n-            requested = set(media_types)\n-            clear: dict[str, list] = {}\n-            for media_type, field in (\n-                (MediaType.ARTIST, \"artists\"),\n-                (MediaType.ALBUM, \"albums\"),\n-                (MediaType.TRACK, \"tracks\"),\n-                (MediaType.PLAYLIST, \"playlists\"),\n-                (MediaType.AUDIOBOOK, \"audiobooks\"),\n-                (MediaType.PODCAST, \"podcasts\"),\n-            ):\n-                if media_type not in requested:\n-                    clear[field] = []\n-            return replace(url_result, **clear) if clear else url_result\n+            return url_result\n         # handle normal global search by querying the library and all providers\n         # the library (if included) is searched first: it is fast and its results are\n         # used to deduplicate provider results and to skip provider searches for media\n@@ -3148,7 +3129,9 @@ class MusicController(MusicDatabaseSetupMixin, CoreController):\n             sound_effects=visible_items(self.mass, results.sound_effects, user),\n         )\n \n-    async def _search_shareable_url(self, search_query: str) -> SearchResults | None:\n+    async def _search_shareable_url(\n+        self, search_query: str, media_types: list[MediaType], search_providers: list[str]\n+    ) -> SearchResults | None:\n         \"\"\"\n         Handle a search query that is a streaming provider public shareable URL.\n \n@@ -3165,6 +3148,14 @@ class MusicController(MusicDatabaseSetupMixin, CoreController):\n             return SearchResults()\n         if provider_instance_id_or_domain not in PROVIDERS_WITH_SHAREABLE_URLS:\n             return None\n+        # a search scoped per provider (the frontend's progressive search) resolves the\n+        # URL only on the call that targets the owning provider, so it is listed once\n+        if media_type not in media_types or not any(\n+            (prov := self.mass.get_provider(instance_id))\n+            and prov.domain == provider_instance_id_or_domain\n+            for instance_id in search_providers\n+        ):\n+            return SearchResults()\n         try:\n             item = await self.get_item(\n                 media_type=media_type,\ndiff --git a/tests/controllers/music/test_search.py b/tests/controllers/music/test_search.py\nindex 3b0b8d4c11..0122512866 100644\n--- a/tests/controllers/music/test_search.py\n+++ b/tests/controllers/music/test_search.py\n@@ -732,7 +732,7 @@ async def test_search_exact_match_shortcut_skipped_for_explicit_providers() -> N\n \n async def test_search_station_share_url_returns_radio() -> None:\n     \"\"\"A pasted Apple Music station share link returns the station as a radio result.\"\"\"\n-    controller = _make_controller([])\n+    controller = _make_controller([_make_search_provider(\"apple_music\")])\n     station = Radio(\n         item_id=\"ra.123\",\n         provider=\"apple_music\",\n@@ -747,7 +747,7 @@ async def test_search_station_share_url_returns_radio() -> None:\n     controller.get_item = AsyncMock(return_value=station)  # type: ignore[method-assign]\n \n     result = await controller._search_shareable_url(\n-        \"https://music.apple.com/us/station/chill/ra.123\"\n+        \"https://music.apple.com/us/station/chill/ra.123\", MediaType.ALL, [\"apple_music\"]\n     )\n \n     assert result is not None\n@@ -811,61 +811,37 @@ def _make_playlist(item_id: str, provider: str, name: str) -> Playlist:\n     )\n \n \n-async def _resolve_playlist_url(_query: str) -> SearchResults:\n-    return SearchResults(playlists=[_make_playlist(\"pl1\", \"spotify\", \"My Playlist\")])\n+async def test_search_shareable_url_only_on_owning_provider() -> None:\n+    \"\"\"A search scoped per provider resolves a pasted URL only on the owning provider.\"\"\"\n+    spotify = _make_search_provider(\"spotify--abc\", domain=\"spotify\")\n+    tidal = _make_search_provider(\"tidal--abc\", domain=\"tidal\")\n+    controller = _make_controller([spotify, tidal])\n+    playlist = _make_playlist(\"pl1\", \"spotify\", \"My Playlist\")\n+    controller.get_item = AsyncMock(return_value=playlist)  # type: ignore[method-assign]\n+    url = \"https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M\"\n \n+    owner = await controller.search(url, [MediaType.PLAYLIST], limit=5, providers=[\"spotify\"])\n+    other = await controller.search(url, [MediaType.PLAYLIST], limit=5, providers=[\"tidal\"])\n+    library = await controller.search(url, [MediaType.PLAYLIST], limit=5, providers=[\"library\"])\n \n-async def test_search_shareable_url_skipped_when_providers_scoped() -> None:\n-    \"\"\"A scoped search must not return the resolved shareable-URL item.\n-\n-    The frontend's progressive search dispatches one music/search call per\n-    configured provider (plus one for the library), each with providers=[one].\n-    If the URL interception fired on every scoped call, one pasted URL would\n-    appear N times in the UI.\n-    \"\"\"\n-    prov = _make_search_provider(\"spotify--abc\", domain=\"spotify\")\n-    controller = _make_controller([prov])\n-    controller._search_shareable_url = AsyncMock(  # type: ignore[method-assign]\n-        side_effect=_resolve_playlist_url\n-    )\n-\n-    result = await controller.search(\n-        \"https://open.spotify.com/playlist/37i9dQZF1DX\",\n-        media_types=[MediaType.PLAYLIST],\n-        limit=5,\n-        providers=[\"spotify\"],\n-    )\n-\n-    # URL interception did not fire; the normal provider search ran instead.\n-    controller._search_shareable_url.assert_not_awaited()\n-    assert result.playlists == []\n-    prov.search.assert_awaited_once()\n+    assert owner.playlists == [playlist]\n+    assert other.playlists == []\n+    assert library.playlists == []\n+    controller.get_item.assert_awaited_once()\n+    tidal.search.assert_not_awaited()\n \n \n async def test_search_shareable_url_respects_media_types() -> None:\n-    \"\"\"On the global path the URL-resolved item is masked by media_types.\n-\n-    A playlist URL resolved on a tracks-only search must not come back as a\n-    playlist. Fields outside the requested media_types are cleared.\n-    \"\"\"\n-    controller = _make_controller([])\n-    controller._search_shareable_url = AsyncMock(  # type: ignore[method-assign]\n-        side_effect=_resolve_playlist_url\n-    )\n-\n-    # media_types restricted → playlist field cleared\n-    result = await controller.search(\n-        \"https://open.spotify.com/playlist/37i9dQZF1DX\",\n-        media_types=[MediaType.TRACK],\n-        limit=5,\n-    )\n-    assert result.playlists == []\n-    assert result.tracks == []\n-\n-    # media_types includes playlist → resolved item passes through\n-    result = await controller.search(\n-        \"https://open.spotify.com/playlist/37i9dQZF1DX\",\n-        media_types=[MediaType.PLAYLIST],\n-        limit=5,\n-    )\n-    assert [p.item_id for p in result.playlists] == [\"pl1\"]\n+    \"\"\"A pasted URL is not resolved when its media type was not asked for.\"\"\"\n+    spotify = _make_search_provider(\"spotify--abc\", domain=\"spotify\")\n+    controller = _make_controller([spotify])\n+    playlist = _make_playlist(\"pl1\", \"spotify\", \"My Playlist\")\n+    controller.get_item = AsyncMock(return_value=playlist)  # type: ignore[method-assign]\n+    url = \"https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M\"\n+\n+    tracks_only = await controller.search(url, [MediaType.TRACK], limit=5)\n+    playlists = await controller.search(url, [MediaType.PLAYLIST], limit=5)\n+\n+    assert tracks_only.playlists == []\n+    assert playlists.playlists == [playlist]\n+    controller.get_item.assert_awaited_once()\n",
@@ -12243,24 +12250,24 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 16:25 CET",
-   "changed_now": "new"
+   "changed_now": "drafted"
   },
   {
    "repo": "server",
    "number": 7227,
    "state": "open",
    "closed_at": null,
-   "title": "Update FastMCP Server provider to v2.2.3: statistics commands, 401 resource metadata, security fixes",
+   "title": "Update FastMCP Server provider to v2.2.4: provider-registered commands, 401 resource metadata, guest token refusal",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7227",
-   "draft": false,
-   "verdict": "ready",
-   "assessment": "approve",
+   "draft": true,
+   "verdict": "almost",
+   "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "Copilot; then you (requirements_all.txt rule)",
+   "waiting_on": "trudenboy: Copilot CRITICAL (draft)",
    "gpt_sol": "clean",
    "size": "M",
    "code": 72,
@@ -12277,10 +12284,9 @@
    "stacked": false,
    "tldr": "Ready: despite the title, the statistics commands are already on dev (#5700); this syncs the provider to 2.2.3, refuses long-lived tokens for guests in the Connect Wizard (same rule as core) and restores the RFC 9728 metadata URL in the 401. Opus and GPT Sol clean, 783 tests pass with the pinned fastmcp. Touches the generated requirements_all.txt, so it hits your open generated-files rule.",
    "summary": "Diff vs origin/dev: VERSION 2.2.3, auth.py get_routes declaring /.well-known/oauth-protected-resource/<mount>, server.py sharing the metadata builder with mount_well_known, a guest check in make_mint_token, and live/e2e/wizard tests. The fastmcp==4.1.3 pin in manifest and requirements_all is identical to dev after #7208, so it merges as a no-op.\n\nStatistics (from the brief): unchanged by this PR. command_policy keeps _family('statistics/', read=QUERY_LIBRARY, readonly=True), so it is reachable only through ma_api call_tool for tokens with the query-library capability. The core commands need Scope.LIBRARY_READ, are scoped to get_current_user() (#6801 impersonation scope check retained), and are capped at MAX_STATISTICS_RESULT_LIMIT.\n\nGuest check: matches core auth/token/create (webserver/auth.py:1349). It runs before the dedup revoke, and the test asserts no create or revoke call. UserRole is a StrEnum, so the test's 'guest' string compares equal.\n\n401 metadata: the route is a declaration so FastMCP adds resource_metadata to the challenge. MA's mount_well_known serves the document, built by the same builder, so the content matches. The e2e test checks the header and the served document. The document is public metadata, and nothing new becomes reachable without auth.\n\nStable note: stable's provider (0.17.0, fastmcp 3.4.7) mints wizard tokens without the guest check too, so the guest gap exists on 2.10.x.",
-   "whats_new": "Opened 14:41Z, ready 14:46Z. Reviewed by Opus and GPT Sol; Copilot requested.",
+   "whats_new": "Synced to v2.2.4 (a75fa3d3c): provider-registered commands now appear in the MCP catalog. Copilot found smart_playlists commands registered under library.write bypass edit:playlists=deny. Drafted, so not re-reviewed; our clean review was on 2c593439b.",
    "blockers": [
-    "Copilot review pending",
-    "Touches requirements_all.txt: `approve 7227` or say generated files count as provider-only"
+    "Draft: Copilot CRITICAL on the new 2.2.4 head (scope bypass for smart_playlists/*), trudenboy"
    ],
    "findings": [
     {
@@ -12295,9 +12301,18 @@
     }
    ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "Requested 15:24Z.",
+   "copilot": {
+    "green": false,
+    "comments": 2,
+    "findings": 2,
+    "review_url": "https://github.com/music-assistant/server/pull/7227",
+    "titles": [
+     "[CRITICAL] edit:library=allow lets smart_playlists/* bypass edit:playlists=deny",
+     "[PROBLEM] Live test full mode still caps at 200 items"
+    ]
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on 2c593439b (15:15Z), then trudenboy synced to 2.2.4 (provider-registered commands in the MCP catalog) and Copilot found a CRITICAL scope bypass on a75fa3d3c (15:50Z). Gate drafted it at 15:53Z.",
    "suggested_fix": null,
    "prompt": "",
    "backport": {
@@ -12310,9 +12325,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 16:25 CET",
-   "changed_now": "new"
+   "changed_now": "drafted"
   }
  ]
 }
