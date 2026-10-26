@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-26T10:00:00+01:00",
+ "last_run": "2026-10-26T11:00:00+01:00",
  "dev": "aec26acfd",
- "run_note": "Simanias fixed every #7216 point, but Copilot found 4 new CRITICALs on the new head, so it goes back to him. #7218 moved its ICY conversion into the config migrations and is ready; it touches core, so it needs your approve. kees's #7217 got drafted by the critical gate on two Copilot CRITICALs, and #6959 conflicts with dev. Merged the three client dependabot bumps.",
+ "run_note": "Simanias keeps pace with Copilot on #7216: all four CRITICALs fixed, but the new review lists two previously missed ones (Line-In takeover, stop overlap). His new #7224 (restart a flow 8 s before the track end) already answered both Copilot threads mid-run, which also fixed our main finding; it waits on Copilot's re-review and could be auto-approved next run. trudenboy's #7219 is a wording and tests bump with one Copilot test thread. No auto-approvals.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -3229,7 +3229,7 @@
     }
    ],
    "waiting_on": "you: rebase (test conflict)",
-   "changed_now": "conflict"
+   "changed_now": ""
   },
   {
    "repo": "aioslimproto",
@@ -10722,7 +10722,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 09:00 CET",
-   "changed_now": "reviewed"
+   "changed_now": ""
   },
   {
    "repo": "models",
@@ -10848,7 +10848,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 09:00 CET",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -10984,7 +10984,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 09:00 CET",
-   "changed_now": "drafted"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -10999,77 +10999,57 @@
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "Simanias: 2 Copilot CRITICAL threads",
-   "gpt_sol": "2 problems (1 confirmed by Copilot)",
+   "waiting_on": "Simanias: 2 Copilot previously missed CRITICALs",
+   "gpt_sol": "2 critical (1 = Copilot's, 1 we rate minor)",
    "size": "M",
-   "code": 174,
-   "add": 174,
+   "code": 187,
+   "add": 187,
    "del": 0,
    "ci": "green (14 checks)",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev aec26acfd",
-   "head_sha": "9b41ca198",
+   "merge_state": "merge-tree clean on origin/dev aec26acfd; textual conflict with #7224 (constants and test tail)",
+   "head_sha": "4ba371d1e",
    "core_touched": false,
    "providers_touched": [
     "raumfeld"
    ],
    "stacked": false,
-   "tldr": "Almost: Simanias fixed all our points and the three Copilot CRITICALs from 08:48Z (playback speed, takeover, leaking QUEUE_UPDATED subscription, backward clock, Smart Fades, synced follower). Our old f1 is covered, 281 tests pass, provider-only. Copilot now raises 4 new CRITICALs on 9b41ca198; one (scheduling from the stale queue clock in _poll_zone) is GPT Sol's point too. Each Copilot round finds new timing corners, so this may take a few more rounds.",
-   "summary": "(1) Playback speed: queue.corrected_elapsed_time is media time (it extrapolates wall delta * playback_speed), and media time = stream time * speed (controller.py set_playback_speed). So (duration - corrected_elapsed) / speed is the wall-clock time left. `or 1.0` guards a 0. Correct.\n\n(2) Takeover / replaced flow: _start_flow_announcement now requires _attr_active_source == player_id. Station buttons and Line-In set it to another value, so the timer path skips them. The generation check in _announce_flow_item sits after `await player_media_from_queue_item`, which has no awaits of its own, and mass.create_task starts eagerly. So at runtime the check runs in the same tick the announcement starts. It works through the `not self._playback_changes` half of _reading_is_current: a timer or media hook firing while play_media (during resolve_stream_url) or stop (during its Stop round trip) runs gets dropped. Those were exactly the in-flight variants of our f1. A Bend already on the wire is covered by play_media and on_unload now cancelling _announce_task_id. The announcement dropped this way does set _announced_item_id. Every _changes_playback command that keeps a flow playing is external-only (seek, pause, _set_play_mode), and play_media resets the field, so no queue track is left unannounced.\n\n(3) Hook instead of subscription: queue signal_update -> players.trigger_player_update (0.25 s debounce) -> update_state -> a MEDIA_IDENTITY_KEYS change (current_media.queue_item_id) -> call_later(1, on_player_media_updated). The queue is therefore already updated when the hook runs, about 1.25 s after QUEUE_UPDATED. The poll (every 5 s while playing, lookahead 30 s) still re-arms the timer at the same cadence as before. The hook also runs for a follower whose media mirrors its leader's, and the synced_to guard handles that case. No subscription is left in __init__, so the per-instance leak for disabled rooms is gone. No remaining references to _on_queue_updated or _unsub_queue_events.\n\n(4) Copilot CRITICALs: cancel_timer now runs unconditionally at the start of _schedule_next_announcement. A reading far from the end, or past it, drops a timer armed from an earlier reading. On the past-the-end side the media hook announces once MA moves on. crossfade_enabled / smart_fades_active (both real PlayerQueue fields in models 1.1.228) skip the timer, and the media hook is the fallback. The synced_to guard skips a room grouped under another.\n\nPrevious f1: fixed. The main scenario (R plays its own flow, joins L's group, R's timer or hook fires) is stopped by the synced_to check once L's member list includes R. The in-flight play/stop variants are stopped by the _playback_changes check plus the task cancel. One narrow window remains, and it is not this PR's to fix. The host can have R in L's zone before MA shows the group: during L.set_members's _add_rooms_to_zone wait, or for a Raumfeld-app grouping until _follow_zones mirrors it (two 2 s looks, longer within GROUP_SETTLE_TIME). In that window synced_to is still None. Dev's own _follows_or_held (next-item advance) and _poll_zone rely on the same synced_to signal and share this gap, so it is a provider-wide pattern from origin/dev. It only matters if a boundary of R's own queue lands inside those few seconds.\n\nChecked for new bugs in the delta and found none. The fixture adds _provider = MagicMock() and iter_players = [] so synced_to resolves in tests. New tests cover speed, takeover, replaced flow, timer cancel, Smart Fades, joined room and the media hook. test_an_announcement_for_a_replaced_flow_is_not_sent bumps the generation inside the awaited call, which cannot happen at runtime today (no suspension point there). It is harmless and stays meaningful if that call ever awaits. Tests: 281 passed. mypy on providers/raumfeld: clean. Ruff not run, per instructions. Files changed vs merge base: music_assistant/providers/raumfeld/player.py (+174) and tests/providers/raumfeld/test_player.py (+265) only.",
-   "whats_new": "3 commits (74e329540, bae78d8647, 9b41ca198) answer our review, Bot-MArley's subscription leak and Copilot's 3 previously missed CRITICALs. Re-reviewed: Opus clean (1 NIT), GPT Sol 2 problems, Copilot 4 new CRITICALs.",
+   "tldr": "Almost: Simanias fixed all four Copilot CRITICALs from the last round, Opus confirms each (285 tests pass, provider-only, one comment NIT). Copilot's new review has no threads but lists two previously missed CRITICALs: a Line-In takeover on the speaker skips the new cleanup (GPT Sol found the same) and a timer firing during a stop that then fails marks the item as announced. Both live only in the review body, so no gate draft. Copilot verdict Needs a closer look.",
+   "summary": "Fix 1: _changes_playback cancels the announce task before the command body runs. Task.cancel() marks the task for cancellation even when its awaited future has just completed, so the coroutine can't get to the Bend call. CancelledError is a BaseException and nothing in _zone_command/_transport_action catches it. Announcements created while a command runs are still caught by the existing generation and _playback_changes check in _announce_flow_item. Resetting _announced_item_id means a Bend that may or may not have reached the zone is sent again by the next reading, which at worst repeats a harmless Bend. Pause and seek only work on an external source. By then _set_external has cleared _flow_url, so the cancel never fires for them and no announcement is lost. Flow mode seeks and resumes go through play_media, which resets everything anyway. Fix 2: _passed_item_id is cleared once queue.current_item differs from it. The new test covers the repeat-all return to the passed track. The queue briefly flipping back to the previous track after the timer is still blocked by the 5 s index guard. Repeat-all wrap: a wrap rejected inside the 5 s window doesn't set _announced_item_id, so the next poll (5 s while playing) or media-updated hook announces it. That only happens when the last track lasts under 5 s, so it's a short delay, not a lost announcement. Fix 3: update_state() calls on_player_position_jumped -> player_queues.on_player_elapsed_time_corrected synchronously when the position jumps. That is the case where the old queue clock is wrong, so running _maybe_announce_flow_item after update_state() reads the corrected clock. Without a jump the extrapolated clock was already right, and the debounced 0.5 s queue update doesn't affect it. Fix 4: _set_external only runs when the zone plays a URI that isn't MA's (station button, Raumfeld app, Spotify Connect). Every way back to the MA queue goes through play_media, which sets _flow_url again from the resolved URL, so dropping it doesn't break a later return. A station button picked from MA (select_source -> _play_library_item) leaves _flow_url set until the next poll calls _set_external, but the active_source guard already blocks announcements in that window. The diff only touches music_assistant/providers/raumfeld/player.py and tests/providers/raumfeld/test_player.py. All of the announcement code is new in this PR (none of it is on origin/dev), so there are no regressions to check against dev.",
+   "whats_new": "341acfd7d and 4ba371d1e answer the 4 Copilot CRITICALs. Re-reviewed: Opus ready, GPT Sol 2 critical, Copilot Needs a closer look with 2 previously missed CRITICALs.",
    "blockers": [
-    "Copilot r4375605138: hold the playback lock and revalidate before the Bend (Simanias)",
-    "Copilot r4375605185: clear _passed_item_id once the queue catches up (Simanias)",
-    "Copilot previously missed: schedule after update_state() and allow a repeat-all wrap in the 5 s window"
+    "Copilot previously missed: Line-In takeover in _update_zone_source() keeps the flow url and in-flight Bend (GPT Sol agrees)",
+    "Copilot previously missed: stop overlapping the boundary timer records the next item as announced",
+    "Both are in the review body only, so Simanias may not see them as threads"
    ],
    "findings": [
     {
      "model": "Copilot",
      "severity": "CRITICAL",
      "file": "music_assistant/providers/raumfeld/player.py",
-     "line": 1835,
-     "title": "A stop or source change during Bend action discovery still sends the old flow URI (r4375605138)",
-     "detail": "The generation check passes before _transport_action() awaits action discovery. Hold the playback lock through discovery and dispatch, revalidate after acquiring it, add a test.",
-     "fix": "",
+     "line": 1289,
+     "title": "Line-In taken over on the speaker keeps the old flow and its in-flight Bend (previously missed, GPT Sol agrees)",
+     "detail": "_update_zone_source() handles this room's Line-In separately and returns without calling _set_external(), so an announcement suspended in get_dlna_action() still sends BendAVTransportURI with the old flow URL to the Line-In zone.",
+     "fix": "Apply the same flow and announcement cleanup in that branch, with a test.",
      "posted": null
     },
     {
      "model": "Copilot",
      "severity": "CRITICAL",
      "file": "music_assistant/providers/raumfeld/player.py",
-     "line": 1717,
-     "title": "_passed_item_id stays set after the queue catches up (r4375605185)",
-     "detail": "With boundary timers off (crossfade), a repeat-all wrap can suppress that item's metadata indefinitely. Clear the marker once the queue reaches the announced item.",
-     "fix": "",
-     "posted": null
-    },
-    {
-     "model": "Copilot",
-     "severity": "CRITICAL",
-     "file": "music_assistant/providers/raumfeld/player.py",
-     "line": 1003,
-     "title": "Cover timer is scheduled from the old queue clock (previously missed, GPT Sol agrees)",
-     "detail": "_poll_zone() calls _maybe_announce_flow_item() before update_state() publishes the new position, so a 198 to 188 s correction still schedules in 2 s instead of 12. A timing-only change doesn't fire the media hook to fix it.",
-     "fix": "Move the call after update_state().",
-     "posted": null
-    },
-    {
-     "model": "Copilot",
-     "severity": "CRITICAL",
-     "file": "music_assistant/providers/raumfeld/player.py",
-     "line": 1791,
-     "title": "A real repeat-all wrap within 5 s of the last announcement is rejected (previously missed)",
-     "detail": "After a seek near the end of the last track, or with a short last track, the first track keeps the previous metadata until a later poll.",
-     "fix": "",
+     "line": 1790,
+     "title": "Timer firing during a stop that later fails records the item as announced (previously missed)",
+     "detail": "_announce_flow_item() rejects the item because _playback_changes is nonzero, but the caller already recorded it. If the stop fails and playback continues, later polls skip it and the old cover stays.",
+     "fix": "Check _playback_changes before recording the item.",
      "posted": null
     },
     {
      "model": "GPT Sol",
      "severity": "SUGGESTION",
      "file": "music_assistant/providers/raumfeld/player.py",
-     "line": 1824,
-     "title": "Send guard does not recheck the active source after _set_external()",
-     "detail": "GPT Sol rates it a problem. The timer callback re-checks _attr_active_source in _start_flow_announcement right before the task starts, so the window is the Bend round trip, which Copilot's r4375605138 already covers.",
+     "line": 1800,
+     "title": "A real repeat-all wrap within 5 s of the last announcement is rejected",
+     "detail": "GPT Sol rates it CRITICAL. Opus: the rejected wrap does not set _announced_item_id, so the next poll (5 s) announces it; only a last track under 5 s hits it, a short delay rather than a lost cover.",
      "fix": "",
      "posted": null
     },
@@ -11077,28 +11057,26 @@
      "model": "Claude",
      "severity": "NIT",
      "file": "music_assistant/providers/raumfeld/player.py",
-     "line": 1736,
-     "title": "New cancel comment is glued onto the remaining-time comment",
-     "detail": "The comment 'MA moves the queue on only when a poll reports the zone past the boundary ... the time left of the current track tells when it comes' used to sit right above the `remaining = ...` line. The delta inserted the cancel_timer line and its own comment directly under it. The result reads as one three-line block describing the cancel, and the explanation is now separated from the line it explains.",
-     "fix": "Move the original two-line comment down to just above `speed = queue.playback_speed or 1.0` / `remaining = ...`, keeping the one-line cancel comment above cancel_timer.",
+     "line": 1750,
+     "title": "Run-on comment in _schedule_next_announcement (still open from the last review)",
+     "detail": "'...tells when it comes' runs straight into 'a timer set from an earlier reading must not outlive it', which reads as one broken sentence.",
+     "fix": "End the first sentence with a period and start the timer remark as its own sentence (see suggested_fix).",
      "posted": null
     }
    ],
    "unaddressed_comments": [],
    "copilot": {
     "green": false,
-    "comments": 2,
-    "findings": 4,
-    "review_url": "https://github.com/music-assistant/server/pull/7216#discussion_r4375605138",
+    "comments": 0,
+    "findings": 2,
+    "review_url": "https://github.com/music-assistant/server/pull/7216",
     "titles": [
-     "[CRITICAL] Hold the playback lock and revalidate before the Bend (r4375605138)",
-     "[CRITICAL] Clear _passed_item_id once the queue reaches the announced item (r4375605185)",
-     "[CRITICAL, previously missed] Schedule the cover timer after update_state() reconciles the clock",
-     "[CRITICAL, previously missed] A repeat-all wrap inside the 5 s window is rejected"
+     "[CRITICAL, previously missed] Line-In taken over on the speaker skips the new cleanup in _update_zone_source()",
+     "[CRITICAL, previously missed] A boundary timer during a stop that later fails records the item as announced"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "Changes recommended on 9b41ca198 (09:14Z): 2 open CRITICAL threads plus 2 previously missed CRITICALs in unchanged code. The 3 previously missed CRITICALs from the 74e329540 review (backward clock, Smart Fades, synced follower) are fixed. Expect the critical gate to draft it.",
+   "copilot_note": "Needs a closer look on 4ba371d1e (10:10Z), no open threads, 2 previously missed CRITICALs in the body. The 4 threads from 09:14Z and 09:46Z are resolved.",
    "suggested_fix": null,
    "prompt": "",
    "backport": null,
@@ -11107,9 +11085,11 @@
    "reporter_reply": null,
    "support": null,
    "fix_thread": null,
-   "related_prs": [],
+   "related_prs": [
+    "#7224 Simanias, textual conflict in player.py"
+   ],
    "reviewed_now": true,
-   "reviewed_at": "2026-10-26 10:20 CET",
+   "reviewed_at": "2026-10-26 11:20 CET",
    "changed_now": "pushed"
   },
   {
@@ -11193,16 +11173,16 @@
     "#7166",
     "#7216"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 10:20 CET",
-   "changed_now": "pushed"
+   "changed_now": ""
   },
   {
    "repo": "server",
    "number": 7215,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Station provider to v1.5.24",
+   "title": "Update Yandex Station provider to v1.5.24: option to stop mirroring Station volume to the intercept target",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7215",
    "draft": true,
@@ -11298,7 +11278,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "client",
@@ -11349,7 +11329,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "client",
@@ -11400,47 +11380,76 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
    "number": 7219,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Smart Home provider to v2.2.7",
+   "title": "Update Yandex Smart Home provider to v2.2.8: setup-flow wording and test coverage",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7219",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "trudenboy (draft)",
-   "gpt_sol": "not run",
-   "size": "L",
-   "code": 581,
-   "add": 0,
+   "waiting_on": "trudenboy: Copilot thread (test exception)",
+   "gpt_sol": "2 problems (test fidelity)",
+   "size": "S",
+   "code": 2,
+   "add": 1,
    "del": 0,
-   "ci": "not checked (draft)",
+   "ci": "green (17 checks)",
    "ci_fail": false,
-   "merge_state": "not checked (draft)",
-   "head_sha": "",
+   "merge_state": "merge-tree clean on origin/dev aec26acfd",
+   "head_sha": "a016c8ea0",
    "core_touched": false,
    "providers_touched": [
     "yandex_smarthome"
    ],
    "stacked": false,
-   "tldr": "Draft, not reviewed yet.",
-   "summary": "",
-   "whats_new": "Opened 08:34Z.",
+   "tldr": "Almost: VERSION 2.2.4 to 2.2.8, two reworded setup strings (kept in sync in en.json) and four test modules from the provider repo. The 2.2.5 to 2.2.8 code already landed through earlier PRs, so runtime code is unchanged. 238 tests pass, no network. Copilot and GPT Sol both say the device-login timeout test raises TimeoutError where the engine raises StepExpiredError, so it tests the wrong path. Auto-approve candidate once that is fixed and Copilot approves.",
+   "summary": "Reviewed myself (no Opus run, 2 changed code lines). Strings: ym_instance drops \"Device Flow popup\" (retired in #5030), cloud_confirm says the code is shown by MA. Tests import real names from the checkout and pass (238 in tests/providers/yandex_smarthome). GPT Sol adds that the cached-token rejection test mocks InvalidCredentialsError where the real path raises LoginFailed through FAILED artifacts.",
+   "whats_new": "Marked ready for review 09:46Z. Reviewed: Claude clean, GPT Sol 2 test problems, Copilot 1 PROBLEM thread.",
    "blockers": [
-    "Draft."
+    "Copilot r4376021797: the timeout test should raise StepExpiredError (trudenboy)"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Copilot",
+     "severity": "PROBLEM",
+     "file": "tests/providers/yandex_smarthome/test_setup_flow.py",
+     "line": 340,
+     "title": "Timeout test raises TimeoutError, the engine raises StepExpiredError (r4376021797)",
+     "detail": "GPT Sol adds that the mock never awaits the polling coroutine it receives, so it leaks an unawaited coroutine.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "tests/providers/yandex_smarthome/test_setup_flow.py",
+     "line": 150,
+     "title": "Cached-token rejection mocks the wrong failure",
+     "detail": "make_authenticator raises LoginFailed, which auto_create_skill turns into FAILED artifacts; the test raises InvalidCredentialsError directly and exercises a different retry branch.",
+     "fix": "",
+     "posted": null
+    }
+   ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "",
+   "copilot": {
+    "green": false,
+    "comments": 1,
+    "findings": 1,
+    "review_url": "https://github.com/music-assistant/server/pull/7219#discussion_r4376021797",
+    "titles": [
+     "[PROBLEM] Use StepExpiredError to exercise the setup timeout path (r4376021797)"
+    ]
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Changes recommended on a016c8ea0 (10:06Z), 1 PROBLEM thread.",
    "suggested_fix": null,
    "prompt": "",
    "backport": null,
@@ -11450,9 +11459,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": null,
-   "changed_now": "new"
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 11:20 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
@@ -11504,7 +11513,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -11556,6 +11565,275 @@
    "related_prs": [
     "#7159 yours, same file"
    ],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": ""
+  },
+  {
+   "repo": "models",
+   "number": 449,
+   "state": "merged",
+   "closed_at": "2026-10-26T09:38:43Z",
+   "title": "Build(deps): Bump actions/setup-python from 7.0.0 to 7.1.0",
+   "author": "app/dependabot",
+   "url": "https://github.com/music-assistant/models/pull/449",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "merged",
+   "gpt_sol": "not run (dependabot bump)",
+   "size": "S",
+   "code": 2,
+   "add": 0,
+   "del": 0,
+   "ci": "",
+   "ci_fail": false,
+   "merge_state": "",
+   "head_sha": "",
+   "core_touched": false,
+   "providers_touched": [],
+   "stacked": false,
+   "tldr": "Dependabot action pin bump, merged by Bot-MArley at 09:38Z.",
+   "summary": "",
+   "whats_new": "Opened and merged by Bot-MArley between runs.",
+   "blockers": [],
+   "findings": [],
+   "unaddressed_comments": [],
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": "merged"
+  },
+  {
+   "repo": "server",
+   "number": 7224,
+   "state": "open",
+   "closed_at": null,
+   "title": "Raumfeld: start a flow at least 8 s before the end of its first track",
+   "author": "Simanias",
+   "url": "https://github.com/music-assistant/server/pull/7224",
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "comment",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "Copilot (re-review of 27f889416)",
+   "gpt_sol": "3 problems on old head (we rate suggestions)",
+   "size": "S",
+   "code": 47,
+   "add": 42,
+   "del": 0,
+   "ci": "green (15 checks)",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev aec26acfd; textual conflict with #7216",
+   "head_sha": "27f889416",
+   "core_touched": false,
+   "providers_touched": [
+    "raumfeld"
+   ],
+   "stacked": false,
+   "tldr": "Almost, close to ready: a Raumfeld zone drops a flow that starts in the last few seconds of a track, so the provider restarts it 8 s before the end. Provider-only, 271 tests pass. Simanias already answered both Copilot threads in 27f889416: the restart is play_index() by the captured item (no active-queue guard, so our inactive-queue problem is gone too), and the flow check now reads the resolved url so a crossfade-forced flow is covered. Left: suggestions only. Waiting on Copilot's re-review; auto-approve candidate if it says Approval recommended.",
+   "summary": "The PR adds _start_flow_earlier to RaumfeldPlayer.play_media. When flow mode is on and the queue's current item starts with less than 8 s left (duration > 8 s), it schedules player_queues.seek(queue, duration - 8) as a background task. It then sets the room to PLAYING so the outer play_index's wait_for_player_update returns and the strict playback lock is freed. Checked: no recursion loop. streamdetails.seek_position is always reassigned in _get_stream_details, the second pass leaves exactly >= 8 s, and a probed duration change converges after one extra pass. Radio and allow_seek=False streams get seek_position 0 from core, so they are skipped. Unknown duration, tracks of 8 s or less and normal plays from 0 are skipped. On the 5-seconds-left case: the start is moved back, so the listener hears up to 8 s again and nothing is skipped. That beats jumping to the next track, which would drop the 5 s. The debug log is enough there. The only visible effect is a scrub to 4:15 landing on 4:11. Main issue: the seek goes through queue.seek, which checks queue.active. queue.active is only recomputed 0.5 s after a player update (call_later in signal_player_state_update), and the early return skips the normal path that sets _attr_active_source = player_id. So a room whose reported source is a station button, line-in or an external source (trusts_reported_source=True makes it a takeover) gets InvalidCommand('Queue ... is not active') inside a task nobody awaits. The faked PLAYING then stays until a slow (15 s) poll fixes it. On origin/dev the same resume works, because play_index never checks queue.active. Secondary: the check runs for any media with a source_id. That includes plugin AUDIO_SOURCE media (source_id = player_id) and UGP FLOW_STREAM media (source_id = the UGP id, so a member would seek the group's queue, once per Raumfeld member). The proposed fix scopes the check to the queue item being played and awaits play_index directly. The nested strict get_group_and_player_lock is re-entrant per task, which I confirmed with a script against the real get_player_lock. Sync groups forward play_media in the same task. With the fix there is no faked state, errors reach the caller, and the UI keeps a single play action. Nothing outside providers/raumfeld and tests/providers/raumfeld changes. Raumfeld does not exist on origin/stable, so this is not a backport candidate. #7166 only touches the streams controller, so no collision. #7216 conflicts textually with this PR (the constants block and the appended tests), but nothing collides semantically: its flow-announcement reset sits after the early return and runs on the second pass.",
+   "whats_new": "Opened 09:48Z. Reviewed on fa0afcabc by Opus, GPT Sol and Copilot; 27f889416 (10:11Z) fixes both Copilot threads and our PROBLEM.",
+   "blockers": [
+    "Copilot re-review of 27f889416 pending"
+   ],
+   "findings": [
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 1987,
+     "title": "An 8 s track resumed at 5 s keeps the failure",
+     "detail": "GPT Sol rates it a problem; tracks of 8 s or less are a deliberate exemption and very rare.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 1978,
+     "title": "Only act on the queue item being played",
+     "detail": "The guard is only flow_mode plus media.source_id. Plugin AUDIO_SOURCE media carries source_id = player_id, so a leftover near-end seek_position on the player's queue would swallow the source and seek the queue instead. UGP FLOW_STREAM media carries the UGP id, so each Raumfeld member would seek the group's queue from inside the group's fan-out and skip joining, which restarts the group once per member. Both need a stale or group near-end start, so they are narrow. With the awaited fix the guard becomes required: a UGP member runs in a TaskManager task, and a nested play_index there would wait on the group lock held by its parent.",
+     "fix": "Require media.queue_item_id and queue.current_item.queue_item_id == media.queue_item_id before acting (included in suggested_fix).",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 84,
+     "title": "Textual conflict with #7216",
+     "detail": "git merge-tree of pr/7224 and pr/7216 conflicts in player.py (both add constants after STARTUP_POLL_WINDOW) and in test_player.py (both append tests at the end). The resolution is trivial and the two changes do not collide semantically. Whichever PR lands second needs a rebase.",
+     "fix": "Rebase the second one after the first merges.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 1980,
+     "title": "Flow detection parses the stream url layout",
+     "detail": "27f889416 tells a flow apart by splitting the resolved url on /flow/<session>/<queue id>/. That ties the provider to the streams controller url format; a core url change silently disables the guard.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 2006,
+     "title": "Restart still runs in a background task behind a faked PLAYING",
+     "detail": "play_index fixes the wrong-item and inactive-queue cases. Awaiting it in the same task (the playback lock is re-entrant) would drop the faked state, as in our earlier patch.",
+     "fix": "",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": false,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7224",
+    "titles": [
+     "2 threads on fa0afcabc resolved in 27f889416"
+    ]
+   },
+   "copilot_reviewed_head": false,
+   "copilot_note": "Changes recommended on fa0afcabc (10:09Z); Simanias answered both threads in 27f889416 at 10:11Z and they are resolved. Waiting for the re-review.",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": {
+    "rec": false,
+    "why": "Raumfeld is not on stable."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "#7216 Simanias, textual conflict in player.py",
+    "#7179 room join restart"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 11:20 CET",
+   "changed_now": "new"
+  },
+  {
+   "repo": "server",
+   "number": 7223,
+   "state": "open",
+   "closed_at": null,
+   "title": "Hide source-only Sendspin devices from the player menu by default",
+   "author": "maximmaxim345",
+   "url": "https://github.com/music-assistant/server/pull/7223",
+   "draft": true,
+   "verdict": null,
+   "assessment": null,
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "maximmaxim345 (draft)",
+   "gpt_sol": "not run",
+   "size": "S",
+   "code": 0,
+   "add": 0,
+   "del": 0,
+   "ci": "not checked (draft)",
+   "ci_fail": false,
+   "merge_state": "not checked (draft)",
+   "head_sha": "",
+   "core_touched": false,
+   "providers_touched": [
+    "sendspin"
+   ],
+   "stacked": false,
+   "tldr": "Draft, not reviewed yet.",
+   "summary": "",
+   "whats_new": "Opened 09:13Z.",
+   "blockers": [
+    "Draft."
+   ],
+   "findings": [],
+   "unaddressed_comments": [],
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": "new"
+  },
+  {
+   "repo": "server",
+   "number": 7225,
+   "state": "open",
+   "closed_at": null,
+   "title": "Explain missing line-in autostart on Sendspin devices",
+   "author": "maximmaxim345",
+   "url": "https://github.com/music-assistant/server/pull/7225",
+   "draft": true,
+   "verdict": null,
+   "assessment": null,
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "maximmaxim345 (draft)",
+   "gpt_sol": "not run",
+   "size": "S",
+   "code": 0,
+   "add": 0,
+   "del": 0,
+   "ci": "not checked (draft)",
+   "ci_fail": false,
+   "merge_state": "not checked (draft)",
+   "head_sha": "",
+   "core_touched": false,
+   "providers_touched": [
+    "sendspin"
+   ],
+   "stacked": false,
+   "tldr": "Draft, not reviewed yet.",
+   "summary": "",
+   "whats_new": "Opened 09:59Z.",
+   "blockers": [
+    "Draft."
+   ],
+   "findings": [],
+   "unaddressed_comments": [],
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
    "changed_now": "new"
