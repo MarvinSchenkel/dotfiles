@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-26T08:00:00+01:00",
+ "last_run": "2026-10-26T09:00:00+01:00",
  "dev": "4360495c4",
- "run_note": "#7211 (auto-approved Qobuz fix) merged. OzGav's #7192 (YouSee on the shared 24-7 code) is ready for your approve after a live test by math625f. Simanias's #7214 (Raumfeld underrun restart) has one valid Copilot CRITICAL for batch joins. #7172 went back to draft.",
+ "run_note": "Auto-approved Simanias's #7214 after he fixed the batch-join CRITICAL. kees's Roku fix #7217 is clean and waits on Copilot (auto-approve candidate next run). #7216 (Raumfeld metadata) has one race with a patch; #7218 (ICY basic) overwrites a user's \"full\" via a provider-side heal. dmoo500's #7172 sharing plugin is ready: both reviewers prefer #7173's core command.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -9003,7 +9003,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "merged"
+   "changed_now": null
   },
   {
    "repo": "server",
@@ -10319,7 +10319,7 @@
    "stacked": false,
    "tldr": "YouSee moves onto the shared 24-7 (music247e) code like Telmore, dropping ~2000 lines of duplicates. Item ids, provider mappings and the yousee_quality key are unchanged, and @math625f verified it on a live account. Claude finds it ready, and 53 tests pass. GPT Sol notes owned playlists are now deleted on removal (announced in the PR) and that synced tracks get a sparse album (shared music247e code, as for Telmore). XL, so not auto-approvable.",
    "summary": "YouSee now subclasses Music247eProvider exactly like Telmore. It keeps its own auth manager (same form-encoded refresh POST and delegated-login regex flow as dev), GraphQL endpoint graphql-1458, its own class-level 4 req/s throttler, and CONF_QUALITY_KEY='yousee_quality' with the same INTEGER 320/192 entry, so stored config loads unchanged. Item ids and provider mappings are unchanged: track/album/artist/playlist ids come from the same fields, mapping item_id is still str(id), and use_cache keys are func.__name__ based, so they stay the same. Every claimed behaviour change shows up in the diff of the old yousee modules against music247e: ItemMapping replaces the per-album get_album call, the page cap goes from 20 to 1000, 429/502/503 now map to retryable errors, lyrics go through convert_to_lrc_lyrics, string genres are fixed, owned playlists are deleted (as Qobuz already does), album availability is honoured, refresh failures are handled, and LoginFailed now carries a reason. None of these regress YouSee, and nothing the old yousee code had is missing from the shared base. Scope is provider-only (+45/-2035 non-test lines) plus 2 obsolete lint_baselines lines; Copilot reports no open issues.",
-   "whats_new": "OzGav marked it ready at 06:34Z after @math625f tested it. Copilot (25-10): Needs a closer look.",
+   "whats_new": "Bot-MArley reviewed it at 07:35Z (no requested changes). OzGav marked it ready at 06:34Z after @math625f tested it. Copilot (25-10): Needs a closer look.",
    "blockers": [
     "Your approve (XL)"
    ],
@@ -10366,9 +10366,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 08:00 CET",
-   "changed_now": "ready for review"
+   "changed_now": "reviewed by you"
   },
   {
    "repo": "server",
@@ -10588,37 +10588,127 @@
    "title": "Add provider-independent share links and playlist previews",
    "author": "dmoo500",
    "url": "https://github.com/music-assistant/server/pull/7172",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "dmoo500 (critical gate)",
-   "gpt_sol": "not run",
+   "draft": false,
+   "verdict": "not_ready",
+   "assessment": "request_changes",
+   "status": "attention",
+   "attention_since": "2026-10-26T07:57:00Z",
+   "waiting_on": "you: sharing design call",
+   "gpt_sol": "2 problems, prefers core",
    "size": "XL",
-   "code": 1224,
+   "code": 1306,
    "add": 2578,
    "del": 0,
-   "ci": "not checked (draft)",
+   "ci": "green",
    "ci_fail": false,
-   "merge_state": "not checked (draft)",
-   "head_sha": "bb8a4cbbc",
+   "merge_state": "merge-tree clean on origin/dev 4360495c4; review required, no auto-merge",
+   "head_sha": "8d940da2a",
    "core_touched": false,
    "providers_touched": [
     "share_provider"
    ],
    "stacked": false,
-   "tldr": "dmoo500's provider-independent share links, marked ready at 06:11Z during this run. It competes with jetersen's draft #7173 + models#447. Full review next run.",
-   "summary": "",
-   "whats_new": "dmoo500 pushed bb8a4cbbc and re-requested Copilot; the critical gate drafted it again at 06:46Z.",
+   "tldr": "No server-side security holes. The blockers are a dead default share domain, a landing page outside the org that has not been reviewed, an unbounded preview with provider fan-out, and silent Deezer/Apple calls on every share. #7173's core command fits MA better for the shared scope.",
+   "summary": "Security looks sound on the server. All four commands require LIBRARY_READ/WRITE, so the server has no unauthenticated surface. Nothing is stored, so there are no guessable ids or tokens to enumerate, and links cannot be revoked. That is acceptable because a link only holds public metadata, and it travels in the fragment, so the share host never sees it. The server never fetches payload URLs, so there is no SSRF. Its only outbound calls go to fixed Deezer and iTunes hosts, throttled at 1 req/s per service with Retry-After handling. Provider refs are host-pinned relative paths: '//', backslash, tab and scheme tricks are rejected, and '/@evil.com' stays on open.spotify.com. Artwork refs use an allowlisted host code plus an alphanumeric subdomain. Server output is JSON only, and M3U import line breaks are sanitized. The '||' field separator is not escaped, but music/playlists/import_playlist already accepts arbitrary M3U on dev, so this adds no new capability. Hidden provider mappings are already stripped from library rows. One pre-existing issue on dev, not from this PR: get_item_by_external_id (also exposed as music/<type>/get_by_external_id) loops over all providers and ignores per-user provider access. share/resolve and share/preview reuse it. The real problems are deployment and cost: the default share domain is dead, the landing page that renders untrusted payloads is outside the org and unreviewed, preview limit is unbounded with provider fan-out per track, and Deezer/Apple are called on every share with no opt-out. Earlier Copilot matching findings (versions, iTunes MIME, Deezer quota) are fixed at the head commit. On design, #7173's core command fits MA better for 'share this item'. #7172's recipient resolve and playlist import is the differentiator, and could come later on top of a models-owned payload and an org-hosted landing page. Design: #7172 (dmoo500) is an opt-in plugin that registers share/generate, share/resolve, share/preview_playlist and share/import_playlist. A link is https://share.music-assistant.io/#<base64url JSON> holding metadata (title, artist, version, ISRC/MBID/barcode, allowlisted artwork ref, host-pinned provider path refs, playlist track stubs). The recipient's own MA resolves it through their providers, previews playlists and imports them as a builtin M3U playlist. It is stateless and needs no server storage, but it does need an MA-run landing page (today a personal repo, and the domain does not resolve). The payload schema becomes a cross-repo client contract that lives only in the server plugin, with copies in the frontend and the landing page. It also hardcodes provider URL schemas and host allowlists, and calls Deezer and iTunes through private HTTP clients instead of the provider code. #7173 (jetersen) is a core music/share_item(uri) command that returns models#447 ItemShareInfo/ItemShareLink: access-filtered public provider website links, plus readable text for local, private or unsupported items, gated by API schema 100. The sender side only: no landing page, no recipient resolve or import. Providers own their URL format (ytmusic and bandcamp touched). For MA's architecture, #7173 fits better for the part both PRs share (deriving a shareable link for an item): it is core-owned, keeps provider URL knowledge in providers, puts the contract in models and needs no new infra. #7172's real extra value is the cross-provider round trip and playlist preview/import. That could be layered on top later, once the payload model moves to models and the org decides to own and host the landing page. Don't merge both as they stand, because they would give clients two competing share entry points. Both are large (#7172 about 1.3k code lines, #7173 about 4.3k additions incl. tests).",
+   "whats_new": "dmoo500 pushed 8d940da2a and marked it ready at 07:57Z. Copilot 08:00Z: Needs a closer look.",
    "blockers": [
-    "Draft (critical gate)",
-    "Competing sharing design with #7173/models#447: your call"
+    "Design call: #7172 plugin (stateless links via share.music-assistant.io) vs jetersen's core command #7173 + models#447. Claude and GPT Sol both lean to the core command",
+    "Default share domain does not resolve and the landing page is in a personal repo",
+    "Unbounded preview fan-out; every track share calls Deezer and Apple with no opt-out"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/share_provider/__init__.py",
+     "line": 70,
+     "title": "Default share domain is not live and the landing page sits outside the org",
+     "detail": "DEFAULT_SHARE_BASE_URL is https://share.music-assistant.io. That host does not resolve today (curl: could not resolve host), so every generated link is dead out of the box. The landing page lives in dmoo500/music-assistant-share. That page decodes and renders the untrusted fragment (titles, provider refs, artwork), so it is the real XSS and open-redirect surface, and this PR does not review it. The server-side allowlists in links.py only protect recipients if the page enforces the same checks.",
+     "fix": "Hold the merge until the landing page is transferred to the org, reviewed (same provider/artwork allowlist, text-only rendering) and deployed on the default domain. Otherwise ship without a default and require the base URL.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/share_provider/__init__.py",
+     "line": 191,
+     "title": "Preview has no upper bound on limit and each track fans out to every provider",
+     "detail": "preview_shared_playlist accepts any limit (only limit >= 1 is checked). Each stub goes through _resolve_by_external_ids, which calls controller.get_item_by_external_id for ISRC, MB recording and MB track. On a library miss, that method loops over all music providers (media/base.py:1116) and makes a network call per provider. One 50-track preview with 4 streaming providers can mean several hundred provider calls (semaphore 2), and limit=5000 is accepted. Generation caps the payload at 48 KiB, but resolve, preview and import never check payload size.",
+     "fix": "Clamp limit (e.g. max 100). For preview, use get_library_item_by_external_id or an ISRC-only provider lookup. Reject decoded payloads above the generation cap in from_base64 callers.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/share_provider/enrichment.py",
+     "line": 104,
+     "title": "Every track share sends title, artist and ISRC to Deezer and Apple with no opt-out",
+     "detail": "enrich() always queries api.deezer.com (ISRC, then search) and itunes.apple.com (lookup, then search), even when the user has configured neither provider. No config entry turns this off, and the plugin description does not mention it. It also duplicates provider logic: Deezer quota code 4 and the iTunes text/javascript content type are reimplemented here instead of living in the deezer and apple_music providers. The 10 s cap holds, and results (including None) are cached for 30 days per provider instance.",
+     "fix": "Make enrichment opt-in with a config entry that names the services, or enrich only through configured providers. Longer term, let providers own their public URLs (the #7173 approach).",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/share_provider/payload.py",
+     "line": 39,
+     "title": "Share payload is a cross-repo contract but lives in a server plugin",
+     "detail": "SharePayload and TrackStub are decoded and re-encoded by frontend#3040 (share_links.ts) and by the landing page, so there are three copies of the schema with no version field. links.py also hardcodes per-provider URL schemas and host allowlists (spotify, tidal, qobuz, ytmusic, deezer, apple_music) that belong to each provider.",
+     "fix": "Move the payload models to music-assistant/models with a version field. Derive links from provider-owned ProviderMapping.url.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/share_provider/enrichment.py",
+     "line": 156,
+     "title": "An unexpected provider host stores an empty ref and makes the link undecodable",
+     "detail": "compact_provider_ref returns '' when the URL fails the host check, and enrich() stores it anyway (lines 144, 156, 206). On decode, _validated_provider_refs rejects '' (verified: ValueError 'Invalid share provider references'), so the whole share cannot be resolved. The current Deezer and iTunes hosts pass, so this is unlikely in practice.",
+     "fix": "Only assign the ref when compact_provider_ref returns a non-empty value.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/share_provider/__init__.py",
+     "line": 180,
+     "title": "share/resolve returns None for an invalid payload, unlike preview and import",
+     "detail": "Preview and import raise a translated InvalidDataError. resolve_share_link returns None, which looks the same to the client as a valid link with no match.",
+     "fix": "Raise InvalidDataError(translation_key='invalid_share_payload') here too.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/share_provider/__init__.py",
+     "line": 305,
+     "title": "Import passes the deprecated library_matching flag alongside match_policy",
+     "detail": "import_playlist documents library_matching as deprecated; match_policy=SAME_RECORDING already enables matching.",
+     "fix": "Drop library_matching=True.",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/share_provider/__init__.py",
+     "line": 553,
+     "title": "Fuzzy matching can silently pick a different song",
+     "detail": "",
+     "fix": "",
+     "posted": null
+    }
+   ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
+   "copilot": {
+    "green": false,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7172",
+    "titles": [
+     "Needs a closer look"
+    ]
+   },
+   "copilot_reviewed_head": true,
    "copilot_note": "",
    "suggested_fix": null,
    "prompt": "",
@@ -10629,9 +10719,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": null,
-   "changed_now": "drafted"
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 09:00 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "models",
@@ -10692,38 +10782,36 @@
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7214",
    "draft": false,
-   "verdict": "almost",
-   "assessment": "comment",
+   "verdict": "ready",
+   "assessment": "approve",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "Simanias: Copilot CRITICAL",
+   "waiting_on": "merge queue",
    "gpt_sol": "clean",
    "size": "S",
    "code": 19,
    "add": 59,
    "del": 1,
-   "ci": "green; Verify passed after the description fix",
+   "ci": "green on 5847a06ed",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 4360495c4; review required, no auto-merge",
-   "head_sha": "2b45fb2d2",
+   "merge_state": "merge-tree clean on origin/dev 4360495c4; approved, auto-merge on (merge queue)",
+   "head_sha": "5847a06ed",
    "core_touched": false,
    "providers_touched": [
     "raumfeld"
    ],
    "stacked": false,
-   "tldr": "When a joining room reports NO_MEDIA_PRESENT with a buffer underrun (a 1st-gen One M at 96 kHz), the join wait ends and the stream restarts at once instead of after 5 s; jo-che measured 4.2 s instead of 5.6 s. Claude and GPT Sol find it clean and 265 tests pass. Copilot opened a CRITICAL: with several rooms joining, one underrun restarts while another is still hooking in. That holds for batch joins.",
+   "tldr": "A joining Raumfeld room that reports a buffer underrun now leaves the join wait, and the others are still waited for, so the restart comes at once when only that room is stuck. Simanias fixed Copilot's batch-join CRITICAL; Claude, GPT Sol and Copilot (Approval recommended) are clean and 266 tests pass. Auto-approved.",
    "summary": "The early return covers the whole batch. For a single joining room (the measured case) it is correct; for simultaneous joins, a restart while another room is TRANSITIONING drops that room for a while, which the wait exists to prevent. Fix: drop the underrunning room from the wait set and restart early only when no room is still transitioning.",
-   "whats_new": "New 06:58Z. Copilot (requested as Marvin) 07:05Z: Changes recommended, 1 CRITICAL thread. The gate will draft it.",
-   "blockers": [
-    "Copilot CRITICAL r4374720448: batch join returns early while another room is still transitioning (Simanias)"
-   ],
+   "whats_new": "Simanias pushed 5847a06ed (07:14Z): only the underrunning room leaves the wait set. Copilot 07:35Z: Approval recommended. Auto-approved and queued at 09:01 CET.",
+   "blockers": [],
    "findings": [
     {
      "model": "Copilot",
      "severity": "CRITICAL",
      "file": "music_assistant/providers/raumfeld/player.py",
      "line": 1450,
-     "title": "Batch join restarts while another room is still hooking in (r4374720448)",
+     "title": "Batch join restarts while another room is still hooking in (r4374720448) (fixed in 5847a06ed)",
      "detail": "Verified as reachable for simultaneous joins.",
      "fix": "Remove the underrunning room from the wait set; return early only once no remaining room is TRANSITIONING.",
      "posted": null
@@ -10731,20 +10819,21 @@
    ],
    "unaddressed_comments": [],
    "copilot": {
-    "green": false,
-    "comments": 1,
-    "findings": 1,
-    "review_url": "https://github.com/music-assistant/server/pull/7214#discussion_r4374720448",
-    "titles": [
-     "[CRITICAL] Batch join returns early (r4374720448)"
-    ]
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7214",
+    "titles": []
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "07:05Z on 2b45fb2d2: Changes recommended.",
+   "copilot_note": "07:35Z on 5847a06ed: Approval recommended.",
    "suggested_fix": null,
    "prompt": "",
    "backport": null,
-   "auto_approved": null,
+   "auto_approved": {
+    "at": "2026-10-26 09:01 CET",
+    "note": "S, Raumfeld provider only, Claude, GPT Sol and Copilot (Approval recommended) clean."
+   },
    "author_replied": null,
    "reporter_reply": null,
    "support": null,
@@ -10754,7 +10843,366 @@
     "support#6821"
    ],
    "reviewed_now": true,
-   "reviewed_at": "2026-10-26 08:00 CET",
+   "reviewed_at": "2026-10-26 09:00 CET",
+   "changed_now": "auto-approved"
+  },
+  {
+   "repo": "server",
+   "number": 7217,
+   "state": "open",
+   "closed_at": null,
+   "title": "Fix Roku Media Assistant player queue stalls and end-of-stream handling",
+   "author": "kees",
+   "url": "https://github.com/music-assistant/server/pull/7217",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "Copilot (requested)",
+   "gpt_sol": "2 problems (we rate suggestions)",
+   "size": "M",
+   "code": 104,
+   "add": 0,
+   "del": 0,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 4360495c4; review required, no auto-merge",
+   "head_sha": "b978f2a99",
+   "core_touched": false,
+   "providers_touched": [
+    "roku_media_assistant"
+   ],
+   "stacked": false,
+   "tldr": "Approve: provider-only Roku fix (104 changed non-test lines). Advance and end-of-stream logic is sound and matches the app source. 34 tests pass. Nits only: lock hold during retries, INFO noise, long comments. Replaces draft #6458. Copilot was requested at 08:01Z; with \"Approval recommended\" it qualifies for auto-approval next run.",
+   "summary": "Provider-only change (roku_media_assistant/player.py +93/-11; 72 added code lines plus 21 added comment lines; tests +272). Verified against the Roku app source (MedievalApple/Media-Assistant mediaplayer.brs): handleDeepLink sets m.queuedDeeplink = Invalid on every play, including the blank ' ' stop deeplink, so clearing self.queued in play_media/stop matches the app. The 't':'m' flow metadata push does not touch the slot. Track-advance detection: dev swapped current_media to queued on any |jump| > 10 s, even with queued None, which blanked current_media and caused false advances on fresh plays, seeks and slow polls. Now it needs queued set and the position falling back by more than 10 s, and play_media resets the baseline to 0. No double advance: queued is consumed once and the app overwrites its single slot. Remote-control rewind of more than 10 s with an item queued still reads as an advance, but that already happens on dev. End-of-stream: IDLE only when state is 'play', position >= duration - 1.5 and the position has not moved for at least 10 s (three polls at 5 s). A normal track end with an item queued resets the position, so it does not trip. Pause maps to PAUSED and is excluded, mid-track buffering or stalls are not near the end, and radio/flow usually report no duration. The resulting IDLE feeds _handle_end_of_queue, which now finishes the queue on the last track (on dev it stayed PLAYING forever), and is ignored mid-queue because next_item is set. The 'stream ended' log fires once per stream. No timers or tasks are added: only two state fields and an asyncio.sleep inside the enqueue call, which is cancellable, so nothing needs cleanup on stop/unload. Flow mode never enqueues, so advance detection is inert there. The enqueue retry runs under the strict PLAYBACK lock, which is the only trade-off worth a note.",
+   "whats_new": "New 07:51Z (kees, picking up #6458 after OzGav's go-ahead).",
+   "blockers": [
+    "Copilot review pending"
+   ],
+   "findings": [
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/roku_media_assistant/player.py",
+     "line": 360,
+     "title": "Paused time counts toward the end-of-stream timeout",
+     "detail": "The 10 s frozen-position clock is not reset by a pause, so resuming in the last 1.5 s can report IDLE at once. Only reachable when paused at the very end.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/roku_media_assistant/player.py",
+     "line": 363,
+     "title": "A missed queue handover is not recovered by end detection",
+     "detail": "",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/roku_media_assistant/player.py",
+     "line": 258,
+     "title": "Enqueue retries stretch the strict PLAYBACK lock hold",
+     "detail": "stream_feeder calls enqueue_next_media inside get_player_lock(PLAYBACK, strict=True). Each attempt is roku.update() (2-3 ECP requests) plus roku_input, every request with rokuecp's 5 s timeout, then sleep(2). Against a Roku that is dropping packets the handover can now hold the lock for roughly 45-60 s instead of about 15 s, and a user skip/play waits on it the whole time. The retry also covers roku.update() failures, where the device is simply unreachable and retrying gains nothing. Not on dev (single attempt there). Low impact; a trade-off worth naming rather than a bug.",
+     "fix": "Optionally retry only the roku_input POST, or bail out after the first attempt when roku.update() itself raised.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/roku_media_assistant/player.py",
+     "line": 286,
+     "title": "Two INFO lines per track change",
+     "detail": "'Enqueued %s on %s' (286) and '%s moved on to enqueued item %s' (346) fire on every track at INFO. The PR body says this is deliberate, so a missed handover shows in the normal log. Other providers log routine handovers at debug. The failure paths (attempt errors, gave up, not in front) already show missed handovers.",
+     "fix": "Use self.logger.debug for the two success messages.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/roku_media_assistant/player.py",
+     "line": 355,
+     "title": "End-of-stream check has no guard for a zero or live duration",
+     "detail": "If ECP ever reports <duration>0 ms</duration> for an isLive stream (radio, flow mode), `position >= duration - 1.5` is always true, and any 10 s position freeze in state 'play' turns into IDLE. Not verified on hardware; the Roku probably omits duration for live streams, which makes this a no-op. Even if it fires, radio is in UNENDABLE_MEDIA_TYPES and flow mode returns early in _handle_end_of_queue, so the result would only be a cosmetic IDLE on a stalled live stream.",
+     "fix": "Optional: require `duration` to be truthy (or skip when self.flow_mode / current media is RADIO).",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/roku_media_assistant/player.py",
+     "line": 253,
+     "title": "Comments are long and narrate history",
+     "detail": "The blocks at 162-163, 236-239, 253-256, 334-338 and 351-354 run 2-5 lines and describe old behaviour ('used to mean', 'which used to blank the current track', 'every fresh play produced'). That history belongs in the PR description. The cross-module reference player_queues/stream_feeder._enqueue_next_item will also go stale.",
+     "fix": "Trim each block to one or two lines that explain the current reason, e.g. '# MA never retries a handover, so retry here' and '# the app only advances to the queued item, seen as the position falling back'.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "tests/providers/roku_media_assistant/test_handover.py",
+     "line": 13,
+     "title": "Test module imports helpers from another test module",
+     "detail": "test_handover imports _make_player/_media from test_track_change. It works, but shared fixtures/helpers usually live in a conftest.py or a helpers module.",
+     "fix": "Move _make_player and _media to tests/providers/roku_media_assistant/conftest.py (or a _helpers.py).",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "#6458"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 09:00 CET",
+   "changed_now": "new"
+  },
+  {
+   "repo": "server",
+   "number": 7216,
+   "state": "open",
+   "closed_at": null,
+   "title": "Raumfeld: show each track's cover, artist and album in the Raumfeld app",
+   "author": "Simanias",
+   "url": "https://github.com/music-assistant/server/pull/7216",
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "comment",
+   "status": "attention",
+   "attention_since": "2026-10-26T07:50:00Z",
+   "waiting_on": "you: post f1 or fix",
+   "gpt_sol": "2 problems",
+   "size": "M",
+   "code": 158,
+   "add": 0,
+   "del": 0,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 4360495c4; review required, no auto-merge",
+   "head_sha": "4db7603c6",
+   "core_touched": false,
+   "providers_touched": [
+    "raumfeld"
+   ],
+   "stacked": false,
+   "tldr": "Almost: solid provider-only flow-mode metadata feature. One medium race: the Bend is not re-checked at send time, so a room grouped under another, or a play/stop in flight, can push its stale flow URL to the zone. 4-line validated fix attached. GPT Sol adds that a pending announcement can overwrite an external source's metadata and that a failed announcement is marked done. Copilot requested.",
+   "summary": "Adds per-track DIDL announcements in flow mode via BendAVTransportURI on the same flow URL, timed from the queue's remaining time (timer in the last 30 s) with QUEUE_UPDATED/poll as fallback, plus a back-step guard and a passed-item guard. DIDL comes from the shared create_didl_metadata (xmlescape plus numeric entities for non-ASCII, so escaping is fine). The image is the 512px JPEG stream-server imageproxy from player_media_from_queue_item, which the renderer can reach. This is the same path dev already uses for non-flow items. It only applies when the URL is /flow/<session>/<own player_id>/..., so group/UGP/external/announcement streams are untouched. Cost per track change is one SOAP call (the action is cached), and the media is built with no I/O. The QUEUE_UPDATED handler is sync and cheap. A host that rejects the call only gets a debug log (KeyError for a missing action is in HOST_ERRORS, so it is caught too). One medium race: the send path never re-validates. A room that joined another room's group, or a timer firing mid play/stop, can Bend a stale flow URL onto the zone. A small validated patch fixes it. Provider-only, 158 added non-test lines (125 excluding comments/blank). The PR branch merged an older dev, and the diff vs the merge base is clean.",
+   "whats_new": "New 07:50Z. Copilot requested as Marvin at 08:01Z.",
+   "blockers": [
+    "f1 (Claude): the announcement is not re-checked at send time, so a room grouped under another can push its stale flow URL to the leader's zone. `fix 7216` pushes the validated 4-line guard (adds a test)"
+   ],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 1806,
+     "title": "Announcement is not re-checked when it is sent: a room grouped under another can Bend the leader's zone with its own stale flow URL",
+     "detail": "_announce_flow_item sends BendAVTransportURI with the url captured when the announcement was scheduled, and only checks that the room has an active zone. A room R that plays its own queue keeps _flow_url and _attr_active_source == R after it joins room L's group (MA's set_members does not stop it; set_members/set_group_members never reset them). Its poll then mirrors L's PLAYING state. If R's 'next track' timer was armed in the last 30 s before the join, or a QUEUE_UPDATED on R's own queue arms it later, the timer fires, _start_flow_announcement passes (state mirrored as PLAYING), and _active_zone() now returns L's zone. R's old flow URL and R's next-track metadata are then Bent onto the group's zone. The PR only measured Bend with the same URL the zone plays; with another URL it is unknown whether the zone switches stream (silence/dead session) or only shows the wrong track. Smaller variants of the same gap: the timer can fire during play_media's `await resolve_stream_url`, before cancel_timer runs, or during stop()'s Stop round trip while the state still reads PLAYING. The created task is not aborted by play_media/stop, so a Bend for the old flow can be sent while the command runs. This is new code, so the gap does not exist on origin/dev.",
+     "fix": "Re-check at send time in _announce_flow_item: url == self._flow_url, no playback command running (_playback_changes), still PLAYING, and not synced to another room. Validated patch attached (+ regression test that fails without it).",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 1763,
+     "title": "Pending announcement can overwrite an external source's metadata",
+     "detail": "",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/raumfeld/player.py",
+     "line": 1785,
+     "title": "A failed announcement is marked done and not retried",
+     "detail": "",
+     "fix": "",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "suggested_fix": {
+    "description": "Skip the announcement unless the URL still matches the current flow, no play/stop is running, the room still plays and is not grouped under another. Validated; 275 tests pass.",
+    "patch": "diff --git a/music_assistant/providers/raumfeld/player.py b/music_assistant/providers/raumfeld/player.py\nindex 5517ff68a3..4f691072cb 100644\n--- a/music_assistant/providers/raumfeld/player.py\n+++ b/music_assistant/providers/raumfeld/player.py\n@@ -1803,7 +1803,15 @@ class RaumfeldPlayer(Player):\n         # the title along but nothing else. BendAVTransportURI updates what the zone reports\n         # without it fetching the uri (measured: the transport stays PLAYING, its clock runs\n         # on and no request follows), so giving it the same flow url leaves the audio alone.\n-        if (zone := self._active_zone()) is None:\n+        if (\n+            url != self._flow_url\n+            # a play or stop command started meanwhile\n+            or self._playback_changes\n+            or self._attr_playback_state != PlaybackState.PLAYING\n+            # a room grouped under another one is in that room's zone, which plays its stream\n+            or (self.synced_to and self.synced_to != self.player_id)\n+            or (zone := self._active_zone()) is None\n+        ):\n             return\n         if (item := self.mass.player_queues.get_item(self.player_id, queue_item_id)) is None:\n             return\ndiff --git a/tests/providers/raumfeld/test_player.py b/tests/providers/raumfeld/test_player.py\nindex 1d3d49d90e..d5312233d9 100644\n--- a/tests/providers/raumfeld/test_player.py\n+++ b/tests/providers/raumfeld/test_player.py\n@@ -2104,6 +2104,7 @@ def _announcing_player(current_item_id: str = \"q2\") -> RaumfeldPlayer:\n     player = _flow_player()\n     player._player_id = \"raumfeld_bar\"\n     player.room = \"Bar\"\n+    player._provider = MagicMock()\n     player.logger = MagicMock()\n     player._flow_url = FLOW_URL\n     player._attr_active_source = \"raumfeld_bar\"\n@@ -2309,3 +2310,18 @@ async def test_a_poll_answered_after_the_room_went_away_is_not_applied() -> None\n         await player._poll_zone(MagicMock(), [\"Bar\"])\n \n     assert player._attr_playback_state == PlaybackState.IDLE\n+\n+\n+async def test_a_room_grouped_under_another_announces_nothing() -> None:\n+    \"\"\"A room that joined another room's group leaves that zone's stream alone.\"\"\"\n+    player = _announcing_player()\n+    with (\n+        patch.object(\n+            RaumfeldPlayer, \"synced_to\", new_callable=PropertyMock, return_value=\"raumfeld_bank\"\n+        ),\n+        patch.object(player, \"_active_zone\", return_value=[\"Bank\", \"Bar\"]),\n+        patch.object(player, \"_zone_command\", AsyncMock()) as zone_command,\n+    ):\n+        await player._announce_flow_item(FLOW_URL, \"q3\")\n+\n+    zone_command.assert_not_awaited()\n",
+    "pushed": null
+   },
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 09:00 CET",
+   "changed_now": "new"
+  },
+  {
+   "repo": "server",
+   "number": 7218,
+   "state": "open",
+   "closed_at": null,
+   "title": "Raumfeld: default ICY metadata to basic",
+   "author": "Simanias",
+   "url": "https://github.com/music-assistant/server/pull/7218",
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "comment",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "Simanias: Copilot thread (migration placement)",
+   "gpt_sol": "1 problem",
+   "size": "M",
+   "code": 60,
+   "add": 0,
+   "del": 0,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 4360495c4; review required, no auto-merge",
+   "head_sha": "4eee99f50",
+   "core_touched": false,
+   "providers_touched": [
+    "raumfeld"
+   ],
+   "stacked": false,
+   "tldr": "Raumfeld's ICY default moves from \"full\" to \"basic\": full only adds a cover link the Raumfeld app ignores and writes in 1.5 s blocks that a zone can run dry on (your #7166 fixes the block size). A stored \"full\" is moved to \"basic\" once, tracked by a per-player marker in player config. GPT Sol and Copilot flag that this also overwrites a user's deliberate \"full\". Your rule puts one-time heals in config migrations.",
+   "summary": "",
+   "whats_new": "New 07:54Z. Copilot 08:05Z: Changes recommended.",
+   "blockers": [
+    "Copilot r4375076927 (open thread): move the full-to-basic conversion into the startup config migrations, which matches your placement rule (Simanias)",
+    "GPT Sol: the heal overwrites a deliberate \"full\" too"
+   ],
+   "findings": [
+    {
+     "model": "Copilot",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/raumfeld/provider.py",
+     "line": 760,
+     "title": "Move the full-to-basic conversion into startup config migrations (r4375076927)",
+     "detail": "",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/raumfeld/provider.py",
+     "line": 769,
+     "title": "An explicit \"full\" set by the user is overwritten",
+     "detail": "The PR argues it cannot be told apart from the provider-stored default. Copilot raises the same.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/raumfeld/provider.py",
+     "line": 760,
+     "title": "Heal lives in the provider with a stored marker, not in a config migration",
+     "detail": "",
+     "fix": "",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": false,
+    "comments": 1,
+    "findings": 1,
+    "review_url": "https://github.com/music-assistant/server/pull/7218#discussion_r4375076927",
+    "titles": [
+     "[PROBLEM] Move the conversion into config migrations (r4375076927)"
+    ]
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "#7166",
+    "#7216"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 09:00 CET",
+   "changed_now": "new"
+  },
+  {
+   "repo": "server",
+   "number": 7215,
+   "state": "open",
+   "closed_at": null,
+   "title": "Update Yandex Station provider to v1.5.24",
+   "author": "trudenboy",
+   "url": "https://github.com/music-assistant/server/pull/7215",
+   "draft": true,
+   "verdict": null,
+   "assessment": null,
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "trudenboy (draft)",
+   "gpt_sol": "not run",
+   "size": "S",
+   "code": 0,
+   "add": 0,
+   "del": 0,
+   "ci": "not checked (draft)",
+   "ci_fail": false,
+   "merge_state": "not checked (draft)",
+   "head_sha": "",
+   "core_touched": false,
+   "providers_touched": [
+    "yandex_station"
+   ],
+   "stacked": false,
+   "tldr": "Draft, not reviewed yet.",
+   "summary": "",
+   "whats_new": "Opened 07:10Z.",
+   "blockers": [
+    "Draft."
+   ],
+   "findings": [],
+   "unaddressed_comments": [],
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "reviewed_at": null,
    "changed_now": "new"
   }
  ]
