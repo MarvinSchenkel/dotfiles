@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-26T12:00:00+01:00",
+ "last_run": "2026-10-26T13:00:00+01:00",
  "dev": "aec26acfd",
- "run_note": "Two small PRs are clean from all three reviewers and wait on you: trudenboy's #7215 (held only by the open en.json rule) and maximmaxim345's #7225 (Sendspin is excluded). Simanias's #7216 and #7224 each fixed the last Copilot round, got one new CRITICAL thread each, and answered both again mid-run; re-review next run. genesispc's new #7226 (ABC Radio per state) is sound but has no tests; Opus wrote 9 that pass.",
+ "run_note": "imoamo72's #7221 (Bluesound metadata for support#6889) is a clean 5-line fix; Copilot only objects to the PR description, so it waits on that before auto-approval, and it should be backported. Both Simanias Raumfeld PRs got another Copilot CRITICAL, were drafted by the gate, and were answered within minutes; they wait on him to mark them ready. trudenboy resolved the #7219 thread without pushing the fix.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -10994,12 +10994,12 @@
    "title": "Raumfeld: show each track's cover, artist and album in the Raumfeld app",
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7216",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "Copilot + our re-review of 63b4e8fc0",
+   "waiting_on": "Simanias: mark ready for review",
    "gpt_sol": "2 critical (we rate suggestions)",
    "size": "M",
    "code": 206,
@@ -11016,9 +11016,9 @@
    "stacked": false,
    "tldr": "Almost: round four. Simanias fixed both previously missed CRITICALs (Line-In takeover, stop overlap) plus repeat wraps; Opus confirms (289 tests pass, provider-only, one comment NIT) and says a repeat change mid-track corrects itself within a poll. Copilot now has one new CRITICAL thread: when two zones merge in the Raumfeld app, a timer can announce the losing queue to the surviving zone before MA reconciles the groups. GPT Sol adds that a failed Bend is still marked announced.",
    "summary": "Delta 4ba371d1e..9c299af7a (935c2a3e4, 9c299af7a). (a) _update_zone_source's Line-In branch now calls _drop_flow(), the same helper _set_external uses: it clears _flow_url and cancels the boundary timer and the in-flight announce task, and _announce_flow_item's url != self._flow_url check also stops a Bend that is already past its await. An MA-started Line-In was already covered by the decorator cancelling the task and by the active_source guard. (b) _start_flow_announcement refuses while _playback_changes is set, so a timer firing during a stop that fails leaves _announced_item_id alone. _passed_item_id is still set, but with an old _announced_at it never counts as lagging, so the next poll re-announces nothing wrong and the queue catching up announces the next track within about one poll. (c) lagging = current == _passed_item_id and less than 12 s since the timer's announcement. Playing polls run every 5 s, so the queue normally catches up within that window, and a queue still on the ended track after it (repeat-one set late) gets that track re-announced. (d) _announce_upcoming passes forward_only=False, so the wrap to item 0 is not refused by the 5 s back-step guard. The resume-near-end flapping that guard was meant for is now covered by the lag hold. Copilot's repeat-setting comment: _maybe_announce_flow_item runs on every playing poll and _schedule_next_announcement cancels and re-arms the timer with the latest next_item. A stale guess is only possible when repeat changes in the last poll interval before a boundary, and it corrects itself as described. No new bugs found in the delta. Merge with #7224 still conflicts in player.py (constants, _changes_playback body, class attributes, on_unload) and test_player.py. All hunks are additive, but after rebase _start_flow_earlier's early return should sit after the _flow_url reset in play_media, so a deferred restart does not leave the old flow's timer armed.",
-   "whats_new": "935c2a3e4 and 9c299af7a answer Copilot's previously missed CRITICALs. Re-reviewed: Opus ready (NIT), GPT Sol 2 critical, Copilot 1 new CRITICAL thread. Mid-run, 63b4e8fc0 answered the new thread.",
+   "whats_new": "Copilot raised another CRITICAL at 11:43Z/11:44Z, the critical gate drafted it at 11:45Z, and Simanias answered with d44e5e8f5 two minutes later. Still a draft, so not re-reviewed.",
    "blockers": [
-    "63b4e8fc0 (11:12Z) answers Copilot r4376559041 (only announce to a zone that plays the room's own queue); thread resolved, re-review next run"
+    "Draft since 11:45Z; Simanias answered the last CRITICAL in d44e5e8f5. Re-review once he marks it ready"
    ],
    "findings": [
     {
@@ -11089,9 +11089,9 @@
    "related_prs": [
     "#7224 Simanias, textual conflict in player.py"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": "pushed"
+   "changed_now": "drafted"
   },
   {
    "repo": "server",
@@ -11235,9 +11235,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": "ready for review"
+   "changed_now": ""
   },
   {
    "repo": "client",
@@ -11397,7 +11397,7 @@
    "number": 7219,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Smart Home provider to v2.2.8: setup-flow wording and test coverage",
+   "title": "Update Yandex Smart Home provider to v2.2.9: setup-flow wording and test coverage",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7219",
    "draft": false,
@@ -11405,7 +11405,7 @@
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "trudenboy: Copilot thread (test exception)",
+   "waiting_on": "trudenboy: push the test fix",
    "gpt_sol": "2 problems (test fidelity)",
    "size": "S",
    "code": 2,
@@ -11422,9 +11422,9 @@
    "stacked": false,
    "tldr": "Almost: VERSION 2.2.4 to 2.2.8, two reworded setup strings (kept in sync in en.json) and four test modules from the provider repo. The 2.2.5 to 2.2.8 code already landed through earlier PRs, so runtime code is unchanged. 238 tests pass, no network. Copilot and GPT Sol both say the device-login timeout test raises TimeoutError where the engine raises StepExpiredError, so it tests the wrong path. Auto-approve candidate once that is fixed and Copilot approves.",
    "summary": "Reviewed myself (no Opus run, 2 changed code lines). Strings: ym_instance drops \"Device Flow popup\" (retired in #5030), cloud_confirm says the code is shown by MA. Tests import real names from the checkout and pass (238 in tests/providers/yandex_smarthome). GPT Sol adds that the cached-token rejection test mocks InvalidCredentialsError where the real path raises LoginFailed through FAILED artifacts.",
-   "whats_new": "Marked ready for review 09:46Z. Reviewed: Claude clean, GPT Sol 2 test problems, Copilot 1 PROBLEM thread.",
+   "whats_new": "trudenboy replied \"fixed\" on the Copilot thread at 11:14Z and renamed the PR to v2.2.9, but pushed nothing: the head is still a016c8ea0 and the thread is resolved with the old test.",
    "blockers": [
-    "Copilot r4376021797: the timeout test should raise StepExpiredError (trudenboy)"
+    "Copilot thread resolved without a push: the timeout test still raises TimeoutError on a016c8ea0 (trudenboy)"
    ],
    "findings": [
     {
@@ -11471,7 +11471,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 11:20 CET",
-   "changed_now": ""
+   "changed_now": "author replied"
   },
   {
    "repo": "server",
@@ -11533,51 +11533,103 @@
    "title": "Fix Bluesound metadata for library playback without an input",
    "author": "imoamo72",
    "url": "https://github.com/music-assistant/server/pull/7221",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "approve",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "imoamo72 (draft)",
-   "gpt_sol": "not run",
+   "waiting_on": "imoamo72: PR description (Copilot thread)",
+   "gpt_sol": "1 problem (pre-existing, we rate suggestion)",
    "size": "S",
    "code": 8,
-   "add": 0,
+   "add": 5,
    "del": 0,
-   "ci": "not checked (draft)",
+   "ci": "green (10 checks)",
    "ci_fail": false,
-   "merge_state": "not checked (draft)",
-   "head_sha": "",
+   "merge_state": "merge-tree clean on origin/dev aec26acfd; merges cleanly with your #7159",
+   "head_sha": "8294f5387",
    "core_touched": false,
    "providers_touched": [
     "bluesound"
    ],
    "stacked": false,
-   "tldr": "Draft, not reviewed yet.",
-   "summary": "",
-   "whats_new": "Opened 08:48Z for support#6889: falls back from input_id to service, then a stable bluos_external id. Same player.py as your #7159 (_musp).",
+   "tldr": "Almost, code is ready: with a BluOS service but no input_id, the source id falls back to the service (e.g. LocalMusic) or \"bluos_external\" instead of None, so MA stops showing its own empty queue and exports the BluOS track metadata (support#6889). 5 lines, provider-only, 23 tests pass and the new ones fail on dev. Copilot's only finding is the PR description template. Once that is fixed and Copilot approves, it auto-approves; backport recommended.",
+   "summary": "The PR only changes the generic else-branch of BluesoundPlayer._resolve_source. source_id = input_id or service or 'bluos_external' now feeds both _attr_active_source and the appended passive PlayerSource, which used to be built with id=None.\n\nStability: the service name ('LocalMusic') stays the same across track changes, and input_id still takes precedence, so the id does not flip between polls. Duplicates: update_attributes resets _attr_source_list = await self._get_bluesound_sources() on every poll before _resolve_source appends, so there is one entry per poll and no growth. This is the same on origin/dev.\n\nCore handling: queue.active = state.active_source in (queue_id, None). While playing, __final_active_source returns the reported 'LocalMusic' when no MA mass source is set, so the queue goes inactive. current_media skips the own-queue fallback because the raw active_source is no longer None, and returns the native PlayerMedia from _resolve_media. That is the intended fix and matches the reporter's live test. When idle, __final_active_source ignores the reported source and falls back to the mass source or player_id, so a leftover service in an idle status does not change queue or resume behaviour. select_source back to MA (source=player_id) stops the player and sets the mass source, as before. The frontend source picker shows passive sources only when they are active, and disabled, so 'LocalMusic' never reaches BluesoundPlayer.select_source, whose split('-') would fail on it. That failure exists on dev too, for the PLAYER_SOURCE_MAP ids.\n\nMA playback: the stream_url/base_url guard runs before the new branch. If a status ever lacks streamUrl during MA playback (e.g. while 'connecting'), the new 'bluos_external'/service id cannot take over: __active_mass_source wins because Bluesound does not set trusts_reported_source and these ids are not in EXTERNAL_SOURCES.\n\nName collisions: the generic branch only runs when input_id, service and name all miss PLAYER_SOURCE_MAP, so a service name cannot shadow a map entry. 'localmusic' is not in EXTERNAL_SOURCES. Services that are in it (qobuz, deezer, iheartradio, ...) now count as a takeover of a stale MA source, which is the right behaviour.\n\nOverlap with draft #7159: none. #7159 only touches bluesound/provider.py (_musp discovery and secondary-zone registration) and tests/providers/bluesound/test_discovery.py, not player.py. The behaviours are independent.\n\nStable has the same generic branch and the same core current_media / __final_active_source semantics (pre-refactor EXTERNAL_SOURCES check). The merge-tree dry run is clean.",
+   "whats_new": "Marked ready 12:00Z. Reviewed: Opus ready, GPT Sol 1 problem (pre-existing), Copilot 1 description thread.",
    "blockers": [
-    "Draft."
+    "Copilot r4377006503: drop the extra Validation section from the PR description (imoamo72)"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Copilot",
+     "severity": "PROBLEM",
+     "file": "PR description",
+     "line": 0,
+     "title": "Extra Validation section breaks the PR template (r4377006503)",
+     "detail": "No functional blockers; Copilot asks to remove the section and condense the verification notes.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/bluesound/player.py",
+     "line": 305,
+     "title": "Switching from MA to the BluOS app still shows the MA queue item",
+     "detail": "GPT Sol rates it a problem. Opus confirms it is pre-existing on dev: LocalMusic is not a trusted takeover and the mass source only clears after 5 s idle. Follow-up, not this PR.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "tests/providers/bluesound/test_source.py",
+     "line": 56,
+     "title": "Tests partly cover code this PR does not change",
+     "detail": "The tests run the real _resolve_source/_resolve_media bodies on a MagicMock self, following the existing test_playback_state.py pattern. The parametrized test_external_source_has_stable_identifier fails on dev (3 cases), so it is a real regression test. test_known_service_keeps_its_source (8 cases), test_ma_stream_is_not_classified_as_external, and the metadata half of test_library_track_change_keeps_source_and_updates_metadata cover unchanged branches and the unchanged _resolve_media. The track-change test also resets _attr_source_list by hand to mimic the poll, so it checks no more than the parametrized test. None of the tests cover the actual symptom: core current_media falling back to the empty own queue when active_source is None.",
+     "fix": "Keep the parametrized identifier test (optionally plus the MA-stream guard). Drop or trim the known-service and track-change tests.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/bluesound/player.py",
+     "line": 311,
+     "title": "Raw service id used as display name",
+     "detail": "name=source_id shows 'LocalMusic' (or 'bluos_external') as the source name in the frontend and in HA. This only affects how it looks and was already the case for input_id-based sources.",
+     "fix": "Optional: add a LocalMusic entry to PLAYER_SOURCE_MAP with a friendly name if the generic branch is mostly hit by the library.",
+     "posted": null
+    }
+   ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "",
+   "copilot": {
+    "green": false,
+    "comments": 1,
+    "findings": 1,
+    "review_url": "https://github.com/music-assistant/server/pull/7221#discussion_r4377006503",
+    "titles": [
+     "[PROBLEM] Remove the extra Validation section from the PR description (r4377006503)"
+    ]
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Changes recommended on 8294f5387 (12:06Z), only for the PR description template; no code blockers.",
    "suggested_fix": null,
    "prompt": "",
-   "backport": null,
+   "backport": {
+    "rec": true,
+    "why": "User-facing bug reported on 2.10.8. The fix is provider-only and 5 lines. Stable has the same generic branch and the same core current_media/active_source semantics, and git merge-tree onto origin/stable is clean."
+   },
    "auto_approved": null,
    "author_replied": null,
    "reporter_reply": null,
    "support": null,
    "fix_thread": null,
    "related_prs": [
-    "#7159 yours, same file"
+    "#7159 yours, same provider, no overlap"
    ],
-   "reviewed_now": false,
-   "reviewed_at": null,
-   "changed_now": ""
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 13:15 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "models",
@@ -11635,12 +11687,12 @@
    "title": "Raumfeld: start a flow at least 8 s before the end of its first track",
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7224",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "Copilot + our re-review of e6e26c342",
+   "waiting_on": "Simanias: mark ready for review",
    "gpt_sol": "1 critical (same as Copilot)",
    "size": "S",
    "code": 65,
@@ -11657,9 +11709,9 @@
    "stacked": false,
    "tldr": "Almost: the restart is now cancelled by any later playback command (told apart by task identity, the lock is FIFO), which fixes Copilot's stale-restart CRITICAL; Opus confirms, 274 tests pass. New Copilot CRITICAL, also raised by GPT Sol and Opus: the 8 s minimum is scaled by queue.playback_speed, which still holds the previous item's speed when play_index restores an audiobook speed. Opus's patch reads the item's own speed and adds a self-cancel test (275 pass).",
    "summary": "Delta 27f889416..7aac457c0. Telling the restart apart: _changes_playback cancels player._flow_restart unless it is asyncio.current_task(). The restart is mass.create_task(play_index(...)), started eagerly. play_index is @handle_play_action, which strictly takes the group and player playback locks before touching any queue state, so the eager first step suspends on the lock the original play_index still holds, and _flow_restart is assigned before anything can check it. In the restart task, play_index -> players.play_media -> _handle_play_media -> provider play_media are plain awaits (the sync_group path too), so the identity check holds and the restart does not cancel itself. Races: a stop, seek or play queued on the lock before the restart runs first (asyncio.Lock is FIFO) and cancels the restart while it waits on the lock, with nothing to unwind. A command queued after the restart runs after it, which is the right order. Commands that do not reach a decorated provider method (volume, shuffle, repeat, set_members) do not cancel, which is fine. Cleanup: on_unload cancels the task. _flow_restart is never reset, but done() covers that. Speed: least = FLOW_MIN_FIRST_TRACK * queue.playback_speed, which is correct for an item already playing. But queue.playback_speed is only written by set_playback_speed and by the player progress handlers (controller.py:1466, playback_tracker.py:147), not when play_index loads a new item with a stored speed (controller.py:1124-1131 sets item.extra_attributes only). For a newly started item it is the previous item's speed. Earlier suggestions still open: flow detection parses the url layout (core sets queue.flow_mode only once the stream is produced, so there is no earlier signal, and after #7216 lands this should reuse _is_queue_flow), and the faked PLAYING while the restart is pending (corrected by the next fast poll if the restart fails). The test suite does not cover the self-identity branch. Merge with #7216 still conflicts (additive hunks in the constants, _changes_playback, class attributes, on_unload and the tests).",
-   "whats_new": "7aac457c0 answers the stale-restart CRITICAL and scales by playback speed. Re-reviewed: Opus ready (4 suggestions), GPT Sol 1 critical, Copilot 1 new CRITICAL thread. Mid-run, e6e26c342 answered the speed thread, so our patch is no longer needed.",
+   "whats_new": "Copilot raised another CRITICAL at 11:43Z/11:44Z, the critical gate drafted it at 11:45Z, and Simanias answered with 73a86b538 two minutes later. Still a draft, so not re-reviewed.",
    "blockers": [
-    "e6e26c342 (11:13Z) takes the speed from the item that starts, answering Copilot r4376550226; thread resolved, re-review next run"
+    "Draft since 11:45Z; Simanias answered the last CRITICAL in 73a86b538. Re-review once he marks it ready"
    ],
    "findings": [
     {
@@ -11730,9 +11782,9 @@
     "#7216 Simanias, textual conflict in player.py",
     "#7179 room join restart"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": "pushed"
+   "changed_now": "drafted"
   },
   {
    "repo": "server",
@@ -11854,9 +11906,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": "ready for review"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -11952,9 +12004,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": "new"
+   "changed_now": ""
   }
  ]
 }
