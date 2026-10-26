@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-23 17:30 CEST",
+ "last_run": "2026-10-26 07:30 CEST",
  "columns": [
   [
    "info",
@@ -89,7 +89,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:23Z",
@@ -107,7 +107,8 @@
      "spotify",
      "Spotify Connect",
      "hass",
-     "waiting-for-user"
+     "waiting-for-user",
+     "triage/reminded-1"
     ]
    }
   },
@@ -163,7 +164,7 @@
    "diff": "diff --git a/aioaudiobookshelf/schema/audio.py b/aioaudiobookshelf/schema/audio.py\nindex 28ade35..16fa8af 100644\n--- a/aioaudiobookshelf/schema/audio.py\n+++ b/aioaudiobookshelf/schema/audio.py\n@@ -44,7 +44,8 @@ class AudioTrack(_BaseModel):\n class AudioFile(_BaseModel):\n     \"\"\"Audiofile.\"\"\"\n \n-    index: int\n+    # null for podcast episodes abs scanned in before its v2.21.0\n+    index: int | None = None\n     ino: str\n     metadata: FileMetadata\n     added_at: Annotated[int, Alias(\"addedAt\")]\ndiff --git a/tests/test_podcasts.py b/tests/test_podcasts.py\nnew file mode 100644\nindex 0000000..dff6ea6\n--- /dev/null\n+++ b/tests/test_podcasts.py\n@@ -0,0 +1,100 @@\n+\"\"\"Tests for decoding podcast payloads.\"\"\"\n+\n+import json\n+from typing import Any\n+\n+from aioaudiobookshelf.schema.library import LibraryItemExpandedPodcast\n+\n+_FILE_METADATA = {\n+    \"filename\": \"episode1.mp3\",\n+    \"ext\": \".mp3\",\n+    \"path\": \"/podcasts/show1/episode1.mp3\",\n+    \"relPath\": \"episode1.mp3\",\n+    \"size\": 1000,\n+    \"mtimeMs\": 1700000000000,\n+    \"ctimeMs\": 1700000000000,\n+    \"birthtimeMs\": 0,\n+}\n+\n+\n+def _episode() -> dict[str, Any]:\n+    \"\"\"Build an episode as abs sends it for a file scanned in before abs v2.21.0.\"\"\"\n+    audio_file = {\n+        \"index\": None,\n+        \"ino\": \"2\",\n+        \"metadata\": _FILE_METADATA,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"manuallyVerified\": False,\n+        \"exclude\": False,\n+        \"error\": None,\n+        \"format\": \"MP2/3 (MPEG audio layer 2/3)\",\n+        \"duration\": 60.0,\n+        \"bitRate\": 128000,\n+        \"codec\": \"mp3\",\n+        \"channels\": 2,\n+        \"channelLayout\": \"stereo\",\n+        \"mimeType\": \"audio/mpeg\",\n+    }\n+    return {\n+        \"libraryItemId\": \"item1\",\n+        \"podcastId\": \"podcast1\",\n+        \"id\": \"episode1\",\n+        \"index\": None,\n+        \"title\": \"Episode 1\",\n+        \"chapters\": [],\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"audioFile\": audio_file,\n+        \"audioTrack\": {\n+            \"index\": None,\n+            \"startOffset\": 0,\n+            \"duration\": 60.0,\n+            \"title\": \"episode1.mp3\",\n+            \"contentUrl\": \"/api/items/item1/file/2\",\n+            \"mimeType\": \"audio/mpeg\",\n+            \"metadata\": _FILE_METADATA,\n+        },\n+        \"duration\": 60.0,\n+        \"size\": 1000,\n+    }\n+\n+\n+def _podcast_item(episode: dict[str, Any]) -> bytes:\n+    item = {\n+        \"id\": \"item1\",\n+        \"ino\": \"1\",\n+        \"libraryId\": \"library1\",\n+        \"folderId\": \"folder1\",\n+        \"path\": \"/podcasts/show1\",\n+        \"relPath\": \"show1\",\n+        \"isFile\": False,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"isMissing\": False,\n+        \"isInvalid\": False,\n+        \"mediaType\": \"podcast\",\n+        \"libraryFiles\": [],\n+        \"size\": 1000,\n+        \"media\": {\n+            \"id\": \"podcast1\",\n+            \"libraryItemId\": \"item1\",\n+            \"autoDownloadEpisodes\": False,\n+            \"maxEpisodesToKeep\": 0,\n+            \"maxNewEpisodesToDownload\": 3,\n+            \"tags\": [],\n+            \"size\": 1000,\n+            \"metadata\": {\"title\": \"Show 1\", \"genres\": [], \"explicit\": False},\n+            \"episodes\": [episode],\n+        },\n+    }\n+    return json.dumps(item).encode()\n+\n+\n+def test_an_episode_scanned_before_abs_2_21_has_no_audio_file_index() -> None:\n+    \"\"\"Abs never backfilled the null index of older scans, see support#6842.\"\"\"\n+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(_episode()))\n+\n+    audio_file = item.media.episodes[0].audio_file\n+    assert audio_file is not None\n+    assert audio_file.index is None\n",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "fmunkes",
      "at": "2026-10-23T06:57:50Z",
@@ -216,11 +217,11 @@
    "col": "user",
    "area": "server / providers/sonos player.py _on_playback_error, streams controller (port 8097); airplay/player.py volume (with #6664)",
    "since": "2026-10-21 12:30",
-   "last": "MarvinSchenkel 2026-10-23 14:24",
+   "last": "innerskyone 2026-10-24 12:51",
    "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-23T14:24:41Z",
+    "login": "innerskyone",
+    "team": false,
+    "at": "2026-10-24T12:51:24Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -248,18 +249,19 @@
     "10-22 14:40 sync: you posted from the board (https://github.com/music-assistant/support/issues/6838#issuecomment-6340988465), with your edits",
     "10-22 15:30 run: you posted the firewall answer from the board, edited (12:40 UTC, https://github.com/music-assistant/support/issues/6838#issuecomment-6340988465). Waiting for innerskyone.",
     "10-23 07:30 run: innerskyone (19:31 UTC): will try, but says native Sonos worked on the previous version and nothing changed on his network. Waiting for his result; if it still fails with the port open, look at what changed between versions.",
-    "10-23 16:30 run: you asked innerskyone (14:24 UTC) which previous version worked natively. Waiting for him."
+    "10-23 16:30 run: you asked innerskyone (14:24 UTC) which previous version worked natively. Waiting for him.",
+    "10-26 07:30 run: innerskyone (10-24): no idea which version worked, 'possibly 2.10.6', just upgraded to 2.10.8. No word on the firewall rule yet."
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-23T14:24:41Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6838#issuecomment-6367158990"
+     "login": "innerskyone",
+     "at": "2026-10-24T12:51:24Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6838#issuecomment-6384431889"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -269,7 +271,7 @@
      "airplay",
      "triage",
      "sonos",
-     "waiting-for-user"
+     "needs-attention"
     ]
    }
   },
@@ -312,7 +314,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "NasaGeek",
      "at": "2026-10-21T16:04:47Z",
@@ -333,7 +335,8 @@
      "sendspin",
      "waiting-for-user",
      "WiiM",
-     "SiriusXM"
+     "SiriusXM",
+     "triage/reminded-1"
     ]
    }
   },
@@ -343,11 +346,11 @@
    "col": "info",
    "area": "server / providers/heos player.py, player_queues/queue_loader.py, Spotify Soloist single stream slot",
    "since": "2026-10-21 07:38",
-   "last": "panda-star357 2026-10-23 02:37",
+   "last": "panda-star357 2026-10-24 23:34",
    "gh": {
     "login": "panda-star357",
     "team": false,
-    "at": "2026-10-23T02:37:35Z",
+    "at": "2026-10-24T23:34:02Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -372,20 +375,21 @@
     "10-21 07:38 run: server#7132 (flow stream read-any, for #6831) may also shorten the time to first bytes after a skip here. Worth a retest once it's in a nightly.",
     "10-21 13:05 dry run of autonomous info asks: GPT Sol revised twice (old Settings path was wrong, the separate Spotify-account question became a capture condition). Agreed text stored as the draft; the next run may post it under the new rules.",
     "10-21 13:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6835#issuecomment-6314882453), GPT: post, the diagnostics lack a debug trace of a failed skip and nobody asked for it yet; steps verified, Spotify contention handled as a capture condition.",
-    "10-23 07:30 run: panda-star357 reports a similar HEOS stall after Next (QQ Music, Denon Home 250) with a cleanup-race lead. Original reporter hasn't answered our debug ask yet. Related to #6831."
+    "10-23 07:30 run: panda-star357 reports a similar HEOS stall after Next (QQ Music, Denon Home 250) with a cleanup-race lead. Original reporter hasn't answered our debug ask yet. Related to #6831.",
+    "10-26 07:30 run: Tommatheussen (HEOS owner) asked for Streams + Player Queues debug logs; panda-star357 posted a 2.10.8 capture (gist), yoavbrog reports the same after seek/skip. Tommatheussen's to analyse."
    ],
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "panda-star357",
-     "at": "2026-10-23T02:37:35Z",
+     "at": "2026-10-24T23:34:02Z",
      "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6835#issuecomment-6356047217"
+     "url": "https://github.com/music-assistant/support/issues/6835#issuecomment-6390929987"
     },
-    "reporter_new": false,
-    "team_new": false,
+    "reporter_new": true,
+    "team_new": true,
     "closed": false,
     "pr": [],
     "test_ask": null,
@@ -396,7 +400,8 @@
      "needs-attention",
      "HEOS"
     ]
-   }
+   },
+   "waiting_on": "team"
   },
   {
    "n": 6831,
@@ -404,17 +409,17 @@
    "col": "merged",
    "area": "server / controllers/streams/controller.py flow route chunk_size, helpers/ffmpeg.py, helpers/process.py",
    "since": "2026-10-21 07:38",
-   "last": "MarvinSchenkel 2026-10-23 12:52",
+   "last": "janoj 2026-10-25 12:02",
    "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-23T12:52:27Z",
+    "login": "janoj",
+    "team": false,
+    "at": "2026-10-25T12:02:51Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "Docker 2.11.0.dev2026100703, native HEOS group of two Denon Home 200s, Tidal, FLAC 44.1/24 output, ICY off, crossfade off. Playback stopped near 434 s of a 466 s track and every Play retried that position and failed with HEOS 'Unable to play media'. An MA restart didn't help, skipping to the next track did. Incident log, diagnostics and a standalone repro attached.",
    "fix": "server#7132 (draft): the flow route passes on whatever ffmpeg has encoded (read-any) when ICY is off, instead of waiting for a full second of encoded audio (~197 KB for FLAC). ICY framing unchanged. This restores the behaviour from before 4108ef5292 (Feb 2025, 'use static chunksize'); the single-item route already reads this way.",
-   "checked": "Opus subagent on origin/dev 03ee9a6872 (stable the same). The flow route reads ffmpeg output with chunk_size = icy_meta_interval if ICY else calculate_content_length(output_format) (controller.py:1546), via iter_chunked -> readexactly (helpers/ffmpeg.py:512/565, process.py:255-279), so for FLAC nothing is written until ~197 KB of encoded audio builds up. NEAR_REALTIME pacing only bursts 3 s ahead (streams/constants.py:100), so a quiet tail starves the player. Hermetic pytest repro: exact chunk size gives the first byte after 17.3 s on 20 s of silence, read-any under 3 s. ICY is off by default, so HEOS takes this path. Chunk size dates from 4bd03c2483 (Apr 2026). No fix PR. 10-22 21:06 UTC amodig on 2.11.0b6 (verified it contains #7132's chunk_size line): HEOS Denon Home 200, Tidal FLAC, no_content_length profile, balanced buffer, configured 2-speaker group with only one speaker online. Start at 410 s plays but queue progress jumps backwards and doesn't reach the next item within 85 s; start at 434 s: player/group start timeouts after ~5/10 s, group dissolved after 15 s; 'Unsupported format' errors only after his cleanup stop. Offers to dig in with GPT Astra over the weekend, asks what to test next.",
+   "checked": "Opus subagent on origin/dev 03ee9a6872 (stable the same). The flow route reads ffmpeg output with chunk_size = icy_meta_interval if ICY else calculate_content_length(output_format) (controller.py:1546), via iter_chunked -> readexactly (helpers/ffmpeg.py:512/565, process.py:255-279), so for FLAC nothing is written until ~197 KB of encoded audio builds up. NEAR_REALTIME pacing only bursts 3 s ahead (streams/constants.py:100), so a quiet tail starves the player. Hermetic pytest repro: exact chunk size gives the first byte after 17.3 s on 20 s of silence, read-any under 3 s. ICY is off by default, so HEOS takes this path. Chunk size dates from 4bd03c2483 (Apr 2026). No fix PR. 10-22 21:06 UTC amodig on 2.11.0b6 (verified it contains #7132's chunk_size line): HEOS Denon Home 200, Tidal FLAC, no_content_length profile, balanced buffer, configured 2-speaker group with only one speaker online. Start at 410 s plays but queue progress jumps backwards and doesn't reach the next item within 85 s; start at 434 s: player/group start timeouts after ~5/10 s, group dissolved after 15 s; 'Unsupported format' errors only after his cleanup stop. Offers to dig in with GPT Astra over the weekend, asks what to test next. 10-24 amodig on b6 with both Denon Home 200s grouped: FLAC control pass, WAV Düsternis from 434 s pass, WAV full Düsternis pass, FLAC from 434 s fail (timeout, group dissolves). Matches your HEOS-buffering-on-compressed-silence read. 10-25 janoj: 'njól' (The Northerner Diaries, Tidal 91139997; Jellyfin MP3 320 too) still has ~2 short pauses in the first 10 s on b7, less than before b6.",
    "plan": "Fix not confirmed. Possibly a second cause: seek start near the end of a track (434 of 466 s) + group start timeout. Second HEOS report in #6835 points at an old queue-cleanup task overlapping a new play request.",
    "branch": "fix/flow-stream-chunk-latency @ 1c65220a1d, worktree server-worktrees/fix-6831",
    "diff": "",
@@ -459,20 +464,21 @@
     "10-23 15:30 run: you posted the silence analysis (12:52 UTC): Düsternis ends in 30 s of digital silence, Cruzer has 413 s mid-track; #7132 is right, the remaining failure is HEOS byte buffering. Asks for other tracks, a WAV A/B and janoj's track name. Waiting on amodig.",
     "10-23 15:55 (release overview): fix is on stable with backport-to-stable; milestone 2.10.8 set.",
     "10-23 16:00 (your call): book 2.10.8 confirmed.",
-    "10-23 16:10 (your call): milestone removed, stays open while amodig answers your questions; #7132 itself shipped in 2.10.8."
+    "10-23 16:10 (your call): milestone removed, stays open while amodig answers your questions; #7132 itself shipped in 2.10.8.",
+    "10-26 07:30 run: amodig's WAV A/B supports your hypothesis; two questions for you. janoj gave a track and says b7 still stutters briefly."
    ],
-   "action": "",
+   "action": "amodig confirms WAV works where FLAC fails, asks (1) is WAV the recommended workaround for HEOS, (2) do you have a HEOS/Denon contact. janoj: still short stutters on b7 (also MP3 via Jellyfin). OzGav said it'll be closed soon. Your call: answer + keep open or close.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-23T12:52:27Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6831#issuecomment-6365314900"
+     "login": "janoj",
+     "at": "2026-10-25T12:02:51Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6831#issuecomment-6397385242"
     },
-    "reporter_new": false,
-    "team_new": false,
+    "reporter_new": true,
+    "team_new": true,
     "closed": false,
     "pr": [
      {
@@ -491,93 +497,11 @@
     "after_test_ask_reporter": true,
     "labels": [
      "Fix to be Confirmed",
-     "waiting-for-user",
+     "needs-attention",
      "HEOS"
     ]
    },
-   "ask": null
-  },
-  {
-   "n": 6821,
-   "title": "Raumfeld: 192 kHz fails on some devices and the sample rate can't be limited per player",
-   "col": "merged",
-   "area": "server / providers/raumfeld player.py + constants.py SUPPORTED_SAMPLE_RATES, controllers/config/players.py",
-   "since": "2026-10-20 07:38",
-   "last": "Simanias 2026-10-22 21:28",
-   "gh": {
-    "login": "Simanias",
-    "team": true,
-    "at": "2026-10-22T21:28:02Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "dev 2.11. 192 kHz/24-bit FLAC drops out on a Connector Gen 2 and Stereo Cubes and doesn't play on a Gen 1 One M; One S devices are fine. Capping flow mode at 96 kHz fixes it, but Raumfeld players don't show the per-player sample rate setting. Re-test of the One M is blocked by #6823.",
-   "fix": "server#7138 (Simanias): each Raumfeld room gets the sample rate setting, everything up to 24/96 on by default, 176.4/192 kHz opt-in per room.",
-   "checked": "Opus subagent on origin/dev. raumfeld/player.py:210 sets _attr_supported_sample_rates to 44.1-192 kHz 16/24 bit for every room (constants.py:49-53); config/players.py:755 hides CONF_ENTRY_SAMPLE_RATES when a player declares its rates, and declared rates win (models/player.py:1510). Claim correct, no open PR. GetProtocolInfo reports no rates, so a per-model table can't be detected.",
-   "plan": "Simanias owns it. jo-che answered his device question and added a group finding: the Raumfeld host applies the leader's format to the whole zone, so the leader should only advertise rates every room in its zone supports. Per-device cap alone won't cover groups.",
-   "branch": "",
-   "diff": "",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/server/pull/7138",
-     "label": "server#7138 (Simanias, merged 10-21 13:17 UTC: per-room sample rate setting, up to 96 kHz by default)"
-    }
-   ],
-   "badges": [
-    [
-     "muted",
-     "Simanias on it",
-     "owner"
-    ],
-    [
-     "ok",
-     "FtbC + 2.11.0 booked",
-     "booked"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-20 07:38 run: new issue, claim confirmed in code, no fix built (provider owner's call).",
-    "10-20 10:38 run: Simanias (07:52 UTC) will add a per-device max sample rate setting and asked jo-che which devices fail. Off your plate, no reply needed.",
-    "10-20 11:38 run: jo-che (09:27 UTC) posted a per-room table: One S Gen 2/3 play 192/24; Stereo Cubes Gen 2, Connector Gen 2 (Wi-Fi) and One M Gen 1 (fw 2.17.4) top out at 96/24. Retested on pr-7112. New: in a group led by a One S at 192 kHz, the One M and Connector drop after ~2 s, because only the leader's sample rate setting counts. Ball is with Simanias, no action for you.",
-    "10-20 14:38 run: Simanias (11:49 UTC) will add a per-device max sample rate plus a PR so a group follows its lowest member's rate (not today, he's abroad). He has a Connector Gen 2 without problems and suggests jo-che moves the Raumfeld host to a wired device. No action for you.",
-    "10-21 15:30 run: Simanias merged server#7138 (13:17 UTC), written against this issue. The Raumfeld provider isn't on stable (cherry-pick conflicts: files deleted there), so I set Fix to be Confirmed + milestone 2.11.0. No reply: you close it at release.",
-    "10-22 13:30 run: Simanias (10:30 UTC) asked jo-che whether server#7138 solves it. Nothing for you.",
-    "10-23 07:30 run: jo-che (20:38 UTC) confirmed server#7138 works for single rooms on dev; Simanias (21:28 UTC) summarised what's merged and coming for groups. Nothing for you."
-   ],
-   "action": "",
-   "milestone": "2.11.0",
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "Simanias",
-     "at": "2026-10-22T21:28:02Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6821#issuecomment-6351705042"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/server",
-      "n": 7138,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-10-21T13:17:56Z",
-      "own": false
-     }
-    ],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "triage",
-     "Fix to be Confirmed",
-     "hass",
-     "needs-attention"
-    ]
-   }
+   "ask": "input"
   },
   {
    "n": 6817,
@@ -618,7 +542,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:07Z",
@@ -634,7 +558,8 @@
     "labels": [
      "airplay",
      "sendspin",
-     "waiting-for-user"
+     "waiting-for-user",
+     "triage/reminded-1"
     ]
    }
   },
@@ -675,7 +600,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:36:49Z",
@@ -691,59 +616,7 @@
     "labels": [
      "dlna",
      "triage",
-     "waiting-for-user"
-    ]
-   }
-  },
-  {
-   "n": 6695,
-   "title": "Universal Group (Cast) announcement cuts off the last word before resume",
-   "col": "cantfix",
-   "area": "server / controllers/players/announcements.py _play_announcement + providers/universal_group/player.py",
-   "since": "2026-10-12 07:40",
-   "last": "Anto79-ops 2026-10-10 18:07",
-   "gh": {
-    "login": "Anto79-ops",
-    "team": false,
-    "at": "2026-10-10T18:07:20Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "On 2.10.6, tts.speak (Piper) on a Universal Group of 2-3 Google Cast devices plays the chime and the message, then resumes the music at the right spot, but the last word of the TTS is cut off on every member. The same announcement to a single Cast plays in full. No debug log yet, the reporter offered one.",
-   "fix": "",
-   "checked": "Opus subagent, code read on origin/dev (same on 2.10.6), not reproduced on hardware. Chromecast has no PLAY_ANNOUNCEMENT feature (chromecast/player.py:106-112), so _members_announce_in_step returns False (announcements.py:1062-1086) and the group takes the default _play_announcement (:650-769). That waits for the group to report PLAYING (:734), takes that as the start, then waits for IDLE with minimal_time duration+2 (:750-757). UGP play_media sets PLAYING optimistically before the members got LOAD (universal_group/player.py:331), so the PLAYING wait returns at once (controller.py:2389-2399), and the members still being IDLE make the UGP mirror IDLE early (player.py:514-533). Restore fires at duration+2 s after LOAD was sent, not after the Casts started, and Nest devices easily take more than 2 s to load a stream. A single Cast is fine because its own state stays IDLE until it plays. No fix on dev or in an open PR.",
-   "plan": "Ask for a debug log of one group announcement to see member PLAYING/IDLE times against the restore line, then build option A.",
-   "branch": "",
-   "diff": "",
-   "prs": [],
-   "badges": [],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, the timings helped. Your analysis matches what the code does: for a Universal Group of Cast speakers the announcement timer starts when the group reports playing. The group reports that right away, before the speakers have buffered and started the audio. So the music comes back about two seconds after the clip should have ended, measured from the wrong starting point, and that cuts off the last word. Could you enable debug logging for Music Assistant, run one group announcement, and attach the log? That lets us check how long your Nest devices take to really start, so we can time the resume from the speakers instead of from the group.",
-   "bookkeeping": [],
-   "notes": [
-    "10-12 07:40 run: new issue. Code read explains it (UGP's optimistic PLAYING starts the announcement timer before the Casts play), no hardware repro, fix shape is a design call.",
-    "10-14 11:40 run: only a bot reminder (03:31 UTC), nothing new."
-   ],
-   "action": "Pick the fix shape: (A, my lean) for a group player, wait for PLAYING and IDLE on the members instead of the group's optimistic state; (B) UGP skips optimistic PLAYING for announcements; (C) fixed tail padding. Post the reply asking for a debug log.",
-   "ask": "input",
-   "milestone": null,
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "Anto79-ops",
-     "at": "2026-10-10T18:07:20Z",
-     "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6695"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "triage",
      "waiting-for-user",
-     "triage/reminded-2",
      "triage/reminded-1"
     ]
    }
@@ -800,7 +673,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "bdeprez",
      "at": "2026-10-13T20:17:14Z",
@@ -856,6 +729,10 @@
     {
      "url": "https://github.com/music-assistant/server/pull/2608",
      "label": "server#2608 (moved reporting into Plex Connect, the cause)"
+    },
+    {
+     "url": "https://github.com/music-assistant/server/pull/7204",
+     "label": "server#7204 (anatosun, draft: Plex provider reports playback for players without Plex Connect again)"
     }
    ],
    "badges": [],
@@ -864,13 +741,14 @@
    "notes": [
     "10-12 07:40 run: new issue. By design since #2608: only the player linked to a Plex Connect instance reports. Workaround in the reply, design call on bringing reporting back for all players.",
     "10-23 14:45 discuss: discussion session started on your main account (Opus 5.5): commit/PR history of plex and plex_connect, why #2608 moved track reporting into Plex Connect, whether Plex needs a registered client per timeline report, verdict deliberate vs regression.",
-    "10-23 15:30 run: you asked anatosun on the issue (12:46 UTC). Card waits on him; reply draft dropped."
+    "10-23 15:30 run: you asked anatosun on the issue (12:46 UTC). Card waits on him; reply draft dropped.",
+    "10-26 07:30 run: anatosun opened draft server#7204 (option a). Waiting on him."
    ],
-   "action": "Waiting on anatosun (you asked 12:46 UTC why #2608 dropped provider-side track reporting). Discussion session still running.",
+   "action": "anatosun opened draft server#7204: provider-side reporting is back for players without Plex Connect, each as its own Plex device. Option (a).",
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T12:46:25Z",
@@ -887,6 +765,14 @@
       "state": "MERGED",
       "draft": false,
       "merged_at": "2025-11-25T08:20:07Z",
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 7204,
+      "state": "OPEN",
+      "draft": true,
+      "merged_at": null,
       "own": false
      }
     ],
@@ -912,11 +798,11 @@
    "col": "info",
    "area": "server / providers/ytmusic (brand account id)",
    "since": "2026-10-12 07:40",
-   "last": "MarvinSchenkel 2026-10-20 14:45",
+   "last": "philippecottier 2026-10-25 09:36",
    "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-20T14:45:17Z",
+    "login": "philippecottier",
+    "team": false,
+    "at": "2026-10-25T09:36:32Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -941,19 +827,20 @@
     "10-15 10:15 run: only a bot reminder (03:31 UTC), nothing new.",
     "10-15 10:40 run: you posted the Brand Account id reply (08:2x UTC). Waiting on the reporter.",
     "10-19 07:38 run: zsmisi (10-18 14:35 UTC): the 21-digit id from myaccount.google.com/brandaccounts still only shows the first profile; a song liked on profile 1 appears, profile 2's likes don't. On dev the id reaches ytmusicapi as onBehalfOfUser for every library call when it's exactly 21 digits (no trimming), else it is dropped silently. server#7075 (merged 10-17, cookie rotation) doesn't touch this. Can't reproduce without the account.",
-    "10-20 17:38 run: you posted the 21-digit check + re-add ask (14:45 UTC). Waiting for zsmisi."
+    "10-20 17:38 run: you posted the 21-digit check + re-add ask (14:45 UTC). Waiting for zsmisi.",
+    "10-26 07:30 run: philippecottier (10-25) confirms the cache explanation (brand account id works, 'Liked music' stays empty until the playlist cache expires); split into #6878."
    ],
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-20T14:45:17Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6706#issuecomment-6293599507"
+     "login": "philippecottier",
+     "at": "2026-10-25T09:36:32Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6706#issuecomment-6396025502"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -962,7 +849,8 @@
     "labels": [
      "triage",
      "youtube_music",
-     "waiting-for-user"
+     "waiting-for-user",
+     "triage/reminded-1"
     ]
    }
   },
@@ -1008,7 +896,7 @@
    "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-10T16:01:24Z",
@@ -1034,78 +922,6 @@
      "Fix to be Confirmed",
      "filesystem_local",
      "needs-attention"
-    ]
-   }
-  },
-  {
-   "n": 6680,
-   "title": "Sonos: track change shows 20-40 s late, a second \"next\" after a skip restarts the same track",
-   "col": "norepro",
-   "area": "server / providers/sonos (cloud_queue.py time-played reports, player.py currentItem) + player_queues next()",
-   "since": "2026-10-09 15:40",
-   "last": "MarvinSchenkel 2026-10-19 07:54",
-   "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-19T07:54:30Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "2.10.5 HA add-on, six Sonos rooms grouped under a Port, queue from MA (Spotify and local). Every natural track change reaches MA 20-40 s late (title, cover, lyrics, HA entity). After a skip MA shows the new track, falls back to the old one at ~2.8 s for ~12 s, and a second next in that window restarts the same track. Once a preload hit 'Retries exhausted' and play_index failed. Same reporter as #6536 (slow subscriber on their side), but this time they ruled their network out: MA reacts within 0.5 s of the speaker's metadata push, the push itself is ~30 s late, while getPlaybackStatus answers at once. Diagnostics attached.",
-   "fix": "",
-   "checked": "Opus subagent on origin/dev and 2.10.5, code trace only (no hardware run, no unit repro). (1) MA learns the current item only from aiosonos' cached metadataStatus.currentItem (providers/sonos/player.py:916-933), no polling. The late push is Sonos firmware, but MA ignores a signal it already gets: the cloud queue asks the speaker to report time played 1 s into each item (cloud_queue.py:203-207), and _handle_sonos_queue_time_played (:243-248) drops any report whose id isn't the current item. (2) next() moves current_index at once and schedules play_index after a 1 s debounce (player_queues/controller.py:798-835). The player is already PLAYING so wait_for_player_update is skipped and transitioning clears as soon as loadCloudQueue returns (:1145). The next Sonos event re-reads the stale currentItem, bare_item_id() strips the @generation so the old id still matches, and the tracker moves current_index back (playback_tracker.py:114-116). A second next computes from that old index. Matches the reporter's timeline exactly. (3) RetriesExhausted escaping _load_item: fixed by server#6575, already on backport/2.10.6 (44f85e59c). Nothing on dev or in an open PR fixes 1 or 2; #6779 is unrelated.",
-   "plan": "Wait for rocklobster42195 to repeat the natural track change test with MA as the only Sonos listener (no Stream Deck plugin, HA Sonos and MA DLNA disabled, Port rebooted, no VPN). Only build the provider fix if the push is still late then.",
-   "branch": "",
-   "diff": "",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/server/pull/6575",
-     "label": "server#6575 (merged, on backport/2.10.6: fixes the Retries exhausted play_index error)"
-    }
-   ],
-   "badges": [
-    [
-     "info",
-     "Waiting for user",
-     "waiting"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-09 15:40 run: new issue. Code trace confirms both Sonos symptoms as MA-side (ignored time-played report + stale currentItem reverting a skip), no hardware or unit repro yet, so no fix branch per the repro rule. Retries-exhausted part already fixed by #6575 for 2.10.6.",
-    "10-12 07:40 run: rocklobster42195 (10-09 17:26 UTC) checked with playback started from the Sonos app itself: the speaker pushes metadataStatus 7-16 s after getPlaybackStatus already knows the new item, so the late push is Sonos firmware. Their own tool polls getPlaybackStatus every 2 s and gets 1.4-1.7 s. That's a third option next to our time-played idea. The time-played report only exists for MA's cloud queue, which is what MA uses, so it still gives ~1 s without polling. The stale-generation skip revert is unaffected by this.",
-    "10-19 10:38 run: you replied 07:54 UTC: on a single Sonos here every track change was pushed within a second, so this looks like #6536 (slow subscriber on their side). Asked for a clean retest with MA as the only listener and a VPN check. Moved to Cannot reproduce, waiting on the reporter. The design call is parked until that result."
-   ],
-   "action": "",
-   "milestone": null,
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-19T07:54:30Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6680#issuecomment-6262429676"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/server",
-      "n": 6575,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-09-29T20:45:19Z",
-      "own": false
-     }
-    ],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "sonos",
-     "waiting-for-user",
-     "triage/reminded-1"
     ]
    }
   },
@@ -1177,7 +993,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:14:26Z",
@@ -1222,7 +1038,8 @@
      "triage",
      "tunein",
      "apple_music",
-     "waiting-for-user"
+     "waiting-for-user",
+     "triage/reminded-1"
     ]
    }
   },
@@ -1271,7 +1088,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:16:29Z",
@@ -1294,7 +1111,8 @@
     "test_ask": null,
     "after_test_ask_reporter": false,
     "labels": [
-     "waiting-for-user"
+     "waiting-for-user",
+     "triage/reminded-1"
     ]
    }
   },
@@ -1346,7 +1164,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-08T14:40:21Z",
@@ -1437,7 +1255,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:17:32Z",
@@ -1530,7 +1348,7 @@
    "ask": "nudge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "CDrummond",
      "at": "2026-10-10T06:44:22Z",
@@ -1576,92 +1394,6 @@
    }
   },
   {
-   "n": 6694,
-   "title": "SiriusXM Bluesville and Spa 404 on every segment (new tpac_iad_iad/.../enc/128k layout)",
-   "col": "merged",
-   "area": "aiosxm 0.3.0 (MizterB) stream.py get_proxied_playlist + server providers/siriusxm/streaming.py",
-   "since": "2026-10-12 07:40",
-   "last": "davidfi01 2026-10-23 13:14",
-   "gh": {
-    "login": "davidfi01",
-    "team": false,
-    "at": "2026-10-23T13:14:25Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "2.11.0b4 HA add-on. BB King's Bluesville and later Spa fail: every segment fetch through the aiosxm proxy returns 404 and MA gives up after 30 s. These channels use a new CDN layout (tpac_iad_iad/<name>/<id>/enc/128k/). The same channels play with ?absolute=1 on the proxy playlist. OzGav tagged MizterB to tweak the library.",
-   "fix": "MizterB's server#7001 (merged 10-14 15:20 UTC by you): bumps aiosxm to 0.3.1, which keeps the full relative segment path in the proxied playlist and adds bitrate selection for the enc/<bitrate>/ channels.",
-   "checked": "Opus subagent, code read, no SiriusXM account. 2.11-only (aiosxm swap #5603). streaming.py:49-52 asks the proxy for the playlist without absolute. aiosxm get_proxied_playlist (stream.py:466-474) keeps only the segment basename when absolute is off and get_segment (:584-588) rebuilds variant_base + basename, so any extra path part or query in the new segment lines is lost. ?absolute=1 keeps the relative URI via urljoin, which fits the workaround. Also 128k isn't in BITRATES, so these channels ignore the bitrate setting. aiosxm 0.3.0 is latest, no upstream issue or PR.",
-   "plan": "Ships with the next 2.11 beta. davidfi01 said he'll confirm once it's in a beta.",
-   "branch": "",
-   "diff": "",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/server/pull/7001",
-     "label": "server#7001 (MizterB, merged 10-14 by you, 2.11 only: aiosxm 0.3.1)"
-    }
-   ],
-   "badges": [
-    [
-     "ok",
-     "FtbC + 2.11.0 booked",
-     "booked"
-    ],
-    [
-     "muted",
-     "Waiting for davidfi01 to test a beta",
-     "waiting"
-    ],
-    [
-     "ok",
-     "Reporter confirmed fix",
-     "confirmed"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-12 07:40 run: new issue. Library side (aiosxm), OzGav already tagged MizterB. Optional reply points him at the code. Blocks these channels on 2.11.0 until aiosxm is bumped.",
-    "10-14 11:40 run: MizterB acknowledged (16:45 UTC), will take a look at aiosxm.",
-    "10-14 15:40 run: MizterB released aiosxm 0.3.1 (segment path kept, bitrate selection for the new layout) and opened server#7001 with the bump. He couldn't reproduce on his own account and asked davidfi01 to confirm once it's in a beta. Moved to Already fixed on dev (open PR), review card.",
-    "10-14 16:40 run: davidfi01 will confirm once server#7001 is in a beta. Still waiting on your review of #7001.",
-    "10-14 17:40 run: You merged server#7001 at 15:20 UTC with backport-to-stable. The backport run failed (modify/delete on siriusxm/constants.py, conflicts in manifest.json, strings.json, en.json, requirements_all.txt): stable still runs the old sxm 0.2.8 provider, aiosxm only exists on 2.11. So I set FtbC + milestone 2.11.0 instead of 2.10.7. No reply needed, davidfi01 already said he'll test the beta.",
-    "10-23 08:30 run: OzGav (05:41 UTC) asked davidfi01 for an update. Nothing for you.",
-    "10-23 15:30 run: davidfi01 (13:14 UTC) confirmed SiriusXM works on the nightlies."
-   ],
-   "action": "",
-   "milestone": "2.11.0",
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "davidfi01",
-     "at": "2026-10-23T13:14:25Z",
-     "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6694#issuecomment-6365726856"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/server",
-      "n": 7001,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-10-14T15:20:16Z",
-      "own": false
-     }
-    ],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "Fix to be Confirmed",
-     "needs-attention",
-     "SiriusXM"
-    ]
-   }
-  },
-  {
    "n": 6685,
    "title": "WiiM Pro Sendspin-over-AirPlay bridge missing from the Sync Group member picker",
    "col": "info",
@@ -1699,7 +1431,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-12T13:38:14Z",
@@ -1723,108 +1455,6 @@
      "triage/reminded-1"
     ]
    }
-  },
-  {
-   "n": 6672,
-   "title": "Roku AirPlay music loses a second or two when pressing pause",
-   "col": "merged",
-   "area": "airplay-cli / src/ap2_client.c ap2cl_pause + ap2cl_play (buffered AirPlay 2)",
-   "since": "2026-10-09 07:40",
-   "last": "OzGav 2026-10-22 12:35",
-   "gh": {
-    "login": "OzGav",
-    "team": true,
-    "at": "2026-10-22T12:35:10Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "2.10.6 HA add-on, Roku streaming stick on the AirPlay provider. Pausing and resuming skips 1-2 s of audio, and the progress bar jumps on pause. The reporter sent a Verbose log and diagnostics.",
-   "fix": "Our airplay-cli#91 (ready, CI green, Copilot clean): a buffered AirPlay 2 pause resumes from the audible position instead of the write position.",
-   "checked": "Opus subagent on the reporter's log (2.10.6) and airplay-cli origin/main a5a2175. The Roku streams native AirPlay 2 buffered over PTP (auto route), reports no latency (buffer window 0-0, lead is our 2000 ms default). Three pause/resume pairs at 14:21: the resume RTP anchor is always ahead of the pause anchor, +100 ms, +319 ms, +1879 ms, and the elapsed time jumps about 1.5 s past real time after each resume. Cause: ap2cl_pause (ap2_client.c ~4576) sends the rate-0 anchor at p->rtp_timestamp, the sender's write position about one lead ahead of what's audible. ap2cl_play (~4686) re-anchors at prev_rtp + AP2_BUFFERED_RTP_GAP_MS. Everything sent but not played falls before the new anchor and the receiver drops it. Splice (Apple) and RAOP/compat paths don't do this, so every non-Apple buffered AP2 receiver should hit it. Side issue: after a 37 s pause the session dropped at 14:22:36 (write timeout) and the next play failed with 'cliairplay did not connect'. Not reproduced locally yet.",
-   "plan": "Release airplay-cli, let the bot bump the pin, then ask PipTheBirb to test the DEV add-on (server_repo dev).",
-   "branch": "",
-   "diff": "",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/airplay-cli/pull/91",
-     "label": "airplay-cli#91 (merged 10-21, in airplay-cli v0.5.9, pinned by server#7137, in nightly 2.11.0.dev2026102203)"
-    }
-   ],
-   "badges": [
-    [
-     "muted",
-     "Assigned to you",
-     "assigned"
-    ],
-    [
-     "info",
-     "Test asked 10-22",
-     "test asked"
-    ],
-    [
-     "ok",
-     "FtbC labelled",
-     "booked"
-    ],
-    [
-     "muted",
-     "backport? (server#7137 pin bump has no label)",
-     "backport?"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-09 07:40 run: new issue. Static triage: pause/resume is lossless by design unless the Roku buffers more than it reports. Diagnostics lack player config and show no AirPlay pause. Reply asks for streaming mode, output protocol and a debug log.",
-    "10-13 10:40 run: you posted the reply from the board (07:55 UTC). Waiting for the reporter.",
-    "10-13 15:40 run: PipTheBirb sent a Verbose log. The loss comes from cliairplay's buffered AP2 pause anchor (write position instead of audible position), confirmed from the log's RTP anchors, not locally. Moved to Reproduced, cannot fix: fix belongs in airplay-cli.",
-    "10-14 11:40 run: airplay-cli#91 is out of draft, CI green, Copilot clean. Moved to Reproduced + fixed and assigned you. The compat-mode workaround reply was already posted.",
-    "10-15 10:15 run: airplay-cli#91 got a reworked pause shape (force-push 07:17, extra commit 08:03 'Record the paused frame after the rate-0 round trip'). Copilot had 2 findings on the first push, both resolved on the second review: 0 open findings, CI green at 4e753f0a55. Still needs the one WiiM Keuken retest of the new shape before merge.",
-    "10-15 11:40 run: You reverted Copilot's post-response sample in f43c73a after the WiiM Amp retest (every SETRATEANCHORTIME takes ~207 ms, so a post-response sample anchored resumes 207 ms late). Copilot re-reviewed f43c73a at 08:38 UTC: approval recommended, 0 open findings, CI green. No reply until the fix is in a dev build.",
-    "10-21 13:35: you merged airplay-cli#91 at 11:08 UTC. Next is the airplay-cli release and pin bump.",
-    "10-21 13:30 run: you merged airplay-cli#91 (11:08/11:15 UTC). Next: one airplay-cli release covers #6672 and #6812, then the pin bump.",
-    "10-22 (on request): airplay-cli v0.5.9 (both fixes) is pinned by server#7137 and in nightly 2.11.0.dev2026102203. Posted the nightly test ask, labelled Fix to be Confirmed. No milestone: server#7137 has no backport label, so backport is your call.",
-    "10-22 11:30 run: PipTheBirb (08:49 UTC): 'sorry, can't test nightly. worried I'll break something'. Drafted a short reassurance that the nightly is a separate app.",
-    "10-22 15:30 run: OzGav (12:35 UTC) told PipTheBirb the nightly runs next to the normal app, just not both at once. Our reassurance draft dropped."
-   ],
-   "action": "",
-   "ask": null,
-   "milestone": null,
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "OzGav",
-     "at": "2026-10-22T12:35:10Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6672#issuecomment-6340875382"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/airplay-cli",
-      "n": 91,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-10-21T11:08:52Z",
-      "own": true
-     }
-    ],
-    "test_ask": {
-     "at": "2026-10-22T08:00:21Z",
-     "url": "https://github.com/music-assistant/support/issues/6672#issuecomment-6335805250"
-    },
-    "after_test_ask_reporter": true,
-    "labels": [
-     "airplay",
-     "triage",
-     "Fix to be Confirmed",
-     "hass",
-     "waiting-for-user"
-    ]
-   },
-   "waiting_on": "reporter"
   },
   {
    "n": 6664,
@@ -1879,7 +1509,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T10:06:51Z",
@@ -1914,7 +1544,8 @@
      "sonos",
      "hass",
      "sendspin",
-     "waiting-for-user"
+     "waiting-for-user",
+     "triage/reminded-1"
     ]
    }
   },
@@ -1964,7 +1595,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T12:45:34Z",
@@ -1984,69 +1615,6 @@
     ]
    },
    "ask": null
-  },
-  {
-   "n": 6490,
-   "title": "Search input does not reliably commit text when using an on-screen predictive keyboard",
-   "col": "merged",
-   "area": "",
-   "since": "2026-10-12 15:40",
-   "summary": "Fixed on dev, fix to be confirmed, milestone 2.11.0. Bookkeeping was already done, so nothing to act on unless the reporter answers.",
-   "fix": "",
-   "checked": "",
-   "plan": "",
-   "branch": "",
-   "diff": "",
-   "prs": [],
-   "badges": [
-    [
-     "ok",
-     "Bookkeeping done",
-     "booked"
-    ],
-    [
-     "muted",
-     "OzGav will close it soon",
-     "waiting"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-05 07:40 run: OzGav asked Diskreet001 (10-02 23:11 UTC) to test on a beta server.",
-    "10-12 15:40 run: OzGav (13:2x UTC) posted \"This will be closed soon assuming fixed.\""
-   ],
-   "last": "OzGav 2026-10-12 13:20",
-   "gh": {
-    "login": "OzGav",
-    "team": true,
-    "at": "2026-10-12T13:20:45Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "milestone": "2.11.0",
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "OzGav",
-     "at": "2026-10-12T13:20:45Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6490#issuecomment-6125122658"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "Fix to be Confirmed",
-     "Frontend",
-     "waiting-for-user",
-     "triage/reminded-2",
-     "triage/reminded-1"
-    ]
-   }
   },
   {
    "n": 6419,
@@ -2083,35 +1651,36 @@
      "backport?"
     ]
    ],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@johnp3004 the cut-off start on AirPlay speakers in a Sendspin group is fixed in music-assistant/server#7160: YouTube Music and Spotify (Soloist) tracks now wait for the slowest speaker instead of starting with the short radio lead. It's in tonight's nightly build. Could you give it a try?\n\n## HAOS\n- Stop your current Music Assistant app\n- Install the \"Music Assistant (NIGHTLY)\" app from the same app repository and start it. It keeps its own settings, separate from your normal install\n\nTo test: play a Spotify or YouTube Music track to the same Sendspin group with your AirPlay speakers, and check that the first seconds are no longer cut off. Starting can take a moment longer now.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
     "10-21 15:45 discuss: discussion session started on your main account. Your question first: did the Sendspin 1.0 work on stable/dev change the live-source lead or the bridge anchor floor (the 09-27 'identical code' check predates it)?",
     "10-22 17:30 run: maximmaxim345 opened server#7160 (related to this issue): YouTube Music and Soloist tracks get the buffered lead instead of the radio one. Moved to Already fixed on dev / someone else's PR; the stale test-ask slot is cleared.",
     "10-23 09:30 run: maximmaxim345 merged server#7160. Labelled Fix to be Confirmed. No milestone: no backport label but it cherry-picks cleanly onto stable, so backport is your call.",
-    "10-23 15:40 (on request): server#7160 isn't in the latest nightly 2.11.0.dev2026102303 (built 33 min before the merge) or beta 6. Nightly test ask drafted; you approved posting it, the first run after the next nightly checks inclusion and posts."
+    "10-23 15:40 (on request): server#7160 isn't in the latest nightly 2.11.0.dev2026102303 (built 33 min before the merge) or beta 6. Nightly test ask drafted; you approved posting it, the first run after the next nightly checks inclusion and posts.",
+    "10-26 07:30 run: OzGav (10-24 11:14 UTC) already asked johnp3004 to test 2.11.0b7, which has server#7160. Our pending nightly test ask is dropped (would be a duplicate). Waiting on johnp3004."
    ],
-   "last": "johnp3004 2026-09-13 18:24",
+   "last": "OzGav 2026-10-24 11:14",
    "gh": {
-    "login": "johnp3004",
-    "team": false,
-    "at": "2026-09-13T18:24:58Z",
+    "login": "OzGav",
+    "team": true,
+    "at": "2026-10-24T11:14:11Z",
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "Test ask approved by you (10-23 15:40) once a nightly includes server#7160. Not in 2.11.0.dev2026102303 (built 06:19 UTC, merge 06:52 UTC). Post when the next nightly lands.",
-   "ask": "reply-test",
+   "action": "",
+   "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
-     "login": "johnp3004",
-     "at": "2026-09-13T18:24:58Z",
-     "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6419#issuecomment-5655193390"
+     "login": "OzGav",
+     "at": "2026-10-24T11:14:11Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6419#issuecomment-6383523922"
     },
     "reporter_new": false,
-    "team_new": false,
+    "team_new": true,
     "closed": false,
     "pr": [
      {
@@ -2129,7 +1698,7 @@
      "airplay",
      "Fix to be Confirmed",
      "sendspin",
-     "needs-attention"
+     "waiting-for-user"
     ]
    },
    "fix_thread": {
@@ -2139,66 +1708,6 @@
     "done": false
    },
    "waiting_on": null
-  },
-  {
-   "n": 6402,
-   "title": "Spotify playback started by Music Assistant appears in another Spotify account/app as “Music Assistant” playback",
-   "col": "merged",
-   "area": "",
-   "since": "2026-10-12 15:40",
-   "summary": "Fixed on dev, fix to be confirmed, milestone 2.11.0. Bookkeeping was already done, so nothing to act on unless the reporter answers.",
-   "fix": "",
-   "checked": "",
-   "plan": "",
-   "branch": "",
-   "diff": "",
-   "prs": [],
-   "badges": [
-    [
-     "ok",
-     "Bookkeeping done",
-     "booked"
-    ],
-    [
-     "muted",
-     "Waiting on beta testers",
-     "waiting"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-12 15:40 run: OzGav (13:19 UTC) asked beta users to confirm the fix."
-   ],
-   "last": "OzGav 2026-10-12 13:19",
-   "gh": {
-    "login": "OzGav",
-    "team": true,
-    "at": "2026-10-12T13:19:58Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "milestone": "2.11.0",
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "OzGav",
-     "at": "2026-10-12T13:19:58Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6402#issuecomment-6125108303"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "Fix to be Confirmed",
-     "spotify",
-     "waiting-for-user"
-    ]
-   }
   },
   {
    "n": 6400,
@@ -2214,32 +1723,33 @@
    "diff": "",
    "prs": [],
    "badges": [],
-   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, that matches what we found. The repeats come from old entries in the speaker's own HEOS queue, which Music Assistant's queue clear doesn't touch, and each of them plays the latest announcement. Clearing the queue on the speaker, for example in the HEOS app, is a good workaround until we fix the cleanup on our side.",
+   "reply": "",
    "bookkeeping": [],
    "notes": [
-    "10-19 07:38 run: Dragon-Creature (10-18 02:31 UTC): clearing the queue in Music Assistant didn't help, clearing the HEOS queue on the speaker itself did. That matches the root cause (stale entries in the HEOS device queue that MA never clears, all pointing at the same announcement URL) and supports option 2 (clear the HEOS queue when MA playback stops). Nothing else new."
+    "10-19 07:38 run: Dragon-Creature (10-18 02:31 UTC): clearing the queue in Music Assistant didn't help, clearing the HEOS queue on the speaker itself did. That matches the root cause (stale entries in the HEOS device queue that MA never clears, all pointing at the same announcement URL) and supports option 2 (clear the HEOS queue when MA playback stops). Nothing else new.",
+    "10-26 07:30 run: Tommatheussen answered the ping with an approach (clear queue, announce, restore). Waiting on him; answer draft dropped."
    ],
-   "last": "MarvinSchenkel 2026-10-22 06:43",
+   "last": "Tommatheussen 2026-10-23 16:51",
    "gh": {
-    "login": "MarvinSchenkel",
+    "login": "Tommatheussen",
     "team": true,
-    "at": "2026-10-22T06:43:54Z",
+    "at": "2026-10-23T16:51:45Z",
     "pr_open": false,
     "pr_draft": false
    },
-   "action": "Optional: post the short workaround note. The HEOS queue cleanup decision is still open.",
-   "ask": "reply-answer",
+   "action": "Tommatheussen (10-23) proposes: clear the HEOS queue before an announcement, no repeat, restore after. His to build.",
+   "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-22T06:43:54Z",
+     "login": "Tommatheussen",
+     "at": "2026-10-23T16:51:45Z",
      "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6400#issuecomment-6334553330"
+     "url": "https://github.com/music-assistant/support/issues/6400#issuecomment-6370105230"
     },
     "reporter_new": false,
-    "team_new": false,
+    "team_new": true,
     "closed": false,
     "pr": [],
     "test_ask": null,
@@ -2249,7 +1759,8 @@
      "waiting-for-user",
      "HEOS"
     ]
-   }
+   },
+   "waiting_on": "team"
   },
   {
    "n": 6329,
@@ -2294,7 +1805,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "Geweldich",
      "at": "2026-09-30T11:09:20Z",
@@ -2420,7 +1931,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:49:03Z",
@@ -2435,83 +1946,7 @@
     "after_test_ask_reporter": false,
     "labels": [
      "invalid",
-     "waiting-for-user"
-    ]
-   }
-  },
-  {
-   "n": 6299,
-   "title": "Global search: alphabetical provider order + name de-dupe hides results from higher-quality providers",
-   "col": "merged",
-   "area": "frontend / global search (useProgressiveSearch + CommandCenter)",
-   "since": "2026-10-12 15:40",
-   "summary": "With several streaming providers, the global search shows only the alphabetically-first provider (Bandcamp over Qobuz for the reporter), and later providers' items with the same name+artist are dropped. Confirmed on frontend origin/main: provider targets are sorted by display name, their results are concatenated block by block (no interleave), and CommandCenter de-dupes on `media_type:name:first_artist` keeping the first hit, then shows 5 per type. Not fixed, no open PR; Marcel already chose the fix (interleave like the server's zip_longest, library first).",
-   "fix": "useProgressiveSearch merges library results first, then the providers round-robin (like the server's zip_longest). The CommandCenter de-dupe only collapses an item into an earlier library item or a same-provider twin, so equally named items on other providers stay visible.",
-   "checked": "A/B: A=pass B=yes A2=pass\n\nlive_verdict: REPRODUCED\nlane: live\nrepro_cmd: `ma-live.sh start /Users/marvin/git/music-assistant/server-worktrees/triage-6299 --no-players` (server origin/dev 81435079e), then `server/.venv/bin/python triage_logs/2026-09-27/repro/6299.py radiohead` (exits 1 on bug). UI: frontend-worktrees/triage-6299 (origin/main a8b5dac2) on :3016 against http://127.0.0.1:8395, Search, type `radiohead`, Enter, all sources.\nevidence: Target order library > Apple Music > Filesystem > Tune-In > YouTube Music. Per-provider calls return YTM results (2 artists, 3 albums, 5 tracks), and the server's aggregated search interleaves them (e.g. tracks Creep [AM], Fake Plastic Trees [YTM], Let Down [AM], ...). The UI (DOM check on provider icon alt) shows Apple Music only in Tracks/Artists/Albums/Playlists. Artists: 4 items, no \"Show more\", YTM Radiohead and Thom Yorke removed by the name+artist de-dupe. Albums: all 3 YTM albums (In Rainbows, OK Computer, Kid A) de-duped away. Tracks: after 3x \"Show more\", the first YTM item is #16 (Where I End and You Begin); 4 of 5 YTM tracks (Fake Plastic Trees, Jigsaw Falling Into Place, Street Spirit, Paranoid Android) de-duped. No server errors; client-side merge only.",
-   "plan": "",
-   "branch": "fix/search-interleave-providers (/Users/marvin/git/music-assistant/frontend-worktrees/triage-6299)",
-   "diff": "diff --git a/src/components/CommandCenter.vue b/src/components/CommandCenter.vue\nindex fb0141ae..bfd87f67 100644\n--- a/src/components/CommandCenter.vue\n+++ b/src/components/CommandCenter.vue\n@@ -597,13 +597,16 @@ const mediaSections = computed(() => {\n   }[] = [];\n \n   for (const mediaType of mediaTypes) {\n+    // an item collapses into an earlier library item or same-provider twin;\n+    // equally named items on different providers are distinct until matched\n     const seen = new Set<string>();\n     const items: MediaItemTypeOrItemMapping[] = [];\n     for (const item of filteredItems(mediaType)) {\n       const key = dedupeKey(item);\n       if (key) {\n-        if (seen.has(key)) continue;\n-        seen.add(key);\n+        const providerKey = `${item.provider}:${key}`;\n+        if (seen.has(key) || seen.has(providerKey)) continue;\n+        seen.add(item.provider === \"library\" ? key : providerKey);\n       }\n       items.push(item);\n     }\ndiff --git a/src/composables/useProgressiveSearch.ts b/src/composables/useProgressiveSearch.ts\nindex 9970d297..45e490c2 100644\n--- a/src/composables/useProgressiveSearch.ts\n+++ b/src/composables/useProgressiveSearch.ts\n@@ -159,24 +159,30 @@ export function useProgressiveSearch(options: ProgressiveSearchOptions) {\n     enabledTargetIds.value.some((id) => pendingTargets.value.has(id)),\n   );\n \n-  // Merge the per-target results in a stable order (library first, then\n-  // providers) and float exact name matches to the top, approximating the\n-  // ranking of the server's combined search.\n+  // Merge like the server's combined search: library first, then the providers\n+  // round-robin, with exact name matches floated to the top.\n   const searchResult = computed<SearchResults | undefined>(() => {\n     if (!activeSearchTerm.value) return undefined;\n     const query = activeSearchTerm.value.toLowerCase().trim();\n-    const ordered = enabledTargetIds.value\n+    const library = enabledTargetIds.value.includes(LIBRARY_SEARCH_TARGET)\n+      ? providerResults.value[LIBRARY_SEARCH_TARGET]\n+      : undefined;\n+    const providers = enabledTargetIds.value\n+      .filter((targetId) => targetId !== LIBRARY_SEARCH_TARGET)\n       .map((targetId) => providerResults.value[targetId])\n       .filter((result) => !!result);\n+    const collect = <T extends { name?: string }>(\n+      pick: (result: SearchResults) => T[],\n+    ) => collectField(library, providers, pick, query);\n     const merged: SearchResults = {\n-      artists: collectField(ordered, (r) => r.artists, query),\n-      albums: collectField(ordered, (r) => r.albums, query),\n-      tracks: collectField(ordered, (r) => r.tracks, query),\n-      playlists: collectField(ordered, (r) => r.playlists, query),\n-      radio: collectField(ordered, (r) => r.radio, query),\n-      podcasts: collectField(ordered, (r) => r.podcasts, query),\n-      audiobooks: collectField(ordered, (r) => r.audiobooks, query),\n-      genres: collectField(ordered, (r) => r.genres, query),\n+      artists: collect((r) => r.artists),\n+      albums: collect((r) => r.albums),\n+      tracks: collect((r) => r.tracks),\n+      playlists: collect((r) => r.playlists),\n+      radio: collect((r) => r.radio),\n+      podcasts: collect((r) => r.podcasts),\n+      audiobooks: collect((r) => r.audiobooks),\n+      genres: collect((r) => r.genres),\n     };\n     if (!merged.genres.length) merged.genres = [...libraryGenresFallback.value];\n     return merged;\n@@ -376,12 +382,27 @@ const floatExactMatches = function <T extends { name?: string }>(\n   return exact.length ? exact.concat(rest) : items;\n };\n \n+// Round-robin merge of the per-provider lists, like the server's zip_longest.\n+const interleave = function <T>(lists: T[][]): T[] {\n+  const items: T[] = [];\n+  const longest = Math.max(0, ...lists.map((list) => list.length));\n+  for (let index = 0; index < longest; index++) {\n+    for (const list of lists) {\n+      if (index < list.length) items.push(list[index]);\n+    }\n+  }\n+  return items;\n+};\n+\n const collectField = function <T extends { name?: string }>(\n-  results: SearchResults[],\n+  library: SearchResults | undefined,\n+  providers: SearchResults[],\n   pick: (result: SearchResults) => T[],\n   query: string,\n ): T[] {\n-  const items: T[] = [];\n-  for (const result of results) items.push(...pick(result));\n+  const items = [\n+    ...(library ? pick(library) : []),\n+    ...interleave(providers.map(pick)),\n+  ];\n   return floatExactMatches(items, query);\n };\ndiff --git a/tests/components/CommandCenter.test.ts b/tests/components/CommandCenter.test.ts\nindex 46dc92e2..4dcae356 100644\n--- a/tests/components/CommandCenter.test.ts\n+++ b/tests/components/CommandCenter.test.ts\n@@ -767,6 +767,25 @@ describe(\"CommandCenter\", () => {\n     wrapper.unmount();\n   });\n \n+  it(\"keeps equally named results from different providers\", async () => {\n+    state.resultsByType[MediaType.TRACK] = [\n+      { ...makeTrack(\"t1\", \"Bohemian Rhapsody\"), provider: \"apple_music\" },\n+      { ...makeTrack(\"t2\", \"Bohemian Rhapsody\"), provider: \"apple_music\" },\n+      { ...makeTrack(\"t3\", \"Bohemian Rhapsody\"), provider: \"ytmusic\" },\n+    ];\n+    const wrapper = mountPalette();\n+    useCommandCenter().open();\n+    await flushPromises();\n+\n+    await typeQuery(wrapper, \"bohemian\");\n+    const items = wrapper\n+      .findAll('[data-testid=\"palette-item\"]')\n+      .filter((item) => item.text().includes(\"Bohemian Rhapsody\"));\n+    expect(items).toHaveLength(2);\n+\n+    wrapper.unmount();\n+  });\n+\n   it(\"shows a spinner while a submitted search is loading\", async () => {\n     const wrapper = mountPalette();\n     useCommandCenter().open();\ndiff --git a/tests/composables/useProgressiveSearch.test.ts b/tests/composables/useProgressiveSearch.test.ts\nindex 2edb59a2..dbd3464c 100644\n--- a/tests/composables/useProgressiveSearch.test.ts\n+++ b/tests/composables/useProgressiveSearch.test.ts\n@@ -171,6 +171,44 @@ describe(\"useProgressiveSearch\", () => {\n     expect(loading.value).toBe(false);\n   });\n \n+  it(\"interleaves provider results after the library results\", async () => {\n+    mockSearch.mockImplementation(\n+      (_query, _mediaTypes, _limit, providers: string[] = []) => {\n+        if (providers[0] === LIBRARY_SEARCH_TARGET)\n+          return Promise.resolve(\n+            results({ tracks: [trackFixture(\"l1\", \"Lib 1\")] }),\n+          );\n+        if (providers[0] === \"fs1\")\n+          return Promise.resolve(\n+            results({\n+              tracks: [\n+                trackFixture(\"f1\", \"Fs 1\", \"fs1\"),\n+                trackFixture(\"f2\", \"Fs 2\", \"fs1\"),\n+                trackFixture(\"f3\", \"Fs 3\", \"fs1\"),\n+              ],\n+            }),\n+          );\n+        if (providers[0] === \"spotify\")\n+          return Promise.resolve(\n+            results({ tracks: [trackFixture(\"s1\", \"Spotify 1\", \"spotify\")] }),\n+          );\n+        return Promise.resolve(emptyResults());\n+      },\n+    );\n+    const { search, searchResult } = setup();\n+\n+    await search(\"hit\");\n+    await flush();\n+\n+    expect(searchResult.value?.tracks.map((item) => item.name)).toEqual([\n+      \"Lib 1\",\n+      \"Fs 1\",\n+      \"Spotify 1\",\n+      \"Fs 2\",\n+      \"Fs 3\",\n+    ]);\n+  });\n+\n   it(\"floats exact name matches above earlier fuzzy results\", async () => {\n     mockSearch.mockImplementation(\n       (_query, _mediaTypes, _limit, providers: string[] = []) => {\n",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/frontend/pull/2845",
-     "label": "frontend#2845 (merged)"
-    }
-   ],
-   "badges": [
-    [
-     "muted",
-     "Waiting on reporter confirmation",
-     "waiting"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "frontend#2845 merged 2026-09-28 15:33 without a backport label. The classifier blocked reading the frontend stable branch, so I couldn't check whether it cherry-picks cleanly.",
-    "Fix to be Confirmed set 2026-09-29 16:45. frontend#2845 has no backport label and the frontend has no stable branch to cherry-pick onto, so 2.10.5 depends on whether stable gets a frontend bump. Tell me the milestone and I'll set it.",
-    "10-05 07:40 run: OzGav asked GeoH2102 (10-02 23:26 UTC) to confirm on the beta.",
-    "10-06 08:00 run: you set milestone 2.11.0 at 17:45 UTC, so the backport call is resolved.",
-    "10-12 15:40 run: OzGav (13:2x UTC) posted \"This will be closed soon assuming fixed.\""
-   ],
-   "last": "OzGav 2026-10-12 13:19",
-   "gh": {
-    "login": "OzGav",
-    "team": true,
-    "at": "2026-10-12T13:19:23Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "action": null,
-   "milestone": "2.11.0",
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "OzGav",
-     "at": "2026-10-12T13:19:23Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6299#issuecomment-6125098347"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/frontend",
-      "n": 2845,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-09-28T15:33:37Z",
-      "own": true
-     }
-    ],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "triage",
-     "Fix to be Confirmed",
-     "Frontend",
      "waiting-for-user",
-     "triage/reminded-2",
      "triage/reminded-1"
     ]
    }
@@ -2555,7 +1990,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-06T13:51:35Z",
@@ -2606,7 +2041,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "marcelveldt",
      "at": "2026-08-26T21:48:58Z",
@@ -2622,83 +2057,6 @@
     "labels": [
      "needs-attention",
      "CORE"
-    ]
-   }
-  },
-  {
-   "n": 6150,
-   "title": "Low contrast on the now playing screen with a blue background",
-   "col": "merged",
-   "area": "frontend / PlayerFullscreen + queue",
-   "since": "2026-10-12 15:40",
-   "last": "OzGav 2026-10-12 13:18",
-   "summary": "With a blue cover the theme blue accent sat on a near identical background, so the playing row, queue banner links and active toggles disappeared. Frontend#2762 (merged 09-15) links this issue and replaces the blue accents on the now playing screen with gray overlay styles. It is in frontend 2.17.310+, so it shipped in server 2.11.0b3 (frontend 2.17.323). It is not in stable 2.10.5 (frontend 2.17.297). Kepstin's other points (bottom bar active state, backend palette picking too dark a light-mode background) are not covered by #2762. The bot will auto-close the issue around 10-15.",
-   "fix": "frontend#2762: gray overlay button style and gray queue row wash instead of the blue accent on the now playing screen.",
-   "checked": "git tag --contains 3293641d7 starts at frontend 2.17.310. pyproject pins: 2.11.0b3 = 2.17.323, 2.10.5 = 2.17.297.",
-   "plan": "",
-   "branch": "",
-   "diff": "",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/frontend/pull/2762",
-     "label": "frontend#2762 (merged)"
-    }
-   ],
-   "badges": [
-    [
-     "muted",
-     "You replied, waiting on the reporter",
-     "waiting"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "2026-10-02: fixed by frontend#2762, shipped in server 2.11.0b3, not in 2.10.x.",
-    "Old local branch fix/fullscreen-accent-contrast (frontend-worktrees/fix-fullscreen-accent-contrast) is superseded by #2762 and can be removed, along with the now-playing-gray-accents worktree.",
-    "10-06 13:40 run: you posted the beta 3 ask at 11:28 UTC. Set Fix to be Confirmed + milestone 2.11.0.",
-    "10-12 15:40 run: OzGav (13:2x UTC) posted \"This will be closed soon assuming fixed.\"",
-    "10-21 13:30 run: last comment sweep: you posted this draft on 10-06 11:28 UTC (OzGav commented after), so it is dropped."
-   ],
-   "gh": {
-    "login": "OzGav",
-    "team": true,
-    "at": "2026-10-12T13:18:47Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "action": "",
-   "milestone": "2.11.0",
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "OzGav",
-     "at": "2026-10-12T13:18:47Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6150#issuecomment-6125087909"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/frontend",
-      "n": 2762,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-09-15T11:03:08Z",
-      "own": true
-     }
-    ],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "triage",
-     "Fix to be Confirmed",
-     "Frontend",
-     "waiting-for-user",
-     "triage/reminded-2",
-     "triage/reminded-1"
     ]
    }
   },
@@ -2739,7 +2097,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "salanki",
      "at": "2026-08-29T17:15:18Z",
@@ -2802,7 +2160,7 @@
    "summary": "QQ Music lists music but full-stream URL resolution fails with 104003 and the preview fallback gets a 403, so tracks are skipped. The reporter has a local endpoint correction that works. xiasi0, the provider maintainer, will fix it after their vacation.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "xiasi0",
      "at": "2026-10-06T18:49:41Z",
@@ -2878,7 +2236,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-15T08:41:56Z",
@@ -2953,7 +2311,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:36:19Z",
@@ -2986,7 +2344,8 @@
     "labels": [
      "airplay",
      "triage",
-     "waiting-for-user"
+     "waiting-for-user",
+     "triage/reminded-1"
     ]
    },
    "fix_thread": {
@@ -3043,7 +2402,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T12:45:57Z",
@@ -3069,91 +2428,6 @@
      "triage",
      "Frontend",
      "needs-attention"
-    ]
-   }
-  },
-  {
-   "n": 6738,
-   "title": "SiriusXM: sub-second dropouts every 10-40 s on AirPlay (RAOP)",
-   "col": "pr",
-   "area": "server / controllers/streams/audio.py HLS radio input (-stream_loop -1 -re) + siriusxm proxy (sxm 0.2.8 / aiosxm)",
-   "since": "2026-10-14 11:40",
-   "last": "MarvinSchenkel 2026-10-23 12:04",
-   "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-23T12:04:32Z",
-    "pr_open": true,
-    "pr_draft": false
-   },
-   "summary": "2.10.6 HA add-on, Juke Audio zones over AirPlay RAOP. Every SiriusXM channel drops out for under a second every 10-40 s, alone or grouped. Spotify, local files and SomaFM on the same zones are fine. Tried buffer_depth 2000/3000 ms and enable_hires off; SiriusXM DEBUG logs show no errors. The 403 RetryErrors in the diagnostics were from two parallel streams, unrelated.",
-   "fix": "",
-   "checked": "Opus subagent, code read on 2.10.6 and origin/dev plus a synthetic repro. HLS radio goes to ffmpeg with -stream_loop -1 -re and no burst (2.10.6 audio.py:4242-4250, dev :4915-4922), so ffmpeg keeps ~0.3-0.5 s lead. The HLS demuxer only fetches the next ~9.75 s segment at the end of the current one, and the SiriusXM proxy fetches it from the CDN on demand (sxm 0.2.8: precache loop is dead code, http.py:36 set_active misses nonlocal; dev aiosxm 0.3.0 stream.py:559-564 also per-request). Any boundary where reload + fetch exceeds the lead starves the player. Synthetic local HLS server with MA's exact args on ffmpeg 9.0.1: 0 ms delay no stalls; 700 ms delay gives a 0.70 s output stall per boundary with no errors; adding -readrate_initial_burst 10 absorbs it fully. Not tested on ffmpeg 7.1.2 (prod) or the real SXM CDN (no account). Side find: buffer_depth only applies to AirPlay 2 (airplay/stream.py:1138-1152), so the reporter's RAOP test changed nothing. No open PR. 10-23 09:36 UTC suwayama (not the reporter): 2.10.7 Docker on a Pi 5, B&O Beolit 12 (RAOP only): BBC Radio 4 HLS stutters (direct URL and BBC Sounds HLS); buffer_depth 2000/5000 ms only reduced it, RAOP encryption off and a quieter 2.4 GHz channel didn't help; non-HLS MP3 radio, Spotify AirPlay from an iPhone and the same HLS relayed through ffmpeg on a Mac all play clean. Offers to test the PR build.",
-   "plan": "Design call: (1, lean) add -readrate_initial_burst ~10 next to -re in the HLS radio branch, generic for every slow HLS origin, backport candidate; check ffmpeg 7.1.2 and the extra start/queue lag. Alternative: drop -re for HLS radio (riskier, it was added for the BBC stall). (2) Optional next-segment prefetch in aiosxm (MizterB). (3) Optional: skip the 5 s HLS metadata poll when the provider pushes metadata.",
-   "branch": "",
-   "diff": "",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/server/pull/7139",
-     "label": "server#7139 (yours, HLS radio initial burst, ready for review)"
-    }
-   ],
-   "badges": [
-    [
-     "info",
-     "Test asked 10-23",
-     "test asked"
-    ],
-    [
-     "info",
-     "Waiting for user",
-     "waiting"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-14 11:40 run: new issue. Synthetic repro of the mechanism (HLS -re keeps ~0.5 s lead, on-demand segment fetch at each boundary), not on the real SXM CDN. Fix shape is a design call (lean: -readrate_initial_burst for HLS radio).",
-    "10-22 07:30 run: you built the HLS burst fix (server#7139) and posted the DEV test ask (10-21 17:20 UTC). Waiting for Ccohen68.",
-    "10-23 12:30 run: suwayama added a BBC Radio 4 HLS data point that fits server#7139 and offered to test. Drafted a pr-7139 Docker test ask for you.",
-    "10-23 14:04 sync: you posted from the board (https://github.com/music-assistant/support/issues/6738#issuecomment-6364451065)",
-    "10-23 14:30 run: you posted the pr-7139 test ask for suwayama from the board (12:04 UTC)."
-   ],
-   "action": "",
-   "milestone": null,
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-23T12:04:32Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6738#issuecomment-6364451065"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/server",
-      "n": 7139,
-      "state": "OPEN",
-      "draft": false,
-      "merged_at": null,
-      "own": true
-     }
-    ],
-    "test_ask": {
-     "at": "2026-10-23T12:04:32Z",
-     "url": "https://github.com/music-assistant/support/issues/6738#issuecomment-6364451065"
-    },
-    "after_test_ask_reporter": false,
-    "labels": [
-     "airplay",
-     "triage",
-     "spotify",
-     "hass",
-     "waiting-for-user",
-     "SiriusXM"
     ]
    }
   },
@@ -3194,7 +2468,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-15T08:23:30Z",
@@ -3223,11 +2497,11 @@
    "col": "pr",
    "area": "server / controllers/player_queues (next debounce, queue_loader abort) + providers/spotify/soloist.py",
    "since": "2026-10-15 12:40",
-   "last": "tylernolf 2026-10-21 00:49",
+   "last": "cateim 2026-10-25 02:36",
    "gh": {
-    "login": "tylernolf",
+    "login": "cateim",
     "team": false,
-    "at": "2026-10-21T00:49:25Z",
+    "at": "2026-10-25T02:36:47Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -3257,20 +2531,21 @@
     "10-22 09:15 discuss: discussion session started on your main account with Fable 5.1 on your two levers: a smarter replacement for the fixed 1 s next debounce (your concern: it guards against next-spam spinning up tasks) and a faster Soloist teardown/respawn; it comes back with options.",
     "10-22 09:30 run: discussion done (Fable). Phase 1 core (adaptive debounce + abort on press) and phase 2 Soloist (Marcel) as separate PRs, measure on the Hermes VM first. Next: `fix 6756 phase1`.",
     "10-22 15:30 run: two drafts from your session: server#7154 (no debounce on a lone press) and server#7155 (cancelled start no longer runs on through the buffer reset), both backport. Phase 2 (Soloist, Marcel) still to come.",
-    "10-23 15:30 run: server#7154 and #7155 closed 10-23 for your own testing (phase 2 dropped after measuring)."
+    "10-23 15:30 run: server#7154 and #7155 closed 10-23 for your own testing (phase 2 dropped after measuring).",
+    "10-26 07:30 run: cateim (10-25): same ~5 s on 2.10.8, Soloist Lossless to a LinkPlay amp over DLNA in flow mode, timed from the amp's HTTP API (table in the comment). Useful for your own testing."
    ],
    "action": "",
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
-     "login": "tylernolf",
-     "at": "2026-10-21T00:49:25Z",
+     "login": "cateim",
+     "at": "2026-10-25T02:36:47Z",
      "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6756#issuecomment-6305201613"
+     "url": "https://github.com/music-assistant/support/issues/6756#issuecomment-6392530466"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [
@@ -3340,7 +2615,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "suporte640",
      "at": "2026-10-19T00:58:04Z",
@@ -3356,81 +2631,6 @@
     "labels": [
      "triage",
      "Spotify Connect",
-     "needs-attention"
-    ]
-   }
-  },
-  {
-   "n": 6806,
-   "title": "Spotify: playlist search hangs on the rate-limited global session (since #6647)",
-   "col": "merged",
-   "area": "server / providers/spotify/provider.py",
-   "since": "2026-10-19 07:38",
-   "last": "Thyraz 2026-10-18 18:56",
-   "gh": {
-    "login": "Thyraz",
-    "team": false,
-    "at": "2026-10-18T18:56:10Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "2.11.0b5 HA add-on with a custom Client ID. Since server#6647 playlist search also runs on the shared MA session, which is often rate limited in Germany. The search times out in the UI while the logs show retry loops; other media types are fast.",
-   "fix": "server#7097: the playlist search on the shared global Spotify session runs under a 4 s deadline. On RetriesExhausted or timeout it keeps the global pages already fetched and tops up only the missing playlists from the user's own Client ID, deduped and capped at the limit, so a rate-limited global session no longer fails or stalls the whole search.",
-   "checked": "provider.py:513-525: with dev_session_active, playlists are searched only via use_global_session=True and gathered with the other types. _session_for (provider.py:1877) always returns the global session for that flag and _request_on_session (1845-1869) has no fallback, so the throttler retries 5x with 20-40 s backoffs (log matches). Repro (scratchpad triageA/test_6806.py, reuses test_search fixtures): a RateLimited on the global playlist search raises out of search() and drops the dev-session track results too. Merged 10-19 07:21 UTC without backport label. Test cherry-pick onto backport/2.10.8 conflicts (spotify/provider.py, and tests/providers/spotify/test_search.py doesn't exist on stable), so milestone 2.11.0.",
-   "plan": "Wait for Thyraz to confirm on a 2.11 nightly or beta.",
-   "branch": "fix/spotify-global-search-fallback @ 7bd8f76a0e, worktree server-worktrees/fix-6806",
-   "diff": "",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/server/pull/7097",
-     "label": "server#7097 (ours, merged 10-19 07:21, no backport label, conflicts on stable)"
-    }
-   ],
-   "badges": [
-    [
-     "ok",
-     "FtbC + 2.11.0 booked",
-     "booked"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-19 07:38 run: new issue. Reproduced with a unit test, fix agent started.",
-    "10-19 07:38 run: Opus fix agent: draft server#7097, 1 new test. A/B: fails without, 280/280 Spotify tests pass with it. A global cooldown under 60 s can still delay the search up to ~60 s (no up-front cooldown check). You're assigned. Copilot took 4 rounds: (1) waiting for RetriesExhausted outlasts the 8 s soft timeout and partial pages duplicated, (2) the 4 s deadline also cut healthy throttled pagination, (3) the fallback over-fetched. All fixed with tests, threads replied + resolved. pre-commit now really passes in a synced venv, so the box is ticked honestly. 283 Spotify tests pass, CI green.",
-    "10-19 09:38 run: you merged server#7097 (07:21 UTC, no backport label). Cherry-pick conflicts on stable, so I set Fix to be Confirmed + milestone 2.11.0. Reply is the confirm ask.",
-    "10-21 11:50: confirm reply dropped. You close fixed issues yourself with a closing message at release."
-   ],
-   "action": "",
-   "milestone": "2.11.0",
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "Thyraz",
-     "at": "2026-10-18T18:56:10Z",
-     "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6806"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/server",
-      "n": 7097,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-10-19T07:21:21Z",
-      "own": true
-     }
-    ],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "triage",
-     "Fix to be Confirmed",
-     "spotify",
-     "hass",
      "needs-attention"
     ]
    }
@@ -3466,7 +2666,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "axsuul",
      "at": "2026-10-18T04:08:57Z",
@@ -3492,11 +2692,11 @@
    "col": "cantfix",
    "area": "server / providers/spotify_connect/go_librespot",
    "since": "2026-10-19 07:38",
-   "last": "MarvinSchenkel 2026-10-20 14:50",
+   "last": "meggsico 2026-10-23 17:51",
    "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-20T14:50:16Z",
+    "login": "meggsico",
+    "team": false,
+    "at": "2026-10-23T17:51:30Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -3518,19 +2718,20 @@
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Real, needs a design call or isn't ours.",
-    "10-20 17:38 run: you posted the Soloist + upstream go-librespot reply (14:50 UTC). Waiting for meggsico."
+    "10-20 17:38 run: you posted the Soloist + upstream go-librespot reply (14:50 UTC). Waiting for meggsico.",
+    "10-26 07:30 run: meggsico's Soloist test: device not visible, asks how pairing works. Question for you/Marcel."
    ],
-   "action": "",
+   "action": "meggsico (Soloist, DEBUG): Soloist starts and MA connects, but 'debian | Music Assistant' never shows in the Spotify Android device list, so no first login. Asks whether Soloist reuses the provider's auth or how to pair when invisible. Soloist is Marcel's; your answer or hand off.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-20T14:50:16Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6787#issuecomment-6293710842"
+     "login": "meggsico",
+     "at": "2026-10-23T17:51:30Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6787#issuecomment-6371238509"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -3540,102 +2741,10 @@
      "triage",
      "Spotify Connect",
      "hass",
-     "waiting-for-user"
-    ]
-   }
-  },
-  {
-   "n": 6812,
-   "title": "AirPlay sync groups with 9+ members or after switching groups fail on PTP",
-   "col": "merged",
-   "area": "airplay-cli src/ap2_ptp.c (shared PTP daemon peer set)",
-   "since": "2026-10-19 07:38",
-   "last": "MarvinSchenkel 2026-10-22 08:00",
-   "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-22T08:00:22Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "On 2.10.7 (HA add-on, 57 players), AirPlay 2 sync groups go playing then idle, and one member logs that it has not answered the PTP clock. Groups with 9 or more AirPlay members always fail. A smaller group fails after a different group was used first, and works again after an MA restart or an AirPlay provider reload. The reporter's packet captures show the daemon sending Sync only to 7 or 8 peers, including a speaker from the previous group.",
-   "fix": "",
-   "checked": "Confirmed in airplay-cli origin/main (1701bc2). The shared daemon peer set has a hard cap: PTP_MAX_PEERS 8 (src/ap2_ptp.c:102). peerset_add (ap2_ptp.c ~1700-1711) only appends and never reuses a slot whose refs dropped to 0. peerset_remove (~1713-1721) decrements refs but never frees the slot, so ps->n only grows. After 8 distinct receiver IPs have been registered over the daemon's lifetime, every new IP hits 'peer set full; ignoring'. The daemon lives as long as the provider (server providers/airplay/provider.py:827-863, --ptp-daemon), which is why a provider reload fixes it. A second leak is on the server side: stream.stop(force=True) (providers/airplay/stream.py:427) and _cleanup_failed_start (stream.py:1783) SIGKILL cliairplay. The 'U <ip>' unregister only runs in ap2_ptp_destroy (ap2_ptp.c:1237), so a killed stream leaves refs>0 and the old peer keeps getting Sync, matching the reporter's capture where Studio W still got Sync. Failed starts are killed, so one failure leaks more slots and the next start fails too. Followed HomePods (R ip F) also take a peer slot. No open airplay-cli PR or support issue covers this. I did not build the binary; this is from code reading, but it lines up with each step in the reporter's captures.",
-   "plan": "airplay-cli fix: make peerset_add reuse a refs==0 slot (or compact on remove), and raise PTP_MAX_PEERS to 16 or more. AP2_PTP_SHM_MAX_FOLLOW and AP2_PTP_SHM_VERSION are tied to it by a _Static_assert, so bump those together. Add a unit test for the add/remove/re-add cycle. Separately decide how the daemon drops peers whose cliairplay process was SIGKILLed, for example by tagging registrations with the client pid and reaping dead pids, or by sending SIGTERM before SIGKILL in stream.py.",
-   "branch": "",
-   "diff": "",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/airplay-cli/pull/95",
-     "label": "airplay-cli#95 (merged 10-21, in airplay-cli v0.5.9, pinned by server#7137, in nightly 2.11.0.dev2026102203)"
-    }
-   ],
-   "badges": [
-    [
-     "info",
-     "Test asked 10-22",
-     "test asked"
-    ],
-    [
-     "ok",
-     "FtbC labelled",
-     "booked"
-    ],
-    [
-     "muted",
-     "backport? (server#7137 pin bump has no label)",
-     "backport?"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-19 07:38 run: new issue. Fix belongs in airplay-cli (PTP peer cap + slot release) and needs your call first.",
-    "10-20 14:30 (on request): investigation chip queued. It confirms the cause with a build and hermetic repro and implements the recommended airplay-cli fix on a local branch with A/B. No PR or GitHub comments until you've reviewed it.",
-    "10-20 14:38 run: the chip opened draft airplay-cli#95 (all builds and sanitizer tests green). Copilot (12:37 UTC) left 3 open findings: the shared-memory object isn't resized when a new daemon reuses an older, smaller one; tests use the production shm name and control port; no-pid registrations take one slot each and get rejected after 128 while still answering OK.",
-    "10-20 15:38 run: airplay-cli#95 is out of draft, CI green, 0 unresolved threads after 4 Copilot rounds (shm recreate when too small, isolated test shm name and port, ownerless regs counted, reap-and-retry on a full table). Waiting for your merge.",
-    "10-21 13:35: PR state refreshed (airplay-cli#95 open, ready for review).",
-    "10-21 13:30 run: you merged airplay-cli#95 (11:08/11:15 UTC). Next: one airplay-cli release covers #6672 and #6812, then the pin bump.",
-    "10-22 (on request): airplay-cli v0.5.9 (both fixes) is pinned by server#7137 and in nightly 2.11.0.dev2026102203. Posted the nightly test ask, labelled Fix to be Confirmed. No milestone: server#7137 has no backport label, so backport is your call."
-   ],
-   "action": "Test ask on nightly 2.11.0.dev2026102203 posted 10-22. Waiting on the reporter.",
-   "ask": null,
-   "milestone": null,
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-22T08:00:22Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6812#issuecomment-6335805660"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/airplay-cli",
-      "n": 95,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-10-21T11:15:58Z",
-      "own": true
-     }
-    ],
-    "test_ask": {
-     "at": "2026-10-22T08:00:22Z",
-     "url": "https://github.com/music-assistant/support/issues/6812#issuecomment-6335805660"
-    },
-    "after_test_ask_reporter": false,
-    "labels": [
-     "airplay",
-     "triage",
-     "Fix to be Confirmed",
-     "hass",
-     "waiting-for-user"
+     "needs-attention"
     ]
    },
-   "waiting_on": "reporter"
+   "ask": "input"
   },
   {
    "n": 6800,
@@ -3678,7 +2787,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "Vivi92821",
      "at": "2026-10-21T14:34:40Z",
@@ -3704,18 +2813,18 @@
    "col": "info",
    "area": "server providers/snapcast/ma_stream.py",
    "since": "2026-10-19 07:38",
-   "last": "MarvinSchenkel 2026-10-20 14:42",
+   "last": "ChangoMunk 2026-10-24 15:00",
    "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-20T14:42:54Z",
+    "login": "ChangoMunk",
+    "team": false,
+    "at": "2026-10-24T15:00:32Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "With an external Snapserver 0.31.0 and MA 2.10.6/2.10.7 (HA add-on), all Snapcast clients skip or pause at the same moment every few minutes. Once it went silent for about 7.6 s. Each glitch lines up with an onResync for MA's stream in the snapserver log. It happens with Tidal and local files, single players and groups. Moving snapserver onto the same Proxmox host did not help, and the built-in server has not been tried.",
    "fix": "",
-   "checked": "In external mode MA pushes PCM through ffmpeg with -re (real-time pacing) to the snapserver TCP source (ma_stream.py:350-370), fed from a 30-chunk buffered() source. -re leaves no slack, so any upstream stall shows up directly as a late delivery and snapserver resyncs. Neither stable nor dev has changed this path: only lint and bump commits since 2.10.7. The diagnostics were taken 527 s after a restart and hold one unrelated zeroconf warning. The snapcast section reports ma_streams 0, so there is no evidence of the glitch window. No root cause found and no repro without their setup.",
-   "plan": "Ask the reporter to install the Profiler provider, reproduce a resync, and attach diagnostics, which include event loop lag and ffmpeg counts around the glitch. Also ask for a short test against the built-in Snapserver to separate an MA-side stall from an external-source issue.",
+   "checked": "In external mode MA pushes PCM through ffmpeg with -re (real-time pacing) to the snapserver TCP source (ma_stream.py:350-370), fed from a 30-chunk buffered() source. -re leaves no slack, so any upstream stall shows up directly as a late delivery and snapserver resyncs. Neither stable nor dev has changed this path: only lint and bump commits since 2.10.7. The diagnostics were taken 527 s after a restart and hold one unrelated zeroconf warning. The snapcast section reports ma_streams 0, so there is no evidence of the glitch window. No root cause found and no repro without their setup. 10-24 ChangoMunk: Profiler worst loop lag 111 ms over ~20 h; MA's PCM to Snapserver has no delivery gap but the content skips; on 2.10.8, ~3.8-3.9 s instant jumps only on Tidal (39/87 Snapcast, 5/14 Chromecast), 0/7 local. Points at the Tidal stream fetch / buffer path, unproven.",
+   "plan": "Get a Tidal Verbose + Streams Debug log around a flagged skip. Then look at the Tidal stream path for a dropped ~3.9 s chunk (segment/retry/read-ahead). Worth a repro session.",
    "branch": "",
    "diff": "",
    "prs": [],
@@ -3730,19 +2839,20 @@
    "bookkeeping": [],
    "notes": [
     "10-19 07:38 run: new issue. Not enough info, reply asks for what's missing.",
-    "10-20 17:38 run: you posted the Profiler diagnostics ask (14:42 UTC). Waiting for ChangoMunk."
+    "10-20 17:38 run: you posted the Profiler diagnostics ask (14:42 UTC). Waiting for ChangoMunk.",
+    "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6791#issuecomment-6409788347), GPT: revise, accepted GPT's text as is (no claim about where the loss happens, asks for the time zone). Ask: Tidal Verbose + Streams Debug log around a skip."
    ],
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-20T14:42:54Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6791#issuecomment-6293546508"
+     "login": "ChangoMunk",
+     "at": "2026-10-24T15:00:32Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6791#issuecomment-6385728474"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -3752,9 +2862,10 @@
      "triage",
      "snapcast",
      "hass",
-     "waiting-for-user"
+     "needs-attention"
     ]
-   }
+   },
+   "ask": null
   },
   {
    "n": 6775,
@@ -3795,7 +2906,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T15:23:02Z",
@@ -3852,7 +2963,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T21:30:55Z",
@@ -3870,83 +2981,6 @@
      "qobuz",
      "filesystem_local",
      "needs-attention"
-    ]
-   }
-  },
-  {
-   "n": 6798,
-   "title": "Clicking the waveform progress bar restarts the track from 0",
-   "col": "merged",
-   "area": "frontend / src/layouts/default/PlayerOSD/PlayerTimeline.vue",
-   "since": "2026-10-19 07:38",
-   "last": "MarvinSchenkel 2026-10-20 13:32",
-   "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-20T13:32:52Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "With the waveform progress bar enabled, clicking on it seeks back to the start of the track instead of the clicked position. The flat progress bar seeks fine. 2.10.6 (frontend 2.17.297), Edge/Firefox and the Windows app.",
-   "fix": "frontend#3031 (merged): the waveform progress bar seeks to the clicked position again, a small pointer move while clicking no longer seeks to 0.",
-   "checked": "PlayerTimeline.vue:71-82 (origin/main 32a1f3c5, same in 2.17.297.post1) gives SliderThumb the `hidden` class (display:none) whenever hasWaveform. reka-ui SliderRoot defaults thumbAlignment to 'contain' (SliderRoot.js:68-71). In SliderHorizontal.js getValueFromPointerEvent, the first slideMove sets offsetPosition = clientX - thumb.getBoundingClientRect().left, and a display:none thumb has left=0 and clientWidth=0, so position = clientX - rect.left - clientX = -rect.left, which clamps to min 0. Any pointermove between pointerdown and pointerup (mouse jitter, or any drag) therefore commits value 0 and stopDragging (PlayerTimeline.vue:428-441) sends seek(0). A perfectly still click works, which is why it looks intermittent. The flat bar shows the thumb on pointerenter, so its rect is valid. Reproduced by reading the reka code path, not in a browser. No open frontend PR touches this.",
-   "plan": "Done once Rocker2234 confirms on a nightly or the 2.11 beta.",
-   "branch": "",
-   "diff": "",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/frontend/pull/3031",
-     "label": "frontend#3031 (ours, merged 10-20 13:31 UTC, 2.11)"
-    }
-   ],
-   "badges": [
-    [
-     "info",
-     "Waiting for user",
-     "waiting"
-    ],
-    [
-     "ok",
-     "FtbC + 2.11.0 booked",
-     "booked"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-19 07:38 run: new issue. Fix identified in code, not reproduced in a browser. Frontend PR needs a browser repro and before/after screenshots, so not built unattended.",
-    "10-20 15:38 run: you merged frontend#3031 (13:31 UTC, no backport label). Fix to be Confirmed + 2.11.0 booked and the \"available in 2.11\" reply posted (13:33 UTC). Waiting for Rocker2234."
-   ],
-   "action": "",
-   "milestone": "2.11.0",
-   "sync": {
-    "at": "2026-10-23T15:30:13Z",
-    "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-20T13:32:52Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6798#issuecomment-6292076360"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/frontend",
-      "n": 3031,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-10-20T13:31:36Z",
-      "own": true
-     }
-    ],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "triage",
-     "Fix to be Confirmed",
-     "Frontend",
-     "waiting-for-user"
     ]
    }
   },
@@ -3981,7 +3015,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "kmycek",
      "at": "2026-10-17T17:36:42Z",
@@ -4039,7 +3073,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T16:29:06Z",
@@ -4098,7 +3132,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "marapavelka",
      "at": "2026-10-17T09:58:35Z",
@@ -4156,7 +3190,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:52:28Z",
@@ -4171,7 +3205,8 @@
     "after_test_ask_reporter": false,
     "labels": [
      "apple_music",
-     "waiting-for-user"
+     "waiting-for-user",
+     "triage/reminded-1"
     ]
    }
   },
@@ -4235,7 +3270,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:35:53Z",
@@ -4263,7 +3298,8 @@
     "labels": [
      "spotify",
      "sonos",
-     "waiting-for-user"
+     "waiting-for-user",
+     "triage/reminded-1"
     ]
    }
   },
@@ -4328,7 +3364,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "profLewis",
      "at": "2026-10-21T00:18:32Z",
@@ -4354,7 +3390,8 @@
     },
     "after_test_ask_reporter": true,
     "labels": [
-     "waiting-for-user"
+     "waiting-for-user",
+     "triage/reminded-1"
     ]
    }
   },
@@ -4410,7 +3447,7 @@
     "done": true
    },
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T12:09:02Z",
@@ -4438,7 +3475,8 @@
     "labels": [
      "triage",
      "fully_kiosk",
-     "waiting-for-user"
+     "waiting-for-user",
+     "triage/reminded-1"
     ]
    }
   },
@@ -4499,7 +3537,7 @@
     "done": true
    },
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T14:35:19Z",
@@ -4527,7 +3565,8 @@
     "labels": [
      "triage",
      "waiting-for-user",
-     "Bluesound"
+     "Bluesound",
+     "triage/reminded-1"
     ]
    }
   },
@@ -4562,7 +3601,7 @@
     "10-23 07:30 run: new issue, confirmed in code (hardcoded port 1443 in aiosonos discovery and client). Fix needs aiosonos + server. Answer drafted."
    ],
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "billyfw",
      "at": "2026-10-23T00:06:27Z",
@@ -4577,7 +3616,8 @@
     "after_test_ask_reporter": false,
     "labels": [
      "sonos",
-     "waiting-for-user"
+     "waiting-for-user",
+     "triage/reminded-1"
     ]
    }
   },
@@ -4587,11 +3627,11 @@
    "col": "cantfix",
    "area": "server / providers/raumfeld provider.py resolve_room_renderer (one renderer per room); providers/dlna/player.py _is_raumfeld_zone_renderer",
    "since": "2026-10-23 08:30",
-   "last": "Simanias 2026-10-23 15:04",
+   "last": "Simanias 2026-10-24 12:46",
    "gh": {
     "login": "Simanias",
     "team": true,
-    "at": "2026-10-23T15:04:09Z",
+    "at": "2026-10-24T12:46:43Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -4601,7 +3641,12 @@
    "plan": "Simanias's area (2.11 beta). Likely fix: link or hide every renderer of a room from the host's zone config.",
    "branch": "",
    "diff": "",
-   "prs": [],
+   "prs": [
+    {
+     "url": "https://github.com/music-assistant/server/pull/7180",
+     "label": "server#7180 (Simanias, draft: a room keeps its player, extra speakers' DLNA players hidden)"
+    }
+   ],
    "badges": [
     [
      "muted",
@@ -4617,25 +3662,43 @@
    "action": "",
    "notes": [
     "10-23 08:30 run: new issue, claim matches dev (one renderer per room linked). OzGav pinged Simanias. Nothing for you.",
-    "10-23 17:30 run: Simanias (15:04 UTC) confirmed the analysis (one DLNA device linked per room, hassfeld keeps the first renderer) and is picking it up. Nothing for you."
+    "10-23 17:30 run: Simanias (15:04 UTC) confirmed the analysis (one DLNA device linked per room, hassfeld keeps the first renderer) and is picking it up. Nothing for you.",
+    "10-26 07:30 run: Simanias opened draft server#7180 (reproduced with a 2-speaker room); culmat's server#7183 closed. Waiting on test/merge."
    ],
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "Simanias",
-     "at": "2026-10-23T15:04:09Z",
+     "at": "2026-10-24T12:46:43Z",
      "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6851#issuecomment-6367961667"
+     "url": "https://github.com/music-assistant/support/issues/6851#issuecomment-6384387735"
     },
     "reporter_new": false,
     "team_new": true,
     "closed": false,
-    "pr": [],
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7180,
+      "state": "OPEN",
+      "draft": true,
+      "merged_at": null,
+      "own": false
+     },
+     {
+      "repo": "music-assistant/server",
+      "n": 7183,
+      "state": "CLOSED",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     }
+    ],
     "test_ask": null,
     "after_test_ask_reporter": false,
     "labels": [
-     "dlna",
-     "triage",
+     "Fix to be Confirmed",
+     "needs-attention",
      "waiting-for-user"
     ]
    }
@@ -4672,7 +3735,7 @@
     "10-23 14:50: curl ran 1260 s clean against DR. Moved to Reproduced, cannot fix (pending repro) with an input ask."
    ],
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "BlochHansen",
      "at": "2026-10-23T11:43:27Z",
@@ -4730,7 +3793,7 @@
     "10-23 16:30 run: you asked UnfundedNag (14:19 UTC) whether it still happens on 2.10.8. Added to the board as waiting on the reporter."
    ],
    "sync": {
-    "at": "2026-10-23T15:30:13Z",
+    "at": "2026-10-26T06:30:11Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T14:19:57Z",
@@ -4748,6 +3811,891 @@
      "waiting-for-user"
     ]
    }
+  },
+  {
+   "n": 6827,
+   "discussion": true,
+   "title": "Discussion: live backups of the MA database (backup command)",
+   "col": "info",
+   "area": "server / helpers/database.py DatabaseConnection (locking_mode=exclusive), feature request",
+   "since": "2026-10-26 07:30",
+   "last": "OzGav 2026-10-25 13:20",
+   "gh": {
+    "login": "OzGav",
+    "team": true,
+    "at": "2026-10-25T13:20:55Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "Feature discussion: take consistent backups of library.db / auth.db / settings.json while MA runs. The DBs are opened with locking_mode=exclusive (kept for performance, support#3647), so no outside process can read them. pfrenssen proposes a server-side backup command using the SQLite backup API on the existing connection (DatabaseConnection.backup(target)). OzGav tagged you on 10-25.",
+   "fix": "",
+   "checked": "Not code-checked beyond the proposal's own pointers (helpers/database.py setup: exclusive lock before WAL).",
+   "plan": "Your call: accept the backup-command shape (and who builds it, pfrenssen offered?) or not.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [],
+   "reply": "",
+   "bookkeeping": [],
+   "ask": "design",
+   "milestone": null,
+   "action": "OzGav tagged you: pfrenssen proposes a server-side backup command (SQLite backup API on the live connection). Yes/no on the shape.",
+   "notes": [
+    "10-26 07:30 run: tagged discussion. Feature idea with a concrete proposal; design call for you."
+   ]
+  },
+  {
+   "n": 6857,
+   "title": "Adding an audiobook to a playlist fails ('expected str instance, ItemMapping found')",
+   "col": "pr",
+   "area": "server / helpers/playlists.py:908-910",
+   "since": "2026-10-26 07:30",
+   "last": "X-dark 2026-10-23 19:37",
+   "gh": {
+    "login": "X-dark",
+    "team": false,
+    "at": "2026-10-23T19:37:54Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.11.0.dev2026102303 Docker: adding an audiobook to an MA playlist fails with 'sequence item 0: expected str instance, ItemMapping found', playlist stays empty.",
+   "fix": "Join author/narrator names instead of objects in playlists.py.",
+   "checked": "Reproduced code-only on origin/dev (scratch script, audiobook author as ItemMapping): playlists.py:908 '; '.join(full_item.authors) and :910 narrators; authors/narrators can be Artist|ItemMapping|str since #3570 (models media_item.py:456-457). Same line on 2.10.8 (playlists.py:809). No PR, no duplicate. Local fix a74c3329f2: _person_name helper joins Artist/ItemMapping names; new test (ItemMapping author + str author + ItemMapping narrator) fails without, 103 pass with. No other author/narrator joins. Stable: playlists.py merges clean, test-import conflict only (add Audiobook), 77 pass on stable.",
+   "plan": "Join names: a.name for Artist/ItemMapping (as Audiobook.artist_str does), regression test with an ItemMapping author. Backportable.",
+   "branch": "fix/playlist-audiobook-author-mapping @ a74c3329f2 (worktree ~/git/music-assistant/server-fix-6857, not pushed)",
+   "diff": "diff --git a/music_assistant/helpers/playlists.py b/music_assistant/helpers/playlists.py\nindex dbf8609925..73a6d71021 100644\n--- a/music_assistant/helpers/playlists.py\n+++ b/music_assistant/helpers/playlists.py\n@@ -905,9 +905,9 @@ def media_item_to_playlist_item(full_item: MediaItem) -> PlaylistItem:\n         \"name\": full_item.name,\n     }\n     if hasattr(full_item, \"authors\") and full_item.authors:\n-        metadata[\"authors\"] = \"; \".join(full_item.authors)\n+        metadata[\"authors\"] = \"; \".join(_person_name(a) for a in full_item.authors)\n     if hasattr(full_item, \"narrators\") and full_item.narrators:\n-        metadata[\"narrators\"] = \"; \".join(full_item.narrators)\n+        metadata[\"narrators\"] = \"; \".join(_person_name(n) for n in full_item.narrators)\n     if full_item.version:\n         metadata[\"version\"] = full_item.version\n     if isrc := _unambiguous_external_id(full_item, ExternalID.ISRC):\n@@ -1104,3 +1104,8 @@ def _parse_extpodcast_line(line: str) -> PodcastInfo | None:\n         item_id=parts[2],\n         provider_instance=parts[3],\n     )\n+\n+\n+def _person_name(value: Artist | ItemMapping | str) -> str:\n+    \"\"\"Return the display name of an audiobook author or narrator.\"\"\"\n+    return value.name if isinstance(value, Artist | ItemMapping) else value\ndiff --git a/tests/helpers/test_playlists.py b/tests/helpers/test_playlists.py\nindex 2b57cc4233..0925f6e7c8 100644\n--- a/tests/helpers/test_playlists.py\n+++ b/tests/helpers/test_playlists.py\n@@ -10,6 +10,7 @@ from music_assistant_models.enums import ContentType, ExternalID, ImageType, Med\n from music_assistant_models.errors import InvalidDataError\n from music_assistant_models.media_items import (\n     Album,\n+    Audiobook,\n     AudioFormat,\n     AudioMetadata,\n     ItemMapping,\n@@ -1298,6 +1299,46 @@ def test_media_item_to_playlist_item_track() -> None:\n     assert result.images[0].remotely_accessible is True\n \n \n+def test_media_item_to_playlist_item_audiobook_with_mapped_people() -> None:\n+    \"\"\"Audiobook authors and narrators given as library mappings are exported by name.\"\"\"\n+    audiobook = Audiobook(\n+        item_id=\"1\",\n+        provider=\"library\",\n+        name=\"Dune\",\n+        provider_mappings={\n+            ProviderMapping(\n+                item_id=\"dune.m4b\",\n+                provider_domain=\"filesystem_local\",\n+                provider_instance=\"filesystem_local_1\",\n+            )\n+        },\n+        authors=UniqueList(\n+            [\n+                ItemMapping(\n+                    item_id=\"5\",\n+                    provider=\"library\",\n+                    name=\"Frank Herbert\",\n+                    media_type=MediaType.ARTIST,\n+                ),\n+                \"Brian Herbert\",\n+            ]\n+        ),\n+        narrators=UniqueList(\n+            [\n+                ItemMapping(\n+                    item_id=\"6\", provider=\"library\", name=\"Scott Brick\", media_type=MediaType.ARTIST\n+                )\n+            ]\n+        ),\n+    )\n+\n+    result = media_item_to_playlist_item(audiobook)\n+\n+    assert result.metadata is not None\n+    assert result.metadata[\"authors\"] == \"Frank Herbert; Brian Herbert\"\n+    assert result.metadata[\"narrators\"] == \"Scott Brick\"\n+\n+\n def test_media_item_to_playlist_item_radio() -> None:\n     \"\"\"Test conversion of a Radio to PlaylistItem.\"\"\"\n     radio = Radio(",
+   "prs": [],
+   "badges": [
+    [
+     "warn",
+     "Local fix",
+     "local fix"
+    ]
+   ],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, I could reproduce this. Adding an audiobook fails when its authors or narrators are linked to artists in the library. Nothing to change on your side.",
+   "bookkeeping": [],
+   "ask": "input",
+   "milestone": null,
+   "action": "Local fix ready (a74c3329f2). Say `fix 6857` for the PR with backport (stable needs a one-line test-import resolution).",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage).",
+    "10-26 07:40: Opus subagent building the local fix (no push, no PR).",
+    "10-26 08:00: local fix built and A/B'd. No PR until you say so."
+   ]
+  },
+  {
+   "n": 6883,
+   "title": "Subsonic: genres added after the first import vanish after a resync",
+   "col": "cantfix",
+   "area": "server / controllers/genres.py _cleanup_stale_genre_mappings, models/music_provider.py _sync_item_genres",
+   "since": "2026-10-26 07:30",
+   "last": "theomega 2026-10-25 14:02",
+   "gh": {
+    "login": "theomega",
+    "team": false,
+    "at": "2026-10-25T14:02:42Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.11.0b7 Docker: genre tags added in Navidrome after the first import get linked on sync, then removed by the 'Scan genre mappings' task; non-default genres get deleted. Reporter included a code trace.",
+   "fix": "",
+   "checked": "Trace correct on dev: music_provider.py:1393 _sync_item_genres adds mapping rows (alias=provider genre) but never writes metadata.genres; an existing item is only rewritten on mapping/album-link changes (:1098-1110, :1970); genres.py:1621 cleanup deletes non-manual mappings whose alias isn't in stored metadata.genres (:1646-1658) and empty non-default genres (:1702). Same on 2.10.8 (genres.py:1496). Not a regression, not Subsonic-specific. Related closed #5310.",
+   "plan": "Design: either write provider genres to metadata.genres when they differ during sync, or stop the cleanup overriding sync-made links. Marcel wrote most of genres.py.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the detailed trace, it matches the code. The sync links the new genres but leaves the item's stored genres as they were, and the genre scan then removes those links. It is not specific to Subsonic.",
+   "bookkeeping": [],
+   "ask": "design",
+   "milestone": null,
+   "action": "Real, core genre handling: which source does the cleanup trust? Your/Marcel's call. Answer drafted.",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage)."
+   ]
+  },
+  {
+   "n": 6879,
+   "title": "Local files: an OverlayFS-backed Docker volume isn't offered in the folder picker",
+   "col": "pr",
+   "area": "server / controllers/storage/backends/mountinfo.py MEDIA_FSTYPES",
+   "since": "2026-10-26 07:30",
+   "last": "dentedbread 2026-10-25 11:06",
+   "gh": {
+    "login": "dentedbread",
+    "team": false,
+    "at": "2026-10-25T11:06:19Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.11.0b5 Docker on TrueNAS: a volume backed by an OverlayFS host mount doesn't show in the Local files folder picker though it's readable; an extra bind mount works around it.",
+   "fix": "Add 'overlay' to MEDIA_FSTYPES.",
+   "checked": "Confirmed: 2.11 storage discovery (#6546, not in 2.10.8) lists only mounts whose fstype is in MEDIA_FSTYPES (mountinfo.py:27-55, used at :133); 'overlay' left out to skip the container root, but '/' is excluded separately at :134. Inside a container a folder can't be added by hand (can_add_local_folder False, controller.py:165-169). No PR. Local fix 2091bbd248: 'overlay' added to MEDIA_FSTYPES; new test with the reporter's overlay line (/media_unified listed, '/' excluded). It also removes 'overlay' from the params of the existing test_filesystems_that_hold_no_media_are_excluded (that case asserted the behaviour being fixed). 456 storage tests pass. Unhandled edge: bare-metal Docker with a data-root outside /var would list overlay2 merged dirs (rare).",
+   "plan": "Add 'overlay' to MEDIA_FSTYPES + a parse_mountinfo test (overlay volume listed, '/' still excluded). 2.11 only (Marcel's #6546).",
+   "branch": "fix/storage-overlay-mounts @ 2091bbd248 (worktree ~/git/music-assistant/server-fix-6879, not pushed)",
+   "diff": "diff --git a/music_assistant/controllers/storage/backends/mountinfo.py b/music_assistant/controllers/storage/backends/mountinfo.py\nindex 2834869264..5f24961aaa 100644\n--- a/music_assistant/controllers/storage/backends/mountinfo.py\n+++ b/music_assistant/controllers/storage/backends/mountinfo.py\n@@ -22,8 +22,8 @@ from music_assistant.controllers.storage.models import StorageKind\n \n MOUNTINFO_PATH: Final[str] = \"/proc/self/mountinfo\"\n \n-# filesystems that can hold a music collection: never the container root (overlay) or a\n-# pseudo filesystem (tmpfs, proc, sysfs, cgroup, devpts, squashfs, ...)\n+# filesystems that can hold a music collection: never a pseudo filesystem (tmpfs, proc, sysfs,\n+# cgroup, devpts, squashfs, ...)\n MEDIA_FSTYPES: Final[frozenset[str]] = frozenset(\n     {\n         \"ext2\",\n@@ -48,6 +48,8 @@ MEDIA_FSTYPES: Final[frozenset[str]] = frozenset(\n         \"nfs4\",\n         \"virtiofs\",\n         \"9p\",\n+        # a host folder merged from several folders; the container root is excluded by mountpoint\n+        \"overlay\",\n         # Docker Desktop for Mac reports its bind mounts with this type\n         \"fakeowner\",\n     }\ndiff --git a/tests/controllers/storage/test_mountinfo.py b/tests/controllers/storage/test_mountinfo.py\nindex 19868a685f..233487d4d6 100644\n--- a/tests/controllers/storage/test_mountinfo.py\n+++ b/tests/controllers/storage/test_mountinfo.py\n@@ -104,6 +104,26 @@ def test_docker_with_a_bind_volume() -> None:\n     ]\n \n \n+def test_docker_with_an_overlay_volume() -> None:\n+    \"\"\"A volume backed by an overlay filesystem is a container volume, the container root is not.\"\"\"\n+    overlay_volume = (\n+        \"715 702 0:120 / /media_unified ro,relatime - overlay overlay \"\n+        \"ro,lowerdir=/mnt/pool/media_1:/mnt/pool/media_2,upperdir=/mnt/pool/media_3,\"\n+        \"workdir=/mnt/pool/.work\"\n+    )\n+    mounts = parse_mountinfo(\n+        f\"{_fixture('docker_bind_volume')}\\n{overlay_volume}\",\n+        excluded_paths=CONTAINER_DATA_PATHS,\n+        in_container=True,\n+        supervisor=False,\n+    )\n+\n+    assert mounts == [\n+        MediaMount(\"/media/music\", \"ext4\", read_only=True, kind=StorageKind.CONTAINER_VOLUME),\n+        MediaMount(\"/media_unified\", \"overlay\", read_only=True, kind=StorageKind.CONTAINER_VOLUME),\n+    ]\n+\n+\n def test_docker_without_volumes() -> None:\n     \"\"\"A container without volumes has no media location at all.\"\"\"\n     mounts = parse_mountinfo(\n@@ -196,9 +216,9 @@ def test_efi_system_partition_is_excluded(mountpoint: str) -> None:\n     assert _parse(_line(mountpoint, \"vfat\")) == {}\n \n \n-@pytest.mark.parametrize(\"fstype\", [\"overlay\", \"tmpfs\", \"squashfs\", \"proc\", \"cgroup2\", \"fuse\"])\n+@pytest.mark.parametrize(\"fstype\", [\"tmpfs\", \"squashfs\", \"proc\", \"cgroup2\", \"fuse\"])\n def test_filesystems_that_hold_no_media_are_excluded(fstype: str) -> None:\n-    \"\"\"The container root and pseudo filesystems are never a media location.\"\"\"\n+    \"\"\"Pseudo filesystems are never a media location.\"\"\"\n     assert _parse(_line(\"/music\", fstype)) == {}\n \n ",
+   "prs": [],
+   "badges": [
+    [
+     "warn",
+     "Local fix",
+     "local fix"
+    ],
+    [
+     "warn",
+     "Changes an existing test: needs your OK",
+     "test change"
+    ]
+   ],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, confirmed. Music Assistant only offers folders on filesystem types it knows, and overlay isn't one of them, so the volume is skipped. Your extra bind mount on the host is a valid workaround for now.",
+   "bookkeeping": [],
+   "ask": "input",
+   "milestone": null,
+   "action": "Local fix ready (2091bbd248) but it changes an existing test case (drops 'overlay' from test_filesystems_that_hold_no_media_are_excluded). Approve that, then `fix 6879` for the PR.",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage).",
+    "10-26 07:40: Opus subagent building the local fix (no push, no PR).",
+    "10-26 08:00: local fix built and A/B'd; needs your OK on the existing-test change."
+   ]
+  },
+  {
+   "n": 6878,
+   "title": "YouTube Music: playlist cache survives an account change (empty 'Liked music' for up to 3 h)",
+   "col": "cantfix",
+   "area": "server / providers/ytmusic __init__.py:544,1181; controllers/cache/helpers.py:100-106",
+   "since": "2026-10-26 07:30",
+   "last": "philippecottier 2026-10-25 09:18",
+   "gh": {
+    "login": "philippecottier",
+    "team": false,
+    "at": "2026-10-25T09:18:35Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.8 HA add-on: after switching the provider to a brand account, 'Liked music' (LM) stays empty for up to 3 h; clearing the cache fixes it. Same reporter explained it on #6706.",
+   "fix": "",
+   "checked": "Confirmed: use_cache key = func name + args under the provider instance_id (cache/helpers.py:100-106); the LM playlist id uses the instance id, not the account (ytmusic:1181); get_playlist_tracks cached 3 h with allow_expired_cache (:544); saving provider config doesn't clear its cache. Re-adding the provider gets a new instance_id, hence the workaround. Not a regression.",
+   "plan": "Provider-scoped: store the active account on init and cache.clear(provider_filter=instance_id) when it changed. A general clear-on-reconfigure in core would be a design call. Decide whether #6706 closes in favour of this.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, your analysis is right. The cache key doesn't include the account, so a reconfigure keeps serving the old result. Clearing the cache or removing and re-adding the provider works around it for now.",
+   "bookkeeping": [],
+   "ask": "input",
+   "milestone": null,
+   "action": "Your provider. Provider-scoped fix (clear its cache when the account changes); also decide if #6706 closes in favour of this. Answer drafted.",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage)."
+   ]
+  },
+  {
+   "n": 6877,
+   "title": "SoundCloud: pasted OAuth token expires within 24 h, no refresh",
+   "col": "cantfix",
+   "area": "server / providers/soundcloud __init__.py:116-118 (soundcloudpy 0.1.4)",
+   "since": "2026-10-26 07:30",
+   "last": "Sjo3rd 2026-10-25 09:04",
+   "gh": {
+    "login": "Sjo3rd",
+    "team": false,
+    "at": "2026-10-25T09:04:56Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.7 Docker: the browser oauth_token is now a JWT that dies within a day; every request 401s until a fresh token is pasted. Reproduced twice.",
+   "fix": "",
+   "checked": "Diagnostics: 153x '401 ... unexpected mimetype' on /me from handle_async_init (soundcloud:116-118), plus 401s on search/stream. Provider stores one Authorization string, no refresh handling. Changes since 2.10.7 don't touch auth. Token lifetime not checked live.",
+   "plan": "Design for robsonke: capture oauth_refresh_token in setup and refresh against SoundCloud's web auth endpoint (undocumented). Small side fix: map the 401 to a clear 'token expired' error.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [
+    [
+     "muted",
+     "robsonke's area",
+     "owner"
+    ]
+   ],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for testing this twice. The SoundCloud provider only uses the token you paste in and can't refresh it, so a short-lived token means re-entering it for now. Supporting the refresh token needs a change to how the provider logs in; we'll check with the provider's maintainer.",
+   "bookkeeping": [],
+   "ask": null,
+   "milestone": null,
+   "action": "robsonke's provider (refresh-token design). Answer drafted; ping robsonke when you post it.",
+   "waiting_on": "team",
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage)."
+   ]
+  },
+  {
+   "n": 6856,
+   "title": "Source install crashes on an ffmpeg git build version string",
+   "col": "user",
+   "area": "server / helpers/ffmpeg.py check_ffmpeg_version",
+   "since": "2026-10-26 07:30",
+   "last": "OzGav 2026-10-23 22:42",
+   "gh": {
+    "login": "OzGav",
+    "team": true,
+    "at": "2026-10-23T22:42:58Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "Source checkout on a Pi 5 / Debian 12; Debian's ffmpeg 5.1.9 rejected, so they built ffmpeg from git (N-127998-...), and startup crashes. Unsupported install; OzGav already replied.",
+   "fix": "",
+   "checked": "ValueError int('') in check_ffmpeg_version; on dev the 'N-xxxx' version still parses to '' and crashes. Not a regression. Optional tiny fix: treat a git snapshot as current.",
+   "plan": "Nothing for you; optional robustness fix only.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [
+    [
+     "muted",
+     "OzGav answered",
+     "owner"
+    ]
+   ],
+   "reply": "",
+   "bookkeeping": [],
+   "ask": null,
+   "milestone": null,
+   "action": "",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage)."
+   ]
+  },
+  {
+   "n": 6855,
+   "title": "MP3 genre tags not picked up correctly",
+   "col": "info",
+   "area": "server / filesystem tags",
+   "since": "2026-10-26 07:30",
+   "last": "OzGav 2026-10-23 22:41",
+   "gh": {
+    "login": "OzGav",
+    "team": true,
+    "at": "2026-10-23T22:41:05Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.7 HA add-on: some custom genres recognised, others not (e.g. 'rock' shown as 'funk'), with external sources off and the DB cleared.",
+   "fix": "",
+   "checked": "The attached mp3tag.csv has no genre column; OzGav asked for one track's genre value. Possibly related to #6883 if tags changed after import, unverified.",
+   "plan": "Wait for the reporter's answer to OzGav.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [],
+   "reply": "",
+   "bookkeeping": [],
+   "ask": null,
+   "milestone": null,
+   "action": "",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage)."
+   ]
+  },
+  {
+   "n": 6860,
+   "title": "2.10.8 regression: Spotify (Soloist) stops at the end of a track, next track never starts",
+   "col": "pr",
+   "area": "server / providers/spotify/backends/soloist.py _observe_external_pause (server#7117)",
+   "since": "2026-10-26 07:30",
+   "last": "The-Flix 2026-10-25 13:52",
+   "gh": {
+    "login": "The-Flix",
+    "team": false,
+    "at": "2026-10-25T13:52:35Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.8, HA add-on and Docker, Sendspin/Squeezelite/AirPlay/web players: Spotify playback stops a few seconds before a track ends and doesn't continue; 2.10.7 works. Four more users confirm on Soloist. OP's librespot claim unverified (his log lines are Soloist-only).",
+   "fix": "Ignore Soloist's end-of-item pause (position 0) in _observe_external_pause.",
+   "checked": "Code-confirmed: server#7117 (1c79b553a1, in 2.10.8) added _observe_external_pause (soloist.py:1267-1283) from _handle_event (:1217-1220) on any playing->paused. At the natural end of its item the engine emits 'paused [0:00 / dur]' before exiting (Vigilo23's log) while _item_over/_engine_exited/_delivery_done are all still unset, so the queue stops; engine runs ~10 s ahead (_RUN_CUSHION_S, :143), hence the early cut. #7117's tests set the guards before the pause, so the real order was never covered. Nothing on dev. Local fix f58ee25027: _pause_ends_item() treats a pause at position <= 0 or within 2 s of the duration as the engine finishing the item; a mid-item pause still stops the queue (#7117 kept); an event without a position is still external (keeps #7117's status-only test). A/B: 3 end-of-item cases fail without, 541 spotify tests pass with. Cherry-picks clean onto stable (61 soloist tests pass). Not verified against a live paired Soloist engine. OP's librespot claim very unlikely (the stop line is Soloist-only). Gap: a real app pause in the last 2 s or at 0 is ignored (falls back to the pre-#7117 stall-skip).",
+   "plan": "Treat a pause as external only when it carries a position inside the item (0 < pos < duration - grace); regression test with the real event order; backport to 2.10.9. Local fix building.",
+   "branch": "fix/soloist-end-of-item-pause @ f58ee25027 (worktree ~/git/music-assistant/server-fix-6860, not pushed)",
+   "diff": "diff --git a/music_assistant/providers/spotify/backends/soloist.py b/music_assistant/providers/spotify/backends/soloist.py\nindex c4f8c9c81b..4f080885fb 100644\n--- a/music_assistant/providers/spotify/backends/soloist.py\n+++ b/music_assistant/providers/spotify/backends/soloist.py\n@@ -143,6 +143,8 @@ _MAX_LEAD_TRIM_MS: Final[int] = int(_MAX_LEAD_TRIM_S * 1000)\n _RUN_CUSHION_S: Final[float] = 10.0\n # how close to its target a position report has to come to confirm a seek\n _SEEK_CONFIRM_GRACE_MS: Final[int] = 3000\n+# a pause reported this close to the item's end is the engine finishing it\n+_END_PAUSE_GRACE_MS: Final[int] = 2000\n \n # The sink renders exact-zero padding while the engine idles between items, and the\n # item-change event arrives after those frames landed in the outgoing item's channel.\n@@ -1218,7 +1220,9 @@ class _SingleTrackRun:\n             was_playing, self._engine_playing = self._engine_playing, playing\n             # the engine repeats a pause across events: act on the transition only\n             if was_playing and data.status == \"paused\":\n-                self._observe_external_pause()\n+                self._observe_external_pause(\n+                    data.position.position_ms if data.position is not None else None\n+                )\n             if self._started.is_set() and self._reader is not None:\n                 # pause silence stays out of the delivered PCM; the cushion gate\n                 # takes priority over resuming\n@@ -1264,7 +1268,7 @@ class _SingleTrackRun:\n             \"can only play in one place at a time\"\n         )\n \n-    def _observe_external_pause(self) -> None:\n+    def _observe_external_pause(self, position_ms: int | None) -> None:\n         \"\"\"Stop the queue when Spotify paused this run's item from outside Music Assistant.\"\"\"\n         if (\n             self.queue_id is None\n@@ -1275,6 +1279,7 @@ class _SingleTrackRun:\n             or self._engine_exited\n             or self._delivery_done\n             or self._error is not None\n+            or self._pause_ends_item(position_ms)\n         ):\n             return\n         # only the Spotify app or Web API pauses the engine, and a paused engine stalls\n@@ -1282,6 +1287,16 @@ class _SingleTrackRun:\n         self.logger.info(\"Spotify paused %s, stopping queue %s\", self.spotify_uri, self.queue_id)\n         self.mass.create_task(self.mass.player_queues.stop(self.queue_id))\n \n+    def _pause_ends_item(self, position_ms: int | None) -> bool:\n+        \"\"\"Return whether a pause at this position is the engine finishing its item.\"\"\"\n+        # at its item's end the engine pauses rewound to the start, then exits a moment\n+        # later: none of the run-ended flags is set yet\n+        if position_ms is None:\n+            return False\n+        return position_ms <= 0 or (\n+            self._duration_ms is not None and position_ms >= self._duration_ms - _END_PAUSE_GRACE_MS\n+        )\n+\n     def _observe_position(self, position_ms: int) -> None:\n         \"\"\"Confirm an armed seek once the engine reports at (or past) its target.\"\"\"\n         self._position_ms = position_ms\ndiff --git a/tests/providers/spotify/test_soloist_backend.py b/tests/providers/spotify/test_soloist_backend.py\nindex f05dacf0d7..f2f565543a 100644\n--- a/tests/providers/spotify/test_soloist_backend.py\n+++ b/tests/providers/spotify/test_soloist_backend.py\n@@ -51,6 +51,7 @@ from music_assistant.providers.spotify_connect.soloist.runtime import (\n     WS_PORT_FILE,\n     SoloistEvent,\n     SoloistPlaybackState,\n+    SoloistPosition,\n )\n \n TRACK_A = \"spotify:track:aaa\"\n@@ -724,9 +725,18 @@ def test_losing_the_device_after_the_item_is_over_is_not_a_takeover(tmp_path: Pa\n     assert run._error is None\n \n \n-def _playback_event(status: str) -> SoloistEvent:\n-    \"\"\"Return a playback_changed event carrying only the given status.\"\"\"\n-    return SoloistEvent(type=\"playback_changed\", data=SoloistPlaybackState(status=status), raw={})\n+def _playback_event(status: str, position_ms: int | None = None) -> SoloistEvent:\n+    \"\"\"Return a playback_changed event carrying the given status (and position).\"\"\"\n+    position = (\n+        SoloistPosition(position_ms=position_ms, timestamp_ms=1)\n+        if position_ms is not None\n+        else None\n+    )\n+    return SoloistEvent(\n+        type=\"playback_changed\",\n+        data=SoloistPlaybackState(status=status, position=position),\n+        raw={},\n+    )\n \n \n def _live_run(tmp_path: Path) -> _SingleTrackRun:\n@@ -771,6 +781,25 @@ async def test_a_pause_before_audio_flows_does_not_stop_the_queue(tmp_path: Path\n     cast(\"MagicMock\", run.mass).player_queues.stop.assert_not_called()\n \n \n+async def test_a_pause_inside_the_item_stops_the_queue(tmp_path: Path) -> None:\n+    \"\"\"A pause the engine places inside the item is the Spotify app pausing it.\"\"\"\n+    run = _live_run(tmp_path)\n+    await run._handle_event(_playback_event(\"playing\", 60_000))\n+    await run._handle_event(_playback_event(\"paused\", 61_000))\n+    cast(\"MagicMock\", run.mass).player_queues.stop.assert_called_once_with(\"player1\")\n+\n+\n+@pytest.mark.parametrize(\"position_ms\", [0, 179_500, 180_000])\n+async def test_the_engine_pausing_at_its_items_end_does_not_stop_the_queue(\n+    tmp_path: Path, position_ms: int\n+) -> None:\n+    \"\"\"At its item's end the engine pauses (rewound to the start) before it exits.\"\"\"\n+    run = _live_run(tmp_path)\n+    await run._handle_event(_playback_event(\"playing\", 170_000))\n+    await run._handle_event(_playback_event(\"paused\", position_ms))\n+    cast(\"MagicMock\", run.mass).player_queues.stop.assert_not_called()\n+\n+\n def test_the_engine_starting_on_the_wrong_item_fails_the_run(tmp_path: Path) -> None:\n     \"\"\"Before this run's item ever played, a foreign report is not an ending.\"\"\"\n     run = _make_run(tmp_path)",
+   "prs": [],
+   "badges": [
+    [
+     "warn",
+     "2.10.8 regression",
+     "regression"
+    ],
+    [
+     "warn",
+     "Local fix",
+     "local fix"
+    ]
+   ],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks all, the logs make this clear. The change in 2.10.8 that handles a pause from the Spotify app also reacts to the pause Soloist sends when a track finishes, so it stops the queue right at the end of the track. We're working on a fix. Until then, staying on 2.10.7 avoids it.",
+   "bookkeeping": [],
+   "ask": "input",
+   "milestone": null,
+   "action": "2.10.8 regression from your #7117 (5 users). Local fix ready (f58ee25027), cherry-picks clean onto stable. Worth one real-account check, then `fix 6860` for the PR + backport (2.10.9). Answer drafted.",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage).",
+    "10-26 07:30 run: local fix built and A/B'd; no PR until you say so."
+   ]
+  },
+  {
+   "n": 6882,
+   "title": "2.10.8: Ambient Sounds (Brown noise) on a Nest Mini stop after 5-10 min",
+   "col": "info",
+   "area": "server / providers/chromecast constants.py:73 (#7120), streams/controller.py:1344 (#7132)",
+   "since": "2026-10-26 07:30",
+   "last": "AkoreJepade 2026-10-25 12:40",
+   "gh": {
+    "login": "AkoreJepade",
+    "team": false,
+    "at": "2026-10-25T12:40:54Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "HA add-on: on 2.10.8 Ambient Sounds on a Nest Mini stop after 5-10 min; switched 2.10.7 <-> 2.10.8 twice, same result each time.",
+   "fix": "",
+   "checked": "Diagnostics: 'Master Bedroom speaker reported a media playback error for ...flac' at 12:38:37, flow mode, no Cast debug log. Candidates in 2.10.8: server#7120 (Cast default HTTP profile 3 -> 2, no content length) and server#7132 (flow chunk_size None without ICY). #7120's PR notes had a Nest Mini >16 min on both profiles, but not overnight/noise. Nothing new on dev.",
+   "plan": "A/B on 2.10.8 with HTTP profile 3 splits #7120 from #7132.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [
+    [
+     "warn",
+     "possible 2.10.8 regression",
+     "regression"
+    ],
+    [
+     "info",
+     "Waiting for user",
+     "waiting"
+    ]
+   ],
+   "reply": "",
+   "bookkeeping": [],
+   "ask": null,
+   "milestone": null,
+   "action": "",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage).",
+    "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6882#issuecomment-6409953019), GPT: post, profile-3 A/B not asked before."
+   ]
+  },
+  {
+   "n": 6873,
+   "title": "Zombie processes pile up: one per Spotify (Soloist) track, PID 1 has no init",
+   "col": "dev",
+   "area": "server / Dockerfile entrypoint (no tini); home-assistant-addon config.yaml init: false",
+   "since": "2026-10-26 07:30",
+   "last": "cateim 2026-10-25 10:23",
+   "gh": {
+    "login": "cateim",
+    "team": false,
+    "at": "2026-10-25T10:23:23Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.8 Docker (HA add-on same): MA runs as PID 1 without an init, each Soloist run leaves a crashpad-handler zombie; init: true fixes it.",
+   "fix": "",
+   "checked": "Dockerfile on dev (:167) runs entrypoint.sh -> exec mass, no tini; the add-on uses the same image with init: false (home-assistant-addon music_assistant/config.yaml:29,36). Reporter's server#7191 adds tini -s as entrypoint; Copilot and Bot-MArley fine; only 'Verify' fails (pytest checklist box unticked).",
+   "plan": "Merge decision on an image-wide entrypoint change (server#7191).",
+   "branch": "",
+   "diff": "",
+   "prs": [
+    {
+     "url": "https://github.com/music-assistant/server/pull/7191",
+     "label": "server#7191 (cateim, open: tini -s as entrypoint)"
+    }
+   ],
+   "badges": [],
+   "reply": "",
+   "bookkeeping": [],
+   "ask": "merge",
+   "milestone": null,
+   "action": "Reporter's server#7191 adds tini as the image entrypoint (fixes zombies for Docker and the add-on). Only the PR checklist box is unticked. Merge call.",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage)."
+   ]
+  },
+  {
+   "n": 6874,
+   "title": "LinkPlay over DLNA (flow mode): elapsed time falls back 4-6 s after pause/resume",
+   "col": "info",
+   "area": "server / dlna/player.py:226-236 (anchor), playback_tracker.py:345",
+   "since": "2026-10-26 07:30",
+   "last": "cateim 2026-10-25 10:23",
+   "gh": {
+    "login": "cateim",
+    "team": false,
+    "at": "2026-10-25T10:23:24Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.8 Docker, AudioCast AMP (generic LinkPlay) via DLNA in flow mode: after pause/resume the queue elapsed_time lags 4-6 s; the amp's HTTP curpos is right and audio doesn't rewind.",
+   "fix": "",
+   "checked": "LinkPlayPlayer defers to its DLNA player (wiim/linkplay_player.py:2-6); flow tracking uses player.corrected_elapsed_time (playback_tracker.py:345); DLNA elapsed = device.media_position anchored at max(position_updated_at, _playing_since) (dlna/player.py:226-236, #5477). A stale RelTime on resume would give exactly this lag; DLNA logs don't show positions. No regression.",
+   "plan": "Need the DLNA player's raw elapsed values next to the queue's.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [
+    [
+     "info",
+     "Waiting for user",
+     "waiting"
+    ]
+   ],
+   "reply": "",
+   "bookkeeping": [],
+   "ask": null,
+   "milestone": null,
+   "action": "",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage).",
+    "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6874#issuecomment-6409953519), GPT: post, new player-level measurements."
+   ]
+  },
+  {
+   "n": 6885,
+   "title": "Naim Uniti Atom HE over DLNA: title/artist disappear, no artwork",
+   "col": "info",
+   "area": "server / helpers/upnp.py:168-235 (DIDL), constants.py:916 (icy-name)",
+   "since": "2026-10-26 07:30",
+   "last": "kprzekop 2026-10-25 19:20",
+   "gh": {
+    "login": "kprzekop",
+    "team": false,
+    "at": "2026-10-25T19:20:03Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.8 HA add-on: on the Atom HE over DLNA the display shows title/artist briefly, then a generic icon, never artwork. AirPlay and a CXN v2 over DLNA are fine; flow mode off doesn't help. No diagnostics.",
+   "fix": "",
+   "checked": "DIDL includes albumArtURI (upnp.py:168-235). Every stream sends icy-name (constants.py:916), which might make the Naim treat it as radio (unverified). DLNA provider doesn't log the DIDL or device responses. No duplicates.",
+   "plan": "Get a DLNA debug log + diagnostics of one track until the title disappears.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [
+    [
+     "warn",
+     "Auto-post held: GPT: bot already asked for diagnostics, DLNA debug won't show the metadata",
+     "auto held"
+    ]
+   ],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nCould you set the DLNA provider's log level to Debug (provider settings, \"Show advanced settings\", \"Log level\"), play one Tidal track to the Atom until the title disappears, and then attach a diagnostics file (Settings > System > Diagnostics > Download diagnostics)?",
+   "bookkeeping": [],
+   "ask": "reply-info",
+   "milestone": null,
+   "action": "Auto-post held: GPT says the bot already asked for diagnostics and a DLNA debug log won't capture the DIDL/device view; needs a targeted trace from you. Info ask drafted (DLNA debug + diagnostics).",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage).",
+    "10-26 07:30 run: auto-post held. GPT: marvin (bot already asked diagnostics; DLNA debug doesn't capture the metadata or device responses). Our draft stays for you."
+   ]
+  },
+  {
+   "n": 6870,
+   "title": "hass_players: artwork never reaches dlna_dmr renderers (only Cast keys sent)",
+   "col": "pr",
+   "area": "server / providers/hass_players/player.py:274-286",
+   "since": "2026-10-26 07:30",
+   "last": "OzGav 2026-10-24 21:29",
+   "gh": {
+    "login": "OzGav",
+    "team": true,
+    "at": "2026-10-24T21:29:00Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.8 HA add-on: hass_players sends artwork only as Cast keys in extra.metadata; HA's dlna_dmr reads extra['thumb'] (and title).",
+   "fix": "Add title/thumb to extra_data in hass_players play_media.",
+   "checked": "Confirmed: player.py:274-286 sets only metadata.images/imageUrl; HA core dlna_dmr/media_player.py:719-721 reads extra title/thumb. Cast passes extra to pychromecast, which accepts thumb (worst case a duplicate image). OzGav asked the reporter to raise a PR.",
+   "plan": "Add extra_data['title'] and extra_data['thumb'] at player.py:274. Flow mode: only the first track's art (known).",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [],
+   "reply": "",
+   "bookkeeping": [],
+   "ask": null,
+   "milestone": null,
+   "action": "OzGav asked the reporter to send a PR. Nothing for you.",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage)."
+   ]
+  },
+  {
+   "n": 6864,
+   "title": "MPD (moOde) player stays on the first track during flow playback",
+   "col": "info",
+   "area": "server / providers/mpd/player.py:275-303, playback_tracker.py:334-410",
+   "since": "2026-10-26 07:30",
+   "last": "OzGav 2026-10-24 11:51",
+   "gh": {
+    "login": "OzGav",
+    "team": true,
+    "at": "2026-10-24T11:51:31Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.8: playback started from the MA app stays on track 1 in MA (screenshot: 23:15 elapsed of a 5:21 track) while later tracks play.",
+   "fix": "",
+   "checked": "MPD has no ENQUEUE, so flow mode; play_media sets current_media once (mpd/player.py:286-303), elapsed polled from MPD status (:275-280). Elapsed past duration means the flow log never advanced (playback_tracker.py:334-410): a flow log/reconnect problem, unconfirmed without a log. OzGav's 'not supported, start from MA' reply looks like a misread (they did start from MA).",
+   "plan": "Correct the misread and ask for an MPD debug log + diagnostics. OzGav owns the provider.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nStarting playback from the Music Assistant app is the normal way, so this should work. Could you open the \"MPD Players\" provider settings, turn on \"Show advanced settings\", set \"Log level\" to \"Debug\", play an album until the second track starts, and then attach a diagnostics file (Settings > System > Diagnostics > Download diagnostics)?",
+   "bookkeeping": [],
+   "ask": "reply-answer",
+   "milestone": null,
+   "action": "OzGav's reply looks like a misread (they did start from MA). Draft corrects it and asks for an MPD debug log. OzGav's provider; post or hand to him.",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage)."
+   ]
+  },
+  {
+   "n": 6658,
+   "title": "Cast (Primare NP5): near the end of the queue it jumps back to an earlier track and replays",
+   "col": "info",
+   "area": "server / streams/controller.py:1411-1418 (#6782), :2465-2477 (#6608), player_queues/controller.py:1659-1669",
+   "since": "2026-10-26 07:30",
+   "last": "dentedbread 2026-10-23 19:43",
+   "gh": {
+    "login": "dentedbread",
+    "team": false,
+    "at": "2026-10-23T19:43:50Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "Docker, 2.11 betas: in the last 1-2 min of the last track MA shows an earlier track and the queue replays from there. Gone on b4, back on b5, still on b6. Only a b2 log.",
+   "fix": "",
+   "checked": "b2 log: flow finishes 14:57:21, receiver re-opens the flow URL 14:57:29, new flow starts at an earlier item. Since then #6608 (b4) resumes a reconnect at the current item, #6782 (b5, also in 2.10.8) 404s a re-request after the flow finished. Hypothesis: after the 404 the Cast receiver reports a reset position, the tracker maps it to an earlier item, _resume_on_idle plays 'next of current'. Matches the b5 timing, unverified.",
+   "plan": "Get a b7 Chromecast debug log covering the last 3 minutes.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [
+    [
+     "info",
+     "Waiting for user",
+     "waiting"
+    ]
+   ],
+   "reply": "",
+   "bookkeeping": [],
+   "ask": null,
+   "milestone": null,
+   "action": "",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage).",
+    "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6658#issuecomment-6409954000), GPT: revise, accepted its text (capture on b6, the reporter's version, diagnostics right after the jump)."
+   ]
+  },
+  {
+   "n": 6888,
+   "title": "Sendspin: MA doesn't redial a speaker after it restarts (shutdown goodbye)",
+   "col": "info",
+   "area": "aiosendspin 10.2.1 server.py:1189,1465-1558; providers/sendspin",
+   "since": "2026-10-26 07:30",
+   "last": "wildekek 2026-10-25 23:40",
+   "gh": {
+    "login": "wildekek",
+    "team": false,
+    "at": "2026-10-25T23:40:43Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.8 HA add-on: sendspin daemon stopped with Ctrl-C (goodbye 'shutdown') and restarted with the same identity/port; MA never reconnects (60 s on aiosendspin 9.1.1, ~5 min on 10.2.1).",
+   "fix": "",
+   "checked": "Dial/redial live in aiosendspin 10.2.1 (pinned 2.10.8 + dev). After a 'shutdown' goodbye the dial loop stops (server.py:1189); only mDNS Removed+Added redials (:1465,:1558); Updated for a goodbye URL is skipped (:1489-1499). If MA misses the goodbye and identical records are re-announced, zeroconf fires nothing. Diagnostics: OSError Errno 19 on sendto 5353 (multicast broken on an interface). Unproven: aiosendspin debug only at Sendspin Verbose.",
+   "plan": "Get a Sendspin Verbose log of the stop/restart. Likely an aiosendspin issue.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [
+    [
+     "info",
+     "Waiting for user",
+     "waiting"
+    ]
+   ],
+   "reply": "",
+   "bookkeeping": [],
+   "ask": null,
+   "milestone": null,
+   "action": "",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage).",
+    "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6888#issuecomment-6409954530), GPT: revise, accepted its text (dropped the mDNS causal framing)."
+   ]
+  },
+  {
+   "n": 6887,
+   "title": "Sendspin: player disappears after another server takes it over",
+   "col": "info",
+   "area": "providers/sendspin/provider.py:147-149,534-537; aiosendspin server.py:1580-1597",
+   "since": "2026-10-26 07:30",
+   "last": "wildekek 2026-10-25 23:40",
+   "gh": {
+    "login": "wildekek",
+    "team": false,
+    "at": "2026-10-25T23:40:42Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.8 HA add-on: daemon with --unpaired-access false; a macOS Sendspin server pairs it, the speaker sends MA 'another_server', and the player vanishes from MA until the provider reloads.",
+   "fix": "",
+   "checked": "MA marks it held for another_server, unregisters only on ClientRemovedEvent; aiosendspin keeps an another_server client until its mDNS record is removed (_cleanup_retained_clients_for_removed_mdns_url, server.py:1580-1597). Likely the takeover drops/re-registers the mDNS record, the client is removed, and a refused next dial never re-adds it. Unverified; probably the same root as #6888 (mDNS events).",
+   "plan": "Same Sendspin Verbose log, covering the takeover.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [
+    [
+     "info",
+     "Waiting for user",
+     "waiting"
+    ]
+   ],
+   "reply": "",
+   "bookkeeping": [],
+   "ask": null,
+   "milestone": null,
+   "action": "",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage).",
+    "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6887#issuecomment-6409955139), GPT: revise, accepted its text (no claim it covers #6888 too)."
+   ]
+  },
+  {
+   "n": 6868,
+   "title": "WiiM Amp Pro: Sendspin-over-Cast bridge goes silent after 4-6 min in a group",
+   "col": "info",
+   "area": "providers/chromecast sendspin_bridge.py:579,667,719; player.py:574-579",
+   "since": "2026-10-26 07:30",
+   "last": "tueboesen 2026-10-24 14:46",
+   "gh": {
+    "login": "tueboesen",
+    "team": false,
+    "at": "2026-10-24T14:46:06Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.8 (and 2.10.7) HA add-on: WiiM Amp Pro (HA MediaPlayers, Cast + DLNA outputs) grouped with sendspin-cli 8.0.0: in sync, then silent after 4-6 min while MA shows playing; a cold-started sync group is silent from the start. WiiM standby timeout didn't help.",
+   "fix": "",
+   "checked": "2.10.7 run: 'Sendspin Cast app no longer active (app_id=None)' ~4 min 13 s after launch, no stop from MA: the device closed the receiver app (fits #5593: the Sendspin Cast app can't report media status). On 2.10.8 nothing logged at the drop; #7074 added two skip paths in the gone-handler (sendspin_bridge.py:667,:579) but the launch completed (:719). App-id changes only at Cast Verbose. No fix on dev.",
+   "plan": "Get a Chromecast Verbose log of the drop on 2.10.8. Likely cantfix (#5593), small pr if MA ignored an app_id change.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [
+    [
+     "info",
+     "Waiting for user",
+     "waiting"
+    ]
+   ],
+   "reply": "",
+   "bookkeeping": [],
+   "ask": null,
+   "milestone": null,
+   "action": "",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage).",
+    "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6868#issuecomment-6409955752), GPT: revise, accepted its text (dropped the idle-timeout theory)."
+   ]
+  },
+  {
+   "n": 6866,
+   "title": "ESP32 pings up to 6 s while MA streams to an AudioCast M5 (LinkPlay)",
+   "col": "info",
+   "area": "protocol_linking.py:2004,3178; wiim/player.py:90",
+   "since": "2026-10-26 07:30",
+   "last": "vertex0 2026-10-24 13:14",
+   "gh": {
+    "login": "vertex0",
+    "team": false,
+    "at": "2026-10-24T13:14:36Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.7/2.10.8 HA add-on: pings to 2.4 GHz ESP32s spike to 6 s during MA playback to an AudioCast M5; the 4STREAM app and HA MediaPlayers are fine. Router reset and HA rollback didn't help.",
+   "fix": "",
+   "checked": "'Handing the output over to sendspin' is only logged when another player joins (protocol_linking.py:3178); solo goes native (wiim/player.py:90). Diagnostics: players_synced 2 and one RAOP stream, so it was grouped (unicast RAOP + Sendspin, maybe to an ESP32-S3 on the same band): Wi-Fi airtime, likely not an MA bug.",
+   "plan": "Ask whether the spikes also happen playing alone.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [
+    [
+     "info",
+     "Waiting for user",
+     "waiting"
+    ]
+   ],
+   "reply": "",
+   "bookkeeping": [],
+   "ask": null,
+   "milestone": null,
+   "action": "",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage).",
+    "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6866#issuecomment-6409956305), GPT: revise, accepted its text (clarifying question: solo vs grouped capture)."
+   ]
+  },
+  {
+   "n": 6865,
+   "title": "Sync group drops a Sonos member for good after a dynamic leader switch",
+   "col": "cantfix",
+   "area": "providers/sync_group/player.py:876-889; models/player.py:3470-3474; players/controller.py:3799",
+   "since": "2026-10-26 07:30",
+   "last": "zcopter 2026-10-24 11:39",
+   "gh": {
+    "login": "zcopter",
+    "team": false,
+    "at": "2026-10-24T11:39:47Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.7 HA add-on (dev and b6 same per reporter): AirPlay leader removed mid-play, A takes over, next form drops B ('can not be grouped with'). Reporter supplies a diff and describes two tests. A normal re-join brings B back.",
+   "fix": "",
+   "checked": "sync_group _form_syncgroup (player.py:876-889) permanently removes members missing from leader.can_group_with; a playing player that leads a group is excluded there (models/player.py:3470-3474), so B (leading C) counts as incompatible; controller.py:3799 applies the same check. A mock test on dev fails as described and passes with the reporter's fix; sync_group tests 156 pass. Unexplained: A grouped B+C natively at 10:30:06 and by 10:30:16 B coordinated C itself; that split may be the real root. Related server#6779 (Sonos coordinator moves). Since #6473.",
+   "plan": "Design: accept the sync_group fix (adds update_state(force_update=True), up to 5 s per re-form) and invite a PR, or fix in the controller/Sonos layer; maybe ask for a Sonos + Sync Group debug log first.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the detailed analysis. We can follow the mechanism: B is left out of A's can_group_with because it is playing and leads C, and the form step then removes it for good. Your fix reproduces correctly against dev in a quick test. One thing we can't explain yet: in your log, A groups B and C natively at 10:30:06, and by 10:30:16 B is coordinating C on its own. Could you reproduce once more with the Sonos and Sync Group log level set to Debug (provider settings, \"Show advanced settings\", \"Log level\") and attach that log? It should show why A's native group split up.",
+   "bookkeeping": [],
+   "ask": "design",
+   "milestone": null,
+   "action": "Reporter's fix works in a mock test but treats a symptom; which layer (sync_group / controller / Sonos)? Answer + debug-log ask drafted.",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage)."
+   ]
+  },
+  {
+   "n": 6867,
+   "title": "WiiM: position jumps ahead ~0.1 s after a seek (follow-up of #6839)",
+   "col": "cantfix",
+   "area": "providers/wiim/player.py:44-49,314-319,443-448,630-641",
+   "since": "2026-10-26 07:30",
+   "last": "riskywhat 2026-10-24 13:40",
+   "gh": {
+    "login": "riskywhat",
+    "team": false,
+    "at": "2026-10-24T13:40:54Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.8 Docker: ~0.8 s after a seek/resume, GetPositionInfo returns the new URI with the previous stream's position; a stop in that window saved 774 s for a seek to 750 s (8/36 seeks live). Reporter supplies a pytest.",
+   "fix": "",
+   "checked": "player.py:44-49 maps LOADING to PLAYING; :443-448 reads position on TRANSITIONING; :630-641 guard lifts on the first read with our URI and any position != duration, no plausibility check; :314-319 stop() lifts it. Reporter's test on dev: 2 fail, 2 pass. No fix, no PR. Guard from #5609, extended by #7149.",
+   "plan": "Pick: wall-clock bound (accept a position <= time since play_media handed over + ~1 s; needs a mocked clock) or the LOADING one-liner (status != LOADING, relies on cached status). Stop-while-loading is display only, defer.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the detailed follow-up and the test. I ran it against the current dev branch and see the same result: the two control cases pass and the other two fail. The provider takes the position the WiiM reports while it is still loading the new stream. We'll look at rejecting a position that is impossible for a stream that was only just started. The stop-while-loading case looks like a display issue only, as you noted.",
+   "bookkeeping": [],
+   "ask": "input",
+   "milestone": null,
+   "action": "Real (reporter's test fails on dev). Pick the fix: wall-clock bound or LOADING one-liner, then `fix 6867`. Answer drafted.",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage)."
+   ]
+  },
+  {
+   "n": 6872,
+   "title": "Bluesound (NAD T758v3) cuts the album's final track ~30 s early (flow mode)",
+   "col": "cantfix",
+   "area": "server / controllers/streams constants.py:138 FLOW_STREAM_LEAD_OUT_SECONDS, controller.py:2485-2504",
+   "since": "2026-10-26 07:30",
+   "last": "codemonkey2k5 2026-10-24 23:49",
+   "gh": {
+    "login": "codemonkey2k5",
+    "team": false,
+    "at": "2026-10-24T23:49:55Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.10.8 HA add-on, 'since somewhere in 2.10': last track of an album ends ~30 s early on Bluesound (Spotify/Soloist, NFS, Jellyfin); Sonos and web fine. codemonkey2k5 adds 'nothing plays beyond ~80%' (no details; may belong to #6860).",
+   "fix": "",
+   "checked": "Flow mode. #5408 (2.10.0) holds the connection open a fixed 8 s (FLOW_STREAM_LEAD_OUT_SECONDS) so Bluesound doesn't drop its buffer. Flow pacing NEAR_REALTIME 1.03x (2.10.5-2.10.8), 1.01x on dev (#6584): the player's lead grows with session length (~3 s + 3 %). 19-min session: expected lead ~37 s minus 8 s = ~29 s cut, matches. Across 20-75 min sessions the gap is 20-34 s. Not a 2.10.8 regression; dev's 1.01x shortens but doesn't remove it.",
+   "plan": "Core design: size the lead-out from the measured lead (served audio minus wall time + margin, capped) and cancel the wait on webserver shutdown. Marcel wrote #5408. Answer asks to confirm with the last track alone.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the log. It looks like the Bluesound builds up more buffered audio the longer an album plays, and Music Assistant closes the stream before the player has played all of it. That would explain why only the last track is cut, and why by about 30 seconds. Could you check one thing: if you play only the album's final track on its own, is the end still cut off?",
+   "bookkeeping": [],
+   "ask": "design",
+   "milestone": null,
+   "action": "Core streams design: fixed 8 s lead-out vs a lead that grows ~3 % with session length. Your/Marcel's call. Answer drafted.",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage)."
+   ]
+  },
+  {
+   "n": 6863,
+   "title": "Bluesound stays unavailable after an IPv6-only (ULA) re-announce: pyblu unbracketed URL",
+   "col": "pr",
+   "area": "providers/bluesound/provider.py:56,84-111; player.py:59; pyblu player.py:45",
+   "since": "2026-10-26 07:30",
+   "last": "wanderingmoo 2026-10-24 10:52",
+   "gh": {
+    "login": "wanderingmoo",
+    "team": false,
+    "at": "2026-10-24T10:52:30Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "2.9.5 Docker (same code in 2.10.8): a Thread border router hands out a ULA, the NODE re-announces with only IPv6, pyblu builds http://fdec:...:11000, setup raises InvalidUrlClientError until a provider reload. Reporter included root cause and fix ideas.",
+   "fix": "Bracket IPv6 hosts before building pyblu URLs.",
+   "checked": "helpers/util.py:1612-1632 falls back to IPv6 without IPv4; provider.py:56 treats a new IP as a new player (:84-111); player.py:59 passes the raw IP; pyblu 2.1.0 player.py:45 f'http://{host}:{port}'. Your draft server#7159 adds another BluosPlayer(ip_address) call (_get_chassis_mac_address) with the same flaw.",
+   "plan": "Bracket IPv6 literals before pyblu (more robust) or ignore IPv6-only re-announces for a player known at IPv4. Optionally upstream to pyblu. Touches your #7159.",
+   "branch": "",
+   "diff": "",
+   "prs": [],
+   "badges": [
+    [
+     "muted",
+     "cyanogenbot's area",
+     "owner"
+    ]
+   ],
+   "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for tracking this down. The same code path is on the current dev branch: an announcement with only an IPv6 address is passed to pyblu unbracketed, and setup fails. No diagnostics needed, your trace covers it.",
+   "bookkeeping": [],
+   "ask": "input",
+   "milestone": null,
+   "action": "Real, small (bracket IPv6 for pyblu); cyanogenbot's provider but your draft #7159 has the same flaw. Fold into #7159 or `fix 6863`? Answer drafted.",
+   "waiting_on": null,
+   "notes": [
+    "10-26 07:30 run: new issue (Opus subagent triage)."
+   ]
   }
  ],
  "design": [
@@ -4777,11 +4725,6 @@
    "Bigger batch for artists that already have a MusicBrainz id, since they skip the lookup the limit protects."
   ],
   [
-   "#6695 UGP announcement cut-off",
-   "Measure announcement start/end on the members instead of the group's optimistic state, make UGP skip optimistic PLAYING for announcements, or pad the tail?",
-   "Measure on the members in _play_announcement. It covers every group type and leaves the providers alone."
-  ],
-  [
    "#6688 Plex history per player",
    "Bring track reporting back to the Plex provider for every player (skip Plex Connect players), or keep it plugin-only?",
    "Bring it back, #2608 dropped behaviour users relied on. Check with anatosun."
@@ -4807,19 +4750,9 @@
    "Transactional handoff plus pruning. The pre-filter alone misses an enabled provider that simply no longer sees the device."
   ],
   [
-   "#6738 SiriusXM HLS gaps at segment boundaries",
-   "HLS radio runs ffmpeg with -re and ~0.5 s lead, so a slow on-demand segment fetch stalls playback. Add -readrate_initial_burst ~10 s for HLS radio, drop -re, or leave it to aiosxm prefetch?",
-   "-readrate_initial_burst for HLS radio. Generic, small, backportable; check ffmpeg 7.1.2 and start latency."
-  ],
-  [
    "#6748 / #6512 Cast stops after ~24 MiB",
    "Make HTTP profile 2 (no forced content length) the Cast default again, or keep profile 3 and drop the content length only for radio and flow streams?",
    "Drop it for radio/flow streams only; profile 3 was set on purpose in server#4133."
-  ],
-  [
-   "#6812 AirPlay PTP peer cap",
-   "airplay-cli: raise PTP_MAX_PEERS (8) and reuse freed slots; how should a SIGKILLed cliairplay release its peer (daemon tracks pid, or server sends SIGTERM before SIGKILL)?",
-   "Free slots on remove + pid tracking in the daemon, cap 32. Coordinate with Marcel."
   ],
   [
    "#6810 + #6796 Spotify Connect handoff",
@@ -4932,7 +4865,7 @@
    ]
   ]
  },
- "gone": "The 30 issues that shipped in 2.10.5, closed with the release comment: #6585, #6583, #6581, #6579, #6573, #6570, #6567, #6561, #6560, #6550, #6542, #6527, #6523, #6517, #6516, #6511, #6496, #6492, #6491, #6478, #6469, #6463, #6462, #6461, #6440, #6345, #6328, #6323, #6273, #4892. Dropped 10-05 as closed: #6470 (closed by reporter 10-02 (Bandcamp back in search)), #6460 (closed 10-02), #6458 (auto-closed 10-03 (no reply)), #6394 (closed 10-02), #6380 (closed by OzGav 10-03 after menaker12 confirmed on beta), #6338 (closed by reporter 10-03 (workaround holds)). Dropped 10-05 08:40: #6517 (auto-closed when you merged server#6702 at 06:31 UTC; booked Fix to be Confirmed + milestone 2.10.6 from its backport-to-stable label). Booked 10-05 09:40 (not on the board): #6629 FtbC + 2.10.6 (server#6691, backport-to-stable), #6620 FtbC (server#6685, backportable, see follow-ups). Dropped 10-05 10:40: #6635 (closed 06:19 UTC after your 2.11 beta reply). #6026 closed 08:03 UTC by your server#5175 merge; card kept in Fix merged until the bookkeeping is queued. Dropped 10-05 14:00: #6636 (closed by Soukyuu 11:40 UTC after your works-as-designed reply and OzGav's follow-up; going back to LMS). Dropped 10-05 15:40: #6026 (bookkeeping landed 12:40 UTC: Fix to be Confirmed + milestone 2.11.0). Dropped 10-06 09:00: #6559 (closed 06:40 UTC with your reply after the AirConnect removal fixed sync; reporter asked to file new issues); #6224 (closed 06:35 UTC when you merged server#6715; booked Fix to be Confirmed, milestone 2.11.0 was already set (migration, no backport)). Dropped 10-06 09:40: #6373 (you closed it 07:11 UTC when server#6611 merged with backport-to-stable; milestone 2.10.6 was set, I added Fix to be Confirmed); #6440 (you closed it 07:10 UTC after explaining Spotify's 1.1x headroom for crossfades); #6616 (you closed it 07:10 UTC as fixed in 2.11, milestone 2.11.0). Dropped 10-06 12:55: #6617 (assigned to jdaberkow, who is iterating on the Deezer family-profile branch with budius). Dropped 10-06 14:40: #6633 (howels closed it at 12:04 UTC, user error: a duplicate HA entity without volume_level). Dropped 10-06 15:40: #6247 (you milestoned and closed it at 13:21 UTC). #6647 closed 14:06 UTC after frontend#2924 merged. Dropped 10-07 as closed: #6641 (you merged server#6726 17:32 UTC, milestone 2.10.6, closed; already in backport/2.10.6). Dropped 10-07 as closed: #6646 (frontend#2923 merged), #6524 (fixed by frontend#2900). Dropped 10-07 13:40: #4377 (you closed it 10:58 UTC; LaneaLucy replied 11:23 UTC that the internal Snapcast server showed it too). #6613 closed 10-08 by the reporter (PO token 2.0.1 + cookie fixed it). Dropped 10-08 13:40 as closed: #6662 (server#6760 merged 11:26 UTC, auto-closed; I set Fix to be Confirmed; no backport label, but it cherry-picks cleanly onto backport/2.10.6 incl. the aiosonos 0.1.14 bump).; #6611 (closed by the reporter 10-09 06:12 UTC, keeps the opt-out on their fork) Dropped 10-12 07:40: #5723 (OzGav closed it 10-10 00:03 UTC as fixed. The reporter split the player-type part into #6688); #6063 (you closed it 10-10 with the 2.10.6 release comment); #6154 (you closed it 10-10 with the 2.10.6 release comment); #6425 (you closed it 10-10 with the 2.10.6 release comment); #6487 (OzGav closed it 10-09 23:58 UTC after parski confirmed the fix); #6562 (you closed it 10-10 with the 2.10.6 release comment); #6570 (you closed it 10-10 with the 2.10.6 release comment); #6571 (you closed it 10-10 with the 2.10.6 release comment); #6624 (closed after server#5868 + server#6858 (MSX Bridge, backport-to-stable) merged 10-10); #6627 (you closed it with the 2.10.6 release comment. magdalar commented 10-11 16:52 UTC that pause still jumps the progress back on Sonos with Audiobookshelf, mostly cosmetic now (see follow-ups)); #6642 (Annikadk confirmed 2.10.6 fixes it and closed it 10-10); #6648 (you closed it 10-10 with the 2.10.6 release comment); #6658 (dentedbread closed it 10-11 11:48 UTC, no repro on 2.11.0b4); #6669 (you closed it 10-10 with the 2.10.6 release comment); #6676 (OzGav closed it 10-11 11:47 UTC as by design: both editions sit in one Local files source, so a rescan of one file drops the other file's link. Advice is a separate source per edition. Our triage-6676 fix branch was never pushed); #6683 (megawubs closed it 10-09 17:33 UTC: 2.10.6 changed Deezer family accounts to one ARL, and the new ARL works); #6659 (now assigned to OzGav, who is working it with dentedbread). Dropped 10-12 09:40: #6493 (you closed it 07:09 UTC, fixed in 2.11). Dropped 10-12 14:40: #6714 (closed by you after server#6910 merged), #6464 (closed by you after server#6613 merged), #6451 (closed by you after server#6528 merged). #6671 and #6481 closed 10-12. Dropped 10-12 16:40: #6722 (Hypopheralcus fixed the Nextcloud proxy setting after your reply and closed it 13:49 UTC). Dropped 10-13 07:40: #6724 (OzGav closed it 22:53 UTC: 4 GB host OOM, reporter stopped Frigate and Grafana and MA kept running). Dropped 10-13 09:40: #6721 (closed 06:40 UTC, jdaberkow had taken it over). Dropped 10-13 10:40: #6577 (you closed it 08:07 UTC, no flip since the last update; reopen if it happens after an HA integration update). Dropped 10-13 15:40: #6666 (lupurs confirmed 2.10.6 fixed it and closed 12:42 UTC). Dropped 10-14 11:40: #6406 (bot auto-closed 03:31 UTC after two reminders) and #6667 (you closed it 18:14 UTC as a side effect of #6645; server#6968 closed with it). Dropped 10-14 13:40: #6725 (whc2001 confirmed the fix on the DEV add-on and closed it 11:02 UTC; server#6810 backport call moved to follow-ups). Dropped 10-14 15:40: #6643 (Asrem2 traced the Voice PE dropouts to a busy 2.4 GHz Wi-Fi channel, 13 h clean on Sendspin after moving the AP, closed 13:34 UTC). Dropped 10-15 10:15: #6186 (endevour confirmed the latest beta fixes it and closed it 10-14 19:36 UTC); #6547 (bot auto-closed 10-15 03:31 UTC after two reminders); #6732 (you closed it 10-15 07:23 UTC as a duplicate). Dropped 10-19 as closed after the 2.10.7 release: #6759, #6704, #6712, #6655, #6601, #6528, #6744 (you closed them 10-18), #6729 (sydlexius confirmed chrisuthe's fix), #6679 (dekiesel: switching to parallel fixed it). Dropped 10-19 08:38: #6811 (assigned to OzGav 06:37 UTC, he is handling the Sendspin Opus stutter). New #6813 and #6814 (ChrisB85, kiwipaulrob) were assigned to OzGav on arrival, not on the board. Dropped 10-20 07:38: #6407 (bot auto-closed 03:32 UTC after two reminders); #6102 (bot auto-closed 03:32 UTC after two reminders, our draft server#6706 is still open (see follow-ups)); #6002 (bot auto-closed 03:32 UTC after two reminders); #6782 (OzGav closed it 01:24 UTC as a feature request (Jellyfin genres were never implemented)); #6653 (anthonws closed the discussion 21:23 UTC, no time to work on it); #6508 (you assigned marcelveldt 10-20 11:50 UTC). #6673 (you closed it 12:56 UTC after the 2.11 provider sharing reply); #6668 (you closed it 12:50 UTC, resolved with the recommended tagging procedure); #6552 (OzGav closed it 13:21 UTC after sragot confirmed server#6425 fixes it on 2.11.0b5). #6682 (assigned to stvncode 13:39 UTC); #6684 (assigned to stvncode 13:39 UTC); #6777 (you closed it 13:45 UTC as duplicate of #6776); #6785 (you closed it 14:34 UTC after frontend#3032 split the review key). Dropped 10-21 07:38: #6639 (bot auto-closed 10-21 03:32 UTC after two reminders); #6663 (limitless-code confirmed the DEV app fixes all scenarios (19:02 UTC) and you closed it 22:30 UTC; FtbC + 2.11.0 were set); #6823 (jo-che confirmed on dev and closed it 19:58 UTC). Dropped 10-21 12:40: #6720 (you posted the thanks from the board 09:50 UTC and closed it). Dropped 10-22 07:30: #6819 (closed as completed by OzGav 10-21 22:53 UTC). Dropped 10-22 07:30: #6395 (closed as not planned by musicassistant-bot 10-22 03:32 UTC). Dropped 10-22 09:30: #6772 (closed as completed by MarvinSchenkel 10-22 06:58 UTC). Dropped 10-22 10:00: #6671 (closed as completed by dekiesel 10-22 07:58 UTC). Dropped 10-22 14:30: #6841 (closed as completed by stormsnsnow 10-22 12:20 UTC). Dropped 10-22 14:30: #6844 (closed as completed by OzGav 10-22 12:11 UTC). Dropped 10-22 15:30: #6757 (closed as completed by zosopage1963 10-22 13:12 UTC). Dropped 10-23 07:30: #6023 (closed as completed by OzGav 10-22 16:21 UTC). Dropped 10-23 07:30: #6752 (closed as completed by OzGav 10-23 01:39 UTC). Dropped 10-23 15:30: #6837 (closed as completed by MarvinSchenkel 10-23 12:33 UTC). Dropped 10-23 16:19: #6839 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6833 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6822 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6675 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6748 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6749 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6751 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6758 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6808 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6807 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6793 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6778 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6797 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6774 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6815 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6849 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:30: #6645 (closed as completed by MarvinSchenkel 10-23 14:21 UTC).",
+ "gone": "The 30 issues that shipped in 2.10.5, closed with the release comment: #6585, #6583, #6581, #6579, #6573, #6570, #6567, #6561, #6560, #6550, #6542, #6527, #6523, #6517, #6516, #6511, #6496, #6492, #6491, #6478, #6469, #6463, #6462, #6461, #6440, #6345, #6328, #6323, #6273, #4892. Dropped 10-05 as closed: #6470 (closed by reporter 10-02 (Bandcamp back in search)), #6460 (closed 10-02), #6458 (auto-closed 10-03 (no reply)), #6394 (closed 10-02), #6380 (closed by OzGav 10-03 after menaker12 confirmed on beta), #6338 (closed by reporter 10-03 (workaround holds)). Dropped 10-05 08:40: #6517 (auto-closed when you merged server#6702 at 06:31 UTC; booked Fix to be Confirmed + milestone 2.10.6 from its backport-to-stable label). Booked 10-05 09:40 (not on the board): #6629 FtbC + 2.10.6 (server#6691, backport-to-stable), #6620 FtbC (server#6685, backportable, see follow-ups). Dropped 10-05 10:40: #6635 (closed 06:19 UTC after your 2.11 beta reply). #6026 closed 08:03 UTC by your server#5175 merge; card kept in Fix merged until the bookkeeping is queued. Dropped 10-05 14:00: #6636 (closed by Soukyuu 11:40 UTC after your works-as-designed reply and OzGav's follow-up; going back to LMS). Dropped 10-05 15:40: #6026 (bookkeeping landed 12:40 UTC: Fix to be Confirmed + milestone 2.11.0). Dropped 10-06 09:00: #6559 (closed 06:40 UTC with your reply after the AirConnect removal fixed sync; reporter asked to file new issues); #6224 (closed 06:35 UTC when you merged server#6715; booked Fix to be Confirmed, milestone 2.11.0 was already set (migration, no backport)). Dropped 10-06 09:40: #6373 (you closed it 07:11 UTC when server#6611 merged with backport-to-stable; milestone 2.10.6 was set, I added Fix to be Confirmed); #6440 (you closed it 07:10 UTC after explaining Spotify's 1.1x headroom for crossfades); #6616 (you closed it 07:10 UTC as fixed in 2.11, milestone 2.11.0). Dropped 10-06 12:55: #6617 (assigned to jdaberkow, who is iterating on the Deezer family-profile branch with budius). Dropped 10-06 14:40: #6633 (howels closed it at 12:04 UTC, user error: a duplicate HA entity without volume_level). Dropped 10-06 15:40: #6247 (you milestoned and closed it at 13:21 UTC). #6647 closed 14:06 UTC after frontend#2924 merged. Dropped 10-07 as closed: #6641 (you merged server#6726 17:32 UTC, milestone 2.10.6, closed; already in backport/2.10.6). Dropped 10-07 as closed: #6646 (frontend#2923 merged), #6524 (fixed by frontend#2900). Dropped 10-07 13:40: #4377 (you closed it 10:58 UTC; LaneaLucy replied 11:23 UTC that the internal Snapcast server showed it too). #6613 closed 10-08 by the reporter (PO token 2.0.1 + cookie fixed it). Dropped 10-08 13:40 as closed: #6662 (server#6760 merged 11:26 UTC, auto-closed; I set Fix to be Confirmed; no backport label, but it cherry-picks cleanly onto backport/2.10.6 incl. the aiosonos 0.1.14 bump).; #6611 (closed by the reporter 10-09 06:12 UTC, keeps the opt-out on their fork) Dropped 10-12 07:40: #5723 (OzGav closed it 10-10 00:03 UTC as fixed. The reporter split the player-type part into #6688); #6063 (you closed it 10-10 with the 2.10.6 release comment); #6154 (you closed it 10-10 with the 2.10.6 release comment); #6425 (you closed it 10-10 with the 2.10.6 release comment); #6487 (OzGav closed it 10-09 23:58 UTC after parski confirmed the fix); #6562 (you closed it 10-10 with the 2.10.6 release comment); #6570 (you closed it 10-10 with the 2.10.6 release comment); #6571 (you closed it 10-10 with the 2.10.6 release comment); #6624 (closed after server#5868 + server#6858 (MSX Bridge, backport-to-stable) merged 10-10); #6627 (you closed it with the 2.10.6 release comment. magdalar commented 10-11 16:52 UTC that pause still jumps the progress back on Sonos with Audiobookshelf, mostly cosmetic now (see follow-ups)); #6642 (Annikadk confirmed 2.10.6 fixes it and closed it 10-10); #6648 (you closed it 10-10 with the 2.10.6 release comment); #6658 (dentedbread closed it 10-11 11:48 UTC, no repro on 2.11.0b4); #6669 (you closed it 10-10 with the 2.10.6 release comment); #6676 (OzGav closed it 10-11 11:47 UTC as by design: both editions sit in one Local files source, so a rescan of one file drops the other file's link. Advice is a separate source per edition. Our triage-6676 fix branch was never pushed); #6683 (megawubs closed it 10-09 17:33 UTC: 2.10.6 changed Deezer family accounts to one ARL, and the new ARL works); #6659 (now assigned to OzGav, who is working it with dentedbread). Dropped 10-12 09:40: #6493 (you closed it 07:09 UTC, fixed in 2.11). Dropped 10-12 14:40: #6714 (closed by you after server#6910 merged), #6464 (closed by you after server#6613 merged), #6451 (closed by you after server#6528 merged). #6671 and #6481 closed 10-12. Dropped 10-12 16:40: #6722 (Hypopheralcus fixed the Nextcloud proxy setting after your reply and closed it 13:49 UTC). Dropped 10-13 07:40: #6724 (OzGav closed it 22:53 UTC: 4 GB host OOM, reporter stopped Frigate and Grafana and MA kept running). Dropped 10-13 09:40: #6721 (closed 06:40 UTC, jdaberkow had taken it over). Dropped 10-13 10:40: #6577 (you closed it 08:07 UTC, no flip since the last update; reopen if it happens after an HA integration update). Dropped 10-13 15:40: #6666 (lupurs confirmed 2.10.6 fixed it and closed 12:42 UTC). Dropped 10-14 11:40: #6406 (bot auto-closed 03:31 UTC after two reminders) and #6667 (you closed it 18:14 UTC as a side effect of #6645; server#6968 closed with it). Dropped 10-14 13:40: #6725 (whc2001 confirmed the fix on the DEV add-on and closed it 11:02 UTC; server#6810 backport call moved to follow-ups). Dropped 10-14 15:40: #6643 (Asrem2 traced the Voice PE dropouts to a busy 2.4 GHz Wi-Fi channel, 13 h clean on Sendspin after moving the AP, closed 13:34 UTC). Dropped 10-15 10:15: #6186 (endevour confirmed the latest beta fixes it and closed it 10-14 19:36 UTC); #6547 (bot auto-closed 10-15 03:31 UTC after two reminders); #6732 (you closed it 10-15 07:23 UTC as a duplicate). Dropped 10-19 as closed after the 2.10.7 release: #6759, #6704, #6712, #6655, #6601, #6528, #6744 (you closed them 10-18), #6729 (sydlexius confirmed chrisuthe's fix), #6679 (dekiesel: switching to parallel fixed it). Dropped 10-19 08:38: #6811 (assigned to OzGav 06:37 UTC, he is handling the Sendspin Opus stutter). New #6813 and #6814 (ChrisB85, kiwipaulrob) were assigned to OzGav on arrival, not on the board. Dropped 10-20 07:38: #6407 (bot auto-closed 03:32 UTC after two reminders); #6102 (bot auto-closed 03:32 UTC after two reminders, our draft server#6706 is still open (see follow-ups)); #6002 (bot auto-closed 03:32 UTC after two reminders); #6782 (OzGav closed it 01:24 UTC as a feature request (Jellyfin genres were never implemented)); #6653 (anthonws closed the discussion 21:23 UTC, no time to work on it); #6508 (you assigned marcelveldt 10-20 11:50 UTC). #6673 (you closed it 12:56 UTC after the 2.11 provider sharing reply); #6668 (you closed it 12:50 UTC, resolved with the recommended tagging procedure); #6552 (OzGav closed it 13:21 UTC after sragot confirmed server#6425 fixes it on 2.11.0b5). #6682 (assigned to stvncode 13:39 UTC); #6684 (assigned to stvncode 13:39 UTC); #6777 (you closed it 13:45 UTC as duplicate of #6776); #6785 (you closed it 14:34 UTC after frontend#3032 split the review key). Dropped 10-21 07:38: #6639 (bot auto-closed 10-21 03:32 UTC after two reminders); #6663 (limitless-code confirmed the DEV app fixes all scenarios (19:02 UTC) and you closed it 22:30 UTC; FtbC + 2.11.0 were set); #6823 (jo-che confirmed on dev and closed it 19:58 UTC). Dropped 10-21 12:40: #6720 (you posted the thanks from the board 09:50 UTC and closed it). Dropped 10-22 07:30: #6819 (closed as completed by OzGav 10-21 22:53 UTC). Dropped 10-22 07:30: #6395 (closed as not planned by musicassistant-bot 10-22 03:32 UTC). Dropped 10-22 09:30: #6772 (closed as completed by MarvinSchenkel 10-22 06:58 UTC). Dropped 10-22 10:00: #6671 (closed as completed by dekiesel 10-22 07:58 UTC). Dropped 10-22 14:30: #6841 (closed as completed by stormsnsnow 10-22 12:20 UTC). Dropped 10-22 14:30: #6844 (closed as completed by OzGav 10-22 12:11 UTC). Dropped 10-22 15:30: #6757 (closed as completed by zosopage1963 10-22 13:12 UTC). Dropped 10-23 07:30: #6023 (closed as completed by OzGav 10-22 16:21 UTC). Dropped 10-23 07:30: #6752 (closed as completed by OzGav 10-23 01:39 UTC). Dropped 10-23 15:30: #6837 (closed as completed by MarvinSchenkel 10-23 12:33 UTC). Dropped 10-23 16:19: #6839 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6833 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6822 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6675 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6748 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6749 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6751 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6758 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6808 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6807 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6793 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6778 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6797 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6774 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6815 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6849 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:30: #6645 (closed as completed by MarvinSchenkel 10-23 14:21 UTC). Dropped 10-26 07:30: #6821 (closed as completed by jo-che 10-24 15:31 UTC). Dropped 10-26 07:30: #6695 (closed as not planned by musicassistant-bot 10-25 03:33 UTC). Dropped 10-26 07:30: #6680 (closed as completed by OzGav 10-25 10:56 UTC). Dropped 10-26 07:30: #6694 (closed as completed by OzGav 10-23 22:53 UTC). Dropped 10-26 07:30: #6672 (closed as completed by OzGav 10-24 11:16 UTC). Dropped 10-26 07:30: #6490 (closed as completed by OzGav 10-24 11:14 UTC). Dropped 10-26 07:30: #6402 (closed as completed by OzGav 10-24 11:10 UTC). Dropped 10-26 07:30: #6299 (closed as completed by OzGav 10-24 11:10 UTC). Dropped 10-26 07:30: #6150 (closed as completed by OzGav 10-24 11:09 UTC). Dropped 10-26 07:30: #6738 (closed as completed by OzGav 10-23 22:50 UTC). Dropped 10-26 07:30: #6806 (closed as completed by Thyraz 10-24 12:41 UTC). Dropped 10-26 07:30: #6812 (closed as completed by OzGav 10-24 21:08 UTC). Dropped 10-26 07:30: #6798 (closed as completed by OzGav 10-24 11:20 UTC).",
  "actions_applied_at": "2026-10-23T12:04:33Z",
  "auto_post": {
   "enabled": true
@@ -4945,14 +4878,6 @@
     "prs": [
      "aioaudiobookshelf#56",
      "server#7161"
-    ],
-    "on_stable": false
-   },
-   {
-    "n": 6821,
-    "title": "Raumfeld: 192 kHz fails on some devices and the sample rate can't be limited per player",
-    "prs": [
-     "server#7138"
     ],
     "on_stable": false
    },
@@ -4971,77 +4896,37 @@
      "server#6506"
     ],
     "on_stable": false
-   },
-   {
-    "n": 6694,
-    "title": "SiriusXM Bluesville and Spa 404 on every segment (new tpac_iad_iad/.../enc/128k layout)",
-    "prs": [
-     "server#7001"
-    ],
-    "on_stable": false
-   },
-   {
-    "n": 6490,
-    "title": "Search input does not reliably commit text when using an on-screen predictive keyboard",
-    "prs": [],
-    "on_stable": null
-   },
-   {
-    "n": 6402,
-    "title": "Spotify playback started by Music Assistant appears in another Spotify account/app as “Music Assistant” playback",
-    "prs": [],
-    "on_stable": null
-   },
-   {
-    "n": 6299,
-    "title": "Global search: alphabetical provider order + name de-dupe hides results from higher-quality providers",
-    "prs": [
-     "frontend#2845"
-    ],
-    "on_stable": null
-   },
-   {
-    "n": 6150,
-    "title": "Low contrast on the now playing screen with a blue background",
-    "prs": [
-     "frontend#2762"
-    ],
-    "on_stable": null
-   },
-   {
-    "n": 6806,
-    "title": "Spotify: playlist search hangs on the rate-limited global session (since #6647)",
-    "prs": [
-     "server#7097"
-    ],
-    "on_stable": false
-   },
-   {
-    "n": 6798,
-    "title": "Clicking the waveform progress bar restarts the track from 0",
-    "prs": [
-     "frontend#3031"
-    ],
-    "on_stable": null
    }
   ]
  },
  "summary_cards": [
   5018,
   6329,
-  6400,
-  6419,
   6602,
-  6695,
   6709,
   6739,
   6776,
   6786,
+  6787,
   6794,
   6796,
   6810,
+  6827,
+  6831,
   6845,
   6850,
-  6854
+  6854,
+  6857,
+  6860,
+  6863,
+  6864,
+  6865,
+  6867,
+  6872,
+  6873,
+  6878,
+  6879,
+  6883,
+  6885
  ]
 }
