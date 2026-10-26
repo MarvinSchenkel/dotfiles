@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-26 07:30 CEST",
+ "last_run": "2026-10-26 08:30 CET",
  "columns": [
   [
    "info",
@@ -89,7 +89,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:23Z",
@@ -164,7 +164,7 @@
    "diff": "diff --git a/aioaudiobookshelf/schema/audio.py b/aioaudiobookshelf/schema/audio.py\nindex 28ade35..16fa8af 100644\n--- a/aioaudiobookshelf/schema/audio.py\n+++ b/aioaudiobookshelf/schema/audio.py\n@@ -44,7 +44,8 @@ class AudioTrack(_BaseModel):\n class AudioFile(_BaseModel):\n     \"\"\"Audiofile.\"\"\"\n \n-    index: int\n+    # null for podcast episodes abs scanned in before its v2.21.0\n+    index: int | None = None\n     ino: str\n     metadata: FileMetadata\n     added_at: Annotated[int, Alias(\"addedAt\")]\ndiff --git a/tests/test_podcasts.py b/tests/test_podcasts.py\nnew file mode 100644\nindex 0000000..dff6ea6\n--- /dev/null\n+++ b/tests/test_podcasts.py\n@@ -0,0 +1,100 @@\n+\"\"\"Tests for decoding podcast payloads.\"\"\"\n+\n+import json\n+from typing import Any\n+\n+from aioaudiobookshelf.schema.library import LibraryItemExpandedPodcast\n+\n+_FILE_METADATA = {\n+    \"filename\": \"episode1.mp3\",\n+    \"ext\": \".mp3\",\n+    \"path\": \"/podcasts/show1/episode1.mp3\",\n+    \"relPath\": \"episode1.mp3\",\n+    \"size\": 1000,\n+    \"mtimeMs\": 1700000000000,\n+    \"ctimeMs\": 1700000000000,\n+    \"birthtimeMs\": 0,\n+}\n+\n+\n+def _episode() -> dict[str, Any]:\n+    \"\"\"Build an episode as abs sends it for a file scanned in before abs v2.21.0.\"\"\"\n+    audio_file = {\n+        \"index\": None,\n+        \"ino\": \"2\",\n+        \"metadata\": _FILE_METADATA,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"manuallyVerified\": False,\n+        \"exclude\": False,\n+        \"error\": None,\n+        \"format\": \"MP2/3 (MPEG audio layer 2/3)\",\n+        \"duration\": 60.0,\n+        \"bitRate\": 128000,\n+        \"codec\": \"mp3\",\n+        \"channels\": 2,\n+        \"channelLayout\": \"stereo\",\n+        \"mimeType\": \"audio/mpeg\",\n+    }\n+    return {\n+        \"libraryItemId\": \"item1\",\n+        \"podcastId\": \"podcast1\",\n+        \"id\": \"episode1\",\n+        \"index\": None,\n+        \"title\": \"Episode 1\",\n+        \"chapters\": [],\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"audioFile\": audio_file,\n+        \"audioTrack\": {\n+            \"index\": None,\n+            \"startOffset\": 0,\n+            \"duration\": 60.0,\n+            \"title\": \"episode1.mp3\",\n+            \"contentUrl\": \"/api/items/item1/file/2\",\n+            \"mimeType\": \"audio/mpeg\",\n+            \"metadata\": _FILE_METADATA,\n+        },\n+        \"duration\": 60.0,\n+        \"size\": 1000,\n+    }\n+\n+\n+def _podcast_item(episode: dict[str, Any]) -> bytes:\n+    item = {\n+        \"id\": \"item1\",\n+        \"ino\": \"1\",\n+        \"libraryId\": \"library1\",\n+        \"folderId\": \"folder1\",\n+        \"path\": \"/podcasts/show1\",\n+        \"relPath\": \"show1\",\n+        \"isFile\": False,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"isMissing\": False,\n+        \"isInvalid\": False,\n+        \"mediaType\": \"podcast\",\n+        \"libraryFiles\": [],\n+        \"size\": 1000,\n+        \"media\": {\n+            \"id\": \"podcast1\",\n+            \"libraryItemId\": \"item1\",\n+            \"autoDownloadEpisodes\": False,\n+            \"maxEpisodesToKeep\": 0,\n+            \"maxNewEpisodesToDownload\": 3,\n+            \"tags\": [],\n+            \"size\": 1000,\n+            \"metadata\": {\"title\": \"Show 1\", \"genres\": [], \"explicit\": False},\n+            \"episodes\": [episode],\n+        },\n+    }\n+    return json.dumps(item).encode()\n+\n+\n+def test_an_episode_scanned_before_abs_2_21_has_no_audio_file_index() -> None:\n+    \"\"\"Abs never backfilled the null index of older scans, see support#6842.\"\"\"\n+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(_episode()))\n+\n+    audio_file = item.media.episodes[0].audio_file\n+    assert audio_file is not None\n+    assert audio_file.index is None\n",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "fmunkes",
      "at": "2026-10-23T06:57:50Z",
@@ -254,14 +254,14 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "innerskyone",
      "at": "2026-10-24T12:51:24Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6838#issuecomment-6384431889"
     },
-    "reporter_new": true,
+    "reporter_new": false,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -314,7 +314,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "NasaGeek",
      "at": "2026-10-21T16:04:47Z",
@@ -381,15 +381,15 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "panda-star357",
      "at": "2026-10-24T23:34:02Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6835#issuecomment-6390929987"
     },
-    "reporter_new": true,
-    "team_new": true,
+    "reporter_new": false,
+    "team_new": false,
     "closed": false,
     "pr": [],
     "test_ask": null,
@@ -470,15 +470,15 @@
    "action": "amodig confirms WAV works where FLAC fails, asks (1) is WAV the recommended workaround for HEOS, (2) do you have a HEOS/Denon contact. janoj: still short stutters on b7 (also MP3 via Jellyfin). OzGav said it'll be closed soon. Your call: answer + keep open or close.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "janoj",
      "at": "2026-10-25T12:02:51Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6831#issuecomment-6397385242"
     },
-    "reporter_new": true,
-    "team_new": true,
+    "reporter_new": false,
+    "team_new": false,
     "closed": false,
     "pr": [
      {
@@ -542,7 +542,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:07Z",
@@ -600,7 +600,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:36:49Z",
@@ -673,7 +673,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "bdeprez",
      "at": "2026-10-13T20:17:14Z",
@@ -748,7 +748,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T12:46:25Z",
@@ -833,14 +833,14 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "philippecottier",
      "at": "2026-10-25T09:36:32Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6706#issuecomment-6396025502"
     },
-    "reporter_new": true,
+    "reporter_new": false,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -896,7 +896,7 @@
    "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-10T16:01:24Z",
@@ -993,7 +993,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:14:26Z",
@@ -1088,7 +1088,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:16:29Z",
@@ -1164,7 +1164,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-08T14:40:21Z",
@@ -1255,7 +1255,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:17:32Z",
@@ -1348,7 +1348,7 @@
    "ask": "nudge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "CDrummond",
      "at": "2026-10-10T06:44:22Z",
@@ -1431,7 +1431,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-12T13:38:14Z",
@@ -1509,7 +1509,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T10:06:51Z",
@@ -1595,7 +1595,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T12:45:34Z",
@@ -1672,7 +1672,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-24T11:14:11Z",
@@ -1680,7 +1680,7 @@
      "url": "https://github.com/music-assistant/support/issues/6419#issuecomment-6383523922"
     },
     "reporter_new": false,
-    "team_new": true,
+    "team_new": false,
     "closed": false,
     "pr": [
      {
@@ -1741,7 +1741,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-23T16:51:45Z",
@@ -1749,7 +1749,7 @@
      "url": "https://github.com/music-assistant/support/issues/6400#issuecomment-6370105230"
     },
     "reporter_new": false,
-    "team_new": true,
+    "team_new": false,
     "closed": false,
     "pr": [],
     "test_ask": null,
@@ -1805,7 +1805,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "Geweldich",
      "at": "2026-09-30T11:09:20Z",
@@ -1931,7 +1931,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:49:03Z",
@@ -1990,7 +1990,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-06T13:51:35Z",
@@ -2041,7 +2041,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "marcelveldt",
      "at": "2026-08-26T21:48:58Z",
@@ -2097,7 +2097,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "salanki",
      "at": "2026-08-29T17:15:18Z",
@@ -2160,7 +2160,7 @@
    "summary": "QQ Music lists music but full-stream URL resolution fails with 104003 and the preview fallback gets a 403, so tracks are skipped. The reporter has a local endpoint correction that works. xiasi0, the provider maintainer, will fix it after their vacation.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "xiasi0",
      "at": "2026-10-06T18:49:41Z",
@@ -2236,7 +2236,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-15T08:41:56Z",
@@ -2311,7 +2311,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:36:19Z",
@@ -2402,7 +2402,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T12:45:57Z",
@@ -2468,7 +2468,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-15T08:23:30Z",
@@ -2538,14 +2538,14 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "cateim",
      "at": "2026-10-25T02:36:47Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6756#issuecomment-6392530466"
     },
-    "reporter_new": true,
+    "reporter_new": false,
     "team_new": false,
     "closed": false,
     "pr": [
@@ -2615,7 +2615,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "suporte640",
      "at": "2026-10-19T00:58:04Z",
@@ -2666,7 +2666,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "axsuul",
      "at": "2026-10-18T04:08:57Z",
@@ -2724,14 +2724,14 @@
    "action": "meggsico (Soloist, DEBUG): Soloist starts and MA connects, but 'debian | Music Assistant' never shows in the Spotify Android device list, so no first login. Asks whether Soloist reuses the provider's auth or how to pair when invisible. Soloist is Marcel's; your answer or hand off.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "meggsico",
      "at": "2026-10-23T17:51:30Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6787#issuecomment-6371238509"
     },
-    "reporter_new": true,
+    "reporter_new": false,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -2787,7 +2787,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "Vivi92821",
      "at": "2026-10-21T14:34:40Z",
@@ -2813,11 +2813,11 @@
    "col": "info",
    "area": "server providers/snapcast/ma_stream.py",
    "since": "2026-10-19 07:38",
-   "last": "ChangoMunk 2026-10-24 15:00",
+   "last": "MarvinSchenkel 2026-10-26 06:32",
    "gh": {
-    "login": "ChangoMunk",
-    "team": false,
-    "at": "2026-10-24T15:00:32Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-26T06:32:20Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -2845,15 +2845,15 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
-     "login": "ChangoMunk",
-     "at": "2026-10-24T15:00:32Z",
-     "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6791#issuecomment-6385728474"
+     "login": "MarvinSchenkel",
+     "at": "2026-10-26T06:32:20Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6791#issuecomment-6409788347"
     },
-    "reporter_new": true,
-    "team_new": false,
+    "reporter_new": false,
+    "team_new": true,
     "closed": false,
     "pr": [],
     "test_ask": null,
@@ -2862,7 +2862,7 @@
      "triage",
      "snapcast",
      "hass",
-     "needs-attention"
+     "waiting-for-user"
     ]
    },
    "ask": null
@@ -2906,7 +2906,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T15:23:02Z",
@@ -2963,7 +2963,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T21:30:55Z",
@@ -3015,7 +3015,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "kmycek",
      "at": "2026-10-17T17:36:42Z",
@@ -3073,7 +3073,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T16:29:06Z",
@@ -3132,7 +3132,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "marapavelka",
      "at": "2026-10-17T09:58:35Z",
@@ -3190,7 +3190,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:52:28Z",
@@ -3270,7 +3270,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:35:53Z",
@@ -3364,7 +3364,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "profLewis",
      "at": "2026-10-21T00:18:32Z",
@@ -3447,7 +3447,7 @@
     "done": true
    },
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T12:09:02Z",
@@ -3537,7 +3537,7 @@
     "done": true
    },
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T14:35:19Z",
@@ -3601,7 +3601,7 @@
     "10-23 07:30 run: new issue, confirmed in code (hardcoded port 1443 in aiosonos discovery and client). Fix needs aiosonos + server. Answer drafted."
    ],
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "billyfw",
      "at": "2026-10-23T00:06:27Z",
@@ -3666,7 +3666,7 @@
     "10-26 07:30 run: Simanias opened draft server#7180 (reproduced with a 2-speaker room); culmat's server#7183 closed. Waiting on test/merge."
    ],
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-24T12:46:43Z",
@@ -3674,7 +3674,7 @@
      "url": "https://github.com/music-assistant/support/issues/6851#issuecomment-6384387735"
     },
     "reporter_new": false,
-    "team_new": true,
+    "team_new": false,
     "closed": false,
     "pr": [
      {
@@ -3735,7 +3735,7 @@
     "10-23 14:50: curl ran 1260 s clean against DR. Moved to Reproduced, cannot fix (pending repro) with an input ask."
    ],
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "BlochHansen",
      "at": "2026-10-23T11:43:27Z",
@@ -3793,7 +3793,7 @@
     "10-23 16:30 run: you asked UnfundedNag (14:19 UTC) whether it still happens on 2.10.8. Added to the board as waiting on the reporter."
    ],
    "sync": {
-    "at": "2026-10-26T06:30:11Z",
+    "at": "2026-10-26T07:30:09Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T14:19:57Z",
@@ -3842,7 +3842,23 @@
    "action": "OzGav tagged you: pfrenssen proposes a server-side backup command (SQLite backup API on the live connection). Yes/no on the shape.",
    "notes": [
     "10-26 07:30 run: tagged discussion. Feature idea with a concrete proposal; design call for you."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "OzGav",
+     "at": "2026-10-25T13:20:55Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/discussions/6827#discussioncomment-19178317"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": []
+   }
   },
   {
    "n": 6857,
@@ -3882,7 +3898,26 @@
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:40: Opus subagent building the local fix (no push, no PR).",
     "10-26 08:00: local fix built and A/B'd. No PR until you say so."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "X-dark",
+     "at": "2026-10-23T19:37:54Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6857"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6883,
@@ -3914,7 +3949,26 @@
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "theomega",
+     "at": "2026-10-25T14:02:42Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6883"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "subsonic",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6879,
@@ -3959,7 +4013,27 @@
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:40: Opus subagent building the local fix (no push, no PR).",
     "10-26 08:00: local fix built and A/B'd; needs your OK on the existing-test change."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "dentedbread",
+     "at": "2026-10-25T11:06:19Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6879#issuecomment-6396852604"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "filesystem_local",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6878,
@@ -3991,7 +4065,28 @@
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "philippecottier",
+     "at": "2026-10-25T09:18:35Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6878"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "youtube_music",
+     "hass",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6877,
@@ -4029,7 +4124,27 @@
    "waiting_on": "team",
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "Sjo3rd",
+     "at": "2026-10-25T09:04:56Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6877"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "soundcloud",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6856,
@@ -4067,7 +4182,26 @@
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "OzGav",
+     "at": "2026-10-23T22:42:58Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6856#issuecomment-6376195321"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6855,
@@ -4099,7 +4233,27 @@
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "OzGav",
+     "at": "2026-10-23T22:41:05Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6855#issuecomment-6376169717"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "hass",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6860,
@@ -4143,7 +4297,27 @@
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:30 run: local fix built and A/B'd; no PR until you say so."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "The-Flix",
+     "at": "2026-10-25T13:52:35Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6860#issuecomment-6398493127"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "spotify",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6882,
@@ -4151,11 +4325,11 @@
    "col": "info",
    "area": "server / providers/chromecast constants.py:73 (#7120), streams/controller.py:1344 (#7132)",
    "since": "2026-10-26 07:30",
-   "last": "AkoreJepade 2026-10-25 12:40",
+   "last": "MarvinSchenkel 2026-10-26 06:44",
    "gh": {
-    "login": "AkoreJepade",
-    "team": false,
-    "at": "2026-10-25T12:40:54Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-26T06:44:00Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -4187,7 +4361,28 @@
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6882#issuecomment-6409953019), GPT: post, profile-3 A/B not asked before."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-26T06:44:00Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6882#issuecomment-6409953019"
+    },
+    "reporter_new": false,
+    "team_new": true,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Chromecast",
+     "hass",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6873,
@@ -4224,7 +4419,35 @@
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "cateim",
+     "at": "2026-10-25T10:23:23Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6873#issuecomment-6396460701"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [
+     {
+      "repo": "music-assistant/server",
+      "n": 7191,
+      "state": "OPEN",
+      "draft": false,
+      "merged_at": null,
+      "own": false
+     }
+    ],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "spotify",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6874,
@@ -4232,11 +4455,11 @@
    "col": "info",
    "area": "server / dlna/player.py:226-236 (anchor), playback_tracker.py:345",
    "since": "2026-10-26 07:30",
-   "last": "cateim 2026-10-25 10:23",
+   "last": "MarvinSchenkel 2026-10-26 06:44",
    "gh": {
-    "login": "cateim",
-    "team": false,
-    "at": "2026-10-25T10:23:24Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-26T06:44:03Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -4263,7 +4486,26 @@
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6874#issuecomment-6409953519), GPT: post, new player-level measurements."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-26T06:44:03Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6874#issuecomment-6409953519"
+    },
+    "reporter_new": false,
+    "team_new": true,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "dlna",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6885,
@@ -4302,7 +4544,27 @@
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:30 run: auto-post held. GPT: marvin (bot already asked diagnostics; DLNA debug doesn't capture the metadata or device responses). Our draft stays for you."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "kprzekop",
+     "at": "2026-10-25T19:20:03Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6885"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "dlna",
+     "airplay",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6870,
@@ -4334,7 +4596,26 @@
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "OzGav",
+     "at": "2026-10-24T21:29:00Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6870#issuecomment-6389762380"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "dlna",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6864,
@@ -4366,7 +4647,26 @@
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "OzGav",
+     "at": "2026-10-24T11:51:31Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6864#issuecomment-6383860414"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6658,
@@ -4374,11 +4674,11 @@
    "col": "info",
    "area": "server / streams/controller.py:1411-1418 (#6782), :2465-2477 (#6608), player_queues/controller.py:1659-1669",
    "since": "2026-10-26 07:30",
-   "last": "dentedbread 2026-10-23 19:43",
+   "last": "MarvinSchenkel 2026-10-26 06:44",
    "gh": {
-    "login": "dentedbread",
-    "team": false,
-    "at": "2026-10-23T19:43:50Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-26T06:44:05Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -4405,7 +4705,27 @@
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6658#issuecomment-6409954000), GPT: revise, accepted its text (capture on b6, the reporter's version, diagnostics right after the jump)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-26T06:44:05Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6658#issuecomment-6409954000"
+    },
+    "reporter_new": false,
+    "team_new": true,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "Chromecast",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6888,
@@ -4413,11 +4733,11 @@
    "col": "info",
    "area": "aiosendspin 10.2.1 server.py:1189,1465-1558; providers/sendspin",
    "since": "2026-10-26 07:30",
-   "last": "wildekek 2026-10-25 23:40",
+   "last": "MarvinSchenkel 2026-10-26 06:44",
    "gh": {
-    "login": "wildekek",
-    "team": false,
-    "at": "2026-10-25T23:40:43Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-26T06:44:07Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -4444,7 +4764,28 @@
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6888#issuecomment-6409954530), GPT: revise, accepted its text (dropped the mDNS causal framing)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-26T06:44:07Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6888#issuecomment-6409954530"
+    },
+    "reporter_new": false,
+    "team_new": true,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "hass",
+     "sendspin",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6887,
@@ -4452,11 +4793,11 @@
    "col": "info",
    "area": "providers/sendspin/provider.py:147-149,534-537; aiosendspin server.py:1580-1597",
    "since": "2026-10-26 07:30",
-   "last": "wildekek 2026-10-25 23:40",
+   "last": "MarvinSchenkel 2026-10-26 06:44",
    "gh": {
-    "login": "wildekek",
-    "team": false,
-    "at": "2026-10-25T23:40:42Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-26T06:44:10Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -4483,7 +4824,28 @@
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6887#issuecomment-6409955139), GPT: revise, accepted its text (no claim it covers #6888 too)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-26T06:44:10Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6887#issuecomment-6409955139"
+    },
+    "reporter_new": false,
+    "team_new": true,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "hass",
+     "sendspin",
+     "waiting-for-user"
+    ]
+   }
   },
   {
    "n": 6868,
@@ -4491,11 +4853,11 @@
    "col": "info",
    "area": "providers/chromecast sendspin_bridge.py:579,667,719; player.py:574-579",
    "since": "2026-10-26 07:30",
-   "last": "tueboesen 2026-10-24 14:46",
+   "last": "MarvinSchenkel 2026-10-26 06:44",
    "gh": {
-    "login": "tueboesen",
-    "team": false,
-    "at": "2026-10-24T14:46:06Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-26T06:44:12Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -4522,7 +4884,29 @@
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6868#issuecomment-6409955752), GPT: revise, accepted its text (dropped the idle-timeout theory)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-26T06:44:12Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6868#issuecomment-6409955752"
+    },
+    "reporter_new": false,
+    "team_new": true,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "hass",
+     "sendspin",
+     "waiting-for-user",
+     "WiiM"
+    ]
+   }
   },
   {
    "n": 6866,
@@ -4530,11 +4914,11 @@
    "col": "info",
    "area": "protocol_linking.py:2004,3178; wiim/player.py:90",
    "since": "2026-10-26 07:30",
-   "last": "vertex0 2026-10-24 13:14",
+   "last": "MarvinSchenkel 2026-10-26 06:44",
    "gh": {
-    "login": "vertex0",
-    "team": false,
-    "at": "2026-10-24T13:14:36Z",
+    "login": "MarvinSchenkel",
+    "team": true,
+    "at": "2026-10-26T06:44:15Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -4561,7 +4945,29 @@
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6866#issuecomment-6409956305), GPT: revise, accepted its text (clarifying question: solo vs grouped capture)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "MarvinSchenkel",
+     "at": "2026-10-26T06:44:15Z",
+     "team": true,
+     "url": "https://github.com/music-assistant/support/issues/6866#issuecomment-6409956305"
+    },
+    "reporter_new": false,
+    "team_new": true,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "sendspin",
+     "waiting-for-user",
+     "WiiM"
+    ]
+   }
   },
   {
    "n": 6865,
@@ -4593,7 +4999,28 @@
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "zcopter",
+     "at": "2026-10-24T11:39:47Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6865"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "airplay",
+     "triage",
+     "sonos",
+     "needs-attention"
+    ]
+   }
   },
   {
    "n": 6867,
@@ -4625,7 +5052,27 @@
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "riskywhat",
+     "at": "2026-10-24T13:40:54Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6867"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "needs-attention",
+     "WiiM"
+    ]
+   }
   },
   {
    "n": 6872,
@@ -4657,7 +5104,28 @@
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "codemonkey2k5",
+     "at": "2026-10-24T23:49:55Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6872#issuecomment-6391069397"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "triage",
+     "hass",
+     "needs-attention",
+     "Bluesound"
+    ]
+   }
   },
   {
    "n": 6863,
@@ -4695,7 +5163,26 @@
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage)."
-   ]
+   ],
+   "sync": {
+    "at": "2026-10-26T07:30:09Z",
+    "last_human": {
+     "login": "wanderingmoo",
+     "at": "2026-10-24T10:52:30Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6863"
+    },
+    "reporter_new": false,
+    "team_new": false,
+    "closed": false,
+    "pr": [],
+    "test_ask": null,
+    "after_test_ask_reporter": false,
+    "labels": [
+     "waiting-for-user",
+     "Bluesound"
+    ]
+   }
   }
  ],
  "design": [
