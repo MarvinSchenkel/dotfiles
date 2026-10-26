@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-26T13:00:00+01:00",
- "dev": "aec26acfd",
- "run_note": "imoamo72's #7221 (Bluesound metadata for support#6889) is a clean 5-line fix; Copilot only objects to the PR description, so it waits on that before auto-approval, and it should be backported. Both Simanias Raumfeld PRs got another Copilot CRITICAL, were drafted by the gate, and were answered within minutes; they wait on him to mark them ready. trudenboy resolved the #7219 thread without pushing the fix.",
+ "last_run": "2026-10-26T14:00:00+01:00",
+ "dev": "54b0bb65a",
+ "run_note": "You merged #7225, #7218, #7215, #7192 and #7208 at 12:51 to 12:58Z; dependabot closed #7178 after that. OzGav's #7212 (follow MusicBrainz merges) is ready for your approve: core metadata code, Opus clean, GPT Sol's two points are suggestions and Copilot's extra-request note is accepted by OzGav. No new conflicts from the merges; the Raumfeld PRs are still drafts.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -9847,14 +9847,14 @@
    "assessment": "approve",
    "status": "attention",
    "attention_since": "2026-10-25T21:12:00Z",
-   "waiting_on": "you: approve; cateim: PR checklist",
+   "waiting_on": "you: approve (Dockerfile)",
    "gpt_sol": "not run",
    "size": "S",
    "code": 8,
    "add": 0,
    "del": 0,
-   "ci": "Verify failing (PR template)",
-   "ci_fail": true,
+   "ci": "green (15 checks)",
+   "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev d42078eb9; review required, no auto-merge",
    "head_sha": "2087bd314",
    "core_touched": false,
@@ -9862,9 +9862,8 @@
    "stacked": false,
    "tldr": "Installs tini in the runtime image and makes it PID 1 (-s), so the crash handlers Soloist runs leave behind are reaped instead of piling up as zombies. Small and sensible; Copilot recommends approval. Verify fails on the PR checklist. Check it does not clash with how the HA add-on starts the image.",
    "summary": "",
-   "whats_new": "New 21:12Z on 10-25.",
+   "whats_new": "Verify is green now (PR checklist fixed). Head unchanged.",
    "blockers": [
-    "Verify: PR checklist (cateim)",
     "Your approve (Dockerfile)"
    ],
    "findings": [],
@@ -9894,8 +9893,8 @@
   {
    "repo": "server",
    "number": 7178,
-   "state": "open",
-   "closed_at": null,
+   "state": "closed",
+   "closed_at": "2026-10-26T13:00:00Z",
    "title": "Bump fastmcp from 4.1.0 to 4.1.2",
    "author": "dependabot",
    "url": "https://github.com/music-assistant/server/pull/7178",
@@ -9919,7 +9918,7 @@
    "stacked": false,
    "tldr": "Dependabot bump, approved by the repo workflow. Superseded by #7208; close it.",
    "summary": "",
-   "whats_new": "New over the weekend.",
+   "whats_new": "Closed by dependabot after #7208 (fastmcp 4.1.3) merged.",
    "blockers": [],
    "findings": [],
    "unaddressed_comments": [],
@@ -9937,13 +9936,13 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": ""
+   "changed_now": "closed"
   },
   {
    "repo": "server",
    "number": 7208,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-26T12:58:28Z",
    "title": "Bump fastmcp from 4.1.0 to 4.1.3",
    "author": "dependabot",
    "url": "https://github.com/music-assistant/server/pull/7208",
@@ -9967,7 +9966,7 @@
    "stacked": false,
    "tldr": "Dependabot bump, approved by the repo workflow. Merges through the workflow.",
    "summary": "",
-   "whats_new": "New over the weekend.",
+   "whats_new": "Merged by you at 12:58Z.",
    "blockers": [],
    "findings": [],
    "unaddressed_comments": [],
@@ -9985,7 +9984,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
@@ -10091,47 +10090,140 @@
    "title": "Follow artists and albums MusicBrainz merged into others",
    "author": "OzGav",
    "url": "https://github.com/music-assistant/server/pull/7212",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "OzGav (draft)",
-   "gpt_sol": "not run",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "attention",
+   "attention_since": "2026-10-26T12:51:00Z",
+   "waiting_on": "you: approve (core)",
+   "gpt_sol": "2 problems (we rate suggestions)",
    "size": "M",
    "code": 81,
-   "add": 260,
+   "add": 77,
    "del": 0,
-   "ci": "not checked (draft)",
+   "ci": "green (17 checks)",
    "ci_fail": false,
-   "merge_state": "not checked (draft)",
+   "merge_state": "merge-tree clean on origin/dev 54b0bb65a",
    "head_sha": "3d355597c",
    "core_touched": true,
    "providers_touched": [],
    "stacked": false,
-   "tldr": "Draft, not reviewed yet.",
-   "summary": "",
-   "whats_new": "Opened 2026-10-26.",
+   "tldr": "Ready, core: when MusicBrainz merges an artist or release, the stored MusicBrainz id is swapped for the new one (only that id, re-read first) and an artist is joined with the library artist that already holds the new id via the existing merge path. Ids from a name search are not followed in that run. 279 tests pass. Costs one or two extra MusicBrainz requests per merged item, once; OzGav accepts that. Remaining points are suggestions.",
+   "summary": "The PR swaps a stored MusicBrainz artist id (MB_ARTIST) or release id (MB_ALBUM) for the id MusicBrainz now answers with after a merge. It joins a followed artist with library artists that already hold the new id, and it skips following for an id a name search found in the same run. The swap (_store_musicbrainz_id) re-reads the stored external ids and only replaces the MusicBrainz tuple. That works because MB_* ids are unique in add_external_id, so the in-memory set loses exactly the id the getter returned and other ids, a second MB_ARTIST included, are kept. The later update_item_in_library unions db and in-memory ids, both of which now hold only the new id, so the old one is not written back. The read/write window has no lock, but neither does dev's own _update_library_item. Both artist entry points (link_item_to_musicbrainz and _update_artist_metadata) handle the join. merge_library_artists_by_mbid / merge_library_items already exist on dev and move provider mappings, favourites, playlog, genres, references and album/track artist relations, keeping the oldest row and merging only artists of the same artist_type. MusicBrainz merges are duplicates by definition, so a correct stored id cannot join two different artists. Album semantics are right: MB_ALBUM is the release id, resolve_release tries it first, and a release that differs because the stored id 404s on the mirror is kept, since the cached None makes get_release_details raise InvalidDataError. Release groups (MB_RELEASEGROUP) are not followed, and albums are not joined. Neither is a regression. A reliably found new id is already canonical, because identify_artist returns details.id. Rate limiting on dev is ThrottlerManager(30, 10) against musicbrainz-mirror.music-assistant.io, not 1 req/s, and every extra request goes through it. I checked every finding against origin/dev; the touched areas have no drift since the merge base.",
+   "whats_new": "Marked ready 12:51Z after fixing Copilot's two CRITICAL id-snapshot threads. Reviewed: Opus ready (2 suggestions, 4 nits), GPT Sol 2 problems we rate suggestions, Copilot Needs a closer look.",
    "blockers": [
-    "Draft."
+    "Core metadata code: your approve (`approve 7212`)",
+    "Copilot verdict is Needs a closer look: the extra-request PROBLEM, which OzGav accepted"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Copilot",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/metadata/enrichment.py",
+     "line": 845,
+     "title": "Following a merge costs another MusicBrainz request in the same refresh (previously missed)",
+     "detail": "The metadata loop fetches details under the new id while the answer is cached under the old one. OzGav accepted it at 12:53Z: one extra request per merged item, the first time. Opus thinks albums cost two.",
+     "fix": "Cache the response under both ids.",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/controllers/metadata/enrichment.py",
+     "line": 849,
+     "title": "Id swap still rewrites the full id set after a re-read",
+     "detail": "GPT Sol rates it a problem: a sync that adds an id between the re-read and set_external_ids() is lost. Opus: same read-modify-write as _update_library_item on dev.",
+     "fix": "Replace only the MusicBrainz row.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/controllers/metadata/enrichment.py",
+     "line": 179,
+     "title": "Namesake guard only holds in the run where the name search happened",
+     "detail": "reliable = bool(artist.mbid) treats any stored id as reliable, including one a name search stored in an earlier run (dev stores it, it just does not merge on it). On the next 90-day refresh, if MusicBrainz has merged that namesake entity into X, the artist follows to X and merge_library_artists_by_mbid joins it with library artists holding X. Dev already merges a name-found row whenever another library artist reliably carries the same id, so the extra exposure is small and needs a MusicBrainz merge of exactly the wrong entity. The same applies to controller.py:409. GPT Sol rates this a problem too.",
+     "fix": "Acceptable as is. Persisting the provenance of a name-found id would be a separate change, so mention the limit in the description rather than block on it.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/controllers/metadata/enrichment.py",
+     "line": 816,
+     "title": "Album follow likely costs two extra requests, and the 'reads its answer again' comment is optimistic",
+     "detail": "use_cache writes the result in a background task (helpers.py _fetch_and_store -> create_task(_store_task)), and cache.set first hops to a thread for json_dumps. When resolve_release returns the redirected release, _follow_merged_release immediately calls get_release_details(old id). Its get_row is queued before the upsert lands, and the finished flight is not reused (mass.create_task only dedupes tasks that are still running), so the old endpoint is most likely fetched a second time. get_album_metadata then fetches release/<new id>, which is a second extra request. Artists cost one extra (artist/<new id> in get_artist_metadata). This happens once per merged item and is throttled. OzGav accepted the artist cost; the album count and the comment are slightly off.",
+     "fix": "Optional: reword the comment (or the PR description) to say the stored release may be fetched again. A real fix would make resolve_release report whether the stored id answered, so no re-read is needed.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/controllers/music/media/artists.py",
+     "line": 1884,
+     "title": "Tag-sourced old id can come back on the next file sync",
+     "detail": "_update_library_item (artists and albums, line 855) unions external ids. A filesystem artist or album whose tags still hold the merged-away id gets it back next to the new one when that file is synced again. mbid then returns whichever comes first in set order, and the next refresh may swap again. Every request involved is cached, so the only cost is DB churn. Dev's union design is the cause, not this PR.",
+     "fix": "None needed for this PR; worth a follow-up if tag-sourced merges show up in practice.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/controllers/metadata/enrichment.py",
+     "line": 733,
+     "title": "Albums are re-pointed but not joined, and release groups are not followed",
+     "detail": "Two library albums whose releases MusicBrainz merged both end up with the same MB_ALBUM but stay separate rows. A merged release group (MB_RELEASEGROUP) stays stale, because _fill_album_from_release only fills blanks. Neither is a regression, and the PR body only claims the artist join.",
+     "fix": "Follow-up candidate, not for this PR.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "tests/controllers/metadata/test_enrichment.py",
+     "line": 1088,
+     "title": "Existing test was edited to dodge the new path",
+     "detail": "test_album_identity_fills_the_blanks_and_keeps_existing_values switched the stored MB_ALBUM from OTHER_MBID to RELEASE_ID. Otherwise the new _follow_merged_release would hit a non-async get_release_details stub. The 'stored id is kept' coverage now lives in the new keeps_a_release_musicbrainz_does_not_answer_for test, so nothing is lost. Separately, the _merged_artist docstring (line 1633) says the artist's details answer with MBID, but the MusicBrainz stub decides that. The new tests are otherwise focused: follow, join, name-search skip, unchanged id, concurrent-id preservation, 404 keep.",
+     "fix": "Fine as is; optionally fix the _merged_artist docstring.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/controllers/metadata/controller.py",
+     "line": 409,
+     "title": "Reliable/follow/merge bookkeeping duplicated in two places",
+     "detail": "link_item_to_musicbrainz and _update_artist_metadata now both carry the same reliable / looked_up_mbid / merge_mbid logic. The merge_mbid half was already duplicated on dev.",
+     "fix": "Could return the followed id from _link_artist_to_musicbrainz or share a small helper; not required.",
+     "posted": null
+    }
+   ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "",
+   "copilot": {
+    "green": false,
+    "comments": 0,
+    "findings": 1,
+    "review_url": "https://github.com/music-assistant/server/pull/7212",
+    "titles": [
+     "[PROBLEM, previously missed] Replacing the id costs another MusicBrainz request in the same refresh (OzGav accepted it, 12:53Z)"
+    ]
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Needs a closer look on 3d355597c (01:25Z), no open threads. Both CRITICAL threads are resolved; the previously missed extra-request PROBLEM is answered by OzGav's 12:53Z comment as an accepted cost.",
    "suggested_fix": null,
    "prompt": "",
-   "backport": null,
+   "backport": {
+    "rec": false,
+    "why": "New behaviour that can merge library rows irreversibly; ship it in a normal release first."
+   },
    "auto_approved": null,
    "author_replied": null,
    "reporter_reply": null,
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": null,
-   "changed_now": ""
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 14:15 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
@@ -10293,8 +10385,8 @@
   {
    "repo": "server",
    "number": 7192,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-26T12:55:07Z",
    "title": "Move YouSee Musik onto the shared 24-7 code",
    "author": "OzGav",
    "url": "https://github.com/music-assistant/server/pull/7192",
@@ -10320,7 +10412,7 @@
    "stacked": false,
    "tldr": "YouSee moves onto the shared 24-7 (music247e) code like Telmore, dropping ~2000 lines of duplicates. Item ids, provider mappings and the yousee_quality key are unchanged, and @math625f verified it on a live account. Claude finds it ready, and 53 tests pass. GPT Sol notes owned playlists are now deleted on removal (announced in the PR) and that synced tracks get a sparse album (shared music247e code, as for Telmore). XL, so not auto-approvable.",
    "summary": "YouSee now subclasses Music247eProvider exactly like Telmore. It keeps its own auth manager (same form-encoded refresh POST and delegated-login regex flow as dev), GraphQL endpoint graphql-1458, its own class-level 4 req/s throttler, and CONF_QUALITY_KEY='yousee_quality' with the same INTEGER 320/192 entry, so stored config loads unchanged. Item ids and provider mappings are unchanged: track/album/artist/playlist ids come from the same fields, mapping item_id is still str(id), and use_cache keys are func.__name__ based, so they stay the same. Every claimed behaviour change shows up in the diff of the old yousee modules against music247e: ItemMapping replaces the per-album get_album call, the page cap goes from 20 to 1000, 429/502/503 now map to retryable errors, lyrics go through convert_to_lrc_lyrics, string genres are fixed, owned playlists are deleted (as Qobuz already does), album availability is honoured, refresh failures are handled, and LoginFailed now carries a reason. None of these regress YouSee, and nothing the old yousee code had is missing from the shared base. Scope is provider-only (+45/-2035 non-test lines) plus 2 obsolete lint_baselines lines; Copilot reports no open issues.",
-   "whats_new": "Bot-MArley reviewed it at 07:35Z (no requested changes). OzGav marked it ready at 06:34Z after @math625f tested it. Copilot (25-10): Needs a closer look.",
+   "whats_new": "Merged by you at 12:55Z.",
    "blockers": [
     "Your approve (XL)"
    ],
@@ -10369,7 +10461,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 08:00 CET",
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
@@ -11091,13 +11183,13 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": "drafted"
+   "changed_now": ""
   },
   {
    "repo": "server",
    "number": 7218,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-26T12:51:44Z",
    "title": "Raumfeld: default ICY metadata to basic",
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7218",
@@ -11123,7 +11215,7 @@
    "stacked": false,
    "tldr": "Ready: the one-time full-to-basic move now lives in config/migrations.py with a top-level marker, mirroring the Apple Music schedule migration, which is your placement rule. The old \"deliberate full is overwritten\" worry is gone: MA never stores a value equal to the default, so every stored \"full\" was written by the provider. Touches core (migrations.py, constants.py), so no auto-approve. 344 tests pass, Copilot approves, 2 nits.",
    "summary": "The delta drops the per-player marker from the provider and adds _migrate_raumfeld_icy_basic in controllers/config/migrations.py, plus CONF_RAUMFELD_ICY_BASIC_MIGRATED in constants.py. It is modelled on _migrate_apple_music_sync_schedule. It returns early when the marker is set, returns False with no marker written when no player config has provider == \"raumfeld\" (the instance id is the domain, since multi_instance is false), rewrites values.enable_icy_metadata from \"full\" to \"basic\" in the raw dict, and then claims the marker even when nothing moved. migrate() runs in ConfigController._load before providers start and async_save()s when it returns True, so the heal runs once, before the provider's room sync. Scenarios: (1) no Raumfeld provider means no marker, which follows the 'marker only when relevant' rule; (2) a disabled provider or player keeps its player config in data and is healed too, which is correct because any stored \"full\" was written by the provider; (3) Raumfeld players added after the marker get \"basic\" from _ensure_icy_default and are never touched. Writing the raw dict instead of an API call matches every other migration; no API exists at that point, and the in-memory player config copy doesn't exist yet. Deliberate-\"full\" concern: it still holds and can't be fixed. PlayerConfig.to_raw() (music_assistant_models) keeps only values that differ from the entry default, and save_player_config stores new_raw wholesale. So under the old \"full\" default, a user who saved \"full\" never had it stored; every stored \"full\" came from _ensure_icy_default. After the migration \"full\" is non-default, so a later pick is stored and the marker keeps it. The provider side now writes \"basic\" only when nothing is stored. The entry switches from CONF_ENTRY_ICY_METADATA_DEFAULT_FULL (still used by bluesound) to a basic-default copy. Background: the provider only shipped in 2.11 betas (b3 onward), so only beta/nightly users have the stored \"full\". Pre-existing on dev and not caused by this PR: saving any Raumfeld player setting strips the default-valued ICY key from raw. The streams controller then reads the base default \"disabled\" until the next supervisor resync re-stores it. This is a possible follow-up, not a blocker. No API_SCHEMA_VERSION, MIN_SCHEMA_VERSION or DB schema change. The branch is one commit behind origin/dev (raumfeld/player.py only) and merges cleanly.",
-   "whats_new": "6d5457ff8 and ab434f34e move the conversion into the config migrations and skip installs without a Raumfeld player. Re-reviewed: Opus ready (2 NITs), GPT Sol 1 problem, Copilot Approval recommended.",
+   "whats_new": "Merged by you at 12:51Z.",
    "blockers": [
     "Core migration, so it needs your approval: `approve 7218`"
    ],
@@ -11176,13 +11268,13 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 10:20 CET",
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
    "number": 7215,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-26T12:52:36Z",
    "title": "Update Yandex Station provider to v1.5.24: option to stop mirroring Station volume to the intercept target",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7215",
@@ -11208,7 +11300,7 @@
    "stacked": false,
    "tldr": "Ready: a per-station \"Mirror Station volume\" toggle, default on, so existing setups keep mirroring. With it off the restore-volume bookkeeping still runs. Opus, GPT Sol and Copilot are all clean, 209 tests pass. Would auto-approve, except it touches the generated translations/en.json, which you haven't ruled on yet.",
    "summary": "CONF_INTERCEPT_MIRROR_VOLUME is a BOOLEAN entry with default_value=True and required=False. Like its intercept siblings it has no category or depends_on. _intercept_mirror_volume reads the config live with a True fallback, so configs saved before this change keep mirroring. In _maybe_mirror_volume the new early return comes after the user-unmute detection, which clears _station_muted_by_intercept and moves _saved_station_volume, and before cmd_volume_set. Restore on session end (_end_intercept_session) and the Alice unmute/re-mute path never depend on the mirror, so they behave the same either way. _maybe_mirror_volume has a single caller (the playerState tick). The strings.json label/description match the en.json keys exactly, and the keys sit in sorted order. The VERSION bump to 1.5.24 follows the provider's convention. The merge base equals origin/dev. Tests cover: no target volume with mirroring off across two ticks, the user-unmute baseline still moving, the restore at session end, explicit on, and the entry's type and default.",
-   "whats_new": "Marked ready 10:25Z. Reviewed: all three clean.",
+   "whats_new": "Merged by you at 12:52Z.",
    "blockers": [
     "Touches translations/en.json, so not auto-approved: `approve 7215`, or say generated en.json counts as provider-only"
    ],
@@ -11237,7 +11329,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "client",
@@ -11471,7 +11563,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 11:20 CET",
-   "changed_now": "author replied"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -11627,9 +11719,9 @@
    "related_prs": [
     "#7159 yours, same provider, no overlap"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-26 13:15 CET",
-   "changed_now": "ready for review"
+   "changed_now": ""
   },
   {
    "repo": "models",
@@ -11784,7 +11876,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": "drafted"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -11841,8 +11933,8 @@
   {
    "repo": "server",
    "number": 7225,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-26T12:50:59Z",
    "title": "Explain missing line-in autostart on Sendspin devices",
    "author": "maximmaxim345",
    "url": "https://github.com/music-assistant/server/pull/7225",
@@ -11868,7 +11960,7 @@
    "stacked": false,
    "tldr": "Ready: a Sendspin source that cannot sense a line-in signal now shows a read-only LABEL note instead of silently missing the autostart option. Same LABEL pattern the provider already uses. 412 tests pass, Copilot and GPT Sol clean. Sendspin is excluded from auto-approval, so it needs your approve. One wording NIT.",
    "summary": "_get_source_autostart_config_entries now returns [] when 'source' is not among the negotiated families. It returns a single LABEL entry keyed source_autostart_unavailable when there is a source role but _supports_line_sense() is False, and the unchanged autostart dropdown otherwise. _supports_line_sense keeps its own source check, which is redundant here but harmless. info_or_none comes from the same client/hello as negotiated_role_ids, so a source role never pairs with missing info. LABEL is the codebase's read-only note type: sendspin's security_status_* and management_status, spotify's soloist_api_key_hint, party, bbc_sounds, fastmcp_server. ALERT is kept for warnings, so LABEL is the right choice for a neutral explanation. The strings.json and en.json entries match and en.json is sorted. The existing test was renamed and now asserts the single LABEL entry. The no-source-role test still covers the first guard. The base is a few commits behind origin/dev, but nothing in sendspin changed since then and the merge is clean.",
-   "whats_new": "Marked ready for review. Reviewed: Opus 1 NIT, GPT Sol and Copilot clean.",
+   "whats_new": "Merged by you at 12:50Z.",
    "blockers": [
     "Sendspin is excluded from auto-approval: `approve 7225`"
    ],
@@ -11908,7 +12000,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
