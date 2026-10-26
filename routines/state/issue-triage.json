@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-10-26 13:30 CET",
+ "last_run": "2026-10-26 14:30 CET",
  "columns": [
   [
    "info",
@@ -89,7 +89,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:23Z",
@@ -164,7 +164,7 @@
    "diff": "diff --git a/aioaudiobookshelf/schema/audio.py b/aioaudiobookshelf/schema/audio.py\nindex 28ade35..16fa8af 100644\n--- a/aioaudiobookshelf/schema/audio.py\n+++ b/aioaudiobookshelf/schema/audio.py\n@@ -44,7 +44,8 @@ class AudioTrack(_BaseModel):\n class AudioFile(_BaseModel):\n     \"\"\"Audiofile.\"\"\"\n \n-    index: int\n+    # null for podcast episodes abs scanned in before its v2.21.0\n+    index: int | None = None\n     ino: str\n     metadata: FileMetadata\n     added_at: Annotated[int, Alias(\"addedAt\")]\ndiff --git a/tests/test_podcasts.py b/tests/test_podcasts.py\nnew file mode 100644\nindex 0000000..dff6ea6\n--- /dev/null\n+++ b/tests/test_podcasts.py\n@@ -0,0 +1,100 @@\n+\"\"\"Tests for decoding podcast payloads.\"\"\"\n+\n+import json\n+from typing import Any\n+\n+from aioaudiobookshelf.schema.library import LibraryItemExpandedPodcast\n+\n+_FILE_METADATA = {\n+    \"filename\": \"episode1.mp3\",\n+    \"ext\": \".mp3\",\n+    \"path\": \"/podcasts/show1/episode1.mp3\",\n+    \"relPath\": \"episode1.mp3\",\n+    \"size\": 1000,\n+    \"mtimeMs\": 1700000000000,\n+    \"ctimeMs\": 1700000000000,\n+    \"birthtimeMs\": 0,\n+}\n+\n+\n+def _episode() -> dict[str, Any]:\n+    \"\"\"Build an episode as abs sends it for a file scanned in before abs v2.21.0.\"\"\"\n+    audio_file = {\n+        \"index\": None,\n+        \"ino\": \"2\",\n+        \"metadata\": _FILE_METADATA,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"manuallyVerified\": False,\n+        \"exclude\": False,\n+        \"error\": None,\n+        \"format\": \"MP2/3 (MPEG audio layer 2/3)\",\n+        \"duration\": 60.0,\n+        \"bitRate\": 128000,\n+        \"codec\": \"mp3\",\n+        \"channels\": 2,\n+        \"channelLayout\": \"stereo\",\n+        \"mimeType\": \"audio/mpeg\",\n+    }\n+    return {\n+        \"libraryItemId\": \"item1\",\n+        \"podcastId\": \"podcast1\",\n+        \"id\": \"episode1\",\n+        \"index\": None,\n+        \"title\": \"Episode 1\",\n+        \"chapters\": [],\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"audioFile\": audio_file,\n+        \"audioTrack\": {\n+            \"index\": None,\n+            \"startOffset\": 0,\n+            \"duration\": 60.0,\n+            \"title\": \"episode1.mp3\",\n+            \"contentUrl\": \"/api/items/item1/file/2\",\n+            \"mimeType\": \"audio/mpeg\",\n+            \"metadata\": _FILE_METADATA,\n+        },\n+        \"duration\": 60.0,\n+        \"size\": 1000,\n+    }\n+\n+\n+def _podcast_item(episode: dict[str, Any]) -> bytes:\n+    item = {\n+        \"id\": \"item1\",\n+        \"ino\": \"1\",\n+        \"libraryId\": \"library1\",\n+        \"folderId\": \"folder1\",\n+        \"path\": \"/podcasts/show1\",\n+        \"relPath\": \"show1\",\n+        \"isFile\": False,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"isMissing\": False,\n+        \"isInvalid\": False,\n+        \"mediaType\": \"podcast\",\n+        \"libraryFiles\": [],\n+        \"size\": 1000,\n+        \"media\": {\n+            \"id\": \"podcast1\",\n+            \"libraryItemId\": \"item1\",\n+            \"autoDownloadEpisodes\": False,\n+            \"maxEpisodesToKeep\": 0,\n+            \"maxNewEpisodesToDownload\": 3,\n+            \"tags\": [],\n+            \"size\": 1000,\n+            \"metadata\": {\"title\": \"Show 1\", \"genres\": [], \"explicit\": False},\n+            \"episodes\": [episode],\n+        },\n+    }\n+    return json.dumps(item).encode()\n+\n+\n+def test_an_episode_scanned_before_abs_2_21_has_no_audio_file_index() -> None:\n+    \"\"\"Abs never backfilled the null index of older scans, see support#6842.\"\"\"\n+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(_episode()))\n+\n+    audio_file = item.media.episodes[0].audio_file\n+    assert audio_file is not None\n+    assert audio_file.index is None\n",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "fmunkes",
      "at": "2026-10-23T06:57:50Z",
@@ -254,7 +254,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "innerskyone",
      "at": "2026-10-24T12:51:24Z",
@@ -314,7 +314,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "NasaGeek",
      "at": "2026-10-21T16:04:47Z",
@@ -381,7 +381,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "panda-star357",
      "at": "2026-10-24T23:34:02Z",
@@ -470,7 +470,7 @@
    "action": "amodig confirms WAV works where FLAC fails, asks (1) is WAV the recommended workaround for HEOS, (2) do you have a HEOS/Denon contact. janoj: still short stutters on b7 (also MP3 via Jellyfin). OzGav said it'll be closed soon. Your call: answer + keep open or close.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "janoj",
      "at": "2026-10-25T12:02:51Z",
@@ -542,7 +542,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T14:35:07Z",
@@ -600,7 +600,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:36:49Z",
@@ -673,7 +673,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "bdeprez",
      "at": "2026-10-13T20:17:14Z",
@@ -748,7 +748,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T12:46:25Z",
@@ -833,7 +833,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "philippecottier",
      "at": "2026-10-25T09:36:32Z",
@@ -896,7 +896,7 @@
    "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "ChrisB85",
      "at": "2026-10-10T16:01:24Z",
@@ -993,7 +993,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:14:26Z",
@@ -1089,7 +1089,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "tamas-unter",
      "at": "2026-10-26T09:01:10Z",
@@ -1120,7 +1120,7 @@
   {
    "n": 6670,
    "title": "Sonos coordinator changes outside MA cause stale queue, idle music",
-   "col": "dev",
+   "col": "merged",
    "area": "server / controllers/player_queues/playback_tracker.py (queue follows an external leader change)",
    "since": "2026-10-08 17:40",
    "last": "mnestrud 2026-10-08 14:40",
@@ -1149,9 +1149,9 @@
    ],
    "badges": [
     [
-     "info",
-     "Waiting on mnestrud",
-     "waiting"
+     "ok",
+     "FtbC + 2.11.0 booked",
+     "booked"
     ]
    ],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks for the detailed analysis and the PR. We'll review music-assistant/server#6779. One thing we'll look at is what happens when the transfer itself fails, for example when the old coordinator went offline, so it doesn't retry on every player update. Since the check sits in the core queue controller, it would also help to know if you only tested it with Sonos or also with another provider that regroups natively.",
@@ -1160,12 +1160,13 @@
     "10-08 17:40 run: new issue. The reporter already opened server#6779 with a fix, CI and Draft PR green. Not reproducible here (3 Sonos needed). Review card.",
     "10-15 10:15 run: mnestrud refocused server#6779 on the Sonos provider only (per Marcel), marked it ready 10-14 19:27 and asked for a fresh Copilot review (requested 10-15 08:15). CI lint/pytest fail only because the new aiosonos events (GROUP_COORDINATOR_CHANGED, SESSION_ERROR, AUDIO_CLIP_STATUS) aren't in a released aiosonos yet.",
     "10-15 10:40 run: Copilot's review of server#6779 (head 4db498cb63) has 2 [CRITICAL] and 2 [PROBLEM] findings in sonos/player.py: the coordinator-move handler can clear state after a same-queue reload (no generation check, :1333), can stop a source that took over the destination during the wait (:1343), its task isn't cancelled in on_unload (:1297), and a terminal clip event can't release the announcement wait while the duration lookup is pending (:862). The critical gate put it back in draft 08:28 UTC. It's mnestrud's to address.",
-    "10-21 11:50: off your list. server#6779 is back in draft until mnestrud fixes the 2 Copilot findings; the review question stays drafted for when it is ready."
+    "10-21 11:50: off your list. server#6779 is back in draft until mnestrud fixes the 2 Copilot findings; the review question stays drafted for when it is ready.",
+    "10-26 14:30 run: mnestrud's server#6779 merged (bugfix, no backport label, conflicts on stable). Labelled Fix to be Confirmed, milestone 2.11.0."
    ],
    "action": "",
-   "milestone": null,
+   "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-08T14:40:21Z",
@@ -1179,9 +1180,9 @@
      {
       "repo": "music-assistant/server",
       "n": 6779,
-      "state": "OPEN",
+      "state": "MERGED",
       "draft": false,
-      "merged_at": null,
+      "merged_at": "2026-10-26T13:20:14Z",
       "own": false
      },
      {
@@ -1200,7 +1201,9 @@
      "sonos",
      "needs-attention"
     ]
-   }
+   },
+   "ask": null,
+   "waiting_on": null
   },
   {
    "n": 6500,
@@ -1256,7 +1259,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:17:32Z",
@@ -1349,7 +1352,7 @@
    "ask": "nudge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "CDrummond",
      "at": "2026-10-10T06:44:22Z",
@@ -1432,7 +1435,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-12T13:38:14Z",
@@ -1511,14 +1514,14 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "josiasmontag",
      "at": "2026-10-26T11:46:00Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6664#issuecomment-6415213776"
     },
-    "reporter_new": true,
+    "reporter_new": false,
     "team_new": false,
     "closed": false,
     "pr": [
@@ -1598,7 +1601,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T12:45:34Z",
@@ -1675,7 +1678,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-24T11:14:11Z",
@@ -1744,7 +1747,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-23T16:51:45Z",
@@ -1808,7 +1811,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "Geweldich",
      "at": "2026-09-30T11:09:20Z",
@@ -1934,7 +1937,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T14:49:03Z",
@@ -1993,7 +1996,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-06T13:51:35Z",
@@ -2044,7 +2047,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "marcelveldt",
      "at": "2026-08-26T21:48:58Z",
@@ -2100,7 +2103,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "salanki",
      "at": "2026-08-29T17:15:18Z",
@@ -2163,7 +2166,7 @@
    "summary": "QQ Music lists music but full-stream URL resolution fails with 104003 and the preview fallback gets a 403, so tracks are skipped. The reporter has a local endpoint correction that works. xiasi0, the provider maintainer, will fix it after their vacation.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "xiasi0",
      "at": "2026-10-06T18:49:41Z",
@@ -2239,7 +2242,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-10-15T08:41:56Z",
@@ -2314,7 +2317,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:36:19Z",
@@ -2405,7 +2408,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T12:45:57Z",
@@ -2481,7 +2484,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "cateim",
      "at": "2026-10-25T02:36:47Z",
@@ -2558,7 +2561,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "suporte640",
      "at": "2026-10-19T00:58:04Z",
@@ -2609,7 +2612,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "axsuul",
      "at": "2026-10-18T04:08:57Z",
@@ -2667,7 +2670,7 @@
    "action": "meggsico (Soloist, DEBUG): Soloist starts and MA connects, but 'debian | Music Assistant' never shows in the Spotify Android device list, so no first login. Asks whether Soloist reuses the provider's auth or how to pair when invisible. Soloist is Marcel's; your answer or hand off.",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "meggsico",
      "at": "2026-10-23T17:51:30Z",
@@ -2730,7 +2733,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "Vivi92821",
      "at": "2026-10-21T14:34:40Z",
@@ -2788,7 +2791,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-26T06:32:20Z",
@@ -2849,7 +2852,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T15:23:02Z",
@@ -2906,7 +2909,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T21:30:55Z",
@@ -2958,7 +2961,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "kmycek",
      "at": "2026-10-17T17:36:42Z",
@@ -3016,7 +3019,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-21T16:29:06Z",
@@ -3075,7 +3078,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "marapavelka",
      "at": "2026-10-17T09:58:35Z",
@@ -3133,7 +3136,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T12:52:28Z",
@@ -3213,7 +3216,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T13:35:53Z",
@@ -3307,7 +3310,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "profLewis",
      "at": "2026-10-21T00:18:32Z",
@@ -3390,7 +3393,7 @@
     "done": true
    },
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T12:09:02Z",
@@ -3480,7 +3483,7 @@
     "done": true
    },
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T14:35:19Z",
@@ -3544,7 +3547,7 @@
     "10-23 07:30 run: new issue, confirmed in code (hardcoded port 1443 in aiosonos discovery and client). Fix needs aiosonos + server. Answer drafted."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "billyfw",
      "at": "2026-10-23T00:06:27Z",
@@ -3609,7 +3612,7 @@
     "10-26 07:30 run: Simanias opened draft server#7180 (reproduced with a 2-speaker room); culmat's server#7183 closed. Waiting on test/merge."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-24T12:46:43Z",
@@ -3678,7 +3681,7 @@
     "10-23 14:50: curl ran 1260 s clean against DR. Moved to Reproduced, cannot fix (pending repro) with an input ask."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "BlochHansen",
      "at": "2026-10-23T11:43:27Z",
@@ -3736,7 +3739,7 @@
     "10-23 16:30 run: you asked UnfundedNag (14:19 UTC) whether it still happens on 2.10.8. Added to the board as waiting on the reporter."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T14:19:57Z",
@@ -3787,7 +3790,7 @@
     "10-26 07:30 run: tagged discussion. Feature idea with a concrete proposal; design call for you."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-25T13:20:55Z",
@@ -3843,7 +3846,7 @@
     "10-26 08:00: local fix built and A/B'd. No PR until you say so."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "X-dark",
      "at": "2026-10-23T19:37:54Z",
@@ -3894,7 +3897,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "theomega",
      "at": "2026-10-25T14:02:42Z",
@@ -3958,7 +3961,7 @@
     "10-26 08:00: local fix built and A/B'd; needs your OK on the existing-test change."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-25T11:06:19Z",
@@ -4010,7 +4013,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "philippecottier",
      "at": "2026-10-25T09:18:35Z",
@@ -4069,7 +4072,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "Sjo3rd",
      "at": "2026-10-25T09:04:56Z",
@@ -4127,7 +4130,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-23T22:42:58Z",
@@ -4178,7 +4181,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-23T22:41:05Z",
@@ -4243,7 +4246,7 @@
     "10-26 13:40 fix: fix session started on your main account with Fable 5.1: cover both #6860 and #6752 (re-check #7117's approach), starting from local fix f58ee25027, live Soloist event capture, PR + backport."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "The-Flix",
      "at": "2026-10-25T13:52:35Z",
@@ -4271,58 +4274,54 @@
   },
   {
    "n": 6882,
-   "title": "2.10.8: Ambient Sounds (Brown noise) on a Nest Mini stop after 5-10 min",
-   "col": "info",
+   "title": "2.10.8 regression: Nest Mini stops Ambient Sounds after 5-10 min on the new Cast default (Profile 2)",
+   "col": "cantfix",
    "area": "server / providers/chromecast constants.py:73 (#7120), streams/controller.py:1344 (#7132)",
    "since": "2026-10-26 07:30",
-   "last": "AkoreJepade 2026-10-26 12:05",
+   "last": "AkoreJepade 2026-10-26 12:57",
    "gh": {
     "login": "AkoreJepade",
     "team": false,
-    "at": "2026-10-26T12:05:15Z",
+    "at": "2026-10-26T12:57:02Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "HA add-on: on 2.10.8 Ambient Sounds on a Nest Mini stop after 5-10 min; switched 2.10.7 <-> 2.10.8 twice, same result each time.",
    "fix": "",
-   "checked": "Diagnostics: 'Master Bedroom speaker reported a media playback error for ...flac' at 12:38:37, flow mode, no Cast debug log. Candidates in 2.10.8: server#7120 (Cast default HTTP profile 3 -> 2, no content length) and server#7132 (flow chunk_size None without ICY). #7120's PR notes had a Nest Mini >16 min on both profiles, but not overnight/noise. Nothing new on dev. 10-26 12:05 UTC AkoreJepade: the profile 'was already set' (screenshot: 'Profile 3 - forced content length [default]', FLAC default, flow mode on, MA Cast App on). On tag 2.10.8 the Cast default is Profile 2 (constants.py:73 DEFAULT_2 = no_content_length); Profile 3 [default] is what 2.10.7 shows. So the screenshot is likely from 2.10.7 after a rollback, i.e. the good runs were on Profile 3 and the failing 2.10.8 runs on Profile 2: points at #7120's default change for this Nest Mini, unconfirmed.",
-   "plan": "If confirmed (Profile 3 on 2.10.8 plays through): #7120's default flip breaks the Nest Mini; consider a per-model default (older Cast devices keep Profile 3, newer Android Cast gets 2) for 2.10.9.",
+   "checked": "Diagnostics: 'Master Bedroom speaker reported a media playback error for ...flac' at 12:38:37, flow mode, no Cast debug log. Candidates in 2.10.8: server#7120 (Cast default HTTP profile 3 -> 2, no content length) and server#7132 (flow chunk_size None without ICY). #7120's PR notes had a Nest Mini >16 min on both profiles, but not overnight/noise. Nothing new on dev. 10-26 12:05 UTC AkoreJepade: the profile 'was already set' (screenshot: 'Profile 3 - forced content length [default]', FLAC default, flow mode on, MA Cast App on). On tag 2.10.8 the Cast default is Profile 2 (constants.py:73 DEFAULT_2 = no_content_length); Profile 3 [default] is what 2.10.7 shows. So the screenshot is likely from 2.10.7 after a rollback, i.e. the good runs were on Profile 3 and the failing 2.10.8 runs on Profile 2: points at #7120's default change for this Nest Mini, unconfirmed. 10-26 12:57 UTC AkoreJepade: 'You are correct and that fixed it': Profile 3 set explicitly on 2.10.8 plays >15 min. Confirms #7120's default flip (forced_content_length -> no_content_length) breaks the Nest Mini for long streams.",
+   "plan": "#7120 fixed the 2026 Google Home Speaker / Android Cast 24 MiB cutoff (#6748) by making Profile 2 the default, which breaks this Nest Mini. Design: per-device default (older Cast devices/Nest keep Profile 3, newer Android-based receivers get Profile 2), detected from the Cast model/manufacturer or cast_type; ship in 2.10.9. Workaround posted implicitly: set Profile 3.",
    "branch": "",
    "diff": "",
    "prs": [],
    "badges": [
     [
      "warn",
-     "possible 2.10.8 regression",
+     "2.10.8 regression (#7120)",
      "regression"
-    ],
-    [
-     "info",
-     "Waiting for user",
-     "waiting"
     ]
    ],
    "reply": "",
    "bookkeeping": [],
-   "ask": null,
+   "ask": "design",
    "milestone": null,
-   "action": "",
+   "action": "Confirmed 2.10.8 regression from your #7120: Profile 3 fixes the Nest Mini, Profile 2 (new default) breaks it. Needs a per-device default (old Nest/Cast keep P3, new Android Cast P2) for 2.10.9. Your call / `fix 6882`.",
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6882#issuecomment-6409953019), GPT: post, profile-3 A/B not asked before.",
-    "10-26 13:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6882#issuecomment-6416057365), GPT: revise, accepted its text: just ask which version the screenshot is from (it shows 2.10.7's default)."
+    "10-26 13:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6882#issuecomment-6416057365), GPT: revise, accepted its text: just ask which version the screenshot is from (it shows 2.10.7's default).",
+    "10-26 14:30 run: reporter confirms Profile 3 on 2.10.8 fixes it (>15 min). Regression from #7120 confirmed; design call for you."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "AkoreJepade",
-     "at": "2026-10-26T12:05:15Z",
+     "at": "2026-10-26T12:57:02Z",
      "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6882#issuecomment-6415562714"
+     "url": "https://github.com/music-assistant/support/issues/6882#issuecomment-6416546512"
     },
     "reporter_new": true,
-    "team_new": false,
+    "team_new": true,
     "closed": false,
     "pr": [],
     "test_ask": null,
@@ -4372,7 +4371,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "cateim",
      "at": "2026-10-25T10:23:23Z",
@@ -4403,21 +4402,21 @@
   {
    "n": 6874,
    "title": "LinkPlay over DLNA (flow mode): elapsed time falls back 4-6 s after pause/resume",
-   "col": "info",
+   "col": "cantfix",
    "area": "server / dlna/player.py:226-236 (anchor), playback_tracker.py:345",
    "since": "2026-10-26 07:30",
-   "last": "MarvinSchenkel 2026-10-26 06:44",
+   "last": "cateim 2026-10-26 13:01",
    "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-26T06:44:03Z",
+    "login": "cateim",
+    "team": false,
+    "at": "2026-10-26T13:01:25Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "2.10.8 Docker, AudioCast AMP (generic LinkPlay) via DLNA in flow mode: after pause/resume the queue elapsed_time lags 4-6 s; the amp's HTTP curpos is right and audio doesn't rewind.",
    "fix": "",
-   "checked": "LinkPlayPlayer defers to its DLNA player (wiim/linkplay_player.py:2-6); flow tracking uses player.corrected_elapsed_time (playback_tracker.py:345); DLNA elapsed = device.media_position anchored at max(position_updated_at, _playing_since) (dlna/player.py:226-236, #5477). A stale RelTime on resume would give exactly this lag; DLNA logs don't show positions. No regression.",
-   "plan": "Need the DLNA player's raw elapsed values next to the queue's.",
+   "checked": "LinkPlayPlayer defers to its DLNA player (wiim/linkplay_player.py:2-6); flow tracking uses player.corrected_elapsed_time (playback_tracker.py:345); DLNA elapsed = device.media_position anchored at max(position_updated_at, _playing_since) (dlna/player.py:226-236, #5477). A stale RelTime on resume would give exactly this lag; DLNA logs don't show positions. No regression. 10-26 13:01 UTC cateim's 1 Hz samples: the AudioCast amp's UPnP GetPositionInfo always returns RelTime 00:00:00 (AbsTime NOT_IMPLEMENTED), playing or paused. So the DLNA player's elapsed stays 0.0 with elapsed_time_last_updated reset at every resume, and the flow queue restarts from 0 on each resume (queue 12.7 -> 0.8, 16.3 -> 0.9) while the amp's HTTP curpos keeps the real flow position (9.2 s, 25.5 s, 41.8 s). Audio itself doesn't rewind.",
+   "plan": "Real: the amp reports no DLNA position, MA re-anchors at resume. Options: (a) DLNA player keeps counting from the paused elapsed when the device never reports a RelTime (no-position devices), (b) LinkPlayPlayer takes the position from the LinkPlay HTTP API (getPlayerStatus curpos) instead of DLNA. (b) is more accurate for LinkPlay; (a) helps every DLNA device without position support.",
    "branch": "",
    "diff": "",
    "prs": [],
@@ -4430,23 +4429,24 @@
    ],
    "reply": "",
    "bookkeeping": [],
-   "ask": null,
+   "ask": "input",
    "milestone": null,
-   "action": "",
+   "action": "cateim proved it: the amp's DLNA RelTime is always 0, so MA restarts elapsed at each resume (amp's HTTP curpos is right). Pick: keep counting in the DLNA player for no-position devices, or take LinkPlay's HTTP curpos. Then `fix 6874`.",
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
-    "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6874#issuecomment-6409953519), GPT: post, new player-level measurements."
+    "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6874#issuecomment-6409953519), GPT: post, new player-level measurements.",
+    "10-26 14:30 run: cateim's measurements show the amp never reports a DLNA position; root cause clear, design pick for you."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-26T06:44:03Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6874#issuecomment-6409953519"
+     "login": "cateim",
+     "at": "2026-10-26T13:01:25Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6874#issuecomment-6416632025"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -4454,7 +4454,7 @@
     "after_test_ask_reporter": false,
     "labels": [
      "dlna",
-     "waiting-for-user"
+     "needs-attention"
     ]
    }
   },
@@ -4497,7 +4497,7 @@
     "10-26 07:30 run: auto-post held. GPT: marvin (bot already asked diagnostics; DLNA debug doesn't capture the metadata or device responses). Our draft stays for you."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "kprzekop",
      "at": "2026-10-25T19:20:03Z",
@@ -4549,7 +4549,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-24T21:29:00Z",
@@ -4600,7 +4600,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-24T11:51:31Z",
@@ -4625,11 +4625,11 @@
    "col": "info",
    "area": "server / streams/controller.py:1411-1418 (#6782), :2465-2477 (#6608), player_queues/controller.py:1659-1669",
    "since": "2026-10-26 07:30",
-   "last": "MarvinSchenkel 2026-10-26 06:44",
+   "last": "dentedbread 2026-10-26 13:05",
    "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-26T06:44:05Z",
+    "login": "dentedbread",
+    "team": false,
+    "at": "2026-10-26T13:05:49Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -4655,17 +4655,18 @@
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
-    "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6658#issuecomment-6409954000), GPT: revise, accepted its text (capture on b6, the reporter's version, diagnostics right after the jump)."
+    "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6658#issuecomment-6409954000), GPT: revise, accepted its text (capture on b6, the reporter's version, diagnostics right after the jump).",
+    "10-26 14:30 run: dentedbread attached a 2.11b5 diagnostics (same issue on b5/b6) and will add a b6 video + log. Waiting for that before analysing."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-26T06:44:05Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6658#issuecomment-6409954000"
+     "login": "dentedbread",
+     "at": "2026-10-26T13:05:49Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6658#issuecomment-6416719926"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -4674,7 +4675,7 @@
     "labels": [
      "triage",
      "Chromecast",
-     "waiting-for-user"
+     "needs-attention"
     ]
    }
   },
@@ -4717,7 +4718,7 @@
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6888#issuecomment-6409954530), GPT: revise, accepted its text (dropped the mDNS causal framing)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-26T06:44:07Z",
@@ -4777,7 +4778,7 @@
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6887#issuecomment-6409955139), GPT: revise, accepted its text (no claim it covers #6888 too)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-26T06:44:10Z",
@@ -4837,7 +4838,7 @@
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6868#issuecomment-6409955752), GPT: revise, accepted its text (dropped the idle-timeout theory)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-26T06:44:12Z",
@@ -4893,7 +4894,7 @@
     "10-26 09:30 run: vertex0 sent solo/solo/grouped diagnostics; the real complaint is the ESP32 dropping out when grouped. Not auto-posting a follow-up: the next step is a judgement call between two tests."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "vertex0",
      "at": "2026-10-26T08:13:47Z",
@@ -4947,7 +4948,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "zcopter",
      "at": "2026-10-24T11:39:47Z",
@@ -5000,7 +5001,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "riskywhat",
      "at": "2026-10-24T13:40:54Z",
@@ -5053,7 +5054,7 @@
     "10-26 10:30 run: Cyanogenbot (09:25 UTC) will take a look (thought it was fixed with Marcel; fix may be gone). Waiting on him; design ask cleared."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "Cyanogenbot",
      "at": "2026-10-26T09:25:11Z",
@@ -5112,7 +5113,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "wanderingmoo",
      "at": "2026-10-24T10:52:30Z",
@@ -5175,7 +5176,7 @@
     "10-26 11:30 run: server#7221 is out of draft. Cyanogenbot's to review."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "imoamo72",
      "at": "2026-10-26T08:54:44Z",
@@ -5235,7 +5236,7 @@
     "10-26 11:30 run: new issue from Simanias with a precise repro and server-side proof. Follow-up to your frontend#3031."
    ],
    "sync": {
-    "at": "2026-10-26T12:30:13Z",
+    "at": "2026-10-26T13:30:06Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-26T09:40:39Z",
@@ -5474,15 +5475,16 @@
   6850,
   6854,
   6857,
-  6860,
   6863,
   6864,
   6865,
   6866,
   6867,
   6873,
+  6874,
   6878,
   6879,
+  6882,
   6883,
   6885,
   6890
