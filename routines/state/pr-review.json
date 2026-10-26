@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-26T15:00:00+01:00",
+ "last_run": "2026-10-26T16:00:00+01:00",
  "dev": "e970b5466",
- "run_note": "You merged Sonos #6779 and the soco and pytest-cov bumps; no new conflicts. imoamo72 fixed the #7221 description, but Copilot now raises the MA-to-BluOS-app switch as CRITICAL; it is pre-existing on dev, so it needs your call (follow-up reply drafted). OzGav waived tests on #7226 and is handling it with genesispc.",
+ "run_note": "Auto-approved imoamo72's #7221 after he added the Bluesound takeover opt-in and Copilot approved; the Test workflow still needs your approval (first-time contributor). jgruber's new #7228 would turn off URL search in the frontend (patch ready), trudenboy's #7220 has two confirmed playback regressions that Copilot also flags, and #7227 is clean but touches requirements_all.txt. On #7172, OzGav raised the same boundaries we did and dmoo500 asks how to scope it.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -142,7 +142,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "Copilot, then you",
-   "changed_now": "merged",
+   "changed_now": "",
    "gpt_sol": "0 critical, 3 problems"
   },
   {
@@ -2110,7 +2110,7 @@
    "number": 6805,
    "state": "open",
    "closed_at": null,
-   "title": "Local files: import the rating embedded in file tags",
+   "title": "Local files: import the rating embedded in file tags as the favorite flag (POPM)",
    "author": "kiwipaulrob",
    "url": "https://github.com/music-assistant/server/pull/6805",
    "draft": true,
@@ -2541,7 +2541,7 @@
    "title": "Add AI generated covers and descriptions to the Playlist Metadata provider",
    "author": "ryanmac8",
    "url": "https://github.com/music-assistant/server/pull/6901",
-   "draft": true,
+   "draft": false,
    "verdict": "almost",
    "assessment": "comment",
    "status": "attention",
@@ -2559,73 +2559,63 @@
     "hass"
    ],
    "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
-   "head_sha": "055f1c1d3",
-   "tldr": "ryanmac8 pushed three fixes overnight: no preview description or concept after unload, cached covers and descriptions put back without waiting, and a 408/5xx image download now pauses the engine. Claude confirms all three. Copilot's 05:07Z review finds the same download gap in openai_compatible (verified, CRITICAL, gate will draft). Left on our side: the 3.14.4 fixture (68 tests) plus two small checks in one validated patch, and your AI_QUERY design call.",
-   "summary": "All three Address-review commits do what they claim, and the Copilot CRITICAL is resolved: no preview description or concept query can start after unload, because the engine lookups never yield between the _stopped check and ai_query. The restore-without-waiting path and the per-engine pause are correct, and the pause state does not leak. The HA 408/5xx mapping pauses the image engine without exposing the signed link. One small gap remains: an unload during the preview concept query still persists a description slot, fixed by one more _stopped check. The Python 3.14.4 test fixture issue is still there, now failing 68 tests; the loop= one-liner fixes all of them, and with it the provider suites pass (236). GPT Sol says concept generation can start after unload during engine discovery; Claude refutes it (select_ai_engine never yields). GPT Sol's second point holds as a narrow race: the text pause is not rechecked after the _record await in _preview_description.",
+   "head_sha": "62bc5692c",
+   "tldr": "Almost: ryanmac8 fixed the stale-overwrite and preview-pause points; Opus confirms the delta (no deadlocks, waits end, unload clean) and all 35 threads are resolved. Still open: the test fake breaks 69 tests on Python 3.14.4, plus two small preview-slot checks (one validated `fix 6901` patch), Copilot's previously missed CRITICAL that a 429 from the HA image download does not pause generation, and your AI_QUERY design call.",
+   "summary": "Delta 62bc5692c review. get_playlist_metadata wraps the provider body in AIArtwork.refreshing(), a per-item_id set of asyncio.Events that is set and removed in a finally. _refresh_playlist (used by the worker's _process and the hourly _refresh_playlists) snapshots those events and waits for them before update_metadata(force_refresh=True).\n\nDeadlocks and waits: the wait happens outside every lock (_refresh_lock is only checked with locked() by refresh(), _store_lock is not held, and the controller's Throttler is entered after the wait). No marked get_playlist_metadata awaits the worker, the hourly pass or their locks. Since the list is a snapshot, a refresh that starts later is never waited for, so the wait cannot starve. A refresh that started after the cover file exists picks the new cover up itself through cover() and _touch, and descriptions through _stored_description. Events are always set, including on cancellation. Unload cancels the worker task at done.wait(). Nothing waits on itself: the worker's own refresh marks only after its wait.\n\nResidual window: the mark covers only this provider's part. The controller's update_item_in_library after it is unmarked. That is negligible: it is the only PLAYLIST_METADATA provider, update_metadata goes through Throttler(1, 30), and only a DB write follows. Copilot's controller-level serialization (r4353322199) was not adopted. The provider-local fix is enough for how it is actually called. A provider reload drops _refreshing, so a refresh still running on the old instance is not waited for. The hourly pass's 'file exists but not shown' check heals that, so it is not flagged.\n\nPreview: _render_preview checks _stopped and the image pause under the semaphore, and calls _pause_if_unreachable on failure. RateLimited and ProviderUnavailableError are in TRANSIENT_ERRORS, so with PREVIEW_CONCURRENCY=2 the styles not yet started are skipped. preview() refuses inside _preview_lock before _available/_record, so no slot is taken. Slots reserved for skipped styles are not returned. That matches the worker, which also keeps the slot on failure.\n\nPrevious points: (a) fixed. _download maps 429 to RateLimited and 408/5xx/transport errors to ProviderUnavailableError, and these are not InvalidDataError, so they skip the chat-to-images fallback. The thread is resolved. (b) not fixed: test_ai.py:2040 still has asyncio.Task(coro, eager_start=True), and 69 tests fail on local Python 3.14.4 with AttributeError 'NoneType' has no attribute 'is_running'. CI is green, likely on an older 3.14 patch. (c) not fixed: preview() has no _stopped check after _concept, and _preview_description records the slot before checking _stopped. (d) not fixed: only _stopped is rechecked after _record. (e) open, Marvin's design call (AI_QUERY gating vs a dedicated ProviderFeature, which needs a models release). (f) unchanged. The collage thumb is still returned alone, as on origin/dev, so it is pre-existing.\n\nCore touched: yes. music_assistant/models/plugin.py adds ImageEngine plus the PluginProvider.get_image_engines/ai_generate_image defaults. music_assistant/helpers/plugin_engines.py, music_assistant/strings.json and translations/en.json also change, and the hass and openai_compatible providers are modified. The metadata controller and music_assistant_models are not touched. The branch is 120 commits behind origin/dev but merges cleanly. The dev changes to enrichment.py do not touch the playlist path.",
    "blockers": [
-    "Draft (critical gate) over Copilot CRITICAL r4344750743 (verified): openai_compatible image downloads still raise InvalidDataError on 408/429/5xx; ryanmac8 has the thread",
-    "Test fixture fails 68 tests on Python 3.14.4: `fix 6901` pushes the loop= one-liner plus two small unload/pause checks (validated)",
-    "Your design call: keep image engines under AI_QUERY or add a dedicated ProviderFeature (needs a models release)"
+    "`fix 6901`: Python 3.14.4 test fake (69 tests) plus two preview-slot checks, validated",
+    "Copilot previously missed CRITICAL: hass image download 429 should raise RateLimited (ryanmac8)",
+    "Your design call: image engines under AI_QUERY or a dedicated ProviderFeature"
    ],
    "findings": [
     {
      "model": "Copilot",
      "severity": "CRITICAL",
-     "file": "music_assistant/providers/openai_compatible/helpers.py",
-     "line": 269,
-     "title": "openai_compatible image download 408/429/5xx counts as a playlist failure, not an outage (r4344750743)",
-     "detail": "The fix in 05ea062a6 covers the Home Assistant download only. openai_compatible's _download_image still raises InvalidDataError for any status >= 300, so the worker keeps paying for generations while downloads fail. Verified on 05ea062a6. Match _request(): ProviderUnavailableError for 408/5xx, RateLimited with Retry-After for 429.",
-     "fix": "Map 408/5xx to ProviderUnavailableError and 429 to RateLimited in _download_image, as _request() does.",
+     "file": "music_assistant/providers/hass/__init__.py",
+     "line": 732,
+     "title": "HA generated-image download 429 is not RateLimited, so generation keeps going (previously missed)",
+     "detail": "It becomes MusicAssistantError, which _pause_if_unreachable() does not recognise. Raise RateLimited with Retry-After as backoff_time, from None.",
+     "fix": "",
      "posted": null
     },
     {
      "model": "Claude",
      "severity": "PROBLEM",
      "file": "tests/providers/playlist_metadata/test_ai.py",
-     "line": 1973,
-     "title": "Worker fake still breaks on Python 3.14.4 (68 tests)",
-     "detail": "_add_worker_fakes creates asyncio.Task(coro, eager_start=True) without loop=. On the venv's Python 3.14.4 this raises AttributeError: 'NoneType' object has no attribute 'is_running': 68 failed, 168 passed. The 64 from the last review grew because the new tests use the same fake.",
-     "fix": "asyncio.Task(coro, loop=asyncio.get_running_loop(), eager_start=True) (see patch)",
+     "line": 2040,
+     "title": "Worker test fake still breaks 69 tests on Python 3.14.4 (previous point b)",
+     "detail": "_add_worker_fakes builds tasks with asyncio.Task(coro, eager_start=True) and no loop. On Python 3.14.4 (local venv, requires-python >=3.14, .python-version '3.14') this fails with AttributeError: 'NoneType' object has no attribute 'is_running', giving 69 failed and 231 passed. CI is green, likely on an older 3.14 patch, and will break once runners move to 3.14.4.",
+     "fix": "task = asyncio.Task(coro, loop=asyncio.get_running_loop(), eager_start=True). Verified: 300 passed.",
      "posted": null
     },
     {
      "model": "Claude",
      "severity": "SUGGESTION",
      "file": "music_assistant/providers/playlist_metadata/ai.py",
-     "line": 482,
-     "title": "Unload during the preview concept query still takes a description slot",
-     "detail": "If the provider unloads while _concept awaits ai_query, preview() goes on to create the describe and render tasks. _preview_description calls _record(_described_at), which persists a slot in the cache after unload, and only then sees _stopped. The renders also start and each raises ActionUnavailable. No paid request is made, but the old instance writes the persisted throttle list after unload. A probe test showed _described_at growing by 1. Checking _stopped right after _concept stops both.",
-     "fix": "Add `if self._stopped: raise ActionUnavailable(\"The provider is unloading\")` right after `concept = await self._concept(...)` (see patch).",
-     "posted": null
-    },
-    {
-     "model": "GPT Sol",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/playlist_metadata/ai.py",
-     "line": 1149,
-     "title": "Text pause not rechecked after the description reservation",
-     "detail": "_preview_description checks _text_engine_paused() before awaiting _record(). If a concurrent concept request fails and sets the text cooldown during that await, the preview still calls the paused engine. Narrow race; recheck the pause next to the _stopped check.",
-     "fix": "if self._stopped or self._text_engine_paused(): return \"\"",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/helpers/plugin_engines.py",
-     "line": 0,
-     "title": "Image engines gated on AI_QUERY (your design call)",
-     "detail": "Not touched by the delta. Still the open design question from the last review: get_image_engines collects only from providers declaring AI_QUERY, because there is no image-generation ProviderFeature in models.",
-     "fix": "",
+     "line": 1197,
+     "title": "Preview description still takes a slot during unload and skips the text-pause recheck (previous points c and d)",
+     "detail": "If the provider unloads during the preview's concept query, preview() creates the describe task anyway. _preview_description then records a description slot in the persisted hourly window before it checks _stopped. After _record awaits the cache store under _store_lock, only _stopped is rechecked. A text-engine pause set meanwhile by the worker still gets a query.",
+     "fix": "Add 'or self._stopped' to the pre-check before _record, and recheck 'self._stopped or self._engine_paused_for(ENGINE_TEXT)' after it. See suggested_fix.",
      "posted": null
     },
     {
      "model": "Claude",
      "severity": "NIT",
      "file": "music_assistant/providers/playlist_metadata/__init__.py",
-     "line": 267,
-     "title": "Collage path still returns its thumb alone",
-     "detail": "When there is no AI cover, the generated collage thumb is returned alone, so merge_lists appends it behind any non-own THUMB still on the playlist. That is the reason the AI path now returns the full list. Same behavior as dev, so not a regression.",
-     "fix": null,
+     "line": 272,
+     "title": "Collage thumb still returned alone (previous point f, pre-existing)",
+     "detail": "The AI cover is returned in front of the playlist's other images so it is the one shown, but the collage branch still returns UniqueList(generated_images) alone. That merges it behind any unservable images. origin/dev does the same, so this is not a regression. It is only inconsistent with the new AI branch.",
+     "fix": "Optional: return the collage thumb in front of the playlist's images like the AI branch, or leave it for a follow-up.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/playlist_metadata/ai.py",
+     "line": 1,
+     "title": "Image engines gated on AI_QUERY (your design call)",
+     "detail": "Unchanged from earlier reviews.",
+     "fix": "",
      "posted": null
     }
    ],
@@ -2651,25 +2641,25 @@
    ],
    "copilot": {
     "green": false,
-    "comments": 1,
+    "comments": 0,
     "findings": 1,
-    "review_url": "https://github.com/music-assistant/server/pull/6901#discussion_r4344750743",
+    "review_url": "https://github.com/music-assistant/server/pull/6901",
     "titles": [
-     "[CRITICAL] openai_compatible image download 408/429/5xx not treated as an outage (r4344750743)"
+     "[CRITICAL, previously missed] hass generated-image download 429 is not RateLimited, so generation keeps going"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "05:07Z on 05ea062a6 (requested as Marvin 05:02Z): Needs a closer look, 1 new CRITICAL thread r4344750743, 1 resolved. The critical gate will draft it.",
+   "copilot_note": "Needs a closer look on 62bc5692c (15:12Z), no open threads; 1 previously missed CRITICAL in providers/hass.",
    "suggested_fix": {
-    "description": "Pass the running loop to asyncio.Task in the test fixture (68 tests pass again on 3.14.4), stop the preview after an unload during the concept query, and recheck the text pause after the reservation. git apply --check OK on 05ea062a6; with the fixture line the provider suites pass (236).",
-    "patch": "diff --git a/music_assistant/providers/playlist_metadata/ai.py b/music_assistant/providers/playlist_metadata/ai.py\nindex 57303ccd4f..27559865cd 100644\n--- a/music_assistant/providers/playlist_metadata/ai.py\n+++ b/music_assistant/providers/playlist_metadata/ai.py\n@@ -479,6 +479,9 @@ class AIArtwork:\n             if self._stopped:\n                 raise ActionUnavailable(\"The provider is unloading\")\n             concept = await self._concept(playlist, context)\n+            if self._stopped:\n+                # unloaded while the concept was written, so no description slot is taken\n+                raise ActionUnavailable(\"The provider is unloading\")\n             slots = asyncio.Semaphore(PREVIEW_CONCURRENCY)\n \n             async def render(look: CoverLook) -> bytes:\n@@ -1149,7 +1149,7 @@ class AIArtwork:\n         ):\n             return \"\"\n         await self._record(self._described_at, CACHE_KEY_DESCRIBED_AT)\n-        if self._stopped:\n+        if self._stopped or self._text_engine_paused():\n             return \"\"\n         try:\n             return await self._write_description(playlist, engine, context)\ndiff --git a/tests/providers/playlist_metadata/test_ai.py b/tests/providers/playlist_metadata/test_ai.py\nindex 71f257c143..604224355a 100644\n--- a/tests/providers/playlist_metadata/test_ai.py\n+++ b/tests/providers/playlist_metadata/test_ai.py\n@@ -1970,7 +1970,7 @@ def _add_worker_fakes(provider: PlaylistMetadataProvider) -> None:\n         if task_id and (existing := tasks.get(task_id)) and not existing.done():\n             coro.close()\n             return existing\n-        task = asyncio.Task(coro, eager_start=True)\n+        task = asyncio.Task(coro, loop=asyncio.get_running_loop(), eager_start=True)\n         tasks[task_id or str(id(task))] = task\n         return task\n \n",
+    "description": "Fix the worker test fake for Python 3.14.4 (b). Stop the preview description from taking a slot after unload (c) and from querying a text engine paused during the reservation (d). Validated with git apply --check on 62bc5692c; test_ai.py gives 108 passed and the three PR test files give 300 passed.",
+    "patch": "diff --git a/music_assistant/providers/playlist_metadata/ai.py b/music_assistant/providers/playlist_metadata/ai.py\nindex 4ab1413ea5..5071e5e4c8 100644\n--- a/music_assistant/providers/playlist_metadata/ai.py\n+++ b/music_assistant/providers/playlist_metadata/ai.py\n@@ -1197,12 +1197,13 @@ class AIArtwork:\n         \"\"\"Return a description to preview for the playlist, empty when none could be written.\"\"\"\n         if (\n             engine is None\n+            or self._stopped\n             or self._engine_paused_for(ENGINE_TEXT)\n             or self._throttle_delay(self._described_at) is not None\n         ):\n             return \"\"\n         await self._record(self._described_at, CACHE_KEY_DESCRIBED_AT)\n-        if self._stopped:\n+        if self._stopped or self._engine_paused_for(ENGINE_TEXT):\n             return \"\"\n         try:\n             return await self._write_description(playlist, engine, context)\ndiff --git a/tests/providers/playlist_metadata/test_ai.py b/tests/providers/playlist_metadata/test_ai.py\nindex 9f602dfc7f..3cc484f771 100644\n--- a/tests/providers/playlist_metadata/test_ai.py\n+++ b/tests/providers/playlist_metadata/test_ai.py\n@@ -2037,7 +2037,7 @@ def _add_worker_fakes(provider: PlaylistMetadataProvider) -> None:\n         if task_id and (existing := tasks.get(task_id)) and not existing.done():\n             coro.close()\n             return existing\n-        task = asyncio.Task(coro, eager_start=True)\n+        task = asyncio.Task(coro, loop=asyncio.get_running_loop(), eager_start=True)\n         tasks[task_id or str(id(task))] = task\n         return task\n \n",
     "pushed": null
    },
    "backport": null,
    "prompt": "Server PR #6901 (https://github.com/music-assistant/server/pull/6901), head 05ea062a6, by ryanmac8. Apply /tmp/prr/r0700/d6901/suggested.patch: in tests/providers/playlist_metadata/test_ai.py pass loop=asyncio.get_running_loop() to the worker fake's asyncio.Task (68 tests fail on Python 3.14.4 without it); in music_assistant/providers/playlist_metadata/ai.py raise ActionUnavailable when _stopped right after _concept() in preview(), and recheck _text_engine_paused() next to _stopped after the _record await in _preview_description. Run tests/providers/playlist_metadata and tests/providers/hass. Work in a worktree from refs/remotes/pr/6901.",
-   "whats_new": "ryanmac8 pushed 055f1c1d3 at 20:47Z while in draft; not re-reviewed (draft). The critical gate drafted it at 05:20Z over Copilot's CRITICAL r4344750743 (openai_compatible image download errors). Earlier overnight: ryanmac8 pushed 38e8b7af7a, 839144b71b and 05ea062a6.",
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-22 07:00 CEST",
+   "whats_new": "62bc5692c applies new covers after running refreshes and pauses the image engine on a failed preview; marked ready 14:55Z. Re-reviewed: Opus almost, GPT Sol point checked and not reachable, Copilot Needs a closer look.",
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 16:25 CET",
    "auto_approved": null,
    "stacked": false,
    "related_prs": [
@@ -2677,8 +2667,8 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "ryanmac8: f1; you: fix, design",
-   "changed_now": "",
+   "waiting_on": "you: `fix 6901` and AI_QUERY design call; ryanmac8: hass 429",
+   "changed_now": "ready for review",
    "gpt_sol": "2 problems (1 refuted, 1 narrow race)"
   },
   {
@@ -10032,7 +10022,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -10080,7 +10070,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -10686,7 +10676,7 @@
    "assessment": "request_changes",
    "status": "attention",
    "attention_since": "2026-10-26T07:57:00Z",
-   "waiting_on": "you: sharing design call",
+   "waiting_on": "you/OzGav: answer dmoo500's scope question",
    "gpt_sol": "2 problems, prefers core",
    "size": "XL",
    "code": 1306,
@@ -10703,11 +10693,10 @@
    "stacked": false,
    "tldr": "No server-side security holes. The blockers are a dead default share domain, a landing page outside the org that has not been reviewed, an unbounded preview with provider fan-out, and silent Deezer/Apple calls on every share. #7173's core command fits MA better for the shared scope.",
    "summary": "Security looks sound on the server. All four commands require LIBRARY_READ/WRITE, so the server has no unauthenticated surface. Nothing is stored, so there are no guessable ids or tokens to enumerate, and links cannot be revoked. That is acceptable because a link only holds public metadata, and it travels in the fragment, so the share host never sees it. The server never fetches payload URLs, so there is no SSRF. Its only outbound calls go to fixed Deezer and iTunes hosts, throttled at 1 req/s per service with Retry-After handling. Provider refs are host-pinned relative paths: '//', backslash, tab and scheme tricks are rejected, and '/@evil.com' stays on open.spotify.com. Artwork refs use an allowlisted host code plus an alphanumeric subdomain. Server output is JSON only, and M3U import line breaks are sanitized. The '||' field separator is not escaped, but music/playlists/import_playlist already accepts arbitrary M3U on dev, so this adds no new capability. Hidden provider mappings are already stripped from library rows. One pre-existing issue on dev, not from this PR: get_item_by_external_id (also exposed as music/<type>/get_by_external_id) loops over all providers and ignores per-user provider access. share/resolve and share/preview reuse it. The real problems are deployment and cost: the default share domain is dead, the landing page that renders untrusted payloads is outside the org and unreviewed, preview limit is unbounded with provider fan-out per track, and Deezer/Apple are called on every share with no opt-out. Earlier Copilot matching findings (versions, iTunes MIME, Deezer quota) are fixed at the head commit. On design, #7173's core command fits MA better for 'share this item'. #7172's recipient resolve and playlist import is the differentiator, and could come later on top of a models-owned payload and an org-hosted landing page. Design: #7172 (dmoo500) is an opt-in plugin that registers share/generate, share/resolve, share/preview_playlist and share/import_playlist. A link is https://share.music-assistant.io/#<base64url JSON> holding metadata (title, artist, version, ISRC/MBID/barcode, allowlisted artwork ref, host-pinned provider path refs, playlist track stubs). The recipient's own MA resolves it through their providers, previews playlists and imports them as a builtin M3U playlist. It is stateless and needs no server storage, but it does need an MA-run landing page (today a personal repo, and the domain does not resolve). The payload schema becomes a cross-repo client contract that lives only in the server plugin, with copies in the frontend and the landing page. It also hardcodes provider URL schemas and host allowlists, and calls Deezer and iTunes through private HTTP clients instead of the provider code. #7173 (jetersen) is a core music/share_item(uri) command that returns models#447 ItemShareInfo/ItemShareLink: access-filtered public provider website links, plus readable text for local, private or unsupported items, gated by API schema 100. The sender side only: no landing page, no recipient resolve or import. Providers own their URL format (ytmusic and bandcamp touched). For MA's architecture, #7173 fits better for the part both PRs share (deriving a shareable link for an item): it is core-owned, keeps provider URL knowledge in providers, puts the contract in models and needs no new infra. #7172's real extra value is the cross-provider round trip and playlist preview/import. That could be layered on top later, once the payload model moves to models and the org decides to own and host the landing page. Don't merge both as they stand, because they would give clients two competing share entry points. Both are large (#7172 about 1.3k code lines, #7173 about 4.3k additions incl. tests).",
-   "whats_new": "dmoo500 replied to both Copilot threads (fixed in 8d940da2a). Copilot now says Needs a closer look with no open issues. Bot-MArley reviewed. Head unchanged, so no re-review.",
+   "whats_new": "OzGav (14:14Z) listed separation-of-concerns issues: own matcher instead of compare_track, hard-coded service URLs, direct Deezer/iTunes calls, M3U with fake share:// paths. dmoo500 (14:50Z) agrees and asks whether to fix ambiguous matching here or split out a core/import/landing-page redesign.",
    "blockers": [
-    "Design call: #7172 plugin (stateless links via share.music-assistant.io) vs jetersen's core command #7173 + models#447. Claude and GPT Sol both lean to the core command",
-    "Default share domain does not resolve and the landing page is in a personal repo",
-    "Unbounded preview fan-out; every track share calls Deezer and Apple with no opt-out"
+    "dmoo500 asks the maintainers where to draw the line: fix matching in this PR or split a core/import/landing-page redesign",
+    "Design call vs #7173 + models#447 (core command); OzGav's points match ours"
    ],
    "findings": [
     {
@@ -10814,7 +10803,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 09:00 CET",
-   "changed_now": ""
+   "changed_now": "author replied"
   },
   {
    "repo": "models",
@@ -10947,7 +10936,7 @@
    "number": 7217,
    "state": "open",
    "closed_at": null,
-   "title": "Fix Roku Media Assistant player queue stalls and end-of-stream handling",
+   "title": "Fix Roku Media Assistant player queue stalls and end-of-stream detection",
    "author": "kees",
    "url": "https://github.com/music-assistant/server/pull/7217",
    "draft": true,
@@ -11083,7 +11072,7 @@
    "number": 7216,
    "state": "open",
    "closed_at": null,
-   "title": "Raumfeld: show each track's cover, artist and album in the Raumfeld app",
+   "title": "Raumfeld: show each track's cover, artist and album in the Raumfeld app in flow mode",
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7216",
    "draft": true,
@@ -11570,41 +11559,138 @@
    "number": 7220,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Music Connect (Ynison) provider to v4.4.0",
+   "title": "Update Yandex Music Connect (Ynison) provider to v4.4.1: Ynison go-away handling and official-client alignment",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7220",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "trudenboy (draft)",
-   "gpt_sol": "not run",
+   "waiting_on": "trudenboy: 3 Copilot CRITICAL threads (2 confirmed)",
+   "gpt_sol": "3 problems (2 confirmed)",
    "size": "XL",
-   "code": 3522,
-   "add": 0,
+   "code": 1774,
+   "add": 1200,
    "del": 0,
-   "ci": "not checked (draft)",
+   "ci": "green (15 checks)",
    "ci_fail": false,
-   "merge_state": "not checked (draft)",
-   "head_sha": "",
+   "merge_state": "merge-tree clean on origin/dev e970b5466",
+   "head_sha": "be12369eb",
    "core_touched": false,
    "providers_touched": [
     "yandex_ynison"
    ],
    "stacked": false,
-   "tldr": "Draft, not reviewed yet.",
-   "summary": "",
-   "whats_new": "Opened 08:39Z.",
+   "tldr": "Almost: vendored Ynison sync to 4.4.1 that honours Yandex's go-away window, adds a 1/5/30/300 s reconnect ladder, cancels its tasks on unload and moves playback state into a PlaybackSession. Provider-only, 485 tests pass. Two confirmed regressions from the new heartbeat dedup: pause publishes the track-start position (resume restarts there), and a phone \"restart track\" is ignored as a relay. Copilot raises both plus a third as CRITICAL.",
+   "summary": "Scope: providers/yandex_ynison (constants, playback_session.py new, provider.py, queue_model.py, reconnect_policy.py new, ynison_client.py) plus tests and one fixture. Nothing outside the provider and its tests. manifest.json is unchanged (ya-passport-auth[ma]==2.2.0), and VERSION goes to 4.4.1.\n\nReconnect: ReconnectPolicy is persistent across _reconnect() calls, unlike dev's per-call attempt counter, so failed sessions now escalate 1 -> 5 -> 30 -> 300 s. A go-away error frame breaks the loop and the next delay is exactly the server window, with a clear warning log. Server-supplied ynison-backoff-millis ladders are adopted. gRPC statuses outside 8/10/14 wait the 300 s idle delay. Reconnect jitter is removed. disconnect() still cancels the message and reconnect tasks, and _schedule_reconnect stays idempotent, so there is no task leak on the client side. wait_connected() polls every 50 ms, bounded at 5 s, and exits on the stop event, so no CPU spin.\n\nUnload: all provider background tasks (runner, provider match, play_media, prefetch) go through _spawn and are cancelled on unload. deselect_source releases get 5 s to finish. This is an improvement over dev, where they were fire-and-forget.\n\nPlayback session refactor: claim/release/lost/release_if_current, request_restart/consume/take_start and request_stop/begin_stream reproduce the old _in_use_by_player/_active_session_id/_track_changed_event/_stream_stop_event semantics. I found no behaviour divergence apart from the intended new status_is_relay seek suppression and the RADIO window index adjustment.\n\nStatus dedup: report_status skips best-effort sends while another device is active or within +-2 s of the extrapolated server baseline. Strict sends (play/pause/seek/end-of-track) wait up to 5 s for a reconnect and now raise when the duration is unknown, which the PR body calls intended.\n\nNo exceptions newly escape into core: player commands still surface PlayerCommandFailed/UnsupportedFeaturedException.",
+   "whats_new": "Marked ready 14:46Z. Reviewed: Opus almost after checking GPT Sol's points (2 problems confirmed), Copilot 3 CRITICAL threads.",
    "blockers": [
-    "Draft."
+    "Copilot r4378916957 / ours: pause publishes the stale track-start position (trudenboy)",
+    "Copilot r4378917061 / ours: a seek back to the baseline is ignored as a relay (trudenboy)",
+    "Copilot r4378917153: a frame without status clears the relay marker"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/yandex_ynison/provider.py",
+     "line": 1829,
+     "title": "MA pause publishes the track-start position, so resume restarts the track",
+     "detail": "report_status dedup suppresses _sync_progress while playback matches the extrapolated baseline, so during normal playback no status is re-sent and the server/state status keeps the value from _update_metadata_from_stream (typically 0). _on_pause sends client.state.progress_ms with paused=True and strict=True. Yandex then shows the track at its start, and the echoed paused state drives _pause_playback. On resume, _activate_playback requests a RESUME restart at state.progress_ms, so playback jumps back to the start. Dev's 5 s heartbeats kept state.progress_ms within about 5 s, and _on_pause is otherwise unchanged from dev, so this is a regression introduced by the dedup.",
+     "fix": "Publish the local position on pause, e.g. progress_ms=self._playback.progress_ms when a stream is active (self._playback.owner_player_id). Alternatively, expose the client's extrapolated baseline position and use it in _on_pause/_on_play.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
+     "line": 742,
+     "title": "Phone seek/restart to the baseline position is treated as a relay and ignored",
+     "detail": "_is_known_status matches an incoming status against the baseline only on (progress_ms, duration_ms, paused). After uninterrupted play from 0 the baseline stays (0, D, False), because dedup sends nothing further. A peer 'restart track' (seek to 0, same track and index) from the Yandex app matches exactly, so status_is_relay=True and _activate_playback skips seek detection. MA keeps playing at the old position.",
+     "fix": "Also compare the status version block: store the version of the last server-received status and only treat an incoming status as a relay if it carries that same version. A new peer seek has a fresh version from the peer device; our own echoes are already handled by last_update_is_echo.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
+     "line": 1138,
+     "title": "Ladder resets on the first state frame, so an accept-then-drop server is redialled every 1 s forever",
+     "detail": "_dispatch_state calls self._policy.on_healthy() on every state frame. _connect_state always sends our initial full state, which the server answers with a state frame, so every accepted connection counts as healthy. If Yandex (or a proxy) accepts the socket, echoes state and then closes without an error frame, each cycle restarts at ladder[0] = 1.0 s with no jitter. That means a redirector plus state WS handshake per second, indefinitely, and the 5/30/300 s steps are never reached. Dev had the same reset-per-cycle flaw but at 5 s +-20%, so this PR lowers the floor 5x. test_drop_after_healthy_state_is_a_transport_failure asserts this 1.0 s behaviour. Server-directed paths (go-away, server ladders) are fine.",
+     "fix": "Only treat a session as healthy after it has been up for some time, e.g. 30 s since _connect_state, both in _dispatch_state and when a drop ends a long session. The suggested_fix patch does this, and the existing 485 tests still pass with it.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
+     "line": 1257,
+     "title": "A reconnect scheduled before the go-away frame is parsed redials once inside the window",
+     "detail": "A failed outbound send (e.g. send_full_state right after the handshake on the initial connect, or a progress send) calls _schedule_reconnect(). _reconnect() calls next_delay() immediately and sleeps on the ladder delay. If the message loop then parses the buffered go-away frame, the finally's _schedule_reconnect() is a no-op because the task is alive, so the client redials before the window ends. The PR's own log says this extends the wait. The stored go-away is honoured on the next next_delay(), so this costs one early attempt.",
+     "fix": "When _apply_error_frame sees a go-away and a reconnect task is sleeping, cancel it and reschedule. Or have _reconnect re-read the policy after its sleep and sleep again if a go-away arrived meanwhile.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/yandex_ynison/reconnect_policy.py",
+     "line": 70,
+     "title": "Non-retryable server error hides the device for 5 min with only an info log",
+     "detail": "An error frame with a gRPC code outside {8,10,14}, no go-away, and a server close afterwards (dev comments say 400030001 'progress > duration' disconnects the socket) now waits RECONNECT_IDLE_DELAY = 300 s. Dev waited 5 s. This copies the official client, but the user only sees 'Ynison reconnect attempt 1 in 300.0s' at info level. The go-away path, by contrast, logs a clear warning explaining that the device disappears from the Yandex app.",
+     "fix": "Log a warning like the go-away one when next_delay() returns the idle delay because the status is non-retryable.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
+     "line": 954,
+     "title": "Redirector error frames (including a go-away) are still treated as auth failures",
+     "detail": "_get_redirect_ticket raises LoginFailed('Redirector response missing host or ticket') for any payload without host/ticket, including an {\"error\": ...} frame. Two consequences: a go-away or backoff directive sent by the redirector is ignored and the 1/5/30/300 ladder is used instead, and a Passport token refresh is triggered. This is pre-existing on dev, and the PR body says the current 500140000 arrives on the state service. Still, the new policy only covers half of the handshake.",
+     "fix": "If the redirector payload contains 'error', pass it through _apply_error_frame (or the policy) and raise a transient error instead of LoginFailed.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
+     "line": 1257,
+     "title": "Reconnect jitter removed",
+     "detail": "Dev added +-20% jitter to every reconnect delay. Now delays are exact (1/5/30/300 s), so installs dropped by the same Yandex-side event retry in lockstep. This matches the official client, and go-away windows are exact by design anyway.",
+     "fix": "Optionally add small jitter to ladder and idle delays (not to go-away).",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/yandex_ynison/provider.py",
+     "line": 373,
+     "title": "Unload cancels in-flight core play_media and misses tasks spawned during the gather",
+     "detail": "play_media(target_player_id, ...) now runs through _spawn and is cancelled on unload, where dev let it complete. Separately, _on_provider_event is unsubscribed only after the cancel/gather, so a provider event during that window spawns an untracked _check_yandex_provider_match. Both are rare and harmless in practice.",
+     "fix": "Run the unsubscribe callbacks before cancelling tasks. Consider marking play_media as finish_on_unload like deselect_source.",
+     "posted": null
+    }
+   ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "",
-   "suggested_fix": null,
+   "copilot": {
+    "green": false,
+    "comments": 3,
+    "findings": 3,
+    "review_url": "https://github.com/music-assistant/server/pull/7220#discussion_r4378916957",
+    "titles": [
+     "[CRITICAL] Pause publishes the stale track-start position (r4378916957)",
+     "[CRITICAL] A peer seek back to the baseline is taken as a relay (r4378917061)",
+     "[CRITICAL] A frame without status clears the relay marker (r4378917153)"
+    ]
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Changes recommended on be12369eb (15:12Z): 3 CRITICAL threads. The gate will draft it.",
+   "suggested_fix": {
+    "description": "Only restart the reconnect ladder after a session has stayed up 30 s (HEALTHY_SESSION_SECONDS), so an accept-then-drop server escalates 1 -> 5 -> 30 -> 300 s instead of being redialled every second. Server directives (go-away, ladders) are unaffected. All 485 passing tests still pass with it, and git apply --check is clean.",
+    "patch": "diff --git a/music_assistant/providers/yandex_ynison/constants.py b/music_assistant/providers/yandex_ynison/constants.py\nindex 903b00276b..ff9f955cc2 100644\n--- a/music_assistant/providers/yandex_ynison/constants.py\n+++ b/music_assistant/providers/yandex_ynison/constants.py\n@@ -65,6 +65,9 @@ STATUS_DEDUP_WINDOW_MS: Final[int] = 2000\n WS_CONNECT_TIMEOUT: Final[float] = 15.0\n WS_HEARTBEAT: Final[float] = 30.0\n WS_MIN_HEARTBEAT: Final[float] = 5.0\n+# A session must stay up this long before the reconnect ladder restarts, so an\n+# accept-then-drop server cannot pin reconnects to the first ladder step.\n+HEALTHY_SESSION_SECONDS: Final[float] = 30.0\n \n # Ynison error codes that require immediate reconnection\n YNISON_ERROR_REBALANCED: Final[str] = \"300100001\"\ndiff --git a/music_assistant/providers/yandex_ynison/ynison_client.py b/music_assistant/providers/yandex_ynison/ynison_client.py\nindex 309054a8a9..a8916b96da 100644\n--- a/music_assistant/providers/yandex_ynison/ynison_client.py\n+++ b/music_assistant/providers/yandex_ynison/ynison_client.py\n@@ -31,6 +31,7 @@ from .constants import (\n     DEFAULT_APP_NAME,\n     DEFAULT_APP_VERSION,\n     DEVICE_TYPE_WEB,\n+    HEALTHY_SESSION_SECONDS,\n     RECONNECT_DELAYS,\n     RECONNECT_IDLE_DELAY,\n     STATUS_DEDUP_WINDOW_MS,\n@@ -255,6 +256,7 @@ class YnisonClient:\n         self._stop_event = asyncio.Event()\n         self._connected = False\n         self._has_connected_once = False\n+        self._connected_at = 0.0\n         self._policy = ReconnectPolicy(RECONNECT_DELAYS, RECONNECT_IDLE_DELAY)\n         self._heartbeat = WS_HEARTBEAT\n         self._status_watermarks: deque[_StatusWatermark] = deque(maxlen=8)\n@@ -763,6 +765,10 @@ class YnisonClient:\n             time.monotonic(),\n         )\n \n+    def _session_was_healthy(self) -> bool:\n+        \"\"\"Return whether the current session stayed up long enough to reset the backoff.\"\"\"\n+        return time.monotonic() - self._connected_at >= HEALTHY_SESSION_SECONDS\n+\n     def _channel_ready(self) -> bool:\n         \"\"\"Return whether the state WebSocket can accept a message.\"\"\"\n         return self._connected and self._ws is not None and not self._ws.closed\n@@ -974,6 +980,7 @@ class YnisonClient:\n                 raise LoginFailed(\"Ynison authentication failed — invalid token\") from err\n             raise\n         self._connected = True\n+        self._connected_at = time.monotonic()\n         self._logger.info(\"Connected to Ynison state service at %s\", host)\n \n         # Always send a fresh initial state (empty/paused) — both on cold\n@@ -1092,6 +1099,8 @@ class YnisonClient:\n                     await socket.close()\n             if self._ws is socket and not self._stop_event.is_set() and not cancelled:\n                 if not server_directive:\n+                    if self._session_was_healthy():\n+                        self._policy.on_healthy()\n                     self._policy.on_transport_failure()\n                 self._schedule_reconnect()\n         self._logger.debug(\"Ynison message loop exited\")\n@@ -1135,7 +1144,8 @@ class YnisonClient:\n         \"\"\"Apply one state frame and notify the state callback.\"\"\"\n         was_active = self.state.active_device_id == self.device_id\n         self._parse_state(data)\n-        self._policy.on_healthy()\n+        if self._session_was_healthy():\n+            self._policy.on_healthy()\n         if was_active and self.state.active_device_id != self.device_id:\n             # The server clears this flag when the device activates.\n             await self.update_session_params(mute_events_if_passive=True)\n",
+    "pushed": null
+   },
    "prompt": "",
    "backport": null,
    "auto_approved": null,
@@ -11613,100 +11699,80 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": null,
-   "changed_now": ""
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 16:25 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
    "number": 7221,
    "state": "open",
    "closed_at": null,
-   "title": "Fix Bluesound metadata for library playback without an input",
+   "title": "Fix Bluesound metadata for library playback without an input ID",
    "author": "imoamo72",
    "url": "https://github.com/music-assistant/server/pull/7221",
    "draft": false,
-   "verdict": "almost",
+   "verdict": "ready",
    "assessment": "approve",
-   "status": "attention",
-   "attention_since": "2026-10-26T13:59:00Z",
-   "waiting_on": "you: answer Copilot CRITICAL (pre-existing) or ask for the opt-in",
-   "gpt_sol": "1 problem (pre-existing, we rate suggestion)",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "you: approve the Test workflow run (first-time contributor), then the merge queue",
+   "gpt_sol": "1 problem (we rate suggestion)",
    "size": "S",
-   "code": 8,
-   "add": 5,
+   "code": 10,
+   "add": 7,
    "del": 0,
-   "ci": "green",
+   "ci": "Test workflow action_required (first-time contributor); other checks green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev e970b5466",
-   "head_sha": "5f5dbe6ca",
+   "head_sha": "3ab9882db",
    "core_touched": false,
    "providers_touched": [
     "bluesound"
    ],
    "stacked": false,
-   "tldr": "Almost: the 5-line fix is unchanged and correct (imoamo72 only merged dev and fixed the description). Copilot now raises the MA-to-BluOS-app switch as CRITICAL and asks to turn on trusts_reported_source for Bluesound. Opus showed that gap exists on dev too; the opt-in would make every Bluesound preset and input count as a takeover. Your call: answer it as a follow-up (reply drafted) or ask imoamo72 to add the opt-in plus a test.",
-   "summary": "The PR only changes the generic else-branch of BluesoundPlayer._resolve_source. source_id = input_id or service or 'bluos_external' now feeds both _attr_active_source and the appended passive PlayerSource, which used to be built with id=None.\n\nStability: the service name ('LocalMusic') stays the same across track changes, and input_id still takes precedence, so the id does not flip between polls. Duplicates: update_attributes resets _attr_source_list = await self._get_bluesound_sources() on every poll before _resolve_source appends, so there is one entry per poll and no growth. This is the same on origin/dev.\n\nCore handling: queue.active = state.active_source in (queue_id, None). While playing, __final_active_source returns the reported 'LocalMusic' when no MA mass source is set, so the queue goes inactive. current_media skips the own-queue fallback because the raw active_source is no longer None, and returns the native PlayerMedia from _resolve_media. That is the intended fix and matches the reporter's live test. When idle, __final_active_source ignores the reported source and falls back to the mass source or player_id, so a leftover service in an idle status does not change queue or resume behaviour. select_source back to MA (source=player_id) stops the player and sets the mass source, as before. The frontend source picker shows passive sources only when they are active, and disabled, so 'LocalMusic' never reaches BluesoundPlayer.select_source, whose split('-') would fail on it. That failure exists on dev too, for the PLAYER_SOURCE_MAP ids.\n\nMA playback: the stream_url/base_url guard runs before the new branch. If a status ever lacks streamUrl during MA playback (e.g. while 'connecting'), the new 'bluos_external'/service id cannot take over: __active_mass_source wins because Bluesound does not set trusts_reported_source and these ids are not in EXTERNAL_SOURCES.\n\nName collisions: the generic branch only runs when input_id, service and name all miss PLAYER_SOURCE_MAP, so a service name cannot shadow a map entry. 'localmusic' is not in EXTERNAL_SOURCES. Services that are in it (qobuz, deezer, iheartradio, ...) now count as a takeover of a stale MA source, which is the right behaviour.\n\nOverlap with draft #7159: none. #7159 only touches bluesound/provider.py (_musp discovery and secondary-zone registration) and tests/providers/bluesound/test_discovery.py, not player.py. The behaviours are independent.\n\nStable has the same generic branch and the same core current_media / __final_active_source semantics (pre-refactor EXTERNAL_SOURCES check). The merge-tree dry run is clean.",
-   "whats_new": "5f5dbe6ca merges dev, code unchanged; description fixed. Copilot re-review: new CRITICAL thread on the MA-to-library switch.",
+   "tldr": "Auto-approved: the source-id fallback plus imoamo72's new trusts_reported_source opt-in, so a BluOS-app library session takes over MA's queue and its metadata shows. Opus checked MA playback keeps its queue (flow mode, announcements, synced followers, AirPlay output); 25 tests pass. One suggestion: for one poll after switching from the library back to MA, the old native source still shows (2-line patch). The Test workflow waits for your approval because imoamo72 is a first-time contributor.",
+   "summary": "Delta since the last review: BluesoundPlayer sets _attr_trusts_reported_source = True, plus a test of the published source and metadata after an MA-to-library switch.\n\nWhat trust changes: _resolve_source appends whatever it reports to source_list, so with trust on, any non-None _attr_active_source counts as a takeover in __reports_source_takeover. Checked each path on the PR head:\n- MA's own stream (queue, flow mode, announcements, plugin /source/ URLs): every URL comes from streams.base_url, and _resolve_source sets None when the stream URL contains it. None is never a takeover, so the queue stays active.\n- Grouped/synced BluOS: a follower sets the leader id as its source. That id is not in its source list, and __final_synced_to returns the leader's state before the takeover check anyway. A leader on its own library now shows LocalMusic to the whole group, which is correct.\n- MA via a linked output protocol (AirPlay): a reported native source is overruled because active_output_protocol is not native. Behaviour unchanged.\n- Presets and inputs: a preset reports its service (TuneIn and Tidal were already in EXTERNAL_SOURCES). A LocalMusic preset, Analog/Digital Input, HDMI ARC or an unknown input_id now take over the remembered MA queue as intended. Previously the MA queue kept showing over a TV or analog input.\n- Idle player whose status still names a service: the reported-source branch requires playback_state != IDLE, so the source falls back to the MA source. Paused library playback shows LocalMusic and expires through the existing external-pause timeout (raw source, not affected by trust).\n- Side effects are intended. With library or input playback active, MA's play/pause goes to the device source instead of resuming the MA queue. Announcements see the external prev_source. Protocol grouping is blocked while an external source plays.\n\nThe only path where MA's queue loses the source during MA playback is the optimistic play_media window (finding 1). The bluos_external fallback would also count as a takeover if BluOS ever reported a status with no stream URL, service or input during MA playback. I could not show that happens, so it is not flagged.\n\nHardware note: the PR body says it was verified on 2.10.8. Stable has no trust mechanism, so the takeover part has not been tested on a device. Worth asking the author to confirm on a dev build.",
+   "whats_new": "b8746c0e9 and 3ab9882db add the trusts_reported_source opt-in and a takeover test, answering Copilot's CRITICAL. Re-reviewed: Opus ready, GPT Sol 1 problem, Copilot Approval recommended. Auto-approved and queued at 15:25Z.",
    "blockers": [
-    "Copilot r4378156588 (CRITICAL): enable trusts_reported_source so an MA-to-BluOS switch counts as a takeover. Pre-existing on dev; reply drafted as a follow-up, or ask imoamo72 for the opt-in",
-    "Once the thread is answered and Copilot approves, it can be auto-approved (backport recommended)"
+    "Test workflow needs your approval to run (first-time contributor); the merge waits on it"
    ],
    "findings": [
     {
-     "model": "Copilot",
-     "severity": "CRITICAL",
-     "file": "music_assistant/providers/bluesound/player.py",
-     "line": 305,
-     "title": "MA to BluOS library switch still shows the remembered MA queue (r4378156588)",
-     "detail": "LocalMusic is not in EXTERNAL_SOURCES and Bluesound leaves trusts_reported_source off, so __final_active_source keeps the MA queue. Opus and GPT Sol flagged the same, and it is the same on dev. Chromecast, Sonos and Raumfeld opt in.",
-     "fix": "Set _attr_trusts_reported_source = True on BluesoundPlayer plus a regression test, or answer it as a follow-up.",
-     "posted": null
-    },
-    {
      "model": "Claude",
      "severity": "SUGGESTION",
-     "file": "tests/providers/bluesound/test_source.py",
-     "line": 56,
-     "title": "Tests partly cover code this PR does not change",
-     "detail": "The tests run the real _resolve_source/_resolve_media bodies on a MagicMock self, following the existing test_playback_state.py pattern. The parametrized test_external_source_has_stable_identifier fails on dev (3 cases), so it is a real regression test. test_known_service_keeps_its_source (8 cases), test_ma_stream_is_not_classified_as_external, and the metadata half of test_library_track_change_keeps_source_and_updates_metadata cover unchanged branches and the unchanged _resolve_media. The track-change test also resets _attr_source_list by hand to mimic the poll, so it checks no more than the parametrized test. None of the tests cover the actual symptom: core current_media falling back to the empty own queue when active_source is None.",
-     "fix": "Keep the parametrized identifier test (optionally plus the MA-stream guard). Drop or trim the known-service and track-change tests.",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "NIT",
      "file": "music_assistant/providers/bluesound/player.py",
-     "line": 311,
-     "title": "Raw service id used as display name",
-     "detail": "name=source_id shows 'LocalMusic' (or 'bluos_external') as the source name in the frontend and in HA. This only affects how it looks and was already the case for input_id-based sources.",
-     "fix": "Optional: add a LocalMusic entry to PLAYER_SOURCE_MAP with a friendly name if the generic branch is mostly hit by the library.",
+     "line": 203,
+     "title": "Stale native source wins for one poll after MA starts playback",
+     "detail": "When the user switches from BluOS library playback to an MA queue, set_active_mass_source and play_media's optimistic update_state run while _attr_active_source is still 'LocalMusic' from the last poll, and that id is in source_list. With trust on, that counts as a takeover, so state.active_source stays 'LocalMusic' while PLAYING. queue.active is False, and the queue is published IDLE until the next poll (0.5 s dynamic polling) reports the MA stream URL. Reproduced with MockPlayer: after set_active_mass_source(player_id) the published source is still 'LocalMusic'. The effect is transient (UI flicker, one queue update dropped), not a lasting deactivation. Raumfeld clears the source in play_media for the same reason. GPT Sol rates it a problem.",
+     "fix": "Set self._attr_active_source = None in play_media's optimistic update, before update_state().",
      "posted": null
     }
    ],
    "unaddressed_comments": [],
    "copilot": {
-    "green": false,
-    "comments": 1,
-    "findings": 1,
-    "review_url": "https://github.com/music-assistant/server/pull/7221#discussion_r4378156588",
-    "titles": [
-     "[CRITICAL] MA to BluOS library switch still shows the remembered MA queue (r4378156588)"
-    ]
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7221",
+    "titles": []
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "Changes recommended on 5f5dbe6ca (14:08Z): the description thread is resolved, but a new CRITICAL thread asks to enable trusts_reported_source for Bluesound. Expect the critical gate to draft it.",
+   "copilot_note": "Approval recommended on 3ab9882db (15:06Z); the takeover thread is resolved.",
    "suggested_fix": {
-    "description": "Decline reply for r4378156588 (pre-existing, follow-up), not posted:\n\n> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThis also happens on dev today, so it isn't a regression from this PR. Turning on `trusts_reported_source` changes how every Bluesound source is treated, so let's do that in a follow-up and keep this fix small enough to backport.",
-    "patch": "",
+    "description": "Clear the native source in play_media's optimistic update so MA's queue owns the player from the start.",
+    "patch": "--- a/music_assistant/providers/bluesound/player.py\n+++ b/music_assistant/providers/bluesound/player.py\n@@ -201,6 +201,8 @@ class BluesoundPlayer(Player):\n             raise PlayerCommandFailed(\"Failed to start playback.\")\n \n         # Optimistically update state\n+        # drop the native source of the last poll, it would count as a takeover of MA's queue\n+        self._attr_active_source = None\n         self._attr_current_media = media\n         self._attr_elapsed_time = 0\n         self._attr_elapsed_time_last_updated = time.time()\n",
     "pushed": null
    },
    "prompt": "",
    "backport": {
     "rec": true,
-    "why": "User-facing bug reported on 2.10.8. The fix is provider-only and 5 lines. Stable has the same generic branch and the same core current_media/active_source semantics, and git merge-tree onto origin/stable is clean."
+    "why": "Only the first commit (source-id fallback): stable has no trusts_reported_source, and the full PR's new test fails on origin/stable."
    },
-   "auto_approved": null,
+   "auto_approved": {
+    "at": "2026-10-26 16:25 CET",
+    "note": "S, Bluesound provider and tests only, Claude ready and Copilot Approval recommended on 3ab9882db. Auto-merge on; waits for the Test workflow approval."
+   },
    "author_replied": null,
    "reporter_reply": null,
    "support": null,
@@ -11714,9 +11780,9 @@
    "related_prs": [
     "#7159 yours, same provider, no overlap"
    ],
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-26 13:15 CET",
-   "changed_now": "pushed"
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 16:25 CET",
+   "changed_now": "auto-approved"
   },
   {
    "repo": "models",
@@ -12002,7 +12068,7 @@
    "number": 7226,
    "state": "open",
    "closed_at": null,
-   "title": "Update ABC Radio Network Provider to support multiple states",
+   "title": "Update ABC Radio Network Provider to support multiple states in Australia",
    "author": "genesispc",
    "url": "https://github.com/music-assistant/server/pull/7226",
    "draft": false,
@@ -12089,7 +12155,164 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 12:20 CET",
-   "changed_now": "author replied"
+   "changed_now": ""
+  },
+  {
+   "repo": "server",
+   "number": 7228,
+   "state": "open",
+   "closed_at": null,
+   "title": "fix(music): honor providers and media_types filters in URL-search interception",
+   "author": "jgruber",
+   "url": "https://github.com/music-assistant/server/pull/7228",
+   "draft": false,
+   "verdict": "not_ready",
+   "assessment": "request_changes",
+   "status": "attention",
+   "attention_since": "2026-10-26T14:45:00Z",
+   "waiting_on": "you: post f1 (regression) or `fix 7228`",
+   "gpt_sol": "3 problems (2 = ours)",
+   "size": "S",
+   "code": 29,
+   "add": 26,
+   "del": 0,
+   "ci": "lint (mypy bare list) and Verify failing",
+   "ci_fail": true,
+   "merge_state": "merge-tree clean on origin/dev e970b5466",
+   "head_sha": "0c1a3a75b",
+   "core_touched": true,
+   "providers_touched": [],
+   "stacked": false,
+   "tldr": "Not ready: aims to stop duplicate results when a pasted share URL is searched per provider, but gating on \"providers is None\" turns URL lookup off for the frontend entirely, since progressive search always sends providers=[one target]. A pasted Spotify or Apple Music link would be text-searched everywhere and never resolve. The right gate is ownership. media_types also misses radio. Opus has a patch that fixes both and clears the lint errors; 30 tests pass.",
+   "summary": "The PR adds `providers is None and` before _search_shareable_url, and masks the returned SearchResults fields not in media_types.\n\nFrontend check (frontend origin/main): useProgressiveSearch.searchTarget calls api.search(term, mediaTypes, limit, [targetId]) once per target. Targets are 'library' plus one per streaming domain, or one per instance for local providers. An empty selection still fans out per target. No frontend code detects URLs. This has shipped since frontend 2.17.218, and the server pins 2.17.349. The only unscoped callers are the smart-playlist seed searches and API/HA users. So the PR swaps 'N duplicates' for 'no result' in the main search UI.\n\nInstance vs domain: parse_uri returns the domain. search_providers is already resolved from instance ids or domains and collapsed by get_unique_providers. Matching prov.domain of each search provider against the parsed domain covers both forms. Library-only calls get an empty result, not a text search of the URL. A missing owner provider gives an empty result, same as before (get_item failed with a warning).\n\nmedia_types: _search_shareable_url can return radio (Apple Music station links, see test_search_station_share_url_returns_radio), but the mask has no RADIO entry. The mask also runs after get_item, so a lookup that gets discarded still costs a provider call.\n\nCI: mypy flags `dict[str, list]` at controller.py:692, plus two ruff autofixes. The author owns these, and the suggested patch removes that block. The suggested patch also flips the PR's first test, which asserts the regression, and passes MediaType.ALL plus a provider in the existing station test (new signature).",
+   "whats_new": "Opened 14:45Z. Reviewed by Opus and GPT Sol; CI red so no Copilot yet.",
+   "blockers": [
+    "f1: the providers gate disables URL search for the frontend's per-provider search; post it or `fix 7228` (patch gates on the URL's owning provider)",
+    "f2: media_types mask misses radio",
+    "CI: mypy bare list at controller.py:692 (the patch removes it)"
+   ],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "CRITICAL",
+     "file": "music_assistant/controllers/music/controller.py",
+     "line": 684,
+     "title": "URL search no longer fires for the frontend's per-provider search",
+     "detail": "Interception now needs providers is None. The frontend's progressive search (useProgressiveSearch.ts:294) always sends providers=[targetId], including when nothing is selected. Pasting an open.spotify.com or music.apple.com link into the main search now text-searches the URL at every provider and the library, so the linked item never shows up. The PR's own test (test_search_shareable_url_skipped_when_providers_scoped) asserts this: providers=['spotify'], the owner of the URL, does not resolve it.",
+     "fix": "Gate on ownership, not on the presence of a scope. Pass search_providers to _search_shareable_url. Resolve only when one of them has the URL's domain, and return an empty SearchResults for the other scoped calls (library, other providers).",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/music/controller.py",
+     "line": 692,
+     "title": "media_types mask misses radio and runs after the provider lookup",
+     "detail": "The mask lists artists, albums, tracks, playlists, audiobooks and podcasts but not radio, and _search_shareable_url returns radio for Apple Music station links. A tracks-only search with a station link still returns the station. The item is also fetched via get_item before it gets discarded.",
+     "fix": "In _search_shareable_url, return SearchResults() when the parsed media_type is not in media_types, before get_item. The field-mask block and the dataclasses.replace import go away.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/controllers/music/controller.py",
+     "line": 692,
+     "title": "CI lint fails (mypy bare list, ruff autofixes)",
+     "detail": "`clear: dict[str, list]` misses a type argument, and ruff wants two autofixes. The author owns this.",
+     "fix": "Removed by the suggested patch, or annotate as dict[str, list[Any]] and run pre-commit.",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "No review: CI is red, so the poll workflow has not requested one.",
+   "suggested_fix": {
+    "description": "Resolve a pasted URL only on the search that targets its owning provider and only for requested media types. Other scoped calls return an empty result. Tests updated to match (owner/other/library and media_types cases), plus the existing station test for the new signature.",
+    "patch": "diff --git a/music_assistant/controllers/music/controller.py b/music_assistant/controllers/music/controller.py\nindex 3a76f9bfae..994fd933da 100644\n--- a/music_assistant/controllers/music/controller.py\n+++ b/music_assistant/controllers/music/controller.py\n@@ -7,7 +7,6 @@ import logging\n from collections.abc import Awaitable, Callable, Coroutine, Iterable, Sequence\n from contextlib import suppress\n from copy import deepcopy\n-from dataclasses import replace\n from datetime import datetime\n from itertools import zip_longest\n from typing import TYPE_CHECKING, Any, Final, NamedTuple, cast\n@@ -675,31 +674,13 @@ class MusicController(MusicDatabaseSetupMixin, CoreController):\n             base_class=SearchResults,\n         ):\n             return cast(\"SearchResults\", cache)\n-        # Check if the search query is a streaming provider public shareable URL.\n-        # Only intercept on the global search path: when the caller scoped the\n-        # search to specific providers (e.g. the frontend's progressive search\n-        # dispatches one call per configured provider plus one for the library),\n-        # returning the resolved item from every scoped call turns a single\n-        # pasted URL into N duplicates in the UI.\n-        if providers is None and (\n-            url_result := await self._search_shareable_url(search_query)\n+        # Check if the search query is a streaming provider public shareable URL\n+        if (\n+            url_result := await self._search_shareable_url(\n+                search_query, media_types, search_providers\n+            )\n         ) is not None:\n-            # Respect the caller's media_types: a URL that resolves to e.g.\n-            # a playlist should not appear in results when the caller only\n-            # asked for tracks.\n-            requested = set(media_types)\n-            clear: dict[str, list] = {}\n-            for media_type, field in (\n-                (MediaType.ARTIST, \"artists\"),\n-                (MediaType.ALBUM, \"albums\"),\n-                (MediaType.TRACK, \"tracks\"),\n-                (MediaType.PLAYLIST, \"playlists\"),\n-                (MediaType.AUDIOBOOK, \"audiobooks\"),\n-                (MediaType.PODCAST, \"podcasts\"),\n-            ):\n-                if media_type not in requested:\n-                    clear[field] = []\n-            return replace(url_result, **clear) if clear else url_result\n+            return url_result\n         # handle normal global search by querying the library and all providers\n         # the library (if included) is searched first: it is fast and its results are\n         # used to deduplicate provider results and to skip provider searches for media\n@@ -3148,7 +3129,9 @@ class MusicController(MusicDatabaseSetupMixin, CoreController):\n             sound_effects=visible_items(self.mass, results.sound_effects, user),\n         )\n \n-    async def _search_shareable_url(self, search_query: str) -> SearchResults | None:\n+    async def _search_shareable_url(\n+        self, search_query: str, media_types: list[MediaType], search_providers: list[str]\n+    ) -> SearchResults | None:\n         \"\"\"\n         Handle a search query that is a streaming provider public shareable URL.\n \n@@ -3165,6 +3148,14 @@ class MusicController(MusicDatabaseSetupMixin, CoreController):\n             return SearchResults()\n         if provider_instance_id_or_domain not in PROVIDERS_WITH_SHAREABLE_URLS:\n             return None\n+        # a search scoped per provider (the frontend's progressive search) resolves the\n+        # URL only on the call that targets the owning provider, so it is listed once\n+        if media_type not in media_types or not any(\n+            (prov := self.mass.get_provider(instance_id))\n+            and prov.domain == provider_instance_id_or_domain\n+            for instance_id in search_providers\n+        ):\n+            return SearchResults()\n         try:\n             item = await self.get_item(\n                 media_type=media_type,\ndiff --git a/tests/controllers/music/test_search.py b/tests/controllers/music/test_search.py\nindex 3b0b8d4c11..0122512866 100644\n--- a/tests/controllers/music/test_search.py\n+++ b/tests/controllers/music/test_search.py\n@@ -732,7 +732,7 @@ async def test_search_exact_match_shortcut_skipped_for_explicit_providers() -> N\n \n async def test_search_station_share_url_returns_radio() -> None:\n     \"\"\"A pasted Apple Music station share link returns the station as a radio result.\"\"\"\n-    controller = _make_controller([])\n+    controller = _make_controller([_make_search_provider(\"apple_music\")])\n     station = Radio(\n         item_id=\"ra.123\",\n         provider=\"apple_music\",\n@@ -747,7 +747,7 @@ async def test_search_station_share_url_returns_radio() -> None:\n     controller.get_item = AsyncMock(return_value=station)  # type: ignore[method-assign]\n \n     result = await controller._search_shareable_url(\n-        \"https://music.apple.com/us/station/chill/ra.123\"\n+        \"https://music.apple.com/us/station/chill/ra.123\", MediaType.ALL, [\"apple_music\"]\n     )\n \n     assert result is not None\n@@ -811,61 +811,37 @@ def _make_playlist(item_id: str, provider: str, name: str) -> Playlist:\n     )\n \n \n-async def _resolve_playlist_url(_query: str) -> SearchResults:\n-    return SearchResults(playlists=[_make_playlist(\"pl1\", \"spotify\", \"My Playlist\")])\n+async def test_search_shareable_url_only_on_owning_provider() -> None:\n+    \"\"\"A search scoped per provider resolves a pasted URL only on the owning provider.\"\"\"\n+    spotify = _make_search_provider(\"spotify--abc\", domain=\"spotify\")\n+    tidal = _make_search_provider(\"tidal--abc\", domain=\"tidal\")\n+    controller = _make_controller([spotify, tidal])\n+    playlist = _make_playlist(\"pl1\", \"spotify\", \"My Playlist\")\n+    controller.get_item = AsyncMock(return_value=playlist)  # type: ignore[method-assign]\n+    url = \"https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M\"\n \n+    owner = await controller.search(url, [MediaType.PLAYLIST], limit=5, providers=[\"spotify\"])\n+    other = await controller.search(url, [MediaType.PLAYLIST], limit=5, providers=[\"tidal\"])\n+    library = await controller.search(url, [MediaType.PLAYLIST], limit=5, providers=[\"library\"])\n \n-async def test_search_shareable_url_skipped_when_providers_scoped() -> None:\n-    \"\"\"A scoped search must not return the resolved shareable-URL item.\n-\n-    The frontend's progressive search dispatches one music/search call per\n-    configured provider (plus one for the library), each with providers=[one].\n-    If the URL interception fired on every scoped call, one pasted URL would\n-    appear N times in the UI.\n-    \"\"\"\n-    prov = _make_search_provider(\"spotify--abc\", domain=\"spotify\")\n-    controller = _make_controller([prov])\n-    controller._search_shareable_url = AsyncMock(  # type: ignore[method-assign]\n-        side_effect=_resolve_playlist_url\n-    )\n-\n-    result = await controller.search(\n-        \"https://open.spotify.com/playlist/37i9dQZF1DX\",\n-        media_types=[MediaType.PLAYLIST],\n-        limit=5,\n-        providers=[\"spotify\"],\n-    )\n-\n-    # URL interception did not fire; the normal provider search ran instead.\n-    controller._search_shareable_url.assert_not_awaited()\n-    assert result.playlists == []\n-    prov.search.assert_awaited_once()\n+    assert owner.playlists == [playlist]\n+    assert other.playlists == []\n+    assert library.playlists == []\n+    controller.get_item.assert_awaited_once()\n+    tidal.search.assert_not_awaited()\n \n \n async def test_search_shareable_url_respects_media_types() -> None:\n-    \"\"\"On the global path the URL-resolved item is masked by media_types.\n-\n-    A playlist URL resolved on a tracks-only search must not come back as a\n-    playlist. Fields outside the requested media_types are cleared.\n-    \"\"\"\n-    controller = _make_controller([])\n-    controller._search_shareable_url = AsyncMock(  # type: ignore[method-assign]\n-        side_effect=_resolve_playlist_url\n-    )\n-\n-    # media_types restricted → playlist field cleared\n-    result = await controller.search(\n-        \"https://open.spotify.com/playlist/37i9dQZF1DX\",\n-        media_types=[MediaType.TRACK],\n-        limit=5,\n-    )\n-    assert result.playlists == []\n-    assert result.tracks == []\n-\n-    # media_types includes playlist → resolved item passes through\n-    result = await controller.search(\n-        \"https://open.spotify.com/playlist/37i9dQZF1DX\",\n-        media_types=[MediaType.PLAYLIST],\n-        limit=5,\n-    )\n-    assert [p.item_id for p in result.playlists] == [\"pl1\"]\n+    \"\"\"A pasted URL is not resolved when its media type was not asked for.\"\"\"\n+    spotify = _make_search_provider(\"spotify--abc\", domain=\"spotify\")\n+    controller = _make_controller([spotify])\n+    playlist = _make_playlist(\"pl1\", \"spotify\", \"My Playlist\")\n+    controller.get_item = AsyncMock(return_value=playlist)  # type: ignore[method-assign]\n+    url = \"https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M\"\n+\n+    tracks_only = await controller.search(url, [MediaType.TRACK], limit=5)\n+    playlists = await controller.search(url, [MediaType.PLAYLIST], limit=5)\n+\n+    assert tracks_only.playlists == []\n+    assert playlists.playlists == [playlist]\n+    controller.get_item.assert_awaited_once()\n",
+    "pushed": null
+   },
+   "prompt": "Fix music-assistant/server PR #7228 (head 0c1a3a75b) on top of refs/remotes/pr/7228: in MusicController.search resolve a pasted share URL only on the call whose providers include the URL's owning provider (or no provider filter), return empty for other scoped calls and library-only, include radio in the media_types mask and apply it before the lookup. Apply the validated patch from the review, run pytest tests/controllers/music/test_search.py and mypy.",
+   "backport": {
+    "rec": false,
+    "why": "Not as written; with the ownership gate it is a small optional core bugfix."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 16:25 CET",
+   "changed_now": "new"
+  },
+  {
+   "repo": "server",
+   "number": 7227,
+   "state": "open",
+   "closed_at": null,
+   "title": "Update FastMCP Server provider to v2.2.3: statistics commands, 401 resource metadata, security fixes",
+   "author": "trudenboy",
+   "url": "https://github.com/music-assistant/server/pull/7227",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "Copilot; then you (requirements_all.txt rule)",
+   "gpt_sol": "clean",
+   "size": "M",
+   "code": 72,
+   "add": 66,
+   "del": 0,
+   "ci": "Test green, Dependency Security Review pending",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev e970b5466",
+   "head_sha": "2c593439b",
+   "core_touched": false,
+   "providers_touched": [
+    "fastmcp_server"
+   ],
+   "stacked": false,
+   "tldr": "Ready: despite the title, the statistics commands are already on dev (#5700); this syncs the provider to 2.2.3, refuses long-lived tokens for guests in the Connect Wizard (same rule as core) and restores the RFC 9728 metadata URL in the 401. Opus and GPT Sol clean, 783 tests pass with the pinned fastmcp. Touches the generated requirements_all.txt, so it hits your open generated-files rule.",
+   "summary": "Diff vs origin/dev: VERSION 2.2.3, auth.py get_routes declaring /.well-known/oauth-protected-resource/<mount>, server.py sharing the metadata builder with mount_well_known, a guest check in make_mint_token, and live/e2e/wizard tests. The fastmcp==4.1.3 pin in manifest and requirements_all is identical to dev after #7208, so it merges as a no-op.\n\nStatistics (from the brief): unchanged by this PR. command_policy keeps _family('statistics/', read=QUERY_LIBRARY, readonly=True), so it is reachable only through ma_api call_tool for tokens with the query-library capability. The core commands need Scope.LIBRARY_READ, are scoped to get_current_user() (#6801 impersonation scope check retained), and are capped at MAX_STATISTICS_RESULT_LIMIT.\n\nGuest check: matches core auth/token/create (webserver/auth.py:1349). It runs before the dedup revoke, and the test asserts no create or revoke call. UserRole is a StrEnum, so the test's 'guest' string compares equal.\n\n401 metadata: the route is a declaration so FastMCP adds resource_metadata to the challenge. MA's mount_well_known serves the document, built by the same builder, so the content matches. The e2e test checks the header and the served document. The document is public metadata, and nothing new becomes reachable without auth.\n\nStable note: stable's provider (0.17.0, fastmcp 3.4.7) mints wizard tokens without the guest check too, so the guest gap exists on 2.10.x.",
+   "whats_new": "Opened 14:41Z, ready 14:46Z. Reviewed by Opus and GPT Sol; Copilot requested.",
+   "blockers": [
+    "Copilot review pending",
+    "Touches requirements_all.txt: `approve 7227` or say generated files count as provider-only"
+   ],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "tests/providers/fastmcp_server/integration/test_live_catalog.py",
+     "line": 406,
+     "title": "sort_index is insert order, not queue position",
+     "detail": "QueueItem.index is never filled server-side, so switching away from it makes sense. But sort_index is the original insert order kept for unshuffle, not where the item sits. For an append it happens to equal the position. Live-only test, skipped in CI.",
+     "fix": "Compare the item's position in the full queue_items list against the protected index instead.",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "Requested 15:24Z.",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": {
+    "rec": false,
+    "why": "Stable runs provider 0.17.0 on fastmcp 3.4.7; a guest-token fix for 2.10.x would need its own small PR."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-26 16:25 CET",
+   "changed_now": "new"
   }
  ]
 }
