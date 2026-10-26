@@ -4233,13 +4233,14 @@
    ],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks all, the logs make this clear. The change in 2.10.8 that handles a pause from the Spotify app also reacts to the pause Soloist sends when a track finishes, so it stops the queue right at the end of the track. We're working on a fix. Until then, staying on 2.10.7 avoids it.",
    "bookkeeping": [],
-   "ask": "input",
+   "ask": null,
    "milestone": null,
-   "action": "2.10.8 regression from your #7117 (5 users). Local fix ready (f58ee25027), cherry-picks clean onto stable. Worth one real-account check, then `fix 6860` for the PR + backport (2.10.9). Answer drafted.",
+   "action": "Fix session (Fable) running: fix the regression and re-check #7117's approach against #6752 so both are solved; real Soloist event capture, then PR + backport.",
    "waiting_on": null,
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
-    "10-26 07:30 run: local fix built and A/B'd; no PR until you say so."
+    "10-26 07:30 run: local fix built and A/B'd; no PR until you say so.",
+    "10-26 13:40 fix: fix session started on your main account with Fable 5.1: cover both #6860 and #6752 (re-check #7117's approach), starting from local fix f58ee25027, live Soloist event capture, PR + backport."
    ],
    "sync": {
     "at": "2026-10-26T12:30:13Z",
@@ -4260,6 +4261,12 @@
      "spotify",
      "needs-attention"
     ]
+   },
+   "fix_thread": {
+    "id": "mcp:a766341e-46d2-4811-b6aa-b49c8e582f61",
+    "title": "Fix: Soloist end-of-track stop (2.10.8 regression) without losing the Spotify-app pause fix (#6860, #6752)",
+    "kind": "fix",
+    "done": false
    }
   },
   {
