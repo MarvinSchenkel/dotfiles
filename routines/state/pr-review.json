@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-27T13:00:00+01:00",
+ "last_run": "2026-10-27T15:00:00+01:00",
  "dev": "291ddf919",
- "run_note": "Only #7220 moved: trudenboy's v4.4.6 cursor rework fixes Copilot's last two CRITICALs, but our replay finding survives its third round because nobody has posted it; Copilot adds one new CRITICAL. Our #7242 and #7227 findings are also still unposted.",
+ "run_note": "A reporter confirmed your #7244 fixes support#6860 and OzGav marked it ready; it needs his approve. trudenboy's #7242 and #7220 are down to one finding each, both ours and both unposted (guest scope on the Alice command, a track replay that dev shares); patches apply. mnestrud's aiosonos#194 is clean and needs your approve. The 14:00 run was skipped; this one covers 12:05Z onward.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -10671,12 +10671,12 @@
    "title": "Add provider-independent share links and playlist previews",
    "author": "dmoo500",
    "url": "https://github.com/music-assistant/server/pull/7172",
-   "draft": false,
+   "draft": true,
    "verdict": "not_ready",
    "assessment": "request_changes",
    "status": "waiting",
    "attention_since": "2026-10-26T07:57:00Z",
-   "waiting_on": "dmoo500 (OzGav steering scope)",
+   "waiting_on": "dmoo500 (draft)",
    "gpt_sol": "2 problems, prefers core",
    "size": "XL",
    "code": 1306,
@@ -10693,7 +10693,7 @@
    "stacked": false,
    "tldr": "No server-side security holes. The blockers are a dead default share domain, a landing page outside the org that has not been reviewed, an unbounded preview with provider fan-out, and silent Deezer/Apple calls on every share. #7173's core command fits MA better for the shared scope.",
    "summary": "Security looks sound on the server. All four commands require LIBRARY_READ/WRITE, so the server has no unauthenticated surface. Nothing is stored, so there are no guessable ids or tokens to enumerate, and links cannot be revoked. That is acceptable because a link only holds public metadata, and it travels in the fragment, so the share host never sees it. The server never fetches payload URLs, so there is no SSRF. Its only outbound calls go to fixed Deezer and iTunes hosts, throttled at 1 req/s per service with Retry-After handling. Provider refs are host-pinned relative paths: '//', backslash, tab and scheme tricks are rejected, and '/@evil.com' stays on open.spotify.com. Artwork refs use an allowlisted host code plus an alphanumeric subdomain. Server output is JSON only, and M3U import line breaks are sanitized. The '||' field separator is not escaped, but music/playlists/import_playlist already accepts arbitrary M3U on dev, so this adds no new capability. Hidden provider mappings are already stripped from library rows. One pre-existing issue on dev, not from this PR: get_item_by_external_id (also exposed as music/<type>/get_by_external_id) loops over all providers and ignores per-user provider access. share/resolve and share/preview reuse it. The real problems are deployment and cost: the default share domain is dead, the landing page that renders untrusted payloads is outside the org and unreviewed, preview limit is unbounded with provider fan-out per track, and Deezer/Apple are called on every share with no opt-out. Earlier Copilot matching findings (versions, iTunes MIME, Deezer quota) are fixed at the head commit. On design, #7173's core command fits MA better for 'share this item'. #7172's recipient resolve and playlist import is the differentiator, and could come later on top of a models-owned payload and an org-hosted landing page. Design: #7172 (dmoo500) is an opt-in plugin that registers share/generate, share/resolve, share/preview_playlist and share/import_playlist. A link is https://share.music-assistant.io/#<base64url JSON> holding metadata (title, artist, version, ISRC/MBID/barcode, allowlisted artwork ref, host-pinned provider path refs, playlist track stubs). The recipient's own MA resolves it through their providers, previews playlists and imports them as a builtin M3U playlist. It is stateless and needs no server storage, but it does need an MA-run landing page (today a personal repo, and the domain does not resolve). The payload schema becomes a cross-repo client contract that lives only in the server plugin, with copies in the frontend and the landing page. It also hardcodes provider URL schemas and host allowlists, and calls Deezer and iTunes through private HTTP clients instead of the provider code. #7173 (jetersen) is a core music/share_item(uri) command that returns models#447 ItemShareInfo/ItemShareLink: access-filtered public provider website links, plus readable text for local, private or unsupported items, gated by API schema 100. The sender side only: no landing page, no recipient resolve or import. Providers own their URL format (ytmusic and bandcamp touched). For MA's architecture, #7173 fits better for the part both PRs share (deriving a shareable link for an item): it is core-owned, keeps provider URL knowledge in providers, puts the contract in models and needs no new infra. #7172's real extra value is the cross-provider round trip and playlist preview/import. That could be layered on top later, once the payload model moves to models and the org decides to own and host the landing page. Don't merge both as they stand, because they would give clients two competing share entry points. Both are large (#7172 about 1.3k code lines, #7173 about 4.3k additions incl. tests).",
-   "whats_new": "OzGav (22:41Z): keep M3U for now and do a proper core import change separately; matching should use the partial data the import already sends. Waiting on dmoo500.",
+   "whats_new": "dmoo500 pushed 6c4b7deaf; Copilot raised CRITICALs (ISRC matches, multi-artist shares, NotImplementedError in album resolution) and the gate drafted it at 12:32Z.",
    "blockers": [
     "dmoo500 asks the maintainers where to draw the line: fix matching in this PR or split a core/import/landing-page redesign",
     "Design call vs #7173 + models#447 (core command); OzGav's points match ours"
@@ -10803,7 +10803,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 09:00 CET",
-   "changed_now": ""
+   "changed_now": "drafted"
   },
   {
    "repo": "models",
@@ -11527,7 +11527,7 @@
    "number": 7220,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Music Connect (Ynison) provider to v4.4.6: Ynison go-away handling and official-client alignment",
+   "title": "Update Yandex Music Connect (Ynison) provider to v4.4.8: Ynison go-away handling and official-client alignment",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7220",
    "draft": false,
@@ -11535,8 +11535,8 @@
    "assessment": "comment",
    "status": "attention",
    "attention_since": "2026-10-27T11:28:00Z",
-   "waiting_on": "you: post f1 (track replay, 3rd round) or `fix 7220`; trudenboy: Copilot CRITICAL",
-   "gpt_sol": "2 critical (1 = ours, 1 = Copilot's)",
+   "waiting_on": "you: post f1 (track replay) or `fix 7220`",
+   "gpt_sol": "2 problems (1 = ours, 1 unverified)",
    "size": "XL",
    "code": 1774,
    "add": 1200,
@@ -11544,19 +11544,18 @@
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 291ddf919",
-   "head_sha": "1e31d3813",
+   "head_sha": "7a74a1370",
    "core_touched": false,
    "providers_touched": [
     "yandex_ynison"
    ],
    "stacked": false,
-   "tldr": "Almost: v4.4.6 is trudenboy's upstream cursor rework. It fixes Copilot's two 10:11Z CRITICALs and Opus finds no new bugs (514 tests pass). Our finding survives a third round: a peer append, or a reconnect during the RADIO refill, still returns \"superseded\" while the finished track is current, and it replays from 0. Copilot never raised it, so trudenboy hasn't seen it; a validated one-retry patch is ready. Copilot's new CRITICAL: Next between two copies of the same track can be lost.",
-   "summary": "Delta 2947c057c..1e31d3813: follow_window_trim/pending_index_shift are replaced by YnisonState.current_item_kept, which the client sets on our own non-navigation queue echo that keeps the current playable. The index comparison in _wait_for_track_change is replaced by navigation_confirmed, which needs the confirmed own queue version to reach the version registered before the navigation send, or a lineage or active-device change. NavigationBaseline now carries a queue lineage that only changes when a foreign queue is adopted. Position reporting uses PlaybackSession.position_ms or the extrapolated StatusBaseline (estimated_progress_ms). Literal outcomes become the NavigationOutcome StrEnum.\n(b) Copilot r4387417104: fixed. A trim echo carries an older own version than _navigation_version, so it cannot settle the wait, and current_item_kept re-indexes the cursor without a restart. Covered by test_trim_echo_does_not_end_the_wait_for_navigation and test_navigation_is_confirmed_by_its_own_echo.\n(c) Copilot r4387417196: fixed. Own frames never change _queue_lineage, so a peer replacement that our set_repeat_mode re-publishes still fails _matches_baseline (test_option_edit_does_not_adopt_a_peer_queue).\n(a) not fixed. The adapted probe reproduces both cases at 1e31d38 ([t1,t1] streamed instead of [t1,t2] and [t1,r2]). A second probe with the real YnisonClient confirms the trigger: a phone-authored append parsed during the RADIO fetch bumps lineage and epoch, and _complete_track returns SUPERSEDED with t1 still current. The stream loop's SUPERSEDED branch is `pass`, so the next iteration re-reads t1 and plays it from 0.\nReviewed with no finding: pause, play and seek positions (position_ms falls back to the server estimate between tracks and after pause), the RESTART and duplicate-id CHANGE paths, stale own echoes (dropped before they reach state), and unload/task cleanup (unchanged). Against origin/dev (4.3.13): dev's string-literal completion had the same replay-on-superseded behaviour, so (a) is not a regression.",
-   "whats_new": "v4.4.6 (1e31d3813): explicit queue lineage, completion waits for its own navigation echo, client owns the cursor. Re-reviewed: Opus almost (our f1 still open), GPT Sol 2 critical, Copilot 1 CRITICAL + description.",
+   "tldr": "Almost: v4.4.8 fixes Copilot's four open CRITICALs, including the duplicate-track Next; 521 tests pass, no new bugs per Opus. Our replay finding still stands for a peer append or a reconnect during the RADIO refill (Copilot only covered option-only edits). dev behaves the same, so it is a gap the PR doesn't close rather than a regression. The one-retry patch still applies and passes all probes. GPT Sol adds one unverified point about a failed option edit.",
+   "summary": "Delta 1e31d3813..7a74a1370 (v4.4.7 + v4.4.8). (1) _unadopted_navigation: mutate_player_state records the navigation version before sending and clears it on YnisonSendError, and _reset_pending_queue clears it too. _accept_queue flags current_item_navigated on the first accepted own echo at or after that version, so a stale navigation echo dropped behind a later repeat/shuffle/append edit is still recognised. current_item_kept is now False for that echo, so the provider no longer re-indexes it silently. This fixes Copilot r4388471390 (covered by test_navigation_to_a_repeated_track_survives_an_option_edit). advance_queue registers navigation only for CHANGE (a callable evaluated after mutate), so repeat-one is not flagged. go_to_index (RADIO advance) always moves. (2) _activate_playback treats current_item_navigated as a new item. A trim that leaves the target at the same track and index now requests TRACK_CHANGE, and the restart wakes _wait_for_track_change, which then sees navigation_confirmed (r4388889022). The restart is consumed at the top of the loop, so a natural advance does not restart twice. (3) _same_playback: a peer queue that differs only in version/options/shuffle_optional drops _pending_queue but keeps lineage, epoch and _last_queue_version (r4388889157). shuffle_optional carries the shuffled order without touching playable_list/current_playable_index, so this matches Ynison's model. (4) The status baseline is cleared only when the item changed (navigated, or a track/index change that is not an own item-keeping echo), which fixes the backward seek after our RADIO trim (r4388889245). (5) Our open finding, rerun at 7a74a1370: probe_superseded_replay.py still streams [t1,t1] for both the peer-append-during-reconnect and the reconnect-during-RADIO-refill cases. probe_real_client.py (real YnisonClient, phone append parsed during get_rotor_station_tracks) still returns superseded with t1 current: an append changes playable_list, so _same_playback is False and the lineage bumps. The SUPERSEDED branch in get_audio_stream is still `pass` (provider.py:584). With the retry patch, the suite (521) and all 3 probes pass. origin/dev (4.3.13) has the same replay-on-superseded behaviour, so this is not a regression. (6) The ma-allow MA001 comments are inert here. The PR is up to date with origin/dev and touches only the provider, its tests and fixtures.",
+   "whats_new": "v4.4.7/4.4.8 (7a74a1370) answer the 12:08Z and 12:54Z Copilot threads; ready again 13:55Z. Re-reviewed: Opus almost (our f1), GPT Sol 2 problems.",
    "blockers": [
-    "f1 (ours, 3rd round, unposted): superseded completion replays the finished track; `post 7220 f1` or `fix 7220`",
-    "Copilot r4388471390 (CRITICAL): duplicate-track Next lost behind an option edit (trudenboy)",
-    "Copilot r4388471463: description"
+    "f1 (ours, unposted, same on dev): superseded completion replays the finished track; `post 7220 f1` or `fix 7220`",
+    "Copilot re-review pending"
    ],
    "findings": [
     {
@@ -11565,27 +11564,34 @@
      "file": "music_assistant/providers/yandex_ynison/provider.py",
      "line": 584,
      "title": "Superseded completion still replays the finished track from 0 when the change kept it current",
-     "detail": "_accept_queue bumps _queue_lineage and the epoch for any foreign queue that differs, including a phone appending to the queue. If that lands while completion waits for the connection, the send lock or the RADIO fetch, or a reconnect bumps queue_generation during _replenish_radio_queue or the advance send, _complete_track returns SUPERSEDED. The finished item is still current, and get_audio_stream's SUPERSEDED branch just passes, so the next loop iteration reads the same track_id and streams it again from 0. Reproduced at 1e31d38 with the adapted probe (/tmp/prr/r1300y/d7220/probe_superseded_replay.py: streamed [t1,t1]) and with the real client (/tmp/prr/r1300y/d7220/probe_real_client.py: outcome superseded, current t1). origin/dev behaves the same.",
+     "detail": "v4.4.8 stops option-only peer edits from superseding a completion. A peer append still bumps _queue_lineage and the epoch, and so does a reconnect that bumps queue_generation during _replenish_radio_queue or the advance send. If either lands while completion waits for the connection, the send lock or the RADIO fetch, _complete_track returns SUPERSEDED with the finished item still current. get_audio_stream's SUPERSEDED branch just passes, so the next iteration reads the same track_id and streams it again from 0. Reproduced at 7a74a1370 with /tmp/prr/r1300y/d7220/probe_superseded_replay.py (streamed [t1,t1] in both cases) and probe_real_client.py (outcome superseded, current t1). origin/dev has the same behaviour. Same on origin/dev, so not a regression.",
      "fix": "When completion is SUPERSEDED, no restart or stop is pending, playback is not paused and the finished track is still current, recapture the baseline and retry _signal_track_completion once (see suggested_fix).",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
+     "line": 689,
+     "title": "A failed option edit clears an earlier successful navigation (unverified)",
+     "detail": "GPT Sol rates it a problem: the exception handler clears _unadopted_navigation unconditionally, so a Next echo arriving before reconnect can be treated as item-kept.",
+     "fix": "",
      "posted": null
     }
    ],
    "unaddressed_comments": [],
    "copilot": {
     "green": false,
-    "comments": 2,
-    "findings": 2,
-    "review_url": "https://github.com/music-assistant/server/pull/7220#discussion_r4388471390",
-    "titles": [
-     "[CRITICAL] Next between two occurrences of the same track is lost behind a repeat/shuffle edit (r4388471390, GPT Sol agrees)",
-     "[PROBLEM] PR description too long (r4388471463)"
-    ]
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7220",
+    "titles": []
    },
-   "copilot_reviewed_head": true,
-   "copilot_note": "Changes recommended on 1e31d3813 (12:08Z): 1 CRITICAL, 1 PROBLEM thread. The two 10:11Z CRITICALs are fixed. Gate will draft it.",
+   "copilot_reviewed_head": false,
+   "copilot_note": "Last review on 2c0b9b8e7 (12:54Z), threads answered and resolved in v4.4.8; re-review of 7a74a1370 requested.",
    "suggested_fix": {
-    "description": "Retry completion once when a superseding change left the finished track current with no restart pending. The new baseline feeds _wait_for_track_change. With it, the suite (514) passes and both probes advance instead of replaying. Validated with git apply --check on 1e31d38.",
-    "patch": "diff --git a/music_assistant/providers/yandex_ynison/provider.py b/music_assistant/providers/yandex_ynison/provider.py\nindex b961f12e3b..d1f8e93c85 100644\n--- a/music_assistant/providers/yandex_ynison/provider.py\n+++ b/music_assistant/providers/yandex_ynison/provider.py\n@@ -578,6 +578,17 @@ class YandexYnisonProvider(PluginProvider):\n                     self.logger.info(\"Track %s finished, advancing to next\", track_id)\n                     baseline = self._ynison.navigation_baseline()\n                     completion = await self._signal_track_completion()\n+                    if (\n+                        completion == NavigationOutcome.SUPERSEDED\n+                        and not playback.restart_requested()\n+                        and not playback.stop_requested()\n+                        and self._ynison is not None\n+                        and not self._ynison.state.is_paused\n+                        and self._ynison.state.current_track_id == track_id\n+                    ):\n+                        # The change kept the finished item current; advance the updated queue.\n+                        baseline = self._ynison.navigation_baseline()\n+                        completion = await self._signal_track_completion()\n                     if completion == NavigationOutcome.RESTART:\n                         playback.request_restart(0, RestartReason.REPEAT, grace=False)\n                     elif completion == NavigationOutcome.SUPERSEDED:\n",
+    "description": "Retry completion once when a superseding change left the finished track current and no restart is pending. Unchanged from the last round. git apply --check passes on 7a74a1370; the suite (521) passes, and both probes advance instead of replaying.",
+    "patch": "diff --git a/music_assistant/providers/yandex_ynison/provider.py b/music_assistant/providers/yandex_ynison/provider.py\nindex b961f12e3b..d1f8e93c85 100644\n--- a/music_assistant/providers/yandex_ynison/provider.py\n+++ b/music_assistant/providers/yandex_ynison/provider.py\n@@ -578,6 +578,17 @@ class YandexYnisonProvider(PluginProvider):\n                     self.logger.info(\"Track %s finished, advancing to next\", track_id)\n                     baseline = self._ynison.navigation_baseline()\n                     completion = await self._signal_track_completion()\n+                    if (\n+                        completion == NavigationOutcome.SUPERSEDED\n+                        and not playback.restart_requested()\n+                        and not playback.stop_requested()\n+                        and self._ynison is not None\n+                        and not self._ynison.state.is_paused\n+                        and self._ynison.state.current_track_id == track_id\n+                    ):\n+                        # The change kept the finished item current; advance the updated queue.\n+                        baseline = self._ynison.navigation_baseline()\n+                        completion = await self._signal_track_completion()\n                     if completion == NavigationOutcome.RESTART:\n                         playback.request_restart(0, RestartReason.REPEAT, grace=False)\n                     elif completion == NavigationOutcome.SUPERSEDED:\n\n",
     "pushed": null
    },
    "prompt": "",
@@ -11597,7 +11603,7 @@
    "fix_thread": null,
    "related_prs": [],
    "reviewed_now": true,
-   "reviewed_at": "2026-10-27 13:15 CET",
+   "reviewed_at": "2026-10-27 15:25 CET",
    "changed_now": "ready for review"
   },
   {
@@ -12885,35 +12891,63 @@
    "title": "Name the session a stream or queue is loaded into",
    "author": "mnestrud",
    "url": "https://github.com/music-assistant/aiosonos/pull/194",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "mnestrud (draft)",
-   "gpt_sol": "not run",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "attention",
+   "attention_since": "2026-10-27T13:42:00Z",
+   "waiting_on": "you: approve (aiosonos)",
+   "gpt_sol": "clean",
    "size": "S",
-   "code": 0,
+   "code": 36,
    "add": 0,
    "del": 0,
-   "ci": "",
+   "ci": "green",
    "ci_fail": false,
-   "merge_state": "",
-   "head_sha": "",
+   "merge_state": "clean",
+   "head_sha": "1e2b5b8af",
    "core_touched": false,
    "providers_touched": [],
    "stacked": false,
-   "tldr": "Draft, not reviewed yet.",
-   "summary": "",
-   "whats_new": "",
+   "tldr": "Adds an optional sync on_session(session_id) callback to play_stream_url and play_cloud_queue, fired right after the session exists and before the load is sent. It does not change any exception: it is additive and keyword-defaulted, so every current caller and except clause behaves as before. The logic is correct and all 147 tests pass. Nothing in the server uses it yet: it needs an aiosonos release, a pin bump from 0.1.15 and a Sonos provider change, and no server PR (including #7235) contains that.",
+   "summary": "Design: the PR uses a callback rather than a new exception type or attribute. That is the less invasive choice. CommandTimeout, FailedCommand, InvalidState and CancelledError all propagate unchanged, so existing except clauses still catch everything. A callback also covers CancelledError, which an exception attribute could not. The callback is called synchronously inside _session_lock, after _create_playback_session returns (or the active session is reused) and before the load await. So: callback fired means the load may have gone out, and callback not fired means nothing was loaded. That holds for creation timeouts, evictions during subscribe (FailedCommand) and cleanup (InvalidState), because all of them raise before the call. If the callback has fired and the load is then refused, the caller still has to tell the cases apart by exception type, as it does today. The internal _play_stream_url('clear', None) caller in stop/clear is unaffected because the default is None. Server callers (origin/dev, aiosonos==0.1.15): player.py play_media calls play_cloud_queue twice (announcement and queue) and _play_stream calls play_stream_url once, all positionally without on_session, so all stay compatible. To get the benefit, _play_stream needs to capture the session via on_session and pass it to _settle_failed_load in place of the replaced_session_id comparison. The queue path can use it too, in place of reading group.active_session_id after the failure. No server PR does this: #7235 is the transfer_queue lock work and has no aiosonos or on_session changes. Tests: 4 focused tests for ordering (await_count is 0 when the callback fires), no call on a failed creation, a call on an unanswered load, and reuse of the active session for queues. They are clear and minimal. The only gaps are listed below.",
+   "whats_new": "Marked ready 13:42Z. Reviewed: Opus ready, GPT Sol clean, Copilot Approval recommended.",
    "blockers": [
-    "Draft."
+    "aiosonos PRs other than bumps need your approve",
+    "Server side still needs a release, pin bump and Sonos provider change to use the callback"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/sonos/player.py (server)",
+     "line": 1615,
+     "title": "No server consumer yet",
+     "detail": "The PR body says the Sonos provider will use the callback in place of comparing session ids, but neither server dev nor any open server PR does. _play_stream still snapshots replaced_session_id and _settle_failed_load compares group.active_session_id against it, which is the heuristic the #6779 review thread flagged. #7235 does not touch this. This needs an aiosonos release (0.1.16), a manifest pin bump and the provider change, in that order.",
+     "fix": "After release, open a server PR: pass on_session=lambda sid: loaded.append(sid) (or set a local) in _play_stream and the queue branch of play_media, and have _settle_failed_load keep tracking the queue when a session was named and the error is CommandTimeout or CancelledError. Then drop replaced_session_id.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "tests/test_session_and_clips.py",
+     "line": 659,
+     "title": "Queue path only tested on a reused session",
+     "detail": "The stream tests cover ordering and the create path. For play_cloud_queue, only reuse is tested. Neither the branch where no session is active (creation, then callback) nor callback-before-load ordering is asserted for queues. The code is trivially correct, so this is coverage symmetry only.",
+     "fix": "Optionally add one test: play_cloud_queue with no active session names the created session before load_cloud_queue is awaited.",
+     "posted": null
+    }
+   ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "",
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/aiosonos/pull/194",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on 1e2b5b8af (14:05Z).",
    "suggested_fix": null,
    "prompt": "",
    "backport": null,
@@ -12922,10 +12956,13 @@
    "reporter_reply": null,
    "support": null,
    "fix_thread": null,
-   "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": null,
-   "changed_now": ""
+   "related_prs": [
+    "server#6779 follow-up",
+    "server#7235 (draft)"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-27 15:25 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
@@ -12991,16 +13028,16 @@
    "number": 7242,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Station provider to v1.5.31: Alice speech API commands and voice control fixes",
+   "title": "Update Yandex Station provider to v1.5.32: Alice speech API commands and voice control fixes",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7242",
-   "draft": true,
+   "draft": false,
    "verdict": "almost",
    "assessment": "comment",
    "status": "attention",
    "attention_since": "2026-10-27T06:49:00Z",
-   "waiting_on": "you: post f1 (guest scope) or `fix 7242`; trudenboy: 3 Copilot CRITICALs",
-   "gpt_sol": "1 problem (= ours)",
+   "waiting_on": "you: post f1 (guest scope) or `fix 7242`",
+   "gpt_sol": "1 critical (= ours)",
    "size": "M",
    "code": 130,
    "add": 0,
@@ -13008,47 +13045,42 @@
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 291ddf919",
-   "head_sha": "d225d4194",
+   "head_sha": "b4a84dbfd",
    "core_touched": false,
    "providers_touched": [
     "yandex_station"
    ],
    "stacked": false,
-   "tldr": "Almost: v1.5.30 fixes Copilot's stop-ack ordering and moves the player-access check to core get_player_state; declining the API schema bump is reasonable. Our point still stands and Copilot never raised it: party guests hold players.control with an empty player filter, so with alice_text_commands on, anyone with a party join link can send free text to Alice and drive the Yandex smart home. Validated patch rejects guests. Copilot has 3 new CRITICALs on pause races.",
-   "summary": "Delta since 00003aa6f. (1) Stop-ack ordering: glagol._handle_message resolves the waiter and then calls update_handler synchronously, so the playing=False carried by the stop reply used to reach _update_playback_state before _pause_stop_pending was set. pause()/stop() now bump the generation, set the guard/flags and the PAUSED/IDLE state before the send. _finish_transport_command restores a _SessionSnapshot on PlayerCommandFailed if the generation is unchanged. The regression test delivers the stopped state inside send(). One gap remains: a stopped frame that arrives during a send that later times out does not bump the generation, so the rollback can briefly report PLAYING. The next periodic frame corrects it, so this is not worth a finding. (2) Access: _get_station calls self.mass.players.get_player_state(player_id), which raises InsufficientPermissions through has_player_access (player_access_filter returns None for Scope.ALL, plus the own-client exemption). Correct, and it also works on 2.10. (3) API_SCHEMA_VERSION: constants.py says to bump for a new API command a non-bundled client could gate on. These commands only exist while the provider is loaded, and command also needs an opt-in, so a version number cannot advertise them. Clients have to probe the provider either way. Precedent is mixed: ambient_sounds bumped under the old wording, while hass/party/ai_radio did not. Accepting the decline is reasonable. (4) Guest exposure, still open: helpers/guest_access.get_or_create_guest_user creates the party guest with role GUEST and no player_filter. ROLE_SCOPES[GUEST] includes Scope.PLAYERS_CONTROL, which is the scope both commands are registered with (provider.py:316). has_player_access returns True for an empty filter, so get_player_state does not block guests. Anyone holding a party join link can call yandex_station/command and drive the Yandex smart home once the admin enables alice_text_commands. The setting text ('every Music Assistant user and integration with player control') does not tell the admin this includes anonymous party guests. No unresolved review threads; all 3 Copilot threads are resolved with author replies. PR is up to date with origin/dev and touches no core code (provider, its tests, and the generated en.json keys).",
-   "whats_new": "v1.5.31 (ab326cf12) answers the pause-race threads; Copilot raised 1 more CRITICAL (stop timeout). Still a draft. The guest scope on yandex_station/command is unchanged.",
+   "tldr": "Almost: v1.5.32 fixes every Copilot pause/stop race (shared _stop_playback, station epoch blocks stale rollbacks); 237 tests pass. Our finding is the only thing left and Copilot never raised it: party guests hold players.control with an empty player filter, so with alice_text_commands on, anyone with a party join link can drive the Yandex smart home. The command is new in this PR. GPT Sol now rates it CRITICAL. Validated patch still applies.",
+   "summary": "Delta d225d4194..b4a84dbfd (v1.5.31 + v1.5.32). (1) _stop_playback: stop() now also sets _pause_stop_pending=True (it used to clear it), and native pause sets it too. Until a playing=False report arrives, any playing=True report is treated as stale. Glagol keeps sending playing=False frames once the Station is stopped, so the guard clears within one frame, also when the Station was already stopped. _needs_replay keeps the old semantics (pause: kept or set if external; stop: cleared). (2) _station_epoch: _update_playback_state compares _SessionSnapshot before and after each report and bumps the epoch on a change. Reports dropped by the guard change nothing, so a timeout still rolls back (test_failed_transport_command_ignores_the_stream_still_playing_meanwhile). A stopped report clears the guard, which bumps the epoch, so no rollback happens and the guard is dropped (test_failed_pause_keeps_playback_the_station_reported_meanwhile). (3) The success path cancels a voice auto-resume scheduled while the command was pending. The failure path with a changed epoch does not, but that needs Alice to finish speaking during a pause that then times out, so no finding. (4) protobuf: `except IndexError, NotImplementedError, RecursionError:` is valid PEP 758 syntax on the repo's Python >=3.14 and covers everything read()/read_byte()/read_dict() raise. (5) The `# ma-allow: MA001` markers refer to an upstream lint rule that does not exist in this repo. They are inert. (6) Guest exposure, unchanged at head: yandex_station/command is still registered with Scope.PLAYERS_CONTROL (provider.py:316). helpers/guest_access.get_or_create_guest_user creates role GUEST with no player_filter. _GUEST_SCOPES includes PLAYERS_CONTROL. get_player_state passes because has_player_access allows an empty filter. The setting text still says only 'every Music Assistant user and integration with player control'. The command does not exist on origin/dev (1.5.24), so this exposure is new in the PR. The PR is up to date with origin/dev and touches only the provider, its tests and the generated en.json.",
+   "whats_new": "v1.5.31/1.5.32 answer the pause-race threads; ready again 13:56Z. Re-reviewed: Opus almost (our f1), GPT Sol 1 critical (= ours), Copilot Needs a closer look.",
    "blockers": [
-    "f1 (ours): party guests can drive the Yandex smart home via yandex_station/command; post it or `fix 7242` (rejects guests)",
-    "Copilot: 3 new CRITICAL pause-race threads (trudenboy)"
+    "f1 (ours, unposted): party guests can drive the Yandex smart home via yandex_station/command; `post 7242 f1` or `fix 7242`"
    ],
    "findings": [
     {
      "model": "Claude",
      "severity": "PROBLEM",
      "file": "music_assistant/providers/yandex_station/provider.py",
-     "line": 313,
+     "line": 336,
      "title": "Party guests can send free-text Alice commands (smart home) once alice_text_commands is on",
-     "detail": "yandex_station/command is registered with required_scope=Scope.PLAYERS_CONTROL. The shared party guest account (helpers/guest_access.get_or_create_guest_user: role GUEST, empty player_filter) holds that scope via _GUEST_SCOPES. The new get_player_state check passes for it, because has_player_access returns True for an empty filter. So anyone with a party join link can hand arbitrary text to Alice and drive whatever is linked to the Yandex account (lights, locks, heating, purchases). The opt-in only says 'every user and integration with player control', which an admin will not read as 'anonymous party guests'. say() is fine at guest level since it is equivalent to an announcement.",
-     "fix": "Reject guest users in command() (UserRole.GUEST -> InsufficientPermissions), or register command with a scope guests never hold (e.g. Scope.CONFIG_PLAYERS_WRITE, which keeps admin and the HA service account). Optionally mention guests in the setting description.",
+     "detail": "yandex_station/command is registered with required_scope=Scope.PLAYERS_CONTROL (line 316). The shared party guest account (helpers/guest_access.get_or_create_guest_user: role GUEST, empty player_filter) holds that scope through _GUEST_SCOPES, and the get_player_state check in _get_station passes for it. Anyone holding a party join link can therefore hand arbitrary text to Alice and control whatever is linked to the Yandex account (lights, locks, heating). The opt-in description does not tell the admin this includes anonymous party guests. say() is fine at guest level.",
+     "fix": "Reject UserRole.GUEST in command() with InsufficientPermissions (see suggested_fix), or register command with a scope guests never hold. Optionally mention guests in the setting description.",
      "posted": null
     }
    ],
    "unaddressed_comments": [],
    "copilot": {
     "green": false,
-    "comments": 3,
-    "findings": 3,
-    "review_url": "https://github.com/music-assistant/server/pull/7242#discussion_r4386840251",
-    "titles": [
-     "[CRITICAL] native pause skips the new guard (r4386840251)",
-     "[CRITICAL] voice-interrupted pause can schedule a new resume (r4386840324)",
-     "[CRITICAL] stop then new native playback inside pause() leaves the generation unchanged (r4386840373)"
-    ]
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7242",
+    "titles": []
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "Changes recommended on d225d4194 (09:08Z), 3 new CRITICAL threads; the gate will draft it again.",
+   "copilot_note": "Needs a closer look on b4a84dbfd (14:08Z), no open threads.",
    "suggested_fix": {
-    "description": "Block party guests from yandex_station/command while keeping players.control for household users and integrations. Validated with git apply --check on d225d4194; provider tests still 232 passed.",
+    "description": "Block party guests from yandex_station/command while keeping players.control for household users and integrations. Unchanged from the last round. git apply --check passes on b4a84dbfd and the provider tests still pass (237).",
     "patch": "diff --git a/music_assistant/providers/yandex_station/provider.py b/music_assistant/providers/yandex_station/provider.py\nindex c4eb64569d..001b7ebed7 100644\n--- a/music_assistant/providers/yandex_station/provider.py\n+++ b/music_assistant/providers/yandex_station/provider.py\n@@ -9,10 +9,11 @@ import logging\n from typing import TYPE_CHECKING, Any, cast\n \n from aiohttp import ClientSession, CookieJar\n-from music_assistant_models.auth import Scope\n+from music_assistant_models.auth import Scope, UserRole\n from music_assistant_models.config_entries import ConfigEntry\n from music_assistant_models.enums import ConfigEntryType\n from music_assistant_models.errors import (\n+    InsufficientPermissions,\n     InvalidDataError,\n     PlayerUnavailableError,\n )\n@@ -25,6 +26,7 @@ from ya_passport_auth.ma import (\n     KeySpec,\n )\n \n+from music_assistant.controllers.webserver.helpers.auth_middleware import get_current_user\n from music_assistant.models.player_provider import PlayerProvider\n \n from .constants import (\n@@ -341,6 +343,10 @@ class YandexStationProvider(PlayerProvider):\n         :param player_id: The Yandex Station player that handles the request.\n         :param text: The request, e.g. \"включи свет на кухне\".\n         \"\"\"\n+        # Party guests hold players.control, but must not reach the Yandex smart home.\n+        if (user := get_current_user()) and user.role == UserRole.GUEST:\n+            msg = f\"{user.username} may not send text requests to Alice\"\n+            raise InsufficientPermissions(msg)\n         await self._get_station(player_id, text).send_command(text)\n \n     def _get_station(self, player_id: str, text: str) -> YandexStationPlayer:\n",
     "pushed": null
    },
@@ -13065,9 +13097,9 @@
    "related_prs": [
     "#7227 maps yandex_station/command to system:admin over MCP"
    ],
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-27 10:25 CET",
-   "changed_now": ""
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-27 15:25 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
@@ -13077,12 +13109,12 @@
    "title": "Fix Spotify on Soloist stopping the queue at the end of every track",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7244",
-   "draft": true,
+   "draft": false,
    "verdict": "ready",
    "assessment": "approve",
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "reporters: test of pr-7244 (support#6860)",
+   "status": "attention",
+   "attention_since": "2026-10-27T12:48:59Z",
+   "waiting_on": "OzGav (or another maintainer): approve; reporter confirmed",
    "gpt_sol": "clean",
    "size": "M",
    "code": 77,
@@ -13099,9 +13131,10 @@
    "stacked": false,
    "tldr": "The fix is correct and small. A pause now arms a 2 s run-scoped watch, and the queue only stops if the engine is still paused and the run is still live at the deadline. The engine's end-of-item pause is followed within milliseconds by exit, wander or delivery done, so it no longer stops the queue. #7117's intent holds: an app pause still stops the queue, about 2 s later. 296 tests pass, and the PR applies cleanly to stable with its tests green there, so backport it.",
    "summary": "Logic checked against origin/dev (soloist.py has no changes on dev since the merge base). Source of truth: the watch re-checks run state (_engine_exited via proc.wait, _item_over via wander, _delivery_done, _stopped, _error) at the deadline. It never looks at the next track, so a next track that starts late does not matter. Real app pause near track end: the engine stops, never exits, and the queue stops after 2 s with the resume position kept. Pause then resume (playing or buffering) within the grace: no stop. Repeated pause: the old watch is cancelled and a new deadline set. Seek, including to near the end: the old run is stopped (watch cancelled through _tasks), and the new run's cold seek runs with _reader None, so nothing arms during startup. Last track of the queue: the engine exits after its pause, nothing stops, and the queue ends naturally (2.10.8 stopped it, which was harmless). Flow mode: same per-item run, no difference. Teardown: the watch goes through _spawn_task, so stop(), unload(), discard_run and a new play all cancel it, and _item_live() checks _stopped, so a watch cannot be armed after stop(). The stop is fired through mass.create_task rather than awaited, so stop() cannot cancel-join its own caller. Autoplay on: the wander sets _item_over before or right after the pause, and arming now also covers buffering->paused, which is still dismissed by the wander. Trade-offs that remain: after a pause in the Spotify app, MA keeps playing up to 2 s of cushioned audio before the stop (well under the 20 s stall watchdog). Also, if an account takeover reports paused before the device goes inactive, the _fail path now wins over the queue stop. That matches 2.10.7 behaviour and has not been verified. Regression test test_the_engine_pausing_at_its_items_end_does_not_stop_the_queue would fail on origin/dev. Tests use a 0.02 s grace against a 0.1 s sleep, which is deterministic because asyncio fires timers in deadline order.",
-   "whats_new": "You put it back to draft and asked the support#6860 reporters to test (09:04Z). No replies yet.",
+   "whats_new": "wdoeland confirmed the fix on support#6860 at 12:48Z; OzGav marked it ready for review at 13:50Z (\"a user reports this fixed the problem\").",
    "blockers": [
-    "Draft: waiting on the reporters' test (support#6860)"
+    "Your own PR: needs OzGav's (or another maintainer's) approve",
+    "Backport after merge (label set)"
    ],
    "findings": [
     {
@@ -13143,7 +13176,13 @@
    },
    "auto_approved": null,
    "author_replied": null,
-   "reporter_reply": null,
+   "reporter_reply": {
+    "issue": "support#6860",
+    "author": "wdoeland",
+    "at": "2026-10-27T12:48:59Z",
+    "url": "https://github.com/music-assistant/support/issues/6860",
+    "summary": "Tested pr-7244 on Soloist (album from the MA UI): tracks no longer stop; confirms the fix."
+   },
    "support": [
     {
      "issue": "support#6860",
@@ -13160,7 +13199,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-27 09:15 CET",
-   "changed_now": ""
+   "changed_now": "reporter replied"
   },
   {
    "repo": "server",
