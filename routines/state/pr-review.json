@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-27T08:00:00+01:00",
- "dev": "5fc232708",
- "run_note": "fmunkes's #7241 (audiobooks in builtin playlists) is a clean core fix that all three reviewers pass; it needs your approve and a backport. trudenboy's #7242 adds an opt-in Alice text command that party guests could reach with players.control; #7227 already blocks it over MCP. No other changes since 07:00.",
+ "last_run": "2026-10-27T09:00:00+01:00",
+ "dev": "2a2a2f991",
+ "run_note": "Your #7244 (Soloist pause at every track end, support#6860) is clean from all three reviewers and backports cleanly; it needs another maintainer's approve. trudenboy's #7242 was drafted on Copilot CRITICALs, but our guest-scope point on the Alice command still needs posting. You merged #7243.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -13080,9 +13080,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-27 08:20 CET",
-   "changed_now": "new"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -13092,12 +13092,12 @@
    "title": "Update Yandex Station provider to v1.5.29: Alice speech API commands and voice control fixes",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7242",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "attention",
    "attention_since": "2026-10-27T06:49:00Z",
-   "waiting_on": "you: post f1 (guest scope on yandex_station/command)",
+   "waiting_on": "you: post f1 (guest scope); trudenboy: Copilot threads",
    "gpt_sol": "1 critical, 1 problem (unverified, experimental features)",
    "size": "M",
    "code": 130,
@@ -13114,10 +13114,10 @@
    "stacked": false,
    "tldr": "Almost: v1.5.29 adds yandex_station/say and an opt-in yandex_station/command that hands free text to Alice, which can drive the Yandex smart home. command only needs players.control, which party guests hold with no player filter, so with the setting on anyone with a party join link could control the smart home. #7227 already treats it as system:admin over MCP. 229 tests pass with the pinned ya-passport-auth.",
    "summary": "Adds yandex_station/say (repeat_phrase server action) and opt-in yandex_station/command (sendText). Both are registered in loaded_in_mass and unregistered in unload; the provider is single-instance, so no name collision. Both reuse YandexGlagol.send(), which only talks to the local Station WS (private-IP guarded), with WS_COMMAND_TIMEOUT and no retries. Results go through _raise_if_failed, so timeouts, not_connected and non-SUCCESS surface as PlayerCommandFailed. There are no new cloud/auth calls, tasks or timers, so unload has nothing new to clean up. The state changes hold up against the replayed Station sequences in the tests: NONE counts as idle, BUSY counts as a voice state, intercept stays paused through LISTENING→BUSY→NONE, and voice control only interrupts on playing=False. strings.json and en.json are identical for the new key, and labels come from translation keys like the existing intercept entry. Toggling the setting reloads the provider through the default update_config, so the registration change applies. Coordinator check against #7227 (head 1326ae90): #7227 already has an EXACT_POLICIES entry for yandex_station/command. It maps to system:admin with _SYSTEM_ANNOTATIONS (readOnlyHint False, destructiveHint True, openWorldHint False), and test_yandex_station_commands passes. yandex_station/say falls to the scope fallback, giving control:players with control annotations. A token with only control:players therefore cannot reach command over MCP. The core WS/HTTP API is a different matter: it still lets any players.control holder call it once the opt-in is on, which is the main finding.",
-   "whats_new": "Opened 06:41Z, ready 06:49Z. Reviewed by Opus and GPT Sol; Copilot requested.",
+   "whats_new": "Copilot raised 2 CRITICALs (stop-ack ordering, the admin player-filter check we flagged as a suggestion) and an API_SCHEMA_VERSION bump; drafted at 07:32Z. Our guest-scope point on yandex_station/command is not among them, so it still needs posting.",
    "blockers": [
-    "f1: yandex_station/command needs an admin scope (or block guests); post it",
-    "Copilot review pending"
+    "f1 (ours, not raised by Copilot): yandex_station/command needs an admin scope; party guests hold players.control. Post it while it is in draft",
+    "Copilot threads with trudenboy"
    ],
    "findings": [
     {
@@ -13182,9 +13182,19 @@
     }
    ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "Requested 07:05Z.",
+   "copilot": {
+    "green": false,
+    "comments": 3,
+    "findings": 3,
+    "review_url": "https://github.com/music-assistant/server/pull/7242",
+    "titles": [
+     "[CRITICAL] Stop acknowledgement can arrive before the pending flag is set",
+     "[CRITICAL] Raw player_filter check rejects full-access users (= our suggestion)",
+     "[PROBLEM] New public API commands need an API_SCHEMA_VERSION bump"
+    ]
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Changes recommended on 00003aa6f (07:08Z); gate drafted it at 07:32Z.",
    "suggested_fix": {
     "description": "Use core has_player_access() for the per-user player check in _get_station. Validated with git apply --check on the PR head, and test_alice_speech.py passes (13). The scope change for yandex_station/command is not included because it needs a test update and a maintainer decision.",
     "patch": "diff --git a/music_assistant/providers/yandex_station/provider.py b/music_assistant/providers/yandex_station/provider.py\nindex ef97f5c9b9..a3d2e362e8 100644\n--- a/music_assistant/providers/yandex_station/provider.py\n+++ b/music_assistant/providers/yandex_station/provider.py\n@@ -26,7 +26,10 @@ from ya_passport_auth.ma import (\n     KeySpec,\n )\n \n-from music_assistant.controllers.webserver.helpers.auth_middleware import get_current_user\n+from music_assistant.controllers.webserver.helpers.auth_middleware import (\n+    get_current_user,\n+    has_player_access,\n+)\n from music_assistant.models.player_provider import PlayerProvider\n \n from .constants import (\n@@ -356,7 +359,7 @@ class YandexStationProvider(PlayerProvider):\n             raise PlayerUnavailableError(msg)\n         # Same per-user player restriction the core player commands enforce.\n         user = get_current_user()\n-        if user and user.player_filter and player_id not in user.player_filter:\n+        if user and not has_player_access(user, player_id, player):\n             msg = f\"{user.username} does not have access to player {player_id}\"\n             raise InsufficientPermissions(msg)\n         return player\n",
@@ -13203,9 +13213,150 @@
    "related_prs": [
     "#7227 maps yandex_station/command to system:admin over MCP"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-27 08:20 CET",
+   "changed_now": "drafted"
+  },
+  {
+   "repo": "server",
+   "number": 7244,
+   "state": "open",
+   "closed_at": null,
+   "title": "Fix Spotify on Soloist stopping the queue at the end of every track",
+   "author": "MarvinSchenkel",
+   "url": "https://github.com/music-assistant/server/pull/7244",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "another maintainer: approve (your PR)",
+   "gpt_sol": "clean",
+   "size": "M",
+   "code": 77,
+   "add": 0,
+   "del": 0,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 2a2a2f991",
+   "head_sha": "dd46a9ac9",
+   "core_touched": false,
+   "providers_touched": [
+    "spotify"
+   ],
+   "stacked": false,
+   "tldr": "The fix is correct and small. A pause now arms a 2 s run-scoped watch, and the queue only stops if the engine is still paused and the run is still live at the deadline. The engine's end-of-item pause is followed within milliseconds by exit, wander or delivery done, so it no longer stops the queue. #7117's intent holds: an app pause still stops the queue, about 2 s later. 296 tests pass, and the PR applies cleanly to stable with its tests green there, so backport it.",
+   "summary": "Logic checked against origin/dev (soloist.py has no changes on dev since the merge base). Source of truth: the watch re-checks run state (_engine_exited via proc.wait, _item_over via wander, _delivery_done, _stopped, _error) at the deadline. It never looks at the next track, so a next track that starts late does not matter. Real app pause near track end: the engine stops, never exits, and the queue stops after 2 s with the resume position kept. Pause then resume (playing or buffering) within the grace: no stop. Repeated pause: the old watch is cancelled and a new deadline set. Seek, including to near the end: the old run is stopped (watch cancelled through _tasks), and the new run's cold seek runs with _reader None, so nothing arms during startup. Last track of the queue: the engine exits after its pause, nothing stops, and the queue ends naturally (2.10.8 stopped it, which was harmless). Flow mode: same per-item run, no difference. Teardown: the watch goes through _spawn_task, so stop(), unload(), discard_run and a new play all cancel it, and _item_live() checks _stopped, so a watch cannot be armed after stop(). The stop is fired through mass.create_task rather than awaited, so stop() cannot cancel-join its own caller. Autoplay on: the wander sets _item_over before or right after the pause, and arming now also covers buffering->paused, which is still dismissed by the wander. Trade-offs that remain: after a pause in the Spotify app, MA keeps playing up to 2 s of cushioned audio before the stop (well under the 20 s stall watchdog). Also, if an account takeover reports paused before the device goes inactive, the _fail path now wins over the queue stop. That matches 2.10.7 behaviour and has not been verified. Regression test test_the_engine_pausing_at_its_items_end_does_not_stop_the_queue would fail on origin/dev. Tests use a 0.02 s grace against a 0.1 s sleep, which is deterministic because asyncio fires timers in deadline order.",
+   "whats_new": "Opened and marked ready 07:55Z. Reviewed: Opus ready (1 suggestion), GPT Sol clean, Copilot Approval recommended.",
+   "blockers": [
+    "Your own PR: needs another maintainer's approve"
+   ],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/spotify/backends/soloist.py",
+     "line": 148,
+     "title": "2 s grace is a timing heuristic measured on one host",
+     "detail": "The end-of-item pause is only dismissed if _engine_exited (proc.wait returning), the wander or _delivery_done lands within 2 s. The PR measured the exit at a few ms on one engine/host. On a slow host (Pi, loaded box) or an engine build that does more work on exit, a slower exit would bring #6860 back intermittently. The existing 'Spotify paused ..., stopping queue' info log at least makes a misfire visible in user logs.",
+     "fix": "Optional. Keep as is. If misfires show up in the field, raise the grace (the only cost is a few more seconds of cushioned audio after an app pause) or add a fast path that dismisses a pause rewound to 0 right after a position report near the duration.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "tests/providers/spotify/test_soloist_backend.py",
+     "line": 812,
+     "title": "Repeated-pause test checks the mechanism, not the outcome",
+     "detail": "test_a_repeated_pause_gets_its_own_grace only asserts that the first task was cancelled and replaced, and it leaves the second watch pending when the test ends. It does not show that the queue stops exactly once, at the second deadline.",
+     "fix": "Await past the grace and assert mass.player_queues.stop.assert_called_once_with('player1') in place of the task-identity checks.",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7244",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on dd46a9ac9 (07:54Z).",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": {
+    "rec": true,
+    "why": "2.10.8 regression from #7117 (on stable as 1c79b553a1); merges cleanly onto stable with the spotify tests green. Label already set."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": [
+    {
+     "issue": "support#6860",
+     "my_last_comment_at": "",
+     "test_asked_at": ""
+    },
+    {
+     "issue": "support#6752",
+     "my_last_comment_at": "",
+     "test_asked_at": ""
+    }
+   ],
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-27 09:15 CET",
    "changed_now": "new"
+  },
+  {
+   "repo": "server",
+   "number": 7243,
+   "state": "merged",
+   "closed_at": "2026-10-27T07:25:01Z",
+   "title": "Show why LRCLIB lookups fail and stop retrying them in background scans",
+   "author": "MarvinSchenkel",
+   "url": "https://github.com/music-assistant/server/pull/7243",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": null,
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "merged",
+   "gpt_sol": "not run",
+   "size": "S",
+   "code": 0,
+   "add": 0,
+   "del": 0,
+   "ci": "",
+   "ci_fail": false,
+   "merge_state": "",
+   "head_sha": "",
+   "core_touched": false,
+   "providers_touched": [],
+   "stacked": false,
+   "tldr": "Your PR, merged by you at 07:25Z.",
+   "summary": "",
+   "whats_new": "Merged by you.",
+   "blockers": [],
+   "findings": [],
+   "unaddressed_comments": [],
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": "merged"
   }
  ]
 }
