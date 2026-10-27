@@ -5,16 +5,27 @@ description: Use to self-review the work done so far and get a second opinion fr
 
 # Self Review
 
-Review the work we have done in this session, then get a second opinion from two other models.
+Review the work we have done in this session, then get a second opinion from Opus 5.5 and GPT Sol 6.1.
 
 ## Steps
 
-1. Do your own review of the current diff first. Look for bugs, logic errors, missing edge cases, and deviations from the project standards.
-2. In parallel, launch two `code-review` sub-agents on the same diff:
-   - one with `model: gpt-5.5`
-   - one with `model: gemini-3.1-pro-preview`
-   Give each the full context: what we changed and why, and the files in scope.
-3. Collect all findings. Merge overlapping points.
+1. Write the full diff under review to `<scratchpad>/self_review/review.diff` (e.g. `git diff origin/dev...HEAD` plus uncommitted changes, from the worktree). Write a short `context.md` next to it: what we changed, why, and the files in scope.
+2. Do your own review of the diff. Look for bugs, logic errors, missing edge cases, and deviations from the project standards.
+3. In parallel, start both second opinions:
+   - **Opus 5.5.** Agent tool, `subagent_type: general-purpose`, `model: opus`, `effort: high`. Give it the paths of `review.diff` and `context.md` and the worktree path. Ask for concrete findings only, each with `file:line`, a one-line problem and a one-line failure scenario.
+   - **GPT Sol 6.1.** Run through the GitHub Copilot CLI (billed to Marvin's Copilot credits) with Bash `run_in_background: true`, `cwd` set to the worktree:
+
+     ```bash
+     copilot -p "$(cat <scratchpad>/self_review/prompt.md)" -s \
+       --model gpt-6.1-sol --reasoning-effort high --no-ask-user \
+       --add-dir <scratchpad>/self_review \
+       --allow-tool='read' --deny-tool='write' --deny-tool='shell' \
+       --deny-tool='url' --deny-tool='memory' \
+       > <scratchpad>/self_review/gpt.md 2>&1
+     ```
+
+     `prompt.md` holds the same ask as the Opus prompt, with absolute paths to `review.diff` and `context.md`. Keep it read-only: never pass `--allow-all-tools`, `--allow-all` or `--yolo`. A run takes a few minutes and costs about 6.5 AI credits before the review itself.
+4. Collect all findings. Merge overlapping points.
 
 ## Deciding
 
@@ -26,4 +37,4 @@ You own the end result. You decide which suggestions to accept or reject.
 
 ## Output
 
-Short summary grouped by: accepted (fixed), rejected (with reason), and anything still open for the user to decide.
+Short summary grouped by: accepted (fixed), rejected (with reason), and anything still open for the user to decide. Note which model raised each point.

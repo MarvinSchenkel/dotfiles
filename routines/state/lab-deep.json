@@ -24,6 +24,30 @@
       "since": "2026-10-27",
       "note": "#6860 Soloist (Autoplay off) stops after the first track on dev 291ddf9198ff; fix server#7244 still a draft. Red until it merges.",
       "green_days": 0
+    },
+    {
+      "test": "scenarios/deep/test_players.py::test_member_rejoins[slim-1] and test_member_restart_ungroups[slim-1]",
+      "since": "2026-10-27",
+      "note": "Server: squeezelite unregister sets available=False without a state diff, the leader keeps the stale member and the reconnected player never gets the stream again (chip mcp:96b1910b). Follow-up chip after server#7249 merges.",
+      "green_days": 0
+    },
+    {
+      "test": "scenarios/deep/test_queue.py::test_now_playing_follows[snap-1] and gate test_queue[snap-1] at now_playing",
+      "since": "2026-10-27",
+      "note": "Server: snapserver replays ~2 s of the previous session's audio on a play right after a stop (chip mcp:6e5e9e74 working on it). The older 'advances' red is fixed by server#7250.",
+      "green_days": 0
+    },
+    {
+      "test": "scenarios/deep/test_players.py::test_announce_ducks_and_resumes[snap-1] (position_kept)",
+      "since": "2026-10-27",
+      "note": "Server: native Snapcast announcement keeps feeding the music stream, ~10 s skipped (chip mcp:66a58e60).",
+      "green_days": 0
+    },
+    {
+      "test": "scenarios/deep/test_players.py::test_announce_short_and_back_to_back[snap-1] (short_clip_full)",
+      "since": "2026-10-27",
+      "note": "Server: the start of a short announcement clip is cut on Snapcast, 0.77 of 1.5 s heard (chip mcp:bff486b0).",
+      "green_days": 0
     }
   ],
   "last_flakes": [

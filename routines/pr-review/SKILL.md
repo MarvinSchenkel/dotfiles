@@ -222,6 +222,10 @@ The full report shows:
   X axis: ready to merge, almost ready, not ready yet, plus one extra column for auto-approved PRs so Marvin
   can keep track of them. That column only shows PRs auto-approved in the last week.
 - SLA colouring: a card that has waited on Marvin for a week or more is red.
+- Action colouring: a PR that requires my response, regardless of its merge state, needs to be coloured orange. Examples are:
+    - User has asked a question that requires my response
+    - User has replied to one of my comments
+    - PR is stuck on something only a maintainer can do, e.g. adding a 'dependency reviewed' label
 - Badges on the cards, only in the report, never as GitHub labels: size, draft, user replied, reporter
   replied, backport recommended on ready and auto-approved PRs, yours, new review, failing CI, stacked, and
   days waiting on Marvin.
