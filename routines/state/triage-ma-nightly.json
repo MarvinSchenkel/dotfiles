@@ -1,44 +1,44 @@
 {
   "thread_id": "mcp:dba76884-e5e6-48aa-aa88-914e09fa4301",
   "scheduled_task_id": "scheduled-task:command:mcp:ece76a14-da84-4b32-9dc2-e104d78297bd:schedule-task:triage-ma-nightly-setup-2026-10-21",
-  "last_run_end": "2026-10-26T05:00:09+01:00",
-  "last_run_summary": "Run 2026-10-26: quiet, no add-on update on 10-25; WiiM #7157 resumed 6 more join restarts; Supervisor restart bounced hass provider 13 s; Apple Music still unloaded pending sign-in; anon 870 MB at 44 h.",
+  "last_run_end": "2026-10-27T05:00:11+01:00",
+  "last_run_summary": "Run 2026-10-27: Apple Music back (sign-in 10-26 11:45, survives restart; 25 i.* tracks skipped for missing artists); new noise: py3.14 shield logs abandoned pyatv connects, Sendspin Cast bridge flag race; Keuken off Wi-Fi twice; 4029 at restart again.",
   "known": {
     "wiim:native-join-stops-leader": {
       "title": "WiiM native join re-GET rewinds Mancave",
       "severity": "low",
       "first_seen": "2026-10-08",
-      "seen": 5,
-      "last_seen": "2026-10-26",
+      "seen": 6,
+      "last_seen": "2026-10-27",
       "fix": "server#7157 in 2026102303: resumed 5/5 first-join restarts on 10-23"
     },
     "airplay:appletv-mrp-companion-reconnect": {
       "title": "Apple TV MRP + Companion reconnect loop",
       "severity": "medium",
       "first_seen": "2026-10-20",
-      "seen": 6,
-      "last_seen": "2026-10-26"
+      "seen": 7,
+      "last_seen": "2026-10-27"
     },
     "remote_access.gateway._bridge_websocket:ConnectionRefusedError@shutdown": {
       "title": "Shutdown noise: remote access bridges to unloaded Sendspin",
       "severity": "low",
       "first_seen": "2026-10-15",
-      "seen": 3,
-      "last_seen": "2026-10-25"
+      "seen": 4,
+      "last_seen": "2026-10-27"
     },
     "aiosendspin:non-compliant-client": {
       "title": "Sendspin non-compliant client warnings",
       "severity": "low",
       "first_seen": "2026-10-08",
-      "seen": 6,
-      "last_seen": "2026-10-26"
+      "seen": 7,
+      "last_seen": "2026-10-27"
     },
     "remote_access:libjuice-turn-403": {
       "title": "libjuice TURN CreatePermission 403 and send failures",
       "severity": "low",
       "first_seen": "2026-10-21",
-      "seen": 6,
-      "last_seen": "2026-10-26"
+      "seen": 7,
+      "last_seen": "2026-10-27"
     },
     "helpers.images:dlna-un_known-404": {
       "title": "DLNA un_known artwork 404 at startup",
@@ -56,11 +56,12 @@
     },
     "LoginFailed@providers/apple_music/api_client.py:_raise_on_auth_error": {
       "first_seen": "2026-10-22",
-      "seen": 5,
+      "seen": 6,
       "title": "Apple Music signed out: every me/ endpoint returns 401/403",
-      "severity": "high",
-      "last_seen": "2026-10-26",
-      "cause": "10-22: expired stored app token (support#6849, #7165 in dev2026102403); 10-24 load still fails on me/storefront with the fix, likely the stored music user token (inferred)"
+      "severity": "low",
+      "last_seen": "2026-10-27",
+      "cause": "10-22: expired stored app token (support#6849, #7165 in dev2026102403); 10-24 load still fails on me/storefront with the fix, likely the stored music user token (inferred)",
+      "resolved": "2026-10-26 11:45 sign-in on dev2026102403; loads after restart"
     },
     "wiim:join-prefetch-wedge": {
       "first_seen": "2026-10-19",
@@ -72,10 +73,10 @@
     },
     "pychromecast:socket-connect-retry": {
       "first_seen": "2026-10-20",
-      "seen": 5,
+      "seen": 6,
       "title": "Overnight Cast socket drops (Amp, Living Room TV, Kantoor)",
       "severity": "low",
-      "last_seen": "2026-10-26"
+      "last_seen": "2026-10-27"
     },
     "remote_access:signaling-client-not-found": {
       "first_seen": "2026-10-22",
@@ -86,36 +87,36 @@
     },
     "RetriesExhausted@helpers/throttle_retry.py:wrapper(lrclib)": {
       "first_seen": "2026-10-20",
-      "seen": 4,
+      "seen": 5,
       "title": "LRCLIB lyrics lookups exhausted retries",
       "severity": "low",
-      "last_seen": "2026-10-26"
+      "last_seen": "2026-10-27"
     },
     "remote_access:signaling-4029-at-startup": {
       "first_seen": "2026-10-23",
-      "seen": 1,
-      "last_seen": "2026-10-23",
+      "seen": 2,
+      "last_seen": "2026-10-27",
       "title": "Remote access rate-limited for 5 minutes after the restart",
       "severity": "low"
     },
     "KeyError@providers/wiim/player.py:_ensure_subscriptions_and_update(async_resubscribe)": {
       "first_seen": "2026-08-21",
-      "seen": 1,
-      "last_seen": "2026-10-23",
+      "seen": 2,
+      "last_seen": "2026-10-27",
       "title": "WiiM SDK resubscribe KeyError during shutdown",
       "severity": "low"
     },
     "wiim.sdk:mini-http-upnp-timeout": {
       "first_seen": "2026-10-23",
-      "seen": 3,
-      "last_seen": "2026-10-26",
+      "seen": 4,
+      "last_seen": "2026-10-27",
       "title": "WiiM Mini unreachable for ~10 s",
       "severity": "low"
     },
     "wiim.sdk:amp-getstatusex-server-disconnected": {
       "first_seen": "2026-10-24",
-      "seen": 3,
-      "last_seen": "2026-10-26",
+      "seen": 4,
+      "last_seen": "2026-10-27",
       "title": "WiiM Amp drops HTTP status polls",
       "severity": "low"
     },
@@ -139,6 +140,27 @@
       "last_seen": "2026-10-26",
       "title": "HA provider reload hit a restarting Supervisor, retry worked",
       "severity": "low"
+    },
+    "asyncio.shield:abandoned-pyatv-connect(control_player._pyatv_connect)": {
+      "first_seen": "2026-10-26",
+      "seen": 1,
+      "last_seen": "2026-10-27",
+      "title": "Abandoned Apple TV connects log ERROR tracebacks on Python 3.14",
+      "severity": "low"
+    },
+    "KeyError@providers/chromecast/sendspin_bridge.py:_flag_bridge_experimental": {
+      "first_seen": "2026-10-26",
+      "seen": 1,
+      "last_seen": "2026-10-27",
+      "title": "Sendspin Cast bridge flagged after it was torn down",
+      "severity": "low"
+    },
+    "fully_kiosk:device-unavailable": {
+      "first_seen": "2026-10-26",
+      "seen": 1,
+      "last_seen": "2026-10-27",
+      "title": "Fully Kiosk tablet .187 timed out",
+      "severity": "low"
     }
   },
   "muted": [],
@@ -149,10 +171,10 @@
     "ws_client": "routines/triage-ma-nightly/ma_ws.py with /usr/bin/python3, env via set -a"
   },
   "health": {
-    "rss_mb": 1217.5,
-    "rss_anon_mb": 869.5,
-    "uptime_seconds": 159815,
-    "event_loop_lag_ms": 0.6,
-    "version": "2.11.0.dev2026102403"
+    "rss_mb": 1518.7,
+    "rss_anon_mb": 923.2,
+    "uptime_seconds": 44266,
+    "event_loop_lag_ms": 0.7,
+    "version": "2.11.0.dev2026102604"
   }
 }
