@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-27T09:00:00+01:00",
- "dev": "2a2a2f991",
- "run_note": "Your #7244 (Soloist pause at every track end, support#6860) is clean from all three reviewers and backports cleanly; it needs another maintainer's approve. trudenboy's #7242 was drafted on Copilot CRITICALs, but our guest-scope point on the Alice command still needs posting. You merged #7243.",
+ "last_run": "2026-10-27T10:00:00+01:00",
+ "dev": "291ddf919",
+ "run_note": "You merged #7181, #7229, #7245, #7237 and the four action bumps. trudenboy re-readied #7242 and #7220; each fixes the last round, gets 3 new Copilot CRITICALs, and still carries one finding of ours Copilot never raised (guest scope on the Alice command, a track replay in Ynison), both with patches. szsolt asks you to look at #6940 again; #6901 now conflicts with #7181.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -2558,14 +2558,14 @@
     "openai_compatible",
     "hass"
    ],
-   "merge_state": "merge-tree clean on origin/dev f4650192d; review required, no auto-merge",
+   "merge_state": "CONFLICT in music_assistant/providers/hass/__init__.py against origin/dev 291ddf919 (from #7181)",
    "head_sha": "62bc5692c",
    "tldr": "Almost: ryanmac8 fixed the stale-overwrite and preview-pause points; Opus confirms the delta (no deadlocks, waits end, unload clean) and all 35 threads are resolved. Still open: the test fake breaks 69 tests on Python 3.14.4, plus two small preview-slot checks (one validated `fix 6901` patch), Copilot's previously missed CRITICAL that a 429 from the HA image download does not pause generation, and your AI_QUERY design call.",
    "summary": "Delta 62bc5692c review. get_playlist_metadata wraps the provider body in AIArtwork.refreshing(), a per-item_id set of asyncio.Events that is set and removed in a finally. _refresh_playlist (used by the worker's _process and the hourly _refresh_playlists) snapshots those events and waits for them before update_metadata(force_refresh=True).\n\nDeadlocks and waits: the wait happens outside every lock (_refresh_lock is only checked with locked() by refresh(), _store_lock is not held, and the controller's Throttler is entered after the wait). No marked get_playlist_metadata awaits the worker, the hourly pass or their locks. Since the list is a snapshot, a refresh that starts later is never waited for, so the wait cannot starve. A refresh that started after the cover file exists picks the new cover up itself through cover() and _touch, and descriptions through _stored_description. Events are always set, including on cancellation. Unload cancels the worker task at done.wait(). Nothing waits on itself: the worker's own refresh marks only after its wait.\n\nResidual window: the mark covers only this provider's part. The controller's update_item_in_library after it is unmarked. That is negligible: it is the only PLAYLIST_METADATA provider, update_metadata goes through Throttler(1, 30), and only a DB write follows. Copilot's controller-level serialization (r4353322199) was not adopted. The provider-local fix is enough for how it is actually called. A provider reload drops _refreshing, so a refresh still running on the old instance is not waited for. The hourly pass's 'file exists but not shown' check heals that, so it is not flagged.\n\nPreview: _render_preview checks _stopped and the image pause under the semaphore, and calls _pause_if_unreachable on failure. RateLimited and ProviderUnavailableError are in TRANSIENT_ERRORS, so with PREVIEW_CONCURRENCY=2 the styles not yet started are skipped. preview() refuses inside _preview_lock before _available/_record, so no slot is taken. Slots reserved for skipped styles are not returned. That matches the worker, which also keeps the slot on failure.\n\nPrevious points: (a) fixed. _download maps 429 to RateLimited and 408/5xx/transport errors to ProviderUnavailableError, and these are not InvalidDataError, so they skip the chat-to-images fallback. The thread is resolved. (b) not fixed: test_ai.py:2040 still has asyncio.Task(coro, eager_start=True), and 69 tests fail on local Python 3.14.4 with AttributeError 'NoneType' has no attribute 'is_running'. CI is green, likely on an older 3.14 patch. (c) not fixed: preview() has no _stopped check after _concept, and _preview_description records the slot before checking _stopped. (d) not fixed: only _stopped is rechecked after _record. (e) open, Marvin's design call (AI_QUERY gating vs a dedicated ProviderFeature, which needs a models release). (f) unchanged. The collage thumb is still returned alone, as on origin/dev, so it is pre-existing.\n\nCore touched: yes. music_assistant/models/plugin.py adds ImageEngine plus the PluginProvider.get_image_engines/ai_generate_image defaults. music_assistant/helpers/plugin_engines.py, music_assistant/strings.json and translations/en.json also change, and the hass and openai_compatible providers are modified. The metadata controller and music_assistant_models are not touched. The branch is 120 commits behind origin/dev but merges cleanly. The dev changes to enrichment.py do not touch the playlist path.",
    "blockers": [
+    "Rebase: providers/hass/__init__.py conflicts with #7181 (ryanmac8)",
     "`fix 6901`: Python 3.14.4 test fake (69 tests) plus two preview-slot checks, validated",
-    "Copilot previously missed CRITICAL: hass image download 429 should raise RateLimited (ryanmac8)",
-    "Your design call: image engines under AI_QUERY or a dedicated ProviderFeature"
+    "Copilot previously missed CRITICAL: hass image download 429 should raise RateLimited (ryanmac8)"
    ],
    "findings": [
     {
@@ -2668,7 +2668,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: `fix 6901` and AI_QUERY design call; ryanmac8: hass 429",
-   "changed_now": "",
+   "changed_now": "conflict",
    "gpt_sol": "2 problems (1 refuted, 1 narrow race)"
   },
   {
@@ -2926,7 +2926,7 @@
     "why": "New feature (new Autoplay mode, config option and strings), not a bugfix. Cherry-picking onto origin/stable also conflicts in queue_loader.py."
    },
    "prompt": "",
-   "whats_new": "szsolt replied on r4335531927 and marked it ready for review at 21:28Z. Head unchanged (8fe7fdf72).",
+   "whats_new": "szsolt pinged you at 08:50Z after scoping down to the similar-artists step. Head unchanged since our ready review (8fe7fdf72).",
    "reviewed_now": false,
    "reviewed_at": "2026-10-21 12:10 CEST",
    "auto_approved": null,
@@ -2937,13 +2937,13 @@
     6978
    ],
    "author_replied": {
-    "at": "2026-10-21T21:28:00Z",
-    "url": "https://github.com/music-assistant/server/pull/6940#discussion_r4335531927",
-    "summary": "Keeps it: autoplay never turns shuffle off, same as Auto mode and adding the artist by hand on dev."
+    "at": "2026-10-27T08:50:00Z",
+    "url": "https://github.com/music-assistant/server/pull/6940",
+    "summary": "szsolt: scoped down to the similar artists step as discussed, asks you to look again"
    },
    "reporter_reply": null,
    "waiting_on": "you: approve",
-   "changed_now": "",
+   "changed_now": "author replied",
    "gpt_sol": "clean"
   },
   {
@@ -9284,8 +9284,8 @@
   {
    "repo": "server",
    "number": 7181,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-27T08:15:08Z",
    "title": "Auto pair Sendspin clients through Home Assistant",
    "author": "arturpragacz",
    "url": "https://github.com/music-assistant/server/pull/7181",
@@ -9312,7 +9312,7 @@
    "stacked": false,
    "tldr": "Solid, well-tested auto-pair. Security holds: admin-gated on the HA side, token client_id checked, PSK never sent or logged. Two calls for Marvin: accept Sendspin->hass by-name coupling (extends the #4916 esphome-enrichment precedent, no depends_on) or ask for a core capability; and MA 'Unpair' gets undone immediately for HA-adopted devices.",
    "summary": "HA follows the Sendspin client ids of ESPHome devices and hands out their pairing token over two admin websocket commands (core#188351). Sendspin pairs an announced, connected, encrypted, unpaired client with that token through the existing pair_with_token path. Lifecycle handling is careful: background subscribe, a generation guard, one attempt per client with one follow-up, cancellation on unload. Copilot's earlier lifecycle findings are fixed. Who can pair: no MA user or API action is involved and no new MA API command is added. The trigger is an HA announcement of a client that is connected to MA, encrypted, unpaired (not LONG_TERM with a record), not in a running manual PIN session, and offers PAIRING_PSK. Trust chain: the HA token configured in the hass provider must be admin (both core commands are require_admin), and the device must be adopted in HA's ESPHome integration, which is admin-gated too. What is trusted from HA: the client-id list (only a trigger, filtered locally) and the token. pair_with_token decodes it, requires token.client_id == the connected client_id, and runs the PAIRING_PSK handshake. A wrong or malicious token fails the handshake and is not trusted. Pairing is standalone (owner=None), the same as the settings-flow token paste. Token handling: fetched fresh per attempt, never stored. It is not logged: the error paths log only the exception, and the hass_client 'Received message' debug log is suppressed because the hass provider forces that logger to its own level + 10. It does travel over the HA websocket, which is plaintext ws when HA is configured as http://. That is no worse than HA's own ESPHome API link to the device. Failure modes: HA not loaded: _hass returns None, no subscription, manual pairing unchanged. HA loads later: PROVIDERS_UPDATED snapshot change -> subscribe. HA connection drop: the hass provider reloads via unload+load, both signal PROVIDERS_UPDATED, so the pairer unsubscribes and then resubscribes. Old HA without the commands, or a non-admin token: FailedCommand -> None with a debug log, so the feature degrades silently. HA going away mid-attempt: the token lookup returns None. Sendspin not loaded: the new HA methods are never called. Sendspin unload: close() cancels running attempts, and a subscription answered after teardown is dropped through the generation counter. Subscribing runs in a background task, so HA never blocks Sendspin startup. Open points: the HA/Sendspin coupling (rule says no; precedent from #4916 says it already exists), unpair being undone automatically, and no retry for a transient no-token while the client stays announced. Coupling: Soft, optional, one-way-by-lookup but two-way-by-naming coupling. No manifest depends_on was added (sendspin/manifest.json has none; Sendspin runs fine without HA). Imports: sendspin/hass_auto_pair.py imports HomeAssistantProvider only under TYPE_CHECKING; no runtime import of the hass package. Lookup: HassAutoPairer._hass does cast(HomeAssistantProvider, mass.get_provider(\"hass\")) by domain name (hass_auto_pair.py:77). Direct calls: Sendspin calls two new Sendspin-specific methods on the concrete HA provider, hass.subscribe_sendspin_clients() and hass.get_sendspin_pairing_token() (hass/__init__.py:532-569), which wrap the HA websocket commands sendspin/subscribe_clients and sendspin/get_pairing_token from home-assistant/core#188351. Lifecycle: provider.py hooks subscribe/unsubscribe onto the existing PROVIDERS_UPDATED hass-availability snapshot (provider.py:499, 1944-1947) and close() into unload. So the HA provider now carries a Sendspin-specific API and Sendspin names the HA provider. Against the rule: no depends_on chain, so that part holds. It does break the stricter wording from OzGav on #4576 (providers must never reference each other by name). It is not new to Sendspin, though. dev already has the same pattern for ESPHome announce enrichment from #4916: sendspin/provider.py:1240 and sendspin/player.py:1438 call get_provider(\"hass\").get_media_player_device_infos(). Core code does the same in webserver/remote_access and auth_providers. So the PR widens an existing, accepted seam rather than opening a new one. The rule-clean version is a core-owned capability, e.g. a pairing-token source registry on the players controller that hass registers into, but there is exactly one implementer (ESPHome via HA). This is a maintainer call: accept it as an extension of the #4916 precedent, or ask for the capability now. Blocking on it alone seems heavy-handed.",
-   "whats_new": "New 16:43Z on 10-24. Copilot: Needs a closer look (the Sendspin to HA dependency).",
+   "whats_new": "Merged by you at 08:15Z.",
    "blockers": [
     "Your call: accept Sendspin looking up the HA provider by name (extends the #4916 precedent, no depends_on) or ask for a core capability",
     "Unpairing an HA-announced device in MA is undone right away (f2)"
@@ -9386,7 +9386,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
@@ -11554,116 +11554,75 @@
    "number": 7220,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Music Connect (Ynison) provider to v4.4.2: Ynison go-away handling and official-client alignment",
+   "title": "Update Yandex Music Connect (Ynison) provider to v4.4.4: Ynison go-away handling and official-client alignment",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7220",
-   "draft": true,
+   "draft": false,
    "verdict": "almost",
    "assessment": "comment",
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "trudenboy: 3 Copilot CRITICAL threads (draft)",
-   "gpt_sol": "3 problems (2 confirmed)",
+   "status": "attention",
+   "attention_since": "2026-10-27T08:50:00Z",
+   "waiting_on": "you: post f1 (track replay) or `fix 7220`; trudenboy: 3 Copilot CRITICALs",
+   "gpt_sol": "3 critical (unverified)",
    "size": "XL",
    "code": 1774,
    "add": 1200,
    "del": 0,
-   "ci": "green (15 checks)",
+   "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev e970b5466",
-   "head_sha": "be12369eb",
+   "merge_state": "merge-tree clean on origin/dev 291ddf919",
+   "head_sha": "fa3e18df6",
    "core_touched": false,
    "providers_touched": [
     "yandex_ynison"
    ],
    "stacked": false,
-   "tldr": "Almost: vendored Ynison sync to 4.4.1 that honours Yandex's go-away window, adds a 1/5/30/300 s reconnect ladder, cancels its tasks on unload and moves playback state into a PlaybackSession. Provider-only, 485 tests pass. Two confirmed regressions from the new heartbeat dedup: pause publishes the track-start position (resume restarts there), and a phone \"restart track\" is ignored as a relay. Copilot raises both plus a third as CRITICAL.",
-   "summary": "Scope: providers/yandex_ynison (constants, playback_session.py new, provider.py, queue_model.py, reconnect_policy.py new, ynison_client.py) plus tests and one fixture. Nothing outside the provider and its tests. manifest.json is unchanged (ya-passport-auth[ma]==2.2.0), and VERSION goes to 4.4.1.\n\nReconnect: ReconnectPolicy is persistent across _reconnect() calls, unlike dev's per-call attempt counter, so failed sessions now escalate 1 -> 5 -> 30 -> 300 s. A go-away error frame breaks the loop and the next delay is exactly the server window, with a clear warning log. Server-supplied ynison-backoff-millis ladders are adopted. gRPC statuses outside 8/10/14 wait the 300 s idle delay. Reconnect jitter is removed. disconnect() still cancels the message and reconnect tasks, and _schedule_reconnect stays idempotent, so there is no task leak on the client side. wait_connected() polls every 50 ms, bounded at 5 s, and exits on the stop event, so no CPU spin.\n\nUnload: all provider background tasks (runner, provider match, play_media, prefetch) go through _spawn and are cancelled on unload. deselect_source releases get 5 s to finish. This is an improvement over dev, where they were fire-and-forget.\n\nPlayback session refactor: claim/release/lost/release_if_current, request_restart/consume/take_start and request_stop/begin_stream reproduce the old _in_use_by_player/_active_session_id/_track_changed_event/_stream_stop_event semantics. I found no behaviour divergence apart from the intended new status_is_relay seek suppression and the RADIO window index adjustment.\n\nStatus dedup: report_status skips best-effort sends while another device is active or within +-2 s of the extrapolated server baseline. Strict sends (play/pause/seek/end-of-track) wait up to 5 s for a reconnect and now raise when the duration is unknown, which the PR body calls intended.\n\nNo exceptions newly escape into core: player commands still surface PlayerCommandFailed/UnsupportedFeaturedException.",
-   "whats_new": "New head fa7383ed9 overnight; still a draft, not re-reviewed.",
+   "tldr": "Almost: v4.4.4 fixes all seven points from our 4.4.1 review, each with a regression test (497 pass). One new regression (Opus, reproduced): navigation now returns \"superseded\" on any queue, device, pause or reconnect change, so a finished track that stays current replays from 0, e.g. a peer append or a reconnect during RADIO refill. One-retry patch validated. Copilot raises 3 more CRITICALs and GPT Sol 3 others (unverified); this PR keeps producing new edge cases each round.",
+   "summary": "Delta since be12369eb. Verified fixes: (1) Pause/play publish stale position: _on_play/_on_pause now use _current_progress_ms, which prefers _playback.progress_ms (last _sync_progress, at most 5 s old) when this source owns the current track. Fixed. (2) Phone seek back to the baseline treated as relay: _status_baseline now stores the version, and _is_known_status treats a peer-authored status with a new version as fresh. Our own echoes (baseline version None, author == own) and empty-version heartbeats still dedup by value. Fixed. (3) Frame without status cleared the relay marker: status_is_relay now defaults to True unless the frame carries player_state.status. Its only consumer is the seek-detection branch in _activate_playback. Fixed. (4) Go-away during a sleeping reconnect: ReconnectPolicy.go_away_pending is checked after the sleep, and the loop continues into next_delay(), which consumes the go-away window before dialing. Fixed. (5) Navigation overtaken by a playback change: _complete_track captures the NavigationBaseline before waiting for the transport, returns 'superseded' if it changed, and passes the same baseline to advance_queue. The stream loop follows the new state instead of QUEUE_END. Fixed for the replacement-queue case. (6) Trim moving the cursor at send time: _update_queue_list adds to pending_index_shift, and follow_window_trim applies the shift only when Ynison reports the same track at index - shift; any other index cancels it. Fixed. (7) Relay replacing the dedup baseline: _remember_server_status is skipped for relays, so the monotonic anchor survives. Fixed. New finding: see PROBLEM below. Notes: pending_index_shift accumulates across trims, so two trims before the first echo would cancel the shift and trigger a restart. That is unlikely, since one prefetch runs per track end. No unresolved review threads. PR is up to date with origin/dev and touches only providers/yandex_ynison and its tests and fixtures.",
+   "whats_new": "v4.4.2 to 4.4.4 answer the earlier threads. Re-reviewed: Opus almost (1 new regression), GPT Sol 3 critical (unverified), Copilot 3 new CRITICALs.",
    "blockers": [
-    "Copilot r4378916957 / ours: pause publishes the stale track-start position (trudenboy)",
-    "Copilot r4378917061 / ours: a seek back to the baseline is ignored as a relay (trudenboy)",
-    "Copilot r4378917153: a frame without status clears the relay marker"
+    "f1 (ours): a superseded completion replays the finished track from 0; post it or `fix 7220`",
+    "Copilot: 3 new CRITICAL threads (trudenboy)"
    ],
    "findings": [
     {
      "model": "Claude",
      "severity": "PROBLEM",
      "file": "music_assistant/providers/yandex_ynison/provider.py",
-     "line": 1829,
-     "title": "MA pause publishes the track-start position, so resume restarts the track",
-     "detail": "report_status dedup suppresses _sync_progress while playback matches the extrapolated baseline, so during normal playback no status is re-sent and the server/state status keeps the value from _update_metadata_from_stream (typically 0). _on_pause sends client.state.progress_ms with paused=True and strict=True. Yandex then shows the track at its start, and the echoed paused state drives _pause_playback. On resume, _activate_playback requests a RESUME restart at state.progress_ms, so playback jumps back to the start. Dev's 5 s heartbeats kept state.progress_ms within about 5 s, and _on_pause is otherwise unchanged from dev, so this is a regression introduced by the dedup.",
-     "fix": "Publish the local position on pause, e.g. progress_ms=self._playback.progress_ms when a stream is active (self._playback.owner_player_id). Alternatively, expose the client's extrapolated baseline position and use it in _on_pause/_on_play.",
+     "line": 577,
+     "title": "A 'superseded' completion that leaves the finished track current replays it from 0",
+     "detail": "advance_queue raises ResourceTemporarilyUnavailable whenever _navigation_identity(queue) (the whole queue minus version/options/shuffle_optional, so playable_list too), the active device or the pause state differs from the baseline. mutate_player_state raises it on any _queue_epoch bump, which happens on every peer queue edit and every reconnect (_connect_state -> _reset_pending_queue). The RADIO branch also returns 'superseded' on a queue_generation change. 4.4.4 maps all of these to 'superseded', and get_audio_stream now just loops: track_id = None, index = -1, then the loop top reads current_track_id. A pause returns at the loop top and an active-device change stops the stream via _clear_active_player, so both are fine. But a peer appending or reordering upcoming items during the navigation window, or a reconnect during _replenish_radio_queue, leaves the finished track current. The loop then streams it again from take_start() == 0. A probe stubbing _signal_track_completion -> 'superseded' with no track change streamed [('track42', 0), ('track42', 0)]. Before 4.4.4 this case stopped with QUEUE_END; now it audibly repeats the track. The window is short when connected but spans the whole RADIO fetch or a 10 s reconnect wait.",
+     "fix": "When completion is 'superseded' and Ynison still reports the finished (track_id, old_index), unpaused and with no stop requested, run _signal_track_completion() once more so navigation is planned against the updated queue. Keep following the state for a real replacement.",
      "posted": null
     },
     {
-     "model": "Claude",
+     "model": "GPT Sol",
      "severity": "PROBLEM",
      "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
-     "line": 742,
-     "title": "Phone seek/restart to the baseline position is treated as a relay and ignored",
-     "detail": "_is_known_status matches an incoming status against the baseline only on (progress_ms, duration_ms, paused). After uninterrupted play from 0 the baseline stays (0, D, False), because dedup sends nothing further. A peer 'restart track' (seek to 0, same track and index) from the Yandex app matches exactly, so status_is_relay=True and _activate_playback skips seek detection. MA keeps playing at the old position.",
-     "fix": "Also compare the status version block: store the version of the last server-received status and only treat an incoming status as a relay if it carries that same version. A new peer seek has a fresh version from the peer device; our own echoes are already handled by last_update_is_echo.",
+     "line": 750,
+     "title": "An older relay becomes a fresh seek after a local seek (unverified)",
+     "detail": "GPT Sol rates it CRITICAL: a shuffle/repeat edit republishes the retained 10 s status after a local seek to 90 s, which is then treated as fresh.",
+     "fix": "",
      "posted": null
     },
     {
-     "model": "Claude",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
-     "line": 1138,
-     "title": "Ladder resets on the first state frame, so an accept-then-drop server is redialled every 1 s forever",
-     "detail": "_dispatch_state calls self._policy.on_healthy() on every state frame. _connect_state always sends our initial full state, which the server answers with a state frame, so every accepted connection counts as healthy. If Yandex (or a proxy) accepts the socket, echoes state and then closes without an error frame, each cycle restarts at ladder[0] = 1.0 s with no jitter. That means a redirector plus state WS handshake per second, indefinitely, and the 5/30/300 s steps are never reached. Dev had the same reset-per-cycle flaw but at 5 s +-20%, so this PR lowers the floor 5x. test_drop_after_healthy_state_is_a_transport_failure asserts this 1.0 s behaviour. Server-directed paths (go-away, server ladders) are fine.",
-     "fix": "Only treat a session as healthy after it has been up for some time, e.g. 30 s since _connect_state, both in _dispatch_state and when a drop ends a long session. The suggested_fix patch does this, and the existing 485 tests still pass with it.",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
-     "line": 1257,
-     "title": "A reconnect scheduled before the go-away frame is parsed redials once inside the window",
-     "detail": "A failed outbound send (e.g. send_full_state right after the handshake on the initial connect, or a progress send) calls _schedule_reconnect(). _reconnect() calls next_delay() immediately and sleeps on the ladder delay. If the message loop then parses the buffered go-away frame, the finally's _schedule_reconnect() is a no-op because the task is alive, so the client redials before the window ends. The PR's own log says this extends the wait. The stored go-away is honoured on the next next_delay(), so this costs one early attempt.",
-     "fix": "When _apply_error_frame sees a go-away and a reconnect task is sleeping, cancel it and reschedule. Or have _reconnect re-read the policy after its sleep and sleep again if a go-away arrived meanwhile.",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/yandex_ynison/reconnect_policy.py",
-     "line": 70,
-     "title": "Non-retryable server error hides the device for 5 min with only an info log",
-     "detail": "An error frame with a gRPC code outside {8,10,14}, no go-away, and a server close afterwards (dev comments say 400030001 'progress > duration' disconnects the socket) now waits RECONNECT_IDLE_DELAY = 300 s. Dev waited 5 s. This copies the official client, but the user only sees 'Ynison reconnect attempt 1 in 300.0s' at info level. The go-away path, by contrast, logs a clear warning explaining that the device disappears from the Yandex app.",
-     "fix": "Log a warning like the go-away one when next_delay() returns the idle delay because the status is non-retryable.",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
-     "line": 954,
-     "title": "Redirector error frames (including a go-away) are still treated as auth failures",
-     "detail": "_get_redirect_ticket raises LoginFailed('Redirector response missing host or ticket') for any payload without host/ticket, including an {\"error\": ...} frame. Two consequences: a go-away or backoff directive sent by the redirector is ignored and the 1/5/30/300 ladder is used instead, and a Passport token refresh is triggered. This is pre-existing on dev, and the PR body says the current 500140000 arrives on the state service. Still, the new policy only covers half of the handshake.",
-     "fix": "If the redirector payload contains 'error', pass it through _apply_error_frame (or the policy) and raise a transient error instead of LoginFailed.",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "NIT",
-     "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
-     "line": 1257,
-     "title": "Reconnect jitter removed",
-     "detail": "Dev added +-20% jitter to every reconnect delay. Now delays are exact (1/5/30/300 s), so installs dropped by the same Yandex-side event retry in lockstep. This matches the official client, and go-away windows are exact by design anyway.",
-     "fix": "Optionally add small jitter to ladder and idle delays (not to go-away).",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "NIT",
+     "model": "GPT Sol",
+     "severity": "PROBLEM",
      "file": "music_assistant/providers/yandex_ynison/provider.py",
-     "line": 373,
-     "title": "Unload cancels in-flight core play_media and misses tasks spawned during the gather",
-     "detail": "play_media(target_player_id, ...) now runs through _spawn and is cancelled on unload, where dev let it complete. Separately, _on_provider_event is unsubscribed only after the cancel/gather, so a provider event during that window spawns an untracked _check_yandex_provider_match. Both are rare and harmless in practice.",
-     "fix": "Run the unsubscribe callbacks before cancelling tasks. Consider marking play_media as finish_on_unload like deselect_source.",
+     "line": 1180,
+     "title": "A fresh phone seek to the start is still classified as queue_rebuild (unverified)",
+     "detail": "GPT Sol rates it CRITICAL; Opus considers the relay case fixed. _classify_drift treats <1 s requested with >5 s local as a rebuild.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
+     "line": 585,
+     "title": "A same-track seek does not supersede a pending completion (unverified)",
+     "detail": "GPT Sol rates it CRITICAL: NavigationBaseline has no status revision.",
+     "fix": "",
      "posted": null
     }
    ],
@@ -11672,18 +11631,18 @@
     "green": false,
     "comments": 3,
     "findings": 3,
-    "review_url": "https://github.com/music-assistant/server/pull/7220#discussion_r4378916957",
+    "review_url": "https://github.com/music-assistant/server/pull/7220#discussion_r4386849513",
     "titles": [
-     "[CRITICAL] Pause publishes the stale track-start position (r4378916957)",
-     "[CRITICAL] A peer seek back to the baseline is taken as a relay (r4378917061)",
-     "[CRITICAL] A frame without status clears the relay marker (r4378917153)"
+     "[CRITICAL] trimmed queue echo during publish_items (r4386849513)",
+     "[CRITICAL] track_id updated before the generator consumes the restart (r4386849552)",
+     "[CRITICAL] RADIO prefetch changes the baseline during recovery (r4386849599)"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "Changes recommended on be12369eb (15:12Z): 3 CRITICAL threads. The gate will draft it.",
+   "copilot_note": "Changes recommended on fa3e18df6 (09:09Z), 3 new CRITICAL threads; gate will draft.",
    "suggested_fix": {
-    "description": "Only restart the reconnect ladder after a session has stayed up 30 s (HEALTHY_SESSION_SECONDS), so an accept-then-drop server escalates 1 -> 5 -> 30 -> 300 s instead of being redialled every second. Server directives (go-away, ladders) are unaffected. All 485 passing tests still pass with it, and git apply --check is clean.",
-    "patch": "diff --git a/music_assistant/providers/yandex_ynison/constants.py b/music_assistant/providers/yandex_ynison/constants.py\nindex 903b00276b..ff9f955cc2 100644\n--- a/music_assistant/providers/yandex_ynison/constants.py\n+++ b/music_assistant/providers/yandex_ynison/constants.py\n@@ -65,6 +65,9 @@ STATUS_DEDUP_WINDOW_MS: Final[int] = 2000\n WS_CONNECT_TIMEOUT: Final[float] = 15.0\n WS_HEARTBEAT: Final[float] = 30.0\n WS_MIN_HEARTBEAT: Final[float] = 5.0\n+# A session must stay up this long before the reconnect ladder restarts, so an\n+# accept-then-drop server cannot pin reconnects to the first ladder step.\n+HEALTHY_SESSION_SECONDS: Final[float] = 30.0\n \n # Ynison error codes that require immediate reconnection\n YNISON_ERROR_REBALANCED: Final[str] = \"300100001\"\ndiff --git a/music_assistant/providers/yandex_ynison/ynison_client.py b/music_assistant/providers/yandex_ynison/ynison_client.py\nindex 309054a8a9..a8916b96da 100644\n--- a/music_assistant/providers/yandex_ynison/ynison_client.py\n+++ b/music_assistant/providers/yandex_ynison/ynison_client.py\n@@ -31,6 +31,7 @@ from .constants import (\n     DEFAULT_APP_NAME,\n     DEFAULT_APP_VERSION,\n     DEVICE_TYPE_WEB,\n+    HEALTHY_SESSION_SECONDS,\n     RECONNECT_DELAYS,\n     RECONNECT_IDLE_DELAY,\n     STATUS_DEDUP_WINDOW_MS,\n@@ -255,6 +256,7 @@ class YnisonClient:\n         self._stop_event = asyncio.Event()\n         self._connected = False\n         self._has_connected_once = False\n+        self._connected_at = 0.0\n         self._policy = ReconnectPolicy(RECONNECT_DELAYS, RECONNECT_IDLE_DELAY)\n         self._heartbeat = WS_HEARTBEAT\n         self._status_watermarks: deque[_StatusWatermark] = deque(maxlen=8)\n@@ -763,6 +765,10 @@ class YnisonClient:\n             time.monotonic(),\n         )\n \n+    def _session_was_healthy(self) -> bool:\n+        \"\"\"Return whether the current session stayed up long enough to reset the backoff.\"\"\"\n+        return time.monotonic() - self._connected_at >= HEALTHY_SESSION_SECONDS\n+\n     def _channel_ready(self) -> bool:\n         \"\"\"Return whether the state WebSocket can accept a message.\"\"\"\n         return self._connected and self._ws is not None and not self._ws.closed\n@@ -974,6 +980,7 @@ class YnisonClient:\n                 raise LoginFailed(\"Ynison authentication failed — invalid token\") from err\n             raise\n         self._connected = True\n+        self._connected_at = time.monotonic()\n         self._logger.info(\"Connected to Ynison state service at %s\", host)\n \n         # Always send a fresh initial state (empty/paused) — both on cold\n@@ -1092,6 +1099,8 @@ class YnisonClient:\n                     await socket.close()\n             if self._ws is socket and not self._stop_event.is_set() and not cancelled:\n                 if not server_directive:\n+                    if self._session_was_healthy():\n+                        self._policy.on_healthy()\n                     self._policy.on_transport_failure()\n                 self._schedule_reconnect()\n         self._logger.debug(\"Ynison message loop exited\")\n@@ -1135,7 +1144,8 @@ class YnisonClient:\n         \"\"\"Apply one state frame and notify the state callback.\"\"\"\n         was_active = self.state.active_device_id == self.device_id\n         self._parse_state(data)\n-        self._policy.on_healthy()\n+        if self._session_was_healthy():\n+            self._policy.on_healthy()\n         if was_active and self.state.active_device_id != self.device_id:\n             # The server clears this flag when the device activates.\n             await self.update_session_params(mute_events_if_passive=True)\n",
+    "description": "Retry completion once when a superseding change kept the finished item current. Validated with git apply --check on fa3e18df6: suite 497 passed, the replacement-queue test still passes, and a probe confirmed the retry ends with QUEUE_END instead of replaying.",
+    "patch": "diff --git a/music_assistant/providers/yandex_ynison/provider.py b/music_assistant/providers/yandex_ynison/provider.py\nindex 3bedc443c5..98d1a2f4ee 100644\n--- a/music_assistant/providers/yandex_ynison/provider.py\n+++ b/music_assistant/providers/yandex_ynison/provider.py\n@@ -572,6 +572,16 @@ class YandexYnisonProvider(PluginProvider):\n                     self.logger.info(\"Track %s finished, advancing to next\", track_id)\n                     old_index = self._ynison.state.current_index\n                     completion = await self._signal_track_completion()\n+                    if (\n+                        completion == \"superseded\"\n+                        and not playback.stop_requested()\n+                        and self._ynison is not None\n+                        and not self._ynison.state.is_paused\n+                        and self._ynison.state.current_track_id == track_id\n+                        and self._ynison.state.current_index == old_index\n+                    ):\n+                        # The change kept the finished item current; advance the updated queue.\n+                        completion = await self._signal_track_completion()\n                     if completion == \"restart\":\n                         playback.request_restart(0, RestartReason.REPEAT, grace=False)\n                     elif completion == \"superseded\":\n",
     "pushed": null
    },
    "prompt": "",
@@ -11694,9 +11653,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-26 16:25 CET",
-   "changed_now": ""
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-27 10:25 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
@@ -12492,8 +12451,8 @@
   {
    "repo": "server",
    "number": 7229,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-27T08:25:15Z",
    "title": "Ask for the line-in autostart target when setting up Sendspin devices",
    "author": "maximmaxim345",
    "url": "https://github.com/music-assistant/server/pull/7229",
@@ -12519,7 +12478,7 @@
    "stacked": false,
    "tldr": "Ready: the Sendspin setup flow now asks which player line-in should start, only for devices that sense line-in, and the default stays the device's own player even while it is unavailable. No migration needed, translations in sync, 416 tests pass, Copilot approves. Sendspin is excluded from auto-approval.",
    "summary": "player.py adds _run_source_autostart_step. It returns early without line sense, reuses the existing target ConfigEntry, prefills from session.context.values and writes the raw value, storing None when the pick equals the default, the same as the settings page. It is called from _run_consent_step only when the input was allowed, and after pairing in run_setup_flow. The consent form's last_step becomes `not _supports_line_sense()`. _get_source_autostart_config_entries now always offers 'This device' first when the client negotiated the player family and uses it as the default. On dev the default was only own_target if that player was in all_players(False, False), so an unavailable own player (for example during its own setup) defaulted to Off.\n\nConfig wiring: sendspin_source._resolve_autostart_target reads get_player_config_value, which falls back to the entry default when nothing is stored. The step's write path therefore lines up with what autostart reads. Existing installs: stored targets are unchanged. Unstored ones resolve to the own player as before, minus the flip to Off while the player was unavailable, which is the intended fix in commit 7c9a01d. Translations: the source_autostart title and description are identical in strings.json and en.json, keys are sorted, and the this_device option key already exists. Declining the input skips the step. Pairing from the 'input pending' branch also reaches it.\n\nTests: three setup-flow tests (allow with input and prefill, decline skips, pairing reaches the step) plus one config test (own player stays the default while unavailable). No existing tests changed. Coverage is proportionate.",
-   "whats_new": "Opened 10-26 16:3xZ. Reviewed: Opus ready, GPT Sol 1 problem, Copilot Approval recommended.",
+   "whats_new": "Merged by you at 08:25Z.",
    "blockers": [
     "Sendspin is excluded from auto-approval: `approve 7229`"
    ],
@@ -12571,13 +12530,13 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-27 07:40 CET",
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
    "number": 7230,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-27T08:18:35Z",
    "title": "Bump CodSpeedHQ/action from 5.5.0 to 5.6.0",
    "author": "app/dependabot",
    "url": "https://github.com/music-assistant/server/pull/7230",
@@ -12601,7 +12560,7 @@
    "stacked": false,
    "tldr": "Dependabot CI action bump, approved by the repo workflow.",
    "summary": "",
-   "whats_new": "",
+   "whats_new": "Merged by you at 08:18Z.",
    "blockers": [],
    "findings": [],
    "unaddressed_comments": [],
@@ -12619,13 +12578,13 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
    "number": 7231,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-27T08:20:36Z",
    "title": "Bump docker/login-action from 4.6.0 to 4.7.0",
    "author": "app/dependabot",
    "url": "https://github.com/music-assistant/server/pull/7231",
@@ -12649,7 +12608,7 @@
    "stacked": false,
    "tldr": "Dependabot CI action bump, approved by the repo workflow.",
    "summary": "",
-   "whats_new": "",
+   "whats_new": "Merged by you at 08:20Z.",
    "blockers": [],
    "findings": [],
    "unaddressed_comments": [],
@@ -12667,13 +12626,13 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
    "number": 7232,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-27T08:21:25Z",
    "title": "Bump astral-sh/setup-uv from 10.3.0 to 10.3.2",
    "author": "app/dependabot",
    "url": "https://github.com/music-assistant/server/pull/7232",
@@ -12697,7 +12656,7 @@
    "stacked": false,
    "tldr": "Dependabot CI action bump, approved by the repo workflow.",
    "summary": "",
-   "whats_new": "",
+   "whats_new": "Merged by you at 08:21Z.",
    "blockers": [],
    "findings": [],
    "unaddressed_comments": [],
@@ -12715,13 +12674,13 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
    "number": 7233,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-27T08:21:25Z",
    "title": "Bump actions/setup-python from 7.0.0 to 7.1.0",
    "author": "app/dependabot",
    "url": "https://github.com/music-assistant/server/pull/7233",
@@ -12745,7 +12704,7 @@
    "stacked": false,
    "tldr": "Dependabot CI action bump, approved by the repo workflow.",
    "summary": "",
-   "whats_new": "",
+   "whats_new": "Merged by you at 08:21Z.",
    "blockers": [],
    "findings": [],
    "unaddressed_comments": [],
@@ -12763,13 +12722,13 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
    "number": 7237,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-27T08:09:01Z",
    "title": "Lokalise translations update",
    "author": "app/github-actions",
    "url": "https://github.com/music-assistant/server/pull/7237",
@@ -12793,7 +12752,7 @@
    "stacked": false,
    "tldr": "Lokalise sync (translations only). Copilot flags six de/ru strings that misdescribe settings, among them the new Yandex \"Mirror Station volume\" toggle and a light-sync offset. They have to be fixed in Lokalise, not in the PR.",
    "summary": "",
-   "whats_new": "",
+   "whats_new": "Merged by you at 08:09Z.",
    "blockers": [
     "Copilot: 6 mistranslated de/ru strings; fix in Lokalise or merge as is"
    ],
@@ -12821,7 +12780,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "server",
@@ -13089,95 +13048,45 @@
    "number": 7242,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Station provider to v1.5.29: Alice speech API commands and voice control fixes",
+   "title": "Update Yandex Station provider to v1.5.30: Alice speech API commands and voice control fixes",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7242",
-   "draft": true,
+   "draft": false,
    "verdict": "almost",
    "assessment": "comment",
    "status": "attention",
    "attention_since": "2026-10-27T06:49:00Z",
-   "waiting_on": "you: post f1 (guest scope); trudenboy: Copilot threads",
-   "gpt_sol": "1 critical, 1 problem (unverified, experimental features)",
+   "waiting_on": "you: post f1 (guest scope) or `fix 7242`; trudenboy: 3 Copilot CRITICALs",
+   "gpt_sol": "1 problem (= ours)",
    "size": "M",
    "code": 130,
    "add": 0,
    "del": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 5fc232708",
-   "head_sha": "00003aa6f",
+   "merge_state": "merge-tree clean on origin/dev 291ddf919",
+   "head_sha": "d225d4194",
    "core_touched": false,
    "providers_touched": [
     "yandex_station"
    ],
    "stacked": false,
-   "tldr": "Almost: v1.5.29 adds yandex_station/say and an opt-in yandex_station/command that hands free text to Alice, which can drive the Yandex smart home. command only needs players.control, which party guests hold with no player filter, so with the setting on anyone with a party join link could control the smart home. #7227 already treats it as system:admin over MCP. 229 tests pass with the pinned ya-passport-auth.",
-   "summary": "Adds yandex_station/say (repeat_phrase server action) and opt-in yandex_station/command (sendText). Both are registered in loaded_in_mass and unregistered in unload; the provider is single-instance, so no name collision. Both reuse YandexGlagol.send(), which only talks to the local Station WS (private-IP guarded), with WS_COMMAND_TIMEOUT and no retries. Results go through _raise_if_failed, so timeouts, not_connected and non-SUCCESS surface as PlayerCommandFailed. There are no new cloud/auth calls, tasks or timers, so unload has nothing new to clean up. The state changes hold up against the replayed Station sequences in the tests: NONE counts as idle, BUSY counts as a voice state, intercept stays paused through LISTENING→BUSY→NONE, and voice control only interrupts on playing=False. strings.json and en.json are identical for the new key, and labels come from translation keys like the existing intercept entry. Toggling the setting reloads the provider through the default update_config, so the registration change applies. Coordinator check against #7227 (head 1326ae90): #7227 already has an EXACT_POLICIES entry for yandex_station/command. It maps to system:admin with _SYSTEM_ANNOTATIONS (readOnlyHint False, destructiveHint True, openWorldHint False), and test_yandex_station_commands passes. yandex_station/say falls to the scope fallback, giving control:players with control annotations. A token with only control:players therefore cannot reach command over MCP. The core WS/HTTP API is a different matter: it still lets any players.control holder call it once the opt-in is on, which is the main finding.",
-   "whats_new": "Copilot raised 2 CRITICALs (stop-ack ordering, the admin player-filter check we flagged as a suggestion) and an API_SCHEMA_VERSION bump; drafted at 07:32Z. Our guest-scope point on yandex_station/command is not among them, so it still needs posting.",
+   "tldr": "Almost: v1.5.30 fixes Copilot's stop-ack ordering and moves the player-access check to core get_player_state; declining the API schema bump is reasonable. Our point still stands and Copilot never raised it: party guests hold players.control with an empty player filter, so with alice_text_commands on, anyone with a party join link can send free text to Alice and drive the Yandex smart home. Validated patch rejects guests. Copilot has 3 new CRITICALs on pause races.",
+   "summary": "Delta since 00003aa6f. (1) Stop-ack ordering: glagol._handle_message resolves the waiter and then calls update_handler synchronously, so the playing=False carried by the stop reply used to reach _update_playback_state before _pause_stop_pending was set. pause()/stop() now bump the generation, set the guard/flags and the PAUSED/IDLE state before the send. _finish_transport_command restores a _SessionSnapshot on PlayerCommandFailed if the generation is unchanged. The regression test delivers the stopped state inside send(). One gap remains: a stopped frame that arrives during a send that later times out does not bump the generation, so the rollback can briefly report PLAYING. The next periodic frame corrects it, so this is not worth a finding. (2) Access: _get_station calls self.mass.players.get_player_state(player_id), which raises InsufficientPermissions through has_player_access (player_access_filter returns None for Scope.ALL, plus the own-client exemption). Correct, and it also works on 2.10. (3) API_SCHEMA_VERSION: constants.py says to bump for a new API command a non-bundled client could gate on. These commands only exist while the provider is loaded, and command also needs an opt-in, so a version number cannot advertise them. Clients have to probe the provider either way. Precedent is mixed: ambient_sounds bumped under the old wording, while hass/party/ai_radio did not. Accepting the decline is reasonable. (4) Guest exposure, still open: helpers/guest_access.get_or_create_guest_user creates the party guest with role GUEST and no player_filter. ROLE_SCOPES[GUEST] includes Scope.PLAYERS_CONTROL, which is the scope both commands are registered with (provider.py:316). has_player_access returns True for an empty filter, so get_player_state does not block guests. Anyone holding a party join link can call yandex_station/command and drive the Yandex smart home once the admin enables alice_text_commands. The setting text ('every Music Assistant user and integration with player control') does not tell the admin this includes anonymous party guests. No unresolved review threads; all 3 Copilot threads are resolved with author replies. PR is up to date with origin/dev and touches no core code (provider, its tests, and the generated en.json keys).",
+   "whats_new": "v1.5.30 (d225d4194) answers the 08:00 Copilot threads. Re-reviewed: Opus almost (guest scope), GPT Sol agrees, Copilot 3 new CRITICALs.",
    "blockers": [
-    "f1 (ours, not raised by Copilot): yandex_station/command needs an admin scope; party guests hold players.control. Post it while it is in draft",
-    "Copilot threads with trudenboy"
+    "f1 (ours): party guests can drive the Yandex smart home via yandex_station/command; post it or `fix 7242` (rejects guests)",
+    "Copilot: 3 new CRITICAL pause-race threads (trudenboy)"
    ],
    "findings": [
     {
      "model": "Claude",
      "severity": "PROBLEM",
      "file": "music_assistant/providers/yandex_station/provider.py",
-     "line": 319,
-     "title": "yandex_station/command only needs players.control, which guests hold",
-     "detail": "With alice_text_commands on, any caller with Scope.PLAYERS_CONTROL can send free text to Alice and drive everything on the Yandex account (smart home, purchases). _GUEST_SCOPES includes PLAYERS_CONTROL. The party plugin's guest user (helpers/guest_access.get_or_create_guest_user) is created with no player_filter, so anyone holding a party join link, possibly remote, passes both the scope and the _get_station filter check. The setting text says 'every Music Assistant user and integration with player control' but does not mention guests. This also disagrees with #7227, which maps the same command to system:admin for MCP. On dev the command does not exist, so the exposure is new. It is opt-in and off by default, so not critical.",
-     "fix": "Register yandex_station/command with an admin-level scope that matches #7227's system:admin, e.g. Scope.SYSTEM_MANAGE, or at least deny UserRole.GUEST in command(). Keep yandex_station/say on players.control. If HA automations (service role) are the intended caller, pick a scope the service role holds but guests/users don't (the maintainers' call). test_loaded_in_mass_registers_alice_commands asserts PLAYERS_CONTROL for both and would need updating. Once the scope is raised, #7227's EXACT_POLICIES entry stays correct with no change.",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/yandex_station/provider.py",
-     "line": 359,
-     "title": "Player-filter check hand-rolls core logic and diverges from it",
-     "detail": "The comment says 'Same per-user player restriction the core player commands enforce', but core uses auth_middleware.has_player_access(). That helper treats Scope.ALL (admins) as unrestricted even when a player_filter is set. The hand-rolled check blocks an admin who has a filter, which core would allow.",
-     "fix": "Use has_player_access(user, player_id, player) (see suggested_fix; the 13 test_alice_speech tests still pass).",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/yandex_station/player.py",
-     "line": 1178,
-     "title": "_pause_stop_pending has no bound",
-     "detail": "After pausing an external session, every playing=True update is dropped until a playing=False arrives. If the Station never reports the stop (pause SUCCESS but not applied, a missed tick around a WS reconnect, or native playback started right away), MA stays PAUSED while the Station plays. Voice-control handling is also skipped until then. play_media/play/stop clear the flag, but nothing driven by the device does.",
-     "fix": "Clear the flag after a short window (e.g. store a monotonic deadline and drop playing=True only before it), or after the first N ticks.",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "NIT",
-     "file": "music_assistant/providers/yandex_station/player.py",
-     "line": 652,
-     "title": "_handle_voice_end still keys on LISTENING/SPEAKING",
-     "detail": "The PR's new state model says a voice request goes LISTENING → BUSY → NONE (Alice speaking) → IDLE. _handle_voice_end only schedules auto-resume when prev_alice_state is LISTENING or SPEAKING, and only SPEAKING sets _alice_spoke. After a stop-triggered interrupt that ends BUSY/NONE → IDLE, auto-resume therefore never fires. Dev has the same code, so this is not a regression, but it is the one Alice-state check that was not moved to ALICE_VOICE_STATES.",
-     "fix": "Use prev_alice_state in ALICE_VOICE_STATES or prev == 'NONE' if NONE-as-answer should count as speech, or confirm upstream that this is intended.",
-     "posted": null
-    },
-    {
-     "model": "GPT Sol",
-     "severity": "PROBLEM",
-     "file": "music_assistant/providers/yandex_station/player.py",
-     "line": 1198,
-     "title": "An Alice switch to native music without a stopped update stays classified as the MA stream (unverified)",
-     "detail": "GPT Sol rates it CRITICAL: _external_playing is kept, so old MA metadata stays and interception is suppressed. Voice control is experimental and off by default.",
-     "fix": "",
-     "posted": null
-    },
-    {
-     "model": "GPT Sol",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/yandex_station/player.py",
-     "line": 753,
-     "title": "say() is inaudible while an intercept session holds the Station at volume 0 (unverified)",
-     "detail": "GPT Sol rates it a problem. Intercept is experimental and off by default.",
-     "fix": "",
+     "line": 313,
+     "title": "Party guests can send free-text Alice commands (smart home) once alice_text_commands is on",
+     "detail": "yandex_station/command is registered with required_scope=Scope.PLAYERS_CONTROL. The shared party guest account (helpers/guest_access.get_or_create_guest_user: role GUEST, empty player_filter) holds that scope via _GUEST_SCOPES. The new get_player_state check passes for it, because has_player_access returns True for an empty filter. So anyone with a party join link can hand arbitrary text to Alice and drive whatever is linked to the Yandex account (lights, locks, heating, purchases). The opt-in only says 'every user and integration with player control', which an admin will not read as 'anonymous party guests'. say() is fine at guest level since it is equivalent to an announcement.",
+     "fix": "Reject guest users in command() (UserRole.GUEST -> InsufficientPermissions), or register command with a scope guests never hold (e.g. Scope.CONFIG_PLAYERS_WRITE, which keeps admin and the HA service account). Optionally mention guests in the setting description.",
      "posted": null
     }
    ],
@@ -13186,18 +13095,18 @@
     "green": false,
     "comments": 3,
     "findings": 3,
-    "review_url": "https://github.com/music-assistant/server/pull/7242",
+    "review_url": "https://github.com/music-assistant/server/pull/7242#discussion_r4386840251",
     "titles": [
-     "[CRITICAL] Stop acknowledgement can arrive before the pending flag is set",
-     "[CRITICAL] Raw player_filter check rejects full-access users (= our suggestion)",
-     "[PROBLEM] New public API commands need an API_SCHEMA_VERSION bump"
+     "[CRITICAL] native pause skips the new guard (r4386840251)",
+     "[CRITICAL] voice-interrupted pause can schedule a new resume (r4386840324)",
+     "[CRITICAL] stop then new native playback inside pause() leaves the generation unchanged (r4386840373)"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "Changes recommended on 00003aa6f (07:08Z); gate drafted it at 07:32Z.",
+   "copilot_note": "Changes recommended on d225d4194 (09:08Z), 3 new CRITICAL threads; the gate will draft it again.",
    "suggested_fix": {
-    "description": "Use core has_player_access() for the per-user player check in _get_station. Validated with git apply --check on the PR head, and test_alice_speech.py passes (13). The scope change for yandex_station/command is not included because it needs a test update and a maintainer decision.",
-    "patch": "diff --git a/music_assistant/providers/yandex_station/provider.py b/music_assistant/providers/yandex_station/provider.py\nindex ef97f5c9b9..a3d2e362e8 100644\n--- a/music_assistant/providers/yandex_station/provider.py\n+++ b/music_assistant/providers/yandex_station/provider.py\n@@ -26,7 +26,10 @@ from ya_passport_auth.ma import (\n     KeySpec,\n )\n \n-from music_assistant.controllers.webserver.helpers.auth_middleware import get_current_user\n+from music_assistant.controllers.webserver.helpers.auth_middleware import (\n+    get_current_user,\n+    has_player_access,\n+)\n from music_assistant.models.player_provider import PlayerProvider\n \n from .constants import (\n@@ -356,7 +359,7 @@ class YandexStationProvider(PlayerProvider):\n             raise PlayerUnavailableError(msg)\n         # Same per-user player restriction the core player commands enforce.\n         user = get_current_user()\n-        if user and user.player_filter and player_id not in user.player_filter:\n+        if user and not has_player_access(user, player_id, player):\n             msg = f\"{user.username} does not have access to player {player_id}\"\n             raise InsufficientPermissions(msg)\n         return player\n",
+    "description": "Block party guests from yandex_station/command while keeping players.control for household users and integrations. Validated with git apply --check on d225d4194; provider tests still 232 passed.",
+    "patch": "diff --git a/music_assistant/providers/yandex_station/provider.py b/music_assistant/providers/yandex_station/provider.py\nindex c4eb64569d..001b7ebed7 100644\n--- a/music_assistant/providers/yandex_station/provider.py\n+++ b/music_assistant/providers/yandex_station/provider.py\n@@ -9,10 +9,11 @@ import logging\n from typing import TYPE_CHECKING, Any, cast\n \n from aiohttp import ClientSession, CookieJar\n-from music_assistant_models.auth import Scope\n+from music_assistant_models.auth import Scope, UserRole\n from music_assistant_models.config_entries import ConfigEntry\n from music_assistant_models.enums import ConfigEntryType\n from music_assistant_models.errors import (\n+    InsufficientPermissions,\n     InvalidDataError,\n     PlayerUnavailableError,\n )\n@@ -25,6 +26,7 @@ from ya_passport_auth.ma import (\n     KeySpec,\n )\n \n+from music_assistant.controllers.webserver.helpers.auth_middleware import get_current_user\n from music_assistant.models.player_provider import PlayerProvider\n \n from .constants import (\n@@ -341,6 +343,10 @@ class YandexStationProvider(PlayerProvider):\n         :param player_id: The Yandex Station player that handles the request.\n         :param text: The request, e.g. \"включи свет на кухне\".\n         \"\"\"\n+        # Party guests hold players.control, but must not reach the Yandex smart home.\n+        if (user := get_current_user()) and user.role == UserRole.GUEST:\n+            msg = f\"{user.username} may not send text requests to Alice\"\n+            raise InsufficientPermissions(msg)\n         await self._get_station(player_id, text).send_command(text)\n \n     def _get_station(self, player_id: str, text: str) -> YandexStationPlayer:\n",
     "pushed": null
    },
    "prompt": "",
@@ -13213,9 +13122,9 @@
    "related_prs": [
     "#7227 maps yandex_station/command to system:admin over MCP"
    ],
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-27 08:20 CET",
-   "changed_now": "drafted"
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-27 10:25 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
@@ -13306,9 +13215,9 @@
    ],
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-27 09:15 CET",
-   "changed_now": "new"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -13339,6 +13248,54 @@
    "tldr": "Your PR, merged by you at 07:25Z.",
    "summary": "",
    "whats_new": "Merged by you.",
+   "blockers": [],
+   "findings": [],
+   "unaddressed_comments": [],
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": ""
+  },
+  {
+   "repo": "server",
+   "number": 7245,
+   "state": "merged",
+   "closed_at": "2026-10-27T08:25:41Z",
+   "title": "Pick the Cast HTTP profile default per receiver model",
+   "author": "MarvinSchenkel",
+   "url": "https://github.com/music-assistant/server/pull/7245",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": null,
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "merged",
+   "gpt_sol": "not run",
+   "size": "S",
+   "code": 0,
+   "add": 0,
+   "del": 0,
+   "ci": "",
+   "ci_fail": false,
+   "merge_state": "",
+   "head_sha": "",
+   "core_touched": false,
+   "providers_touched": [],
+   "stacked": false,
+   "tldr": "Your PR, merged by you at 08:25Z.",
+   "summary": "",
+   "whats_new": "",
    "blockers": [],
    "findings": [],
    "unaddressed_comments": [],
