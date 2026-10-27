@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-27T16:00:00+01:00",
+ "last_run": "2026-10-27T17:00:00+01:00",
  "dev": "291ddf919",
- "run_note": "New: GoatsAndMonkeys's #7246 keeps other accounts' images on an overwrite (support#6602); clean from all three reviewers, core, needs your approve. trudenboy's #7242 v1.5.33 is correct but our guest-scope finding is still unposted after four versions; #7220 is drafted again. adamlonsdale offered OzGav a smaller #7234.",
+ "run_note": "End of day. OzGav's #7248 is clean and needs your approve. justinwoodland's #7009 now ships the OpenAI logo as BookOrbit's colour icon, which nobody else has flagged. GoatsAndMonkeys's #7247 (genres) needs a removal-semantics call with OzGav. Our #7220 replay finding is still unposted and gained a second path.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -4180,126 +4180,80 @@
    "title": "Add BookOrbit audiobook music provider",
    "author": "justinwoodland",
    "url": "https://github.com/music-assistant/server/pull/7009",
-   "draft": true,
+   "draft": false,
    "verdict": "not_ready",
    "assessment": "request_changes",
-   "status": "waiting",
-   "attention_since": null,
+   "status": "attention",
+   "attention_since": "2026-10-27T15:48:00Z",
    "size": "XL",
    "code": 2808,
    "add": 6235,
    "del": 0,
    "ci_fail": false,
-   "ci": "green on f3db80fda (lint, pytest 1-3, provider-scope, test, audit all pass)",
+   "ci": "green",
    "core_touched": false,
    "providers_touched": [
     "bookorbit"
    ],
    "merge_state": "BLOCKED (CHANGES_REQUESTED by OzGav 04:24Z), no conflict with dev",
-   "head_sha": "1f680f253",
-   "tldr": "BookOrbit audiobook provider (XL). Core is now untouched and most of OzGav's first round is done. His newest requests are still open: drop the _sync_library_audiobooks overwrite override, stop recording failed books as applied, explain the exception list, and ship a real flat monochrome icon under 5 KB. Copilot (5 findings) and GPT Sol also flag that skip-and-continue can now delete authors and their books. Waiting on the author.",
-   "summary": "Delta 3240bed0b..f3db80fda. The diff against dev now touches only providers/bookorbit, its tests and en.json. Core and the nine translation files are back to dev (cf146765b, 1bb4ad041). Size drops to 2808 code lines.\n\nOzGav's first-round requests (10-18), now done: library_sync.py and the metadata/details/series-sort core changes removed, translations dropped, plain series numbers stored (07d3164ae), one bad book no longer aborts the refresh (07d3164ae), catalog TTL raised to 15 min (d17d43198).\n\nOzGav's second round (10-20 01:04-04:24Z), status on f3db80fda:\n(1) Broad except (01:04): narrowed in 809bce83e. His follow-up 'why these errors?' (04:20) has no answer yet. ClientResponseError is a subclass of ClientError, so it is redundant. TypeError and ValueError wrap the whole cache plus fetch call and can hide real bugs. Manifest errors are already turned into ProviderUnavailableError. ClientError, TimeoutError and ProviderUnavailableError are enough.\n(2) Details compare never runs during sync (01:06): the author answered with an applied-fingerprint cache plus a _sync_library_audiobooks override in f3db80fda. OzGav asked at 04:20 to remove the override. It is still in the head. The brief says f3db80fda removed it, but f3db80fda is the commit that added it. The author replied at 05:10 that he can fix it, and OzGav explained at 05:14 that the per-item refresh is the intended path.\n(3) Failed books recorded as applied (04:21): still open. _seed_applied_mapping_details_from_catalog stores every catalog book after core returns, but core catches per-item update failures (music_provider.py:1627).\n(4) Monochrome icon (04:24): still open. icon_monochrome.png is 10789 bytes against a 5 KB limit and is a grey copy of the color icon. OzGav also asked the author to reply in his own words.\n\nNew regression from the skip-and-continue change (Copilot CRITICAL, GPT Sol CRITICAL, verified): artist sync derives authors only from books that loaded, and skips are reported for AUDIOBOOK only. Artist sync also reuses the catalog within the 15 min TTL with no skip report at all. If every book of an author fails to load, artist deletion runs, BookOrbit is not a streaming provider, so remove_item_from_library(recursive=True) also deletes that author's audiobooks (artists.py:1950). Single-book authors make this realistic on a transient timeout.\n\nAlso verified: the override's overwrite=True passes freshly parsed mappings without in_library, so the rewrite clears in_library and replaces all metadata (GPT Sol). Moot once the override goes.\n\nStill open from before and never posted: on_streamed revokes the stream grant, so a buffered seek on a multi-part book 404s the next part. The idle-grant patch still applies on f3db80fda.\n\nCopilot reviewed f3db80fda at 05:24Z: 'Changes recommended', 5 open findings (fingerprints, artist deletion, refresh 429 falls back to login, blank-password retry in reconfigure, overwrite test). The last two are in unchanged code and are minor. Tests not run locally.",
+   "head_sha": "9ace49f7a",
+   "tldr": "Not ready: OzGav's four asks are done (no overwrite override, failed books keep their fingerprint, exception list explained, flat 2.6 KB monochrome icon). But the new colour icon.svg is the OpenAI logo, not BookOrbit's mark; it replaced the official book icon on 10-22 and must not ship. get_artist runs a full catalog refresh on every call (Bot-MArley, Copilot, ours: 250 calls gave 250 refreshes, 0 with BYPASS_CACHE). Patch for the latter validated. 136 tests pass.",
+   "summary": "The head is 9ace49f7a, one commit past 0d97fd912. That commit imports CONF_USERNAME/PASSWORD/VERIFY_SSL from music_assistant.constants (#7177) and trims private docstrings to one line. The only author commit since 1f680f253 is that one, plus a dev merge, and the delta is clean. OzGav: (1) there is no _sync_library_audiobooks override any more. (2) _handle_sync_item_failure collects failed audiobook ids (core calls it for write failures at models/music_provider.py:1643 and through report_skipped_sync_item), and _commit_applied_mapping_details keeps the previous fingerprint for those ids, so failed books are not marked applied. (3) The per-book except tuple has a comment explaining it (__init__.py:932-935). (4) icon_monochrome.svg is one flat white path of the BookOrbit book-and-orbit mark, 2607 B. However, icon.svg (2380 B, from 983aa2fe41 on 10-22, 'flat color mark for now') renders as the OpenAI knot logo in blue. It replaced the official book-and-galaxy icon.png. Bot-MArley: get_artist calls _refresh_catalog(force=True). That code dates from 26a240d0f (10-15), so our last review missed it. Core's artist enrichment (metadata/enrichment.py:164) calls artists.get_provider_item with force_refresh=False, and that reaches provider.get_artist (media/base.py:1315). The metadata scan and the post-sync schedule_update_metadata do this for every library author and narrator. Each forced refresh runs list_libraries, a paginated per-library book query, one mass.cache read per book (a fetch on a checksum miss), and a paginated /authors list, all while holding _catalog_lock, so browse, search and sync queue behind it. Opening an artist in the UI also pays for a full refresh. A probe (/tmp/prr/r1700z/d7009/probes/probe_get_artist_scan.py) made 250 get_artist calls and got 250 list_libraries calls. With force=BYPASS_CACHE.get() it got 0, and 1 under BYPASS_CACHE (music/refresh_item via get_provider_item(force_refresh=True), music/controller.py:1880). Auth and tokens: the bearer token is held in memory, and the refresh cookie is captured by hand with a DummyCookieJar. Re-authentication is single-flight, keyed on the rejected token, and tries refresh first, then login. Login 401/403 maps to LoginFailed, while 429/5xx stay retryable. The password is a SECURE_STRING. The part proxy uses per-session uuid grants, so stream URLs carry no token. resolve_image only sends auth to base_url paths, and init cancellation closes the owned session. Load: detail concurrency is 8, the catalog TTL is 15 min for browse/search, pagination is capped at 1000 pages and raises an incomplete error instead of truncating, playback-state writes retry at most 3 times on 409/412, and on_played is serialized per book with a generation skip. I found no unbounded loops or blocking IO. Outside providers/bookorbit and its tests, only music_assistant/translations/en.json changes, with the 12 generated provider.bookorbit.* keys. The branch is up to date with origin/dev, and all review threads except Bot-MArley's are resolved.",
    "blockers": [
-    "OzGav's open requests on f3db80fda: remove the _sync_library_audiobooks override, only record fingerprints for books that actually updated, answer why the exception list was chosen, and replace icon_monochrome.png with a flat single-color shape under 5 KB.",
-    "Skip-and-continue can delete authors and, recursively, their audiobooks when all of an author's books fail to load (Copilot CRITICAL, verified).",
-    "Still never posted: on_streamed revokes the stream grant, so a buffered seek on a multi-part book 404s the next part."
+    "f1 (ours, nobody else raised it): icon.svg is the OpenAI logo; post it",
+    "get_artist full refresh per call (Copilot + Bot-MArley threads, justinwoodland)",
+    "Copilot CRITICAL: _stream_duration error handling"
    ],
    "findings": [
     {
+     "model": "Claude",
      "severity": "CRITICAL",
-     "file": "music_assistant/providers/bookorbit/__init__.py",
-     "line": 939,
-     "title": "Failed book loads can delete authors and their audiobooks",
-     "detail": "New in 07d3164ae. _load_catalog_books drops failed books and reports them as skipped AUDIOBOOK items only. get_library_artists builds authors and narrators from the remaining catalog, and artist sync does not force a refresh, so within the 15 min TTL it reuses a partial catalog with no skip report at all. An author whose only book failed is missing from the artist listing, core deletes it, and artists.py:1950 recursively removes its audiobooks (is_streaming_provider is False). Copilot and GPT Sol both flag it.",
-     "fix": "Force the catalog refresh for ARTIST sync too, and when a book is skipped inside a sync run also call report_skipped_sync_item(MediaType.ARTIST, None, err) so artist deletions are held back for that run."
+     "file": "music_assistant/providers/bookorbit/icon.svg",
+     "line": 1,
+     "title": "Colour icon is the OpenAI logo, not BookOrbit's",
+     "detail": "Commit 983aa2fe41 replaced the official BookOrbit icon.png (an open book with a galaxy and an orbit) with an icon.svg that renders as OpenAI's knot mark in blue. Shipping it would show another company's trademark as this provider's logo, and it no longer matches icon_monochrome.svg (book and orbit).",
+     "fix": "Ship a colour icon.svg under 5 KB made from the BookOrbit book-and-orbit mark, for example the same path as icon_monochrome.svg with BookOrbit's brand colour.",
+     "posted": null
     },
     {
+     "model": "Claude",
      "severity": "PROBLEM",
      "file": "music_assistant/providers/bookorbit/__init__.py",
-     "line": 1224,
-     "title": "_sync_library_audiobooks override still present (OzGav asked to remove)",
-     "detail": "Added in f3db80fda, not removed. It re-saves sole-provider books with overwrite=True, which replaces all metadata (audiobooks.py:576) and replaces the mappings with freshly parsed ones that lack in_library, so the book drops out of the library listing (base.py:1754, database default 0). OzGav explained at 05:14 that per-item refresh is the intended way to pull a new title.",
-     "fix": "Remove _sync_library_audiobooks, _apply_sole_provider_titles, the v2 cache key comment and the related test in test_sync.py."
+     "line": 341,
+     "title": "get_artist forces a full catalog refresh on every call",
+     "detail": "Core's artist enrichment calls get_provider_item(force_refresh=False), which reaches get_artist, for each library author and narrator. This happens during the metadata scan and after a sync adds artists. Each call reruns list_libraries, the paginated book query per library, a cache read per book and the paginated /authors list, all under _catalog_lock. Browse, search and sync wait behind each refresh. Probe: 250 calls gave 250 full refreshes, and 0 with the fix.",
+     "fix": "await self._refresh_catalog(force=BYPASS_CACHE.get()). music/refresh_item sets BYPASS_CACHE through get_provider_item(force_refresh=True), so the author-rename fix still applies there. Update test_get_artist_refreshes_edited_author_from_populated_catalog to set BYPASS_CACHE (see suggested_fix).",
+     "posted": null
     },
     {
-     "severity": "PROBLEM",
-     "file": "music_assistant/providers/bookorbit/__init__.py",
-     "line": 283,
-     "title": "Fingerprints saved for books whose update failed",
-     "detail": "After super().sync_library returns, _seed_applied_mapping_details_from_catalog stores updatedAt for every catalog book. Core swallows per-item failures (music_provider.py:1627), so a failed metadata update is never retried. OzGav asked for this at 04:21; Copilot flags it too.",
-     "fix": "Record the fingerprint only for books whose update or add succeeded, for example by wrapping the per-item path or comparing after sync, and keep the previous value for the rest."
-    },
-    {
-     "severity": "PROBLEM",
-     "file": "music_assistant/providers/bookorbit/icon_monochrome.png",
-     "line": null,
-     "title": "Monochrome icon too large and not flat",
-     "detail": "10789 bytes, the limit is 5 KB. OzGav says it is a grey copy of the color icon with shading, so the apps cannot tint it.",
-     "fix": "Provide a flat single-color silhouette PNG under 5 KB."
-    },
-    {
-     "severity": "CRITICAL",
-     "file": "music_assistant/providers/bookorbit/__init__.py",
-     "line": 395,
-     "title": "on_streamed revokes the grant; buffered seek 404s the next part",
-     "detail": "Unchanged on f3db80fda and never posted. Dev audio.py reuses queue_item.streamdetails when the buffer is valid for a seek and keeps the producer running. on_streamed pops the grant when the old consumer ends, so the next part URL gets a revoked session_id and a 404.",
-     "fix": "Make the grant idle-based instead of revoking in on_streamed (suggested_fix). Three bookorbit tests assert revoke-on-on_streamed and would need changing."
-    },
-    {
+     "model": "Claude",
      "severity": "SUGGESTION",
      "file": "music_assistant/providers/bookorbit/__init__.py",
-     "line": 889,
-     "title": "Per-book exception tuple still too wide (OzGav asked why)",
-     "detail": "ClientResponseError is a subclass of ClientError. TypeError and ValueError wrap the cache read and fetch and can mask programming errors. Manifest TypeError/ValueError are already converted to ProviderUnavailableError in _book_with_playback_order. OzGav's 04:20 question is unanswered.",
-     "fix": "Catch ClientError, TimeoutError and ProviderUnavailableError, and answer the thread."
+     "line": 988,
+     "title": "A refresh_item on one artist refetches every book detail",
+     "detail": "The BookDetail cache entries are not persistent, so under BYPASS_CACHE mass.cache.get treats them as misses. A forced artist refresh therefore runs get_book (and a manifest call for multipart books) for every catalog book at concurrency 8, which is thousands of requests for one click on a large library. The updatedAt checksum already invalidates changed books, and _enrich_author overlays author renames from /authors.",
+     "fix": "Pass allow_bypass=False to the detail cache.get in _get_book_detail, or accept the cost as user-triggered.",
+     "posted": null
     },
     {
-     "severity": "SUGGESTION",
+     "model": "GPT Sol",
+     "severity": "PROBLEM",
      "file": "music_assistant/providers/bookorbit/client.py",
-     "line": 366,
-     "title": "Token refresh 429/5xx falls back to password login",
-     "detail": "Copilot finding on unchanged code. _refresh returns False for any status >= 400, so a rate limit or outage triggers a login request. Login would likely fail the same way, so impact is one extra request.",
-     "fix": "Return False only for 400/401/403 and raise for other statuses."
+     "line": 450,
+     "title": "Pagination counts rows, not distinct ids; a shifted page can publish a partial catalog and delete books (unverified)",
+     "detail": "GPT Sol: reject repeated ids as incomplete.",
+     "fix": "",
+     "posted": null
     },
     {
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/bookorbit/setup_flow.py",
-     "line": 152,
-     "title": "Reconfigure retry with blank password falls back to the saved password",
-     "detail": "Copilot finding on unchanged code. Needs a new password, a failed validation, then a resubmit with the field blanked. Rare.",
-     "fix": "Prefer setup_data's password over saved_setup_data's when the username is unchanged."
-    },
-    {
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/bookorbit/setup_flow.py",
-     "line": 115,
-     "title": "Setup does not catch BookOrbitIncompleteError from list_libraries",
-     "detail": "Unchanged. A wrong URL that returns a JSON object surfaces as a raw error instead of connection_failed.",
-     "fix": "Add BookOrbitIncompleteError to the connection_failed except."
-    },
-    {
-     "severity": "NIT",
-     "file": "music_assistant/providers/bookorbit/helpers.py",
-     "line": 166,
-     "title": "Plain '1.10' sorts as REAL in library collections",
-     "detail": "Core collection SQL treats '1.10' as 1.1, so 1.10 sorts before 1.2. This is the existing core behavior OzGav chose over a core change, and browse still sorts by segments.",
-     "fix": "None in this PR."
-    },
-    {
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/bookorbit/progress.py",
-     "line": 67,
-     "title": "Single-file books without durationSeconds lose progress sync and resume",
-     "detail": "Unchanged.",
-     "fix": "Apply the duration check only when len(audio_files) > 1."
-    },
-    {
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/bookorbit/__init__.py",
-     "line": 316,
-     "title": "Manifest errors escape get_audiobook as raw exceptions",
-     "detail": "Unchanged. A manifest 404 surfaces as ClientResponseError, not MediaNotFoundError.",
-     "fix": "Map a manifest 404 to MediaNotFoundError."
+     "model": "GPT Sol",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/bookorbit/constants.py",
+     "line": 8,
+     "title": "Ten-minute JSON timeouts can hold the catalog and sync locks for hours (unverified)",
+     "detail": "GPT Sol: shorter metadata timeouts and a refresh-wide failure budget.",
+     "fix": "",
+     "posted": null
     }
    ],
    "unaddressed_comments": [
@@ -4330,35 +4284,34 @@
    ],
    "copilot": {
     "green": false,
-    "comments": 5,
-    "findings": 5,
-    "review_url": "https://github.com/music-assistant/server/pull/7009#pullrequestreview-5581074760",
+    "comments": 2,
+    "findings": 2,
+    "review_url": "https://github.com/music-assistant/server/pull/7009#discussion_r4391119090",
     "titles": [
-     "Save fingerprints only for successfully updated books",
-     "Preserve failed-book data to prevent erroneous artist deletions",
-     "Propagate refresh 429/5xx errors instead of retrying login",
-     "Retrying with a blank password restores old credentials",
-     "Remove sole-provider overwrite behavior and preserve library edits"
+     "[CRITICAL] _stream_duration fetches BookDetail outside the manifest error handling (r4391119090)",
+     "[PROBLEM] every artist lookup forces a full catalog refresh (r4391118975, = Bot-MArley + ours)"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "Fresh review on f3db80fda at 05:24Z: 'Changes recommended', 5 open findings (3 tagged CRITICAL, 2 PROBLEM). The artist-deletion and fingerprint findings are verified; the 429 and blank-password ones are minor and in code unchanged since 10-18.",
+   "copilot_note": "Changes recommended on 9ace49f7a (16:09Z); gate will draft.",
    "suggested_fix": {
-    "description": "Covers only the never-posted stream-grant issue; still applies on f3db80fda (git apply --check passes). providers/bookorbit/__init__.py: on_streamed no longer pops the grant or zeroes expiration. _StreamGrant gets a mutable last_used, refreshed on every allowed request and proxied chunk. Pruning drops non-active grants idle past STREAMDETAILS_EXPIRATION_S. Three bookorbit tests assert revoke-on-on_streamed and would need changing, which needs Marvin's OK.",
-    "patch": "diff --git a/music_assistant/providers/bookorbit/__init__.py b/music_assistant/providers/bookorbit/__init__.py\nindex ba7fa06..611265f 100644\n--- a/music_assistant/providers/bookorbit/__init__.py\n+++ b/music_assistant/providers/bookorbit/__init__.py\n@@ -97,13 +97,13 @@ SUPPORTED_FEATURES = {\n }\n \n \n-@dataclass(slots=True, frozen=True)\n+@dataclass(slots=True)\n class _StreamGrant:\n-    \"\"\"Proxy access for one get_stream_details resolution until playback ends.\"\"\"\n+    \"\"\"Proxy access for one get_stream_details resolution while it is in use.\"\"\"\n \n     book_id: str\n     asset_ids: frozenset[str]\n-    created_at: float\n+    last_used: float\n \n \n def _people(entries: Any) -> list[dict[str, Any]]:\n@@ -381,18 +381,13 @@ class BookOrbitProvider(MusicProvider):\n             self._active_stream_sessions.add(session_id)\n \n     async def on_streamed(self, streamdetails: StreamDetails) -> None:\n-        \"\"\"\n-        Revoke proxy access when a stream consumer ends.\n-\n-        Also expires the streamdetails so seek/reconnect cannot reuse part URLs after\n-        the grant is gone (MA may keep unexpired streamdetails on the queue item).\n-        \"\"\"\n+        \"\"\"Release the playback; the grant expires once it has been idle long enough.\"\"\"\n         if (session_id := _session_id_from_streamdetails(streamdetails)) is None:\n             return\n         self._active_stream_sessions.discard(session_id)\n-        self._stream_sessions.pop(session_id, None)\n-        # Force re-resolution: cached details would otherwise keep serving dead part URLs.\n-        streamdetails.expiration = 0\n+        # the buffer producer and a seek within the buffer may still use this grant\n+        if grant := self._stream_sessions.get(session_id):\n+            grant.last_used = time.monotonic()\n \n     async def get_resume_position(\n         self, item_id: str, media_type: MediaType\n@@ -685,6 +680,8 @@ class BookOrbitProvider(MusicProvider):\n             try:\n                 await response.prepare(request)\n                 async for chunk in upstream.content.iter_chunked(PART_STREAM_CHUNK_SIZE):\n+                    if grant := self._stream_sessions.get(session_id):\n+                        grant.last_used = time.monotonic()\n                     await response.write(chunk)\n                 await response.write_eof()\n             except ConnectionError:\n@@ -710,24 +707,27 @@ class BookOrbitProvider(MusicProvider):\n         self._stream_sessions[session_id] = _StreamGrant(\n             book_id=book_id,\n             asset_ids=frozenset(asset_ids),\n-            created_at=time.monotonic(),\n+            last_used=time.monotonic(),\n         )\n         return session_id\n \n     def _stream_session_allows(self, session_id: str, book_id: str, asset_id: str) -> bool:\n-        \"\"\"Return whether the proxy may serve this asset for the given session.\"\"\"\n+        \"\"\"Return whether the proxy may serve this asset, marking the session as used.\"\"\"\n         self._prune_stream_sessions()\n         grant = self._stream_sessions.get(session_id)\n-        return grant is not None and grant.book_id == book_id and asset_id in grant.asset_ids\n+        if grant is None or grant.book_id != book_id or asset_id not in grant.asset_ids:\n+            return False\n+        grant.last_used = time.monotonic()\n+        return True\n \n     def _prune_stream_sessions(self) -> None:\n-        \"\"\"Drop never-started sessions whose streamdetails would already have expired.\"\"\"\n+        \"\"\"Drop sessions that are not playing and have been idle past the streamdetails TTL.\"\"\"\n         now = time.monotonic()\n         stale = [\n             session_id\n             for session_id, grant in self._stream_sessions.items()\n             if session_id not in self._active_stream_sessions\n-            and now - grant.created_at >= STREAMDETAILS_EXPIRATION_S\n+            and now - grant.last_used >= STREAMDETAILS_EXPIRATION_S\n         ]\n         for session_id in stale:\n             del self._stream_sessions[session_id]\n"
+    "description": "Force the catalog refresh in get_artist only under BYPASS_CACHE (music/refresh_item), and extend the existing test so that a plain get_artist reuses the TTL catalog and a refresh_item picks up the rename. git apply --check passes on 9ace49f7a, and 136 tests pass with it. The patch changes the PR's own test, as Bot-MArley asked.",
+    "patch": "diff --git a/music_assistant/providers/bookorbit/__init__.py b/music_assistant/providers/bookorbit/__init__.py\nindex b3ab54ae37..88d2274f24 100644\n--- a/music_assistant/providers/bookorbit/__init__.py\n+++ b/music_assistant/providers/bookorbit/__init__.py\n@@ -30,6 +30,7 @@ from music_assistant_models.media_items import (\n from music_assistant_models.streamdetails import MultiPartPath, StreamDetails\n \n from music_assistant.constants import CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL\n+from music_assistant.controllers.cache import BYPASS_CACHE\n from music_assistant.helpers.aiohttp_client import create_clientsession\n from music_assistant.helpers.datetime import utc\n from music_assistant.models.music_provider import SYNC_RUN_STATE, MusicProvider\n@@ -337,8 +338,8 @@ class BookOrbitProvider(MusicProvider):\n         \"\"\"\n         if not prov_artist_id.startswith((AUTHOR_PREFIX, NARRATOR_PREFIX)):\n             raise MediaNotFoundError(f\"Invalid BookOrbit artist id {prov_artist_id}\")\n-        # Explicit lookups (incl. music/refresh_item) must not return TTL-stale catalog data.\n-        await self._refresh_catalog(force=True)\n+        # Only music/refresh_item forces a refresh; the metadata scan calls this per artist.\n+        await self._refresh_catalog(force=BYPASS_CACHE.get())\n         if artist := self._catalog_artists().get(prov_artist_id):\n             return artist\n         raise MediaNotFoundError(f\"BookOrbit artist {prov_artist_id} not found\")\ndiff --git a/tests/providers/bookorbit/test_sync.py b/tests/providers/bookorbit/test_sync.py\nindex 724c4f1572..2097eeb781 100644\n--- a/tests/providers/bookorbit/test_sync.py\n+++ b/tests/providers/bookorbit/test_sync.py\n@@ -21,6 +21,7 @@ from music_assistant.constants import (\n     CONF_USERNAME,\n     CONF_VERIFY_SSL,\n )\n+from music_assistant.controllers.cache import BYPASS_CACHE\n from music_assistant.controllers.music.media.base import AudiobookSyncDetails\n from music_assistant.models.music_provider import SYNC_RUN_STATE, SyncRunState\n from music_assistant.providers.bookorbit import SUPPORTED_FEATURES, BookOrbitProvider\n@@ -547,7 +548,7 @@ async def test_get_audiobook_and_artist(\n async def test_get_artist_refreshes_edited_author_from_populated_catalog(\n     provider: BookOrbitProvider, book_audiobook: dict[str, Any]\n ) -> None:\n-    \"\"\"refresh_item / get_artist must not return TTL-stale author metadata from `_catalog`.\"\"\"\n+    \"\"\"refresh_item refreshes author metadata; plain get_artist reuses the TTL catalog.\"\"\"\n     author_numeric_id = int(book_audiobook[\"authors\"][0][\"id\"])\n     author_id = f\"{AUTHOR_PREFIX}{author_numeric_id}\"\n     await provider._refresh_catalog(force=True)\n@@ -576,6 +577,13 @@ async def test_get_artist_refreshes_edited_author_from_populated_catalog(\n     )\n \n     artist = await provider.get_artist(author_id)\n+    assert artist.name == \"Old Name\"  # metadata scans reuse the TTL catalog\n+\n+    token = BYPASS_CACHE.set(True)  # what music/refresh_item sets\n+    try:\n+        artist = await provider.get_artist(author_id)\n+    finally:\n+        BYPASS_CACHE.reset(token)\n     assert artist.name == \"New Name\"\n \n \n",
+    "pushed": null
    },
    "backport": null,
    "prompt": "PR music-assistant/server#7009 (BookOrbit audiobook provider, author justinwoodland, head f3db80fda, CI green, CHANGES_REQUESTED by OzGav). PR head is refs/remotes/pr/7009 in /Users/marvin/git/music-assistant/server; read only, do not check out. Core is now untouched. Open on the head: (1) OzGav's 10-20 requests: remove the _sync_library_audiobooks override in music_assistant/providers/bookorbit/__init__.py (around line 1224), record fingerprints only for books that actually updated (around line 283), answer why the per-book exception list (around line 889) was chosen, and ship a flat monochrome icon under 5 KB. The author said at 05:10 he will fix the override. (2) New regression, also flagged by Copilot: skip-and-continue in _load_catalog_books reports skips for AUDIOBOOK only, and artist sync reuses the catalog within the 15 min TTL, so an author whose only book failed to load is deleted and artists.py recursively removes its audiobooks. Fix: force the catalog refresh for ARTIST sync too and call report_skipped_sync_item(MediaType.ARTIST, None, err) on a skip during a sync run. (3) Never posted: on_streamed (around line 395) revokes the stream grant, so a buffered seek on a multi-part book 404s the next part; the card's suggested_fix has an idle-grant patch, and three bookorbit tests assert revoke-on-on_streamed, so ask Marvin before touching tests. Since OzGav is driving this review, Marvin may only want to add (2) and (3). If so, draft a short PR comment that starts with '> [!NOTE] This comment was written by Claude on Marvin\\'s behalf', explains (2) with the single-book author example and the ARTIST skip fix, and (3) with the buffered seek example and the idle-grant fix. Post nothing on GitHub without Marvin's OK.",
-   "whats_new": "Still a draft. justinwoodland pushed 48b3793fd and answered threads at 05:50Z/05:56Z: the exception list is now ClientError, TimeoutError, TypeError, ValueError, and a fingerprint is only stamped for books that did not fail. He also asked OzGav why sync does not overwrite existing library items; OzGav explained at 05:14Z it protects user edits. Not re-reviewed while in draft.",
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-20 07:45 CEST",
+   "whats_new": "Marked ready 15:48Z. Re-reviewed: Opus not_ready (icon, get_artist), GPT Sol 5 problems (pagination dedupe, timeouts, artist fingerprints, cached author fields), Copilot 1 CRITICAL + 1 PROBLEM.",
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-27 17:30 CET",
    "auto_approved": null,
    "stacked": false,
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "author",
-   "changed_now": ""
+   "waiting_on": "you: post f1 (OpenAI logo as icon); justinwoodland: get_artist refresh",
+   "changed_now": "ready for review",
+   "gpt_sol": "5 problems"
   },
   {
    "repo": "aioslimproto",
@@ -11527,16 +11480,16 @@
    "number": 7220,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Music Connect (Ynison) provider to v4.4.8: Ynison go-away handling and official-client alignment",
+   "title": "Update Yandex Music Connect (Ynison) provider to v4.4.9: Ynison go-away handling and official-client alignment",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7220",
-   "draft": true,
+   "draft": false,
    "verdict": "almost",
    "assessment": "comment",
-   "status": "waiting",
+   "status": "attention",
    "attention_since": "2026-10-27T11:28:00Z",
-   "waiting_on": "trudenboy: 3 Copilot CRITICALs (draft)",
-   "gpt_sol": "2 problems (1 = ours, 1 unverified)",
+   "waiting_on": "you: post f1 (track replay, 5th round) or `fix 7220`; trudenboy: 3 Copilot CRITICALs",
+   "gpt_sol": "1 critical (= ours)",
    "size": "XL",
    "code": 1774,
    "add": 1200,
@@ -11544,54 +11497,48 @@
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 291ddf919",
-   "head_sha": "7a74a1370",
+   "head_sha": "984e51599",
    "core_touched": false,
    "providers_touched": [
     "yandex_ynison"
    ],
    "stacked": false,
-   "tldr": "Almost: v4.4.8 fixes Copilot's four open CRITICALs, including the duplicate-track Next; 521 tests pass, no new bugs per Opus. Our replay finding still stands for a peer append or a reconnect during the RADIO refill (Copilot only covered option-only edits). dev behaves the same, so it is a gap the PR doesn't close rather than a regression. The one-retry patch still applies and passes all probes. GPT Sol adds one unverified point about a failed option edit.",
-   "summary": "Delta 1e31d3813..7a74a1370 (v4.4.7 + v4.4.8). (1) _unadopted_navigation: mutate_player_state records the navigation version before sending and clears it on YnisonSendError, and _reset_pending_queue clears it too. _accept_queue flags current_item_navigated on the first accepted own echo at or after that version, so a stale navigation echo dropped behind a later repeat/shuffle/append edit is still recognised. current_item_kept is now False for that echo, so the provider no longer re-indexes it silently. This fixes Copilot r4388471390 (covered by test_navigation_to_a_repeated_track_survives_an_option_edit). advance_queue registers navigation only for CHANGE (a callable evaluated after mutate), so repeat-one is not flagged. go_to_index (RADIO advance) always moves. (2) _activate_playback treats current_item_navigated as a new item. A trim that leaves the target at the same track and index now requests TRACK_CHANGE, and the restart wakes _wait_for_track_change, which then sees navigation_confirmed (r4388889022). The restart is consumed at the top of the loop, so a natural advance does not restart twice. (3) _same_playback: a peer queue that differs only in version/options/shuffle_optional drops _pending_queue but keeps lineage, epoch and _last_queue_version (r4388889157). shuffle_optional carries the shuffled order without touching playable_list/current_playable_index, so this matches Ynison's model. (4) The status baseline is cleared only when the item changed (navigated, or a track/index change that is not an own item-keeping echo), which fixes the backward seek after our RADIO trim (r4388889245). (5) Our open finding, rerun at 7a74a1370: probe_superseded_replay.py still streams [t1,t1] for both the peer-append-during-reconnect and the reconnect-during-RADIO-refill cases. probe_real_client.py (real YnisonClient, phone append parsed during get_rotor_station_tracks) still returns superseded with t1 current: an append changes playable_list, so _same_playback is False and the lineage bumps. The SUPERSEDED branch in get_audio_stream is still `pass` (provider.py:584). With the retry patch, the suite (521) and all 3 probes pass. origin/dev (4.3.13) has the same replay-on-superseded behaviour, so this is not a regression. (6) The ma-allow MA001 comments are inert here. The PR is up to date with origin/dev and touches only the provider, its tests and fixtures.",
-   "whats_new": "Copilot raised 3 more CRITICALs on 7a74a1370 at 14:11Z (one is GPT Sol's failed-option-edit point); gate drafted it at 14:28Z. Our replay finding is still unposted.",
+   "tldr": "Almost: v4.4.9 fixes the three 14:11Z Copilot CRITICALs (Opus verified). Our replay finding is still open and now has a second path: when MA Next wins the race against a natural end, the finished track replays from 0 until the echo arrives. Our old patch no longer applies; Opus rewrote it (wait for our own navigation echo, else retry once), 528 tests and 4/4 probes pass. Copilot's first new CRITICAL overlaps that path.",
+   "summary": "Delta 7a74a1370..984e51599 (v4.4.9). (1) get_audio_stream captures the baseline at track end and passes it through _signal_track_completion into _complete_track, which checks it after the lock and the reconnect wait (Copilot r4389707449). _matches_baseline now also requires _navigation_version to be unchanged, so our own Next/Previous published while the completion waited supersedes it. Covered by test_completion_keeps_the_baseline_captured_at_track_end and test_own_navigation_supersedes_an_earlier_baseline. (2) mutate_player_state saves (navigation_version, unadopted, status) and restores it on YnisonSendError only when that send registered a navigation. A failed repeat/shuffle/append edit leaves a pending navigation alone (r4389707553, test_failed_option_edit_keeps_a_pending_navigation). (3) _navigation_status holds the status sent with a navigation. Later edits republish it until adoption, update_playing_status folds newer local positions into it, a newer non-relay server status clears it, and a queue-only echo that adopts the navigation applies it, so the new occurrence starts at 0 (r4389707642, plus the restart-position assertion Copilot asked for). It is not cleared on adoption or in _reset_pending_queue, but every read is gated on _unadopted_navigation or current_item_navigated, so a leftover value is never used. (4) Open finding, rerun at 984e51599: probe_superseded_replay.py (peer append during reconnect, reconnect during RADIO refill) still streams [t1, t1], and probe_real_client.py still returns superseded with t1 current. New in this delta: /tmp/prr/r1700z/d7220/probes/probe_own_next_stream.py runs the real _on_next before the natural-end completion takes the lock. The completion returns SUPERSEDED because _navigation_version moved, while state.current_track_id stays t1 until the echo arrives (only queue_snapshot sees the pending t2). The loop streams t1 from 0 again, and the echo's TRACK_CHANGE restart then cuts over to t2. Before this delta, the same race published a second advance (t1 -> t3). probe_own_next_race.py shows that the old one-retry patch would retry with a fresh baseline and publish index 2 (a double skip). The old patch also fails git apply because the completion call line changed. The refined patch waits for the echo when our own navigation superseded the completion, and retries once only when the finished item is still current, the device is still active and playback is not paused. With it, the suite (528) and all 4 probes pass. Without it, 3 probes fail. (5) Copilot's 'previously missed' note on the reselect restart using a relayed status position is in unchanged code, and origin/dev restarts at state.progress_ms in the same place. I did not verify it further. (6) The branch is up to date with origin/dev and touches only the provider, its tests and fixtures.",
+   "whats_new": "v4.4.9 (984e51599). Re-reviewed: Opus almost (our f1, new path), GPT Sol agrees, Copilot 3 new CRITICALs.",
    "blockers": [
-    "f1 (ours, unposted, same on dev): superseded completion replays the finished track; `post 7220 f1` or `fix 7220`",
-    "Copilot re-review pending"
+    "f1 (ours, unposted): superseded completion replays the finished track, now also after our own Next; `post 7220 f1` or `fix 7220` (new patch)",
+    "Copilot: 3 CRITICAL threads (trudenboy)"
    ],
    "findings": [
     {
      "model": "Claude",
      "severity": "PROBLEM",
      "file": "music_assistant/providers/yandex_ynison/provider.py",
-     "line": 584,
-     "title": "Superseded completion still replays the finished track from 0 when the change kept it current",
-     "detail": "v4.4.8 stops option-only peer edits from superseding a completion. A peer append still bumps _queue_lineage and the epoch, and so does a reconnect that bumps queue_generation during _replenish_radio_queue or the advance send. If either lands while completion waits for the connection, the send lock or the RADIO fetch, _complete_track returns SUPERSEDED with the finished item still current. get_audio_stream's SUPERSEDED branch just passes, so the next iteration reads the same track_id and streams it again from 0. Reproduced at 7a74a1370 with /tmp/prr/r1300y/d7220/probe_superseded_replay.py (streamed [t1,t1] in both cases) and probe_real_client.py (outcome superseded, current t1). origin/dev has the same behaviour. Same on origin/dev, so not a regression.",
-     "fix": "When completion is SUPERSEDED, no restart or stop is pending, playback is not paused and the finished track is still current, recapture the baseline and retry _signal_track_completion once (see suggested_fix).",
-     "posted": null
-    },
-    {
-     "model": "GPT Sol",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/yandex_ynison/ynison_client.py",
-     "line": 689,
-     "title": "A failed option edit clears an earlier successful navigation (unverified)",
-     "detail": "GPT Sol rates it a problem: the exception handler clears _unadopted_navigation unconditionally, so a Next echo arriving before reconnect can be treated as item-kept.",
-     "fix": "",
+     "line": 583,
+     "title": "Superseded completion replays the finished track from 0, now also when our own Next wins the race",
+     "detail": "The SUPERSEDED branch is still `pass`, so the next iteration reads state.current_track_id and restreams the finished track from 0 whenever that track is still current. Two paths reach it. (a) Unchanged since the last round: a peer append (lineage bump) or a reconnect during the RADIO refill (generation bump) keeps t1 current. The probes still stream [t1, t1]. (b) New in v4.4.9: the baseline captured before the lock now includes _navigation_version, so an MA Next/Previous published while the natural-end completion waited for _queue_navigation_lock supersedes it. That fixes the old double skip. But state.current_track_id stays t1 until Ynison echoes the navigation, so the loop restarts t1 from 0, and the echo's TRACK_CHANGE restart then cuts to t2. This plays a short burst of the previous track and is reproduced by probe_own_next_stream.py. Retrying unconditionally (our old patch) would double skip in (b), because the fresh baseline reads the pending queue (probe_own_next_race.py: sent indexes [1, 2]). origin/dev has the replay for (a).",
+     "fix": "On SUPERSEDED, compare a fresh navigation_baseline() with the captured one. If navigation_version moved (our own navigation won), treat it as CHANGE and wait for the echo via _wait_for_track_change(track_id, baseline). If the playable and active device are unchanged, playback is not paused, no restart or stop is pending and the finished track is still current, retry _signal_track_completion once (see suggested_fix).",
      "posted": null
     }
    ],
    "unaddressed_comments": [],
    "copilot": {
     "green": false,
-    "comments": 0,
-    "findings": 0,
-    "review_url": "https://github.com/music-assistant/server/pull/7220",
-    "titles": []
+    "comments": 3,
+    "findings": 3,
+    "review_url": "https://github.com/music-assistant/server/pull/7220#discussion_r4391139184",
+    "titles": [
+     "[CRITICAL] Next published but echo pending when t0 finishes (r4391139184, overlaps our new path)",
+     "[CRITICAL] peer replaces the queue keeping track id/index (r4391139260)",
+     "[CRITICAL] older own full-state echo clears _navigation_status (r4391139319)"
+    ]
    },
-   "copilot_reviewed_head": false,
-   "copilot_note": "Last review on 2c0b9b8e7 (12:54Z), threads answered and resolved in v4.4.8; re-review of 7a74a1370 requested.",
+   "copilot_reviewed_head": true,
+   "copilot_note": "Changes recommended on 984e51599 (16:11Z), 3 CRITICAL threads; gate will draft.",
    "suggested_fix": {
-    "description": "Retry completion once when a superseding change left the finished track current and no restart is pending. Unchanged from the last round. git apply --check passes on 7a74a1370; the suite (521) passes, and both probes advance instead of replaying.",
-    "patch": "diff --git a/music_assistant/providers/yandex_ynison/provider.py b/music_assistant/providers/yandex_ynison/provider.py\nindex b961f12e3b..d1f8e93c85 100644\n--- a/music_assistant/providers/yandex_ynison/provider.py\n+++ b/music_assistant/providers/yandex_ynison/provider.py\n@@ -578,6 +578,17 @@ class YandexYnisonProvider(PluginProvider):\n                     self.logger.info(\"Track %s finished, advancing to next\", track_id)\n                     baseline = self._ynison.navigation_baseline()\n                     completion = await self._signal_track_completion()\n+                    if (\n+                        completion == NavigationOutcome.SUPERSEDED\n+                        and not playback.restart_requested()\n+                        and not playback.stop_requested()\n+                        and self._ynison is not None\n+                        and not self._ynison.state.is_paused\n+                        and self._ynison.state.current_track_id == track_id\n+                    ):\n+                        # The change kept the finished item current; advance the updated queue.\n+                        baseline = self._ynison.navigation_baseline()\n+                        completion = await self._signal_track_completion()\n                     if completion == NavigationOutcome.RESTART:\n                         playback.request_restart(0, RestartReason.REPEAT, grace=False)\n                     elif completion == NavigationOutcome.SUPERSEDED:\n\n",
+    "description": "Replaces the old one-retry patch, which no longer applies and would double skip when our own Next superseded the completion. If our own navigation won, wait for its echo. If a peer append or a reconnect left the finished item current, retry once. git apply --check passes on 984e51599. The suite (528) and the probes in /tmp/prr/r1300y/d7220 and /tmp/prr/r1700z/d7220/probes pass with it.",
+    "patch": "diff --git a/music_assistant/providers/yandex_ynison/provider.py b/music_assistant/providers/yandex_ynison/provider.py\nindex 4b7865155b..7c993230bf 100644\n--- a/music_assistant/providers/yandex_ynison/provider.py\n+++ b/music_assistant/providers/yandex_ynison/provider.py\n@@ -578,6 +578,21 @@ class YandexYnisonProvider(PluginProvider):\n                     self.logger.info(\"Track %s finished, advancing to next\", track_id)\n                     baseline = self._ynison.navigation_baseline()\n                     completion = await self._signal_track_completion(baseline=baseline)\n+                    if completion == NavigationOutcome.SUPERSEDED and self._ynison is not None:\n+                        latest = self._ynison.navigation_baseline()\n+                        if latest.navigation_version != baseline.navigation_version:\n+                            # Our own navigation won the race; wait for its echo below.\n+                            completion = NavigationOutcome.CHANGE\n+                        elif (\n+                            latest.playable_id == baseline.playable_id\n+                            and latest.active_device_id == baseline.active_device_id\n+                            and not latest.paused\n+                            and not playback.restart_requested()\n+                            and not playback.stop_requested()\n+                            and self._ynison.state.current_track_id == track_id\n+                        ):\n+                            # The change kept the finished item current; advance the updated queue.\n+                            completion = await self._signal_track_completion()\n                     if completion == NavigationOutcome.RESTART:\n                         playback.request_restart(0, RestartReason.REPEAT, grace=False)\n                     elif completion == NavigationOutcome.SUPERSEDED:\n",
     "pushed": null
    },
    "prompt": "",
@@ -11602,9 +11549,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-27 15:25 CET",
-   "changed_now": "drafted"
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-27 17:30 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
@@ -12287,7 +12234,7 @@
    "stacked": false,
    "tldr": "Not ready: the bug is real (the show DJ plans after play_index already handed items 0 and 1 to the player), but the PR reintroduces the opening intro you left out of #6372 via a new core on_queue_start plugin hook, and its AI Radio side duplicates _replan_queue, reworks DJ locking and adds multi-clip slots that change normal replans. Show start also waits on the weather lookup (up to 20 s). A provider-only fix is possible via the queue-items event that already runs before play_index. OzGav requested changes too.",
    "summary": "Adds PluginProvider.on_queue_start, awaited by QueueLoaderMixin._start_queue before play_index for PLAY/REPLACE, with a broad except that logs and still starts playback (CancelledError propagates). AI Radio implements it: under _dj_lock it arms a fresh show state, awaits weather tokens, re-reads the queue, plans every slot including start_of_playlist over the upcoming show, splices clips with guard -2 (so the intro can sit at the start index), publishes in one update_items, sets boundary mix and persists. It also reworks set_queue_dj into _set_queue_dj with automatic arming under the lock, moves _maybe_detach_show_dj under the lock, groups multiple sections that share a slot (_splice_dj_slot) for both on_queue_start and _replan_queue, and teaches _repair_dj_clips about grouped slots.\n\nRoot cause on dev: _ensure_show_dj runs eagerly inside load()'s QUEUE_ITEMS_UPDATED dispatch and arms the state in memory before play_index. It then suspends at _write_queue_dj, and the replan task awaits _prepare_runtime_tokens on top of that. By the time it plans, committed_index covers items 0 and 1, so the first gap is too_close. _replan_queue only ever allows between_songs and end_of_playlist, so an intro is never planned. The PR body calls this a b7 regression, but #6372 (3b90f39dea) states 'The intro is not played: putting it in front of the first track would need the core to accept sound effects from a provider feed.' The intro half is new behaviour on top of that decision.\n\nCore hook vs provider-only: a core-free fix is possible. get_radio_tracks is awaited by the core before load(), so AI Radio can warm the weather cache there. The QUEUE_ITEMS_UPDATED handler runs eagerly (mass.create_task eager_start=True) inside load(), before play_index, so a synchronous arm plus opening plan plus update_items there would land before playback. dev already relies on that ordering for set_boundary_mix_required ('decided at the play start this arm precedes'). The catch is that it depends on implicit eager-dispatch ordering and a reentrant update_items inside load(). The explicit hook is about 25 lines of core and easier to reason about. If you want intros, the hook is defensible. The AI Radio side should then be small: on_queue_start arms the state and runs one _replan_queue pass with an opening flag (allow start_of_playlist, pre-play guard), not a second copy of the planner.\n\nError handling: OzGav's and Bot-MArley's ask is addressed. _start_queue catches Exception per plugin, logs plugin name and queue id, keeps the last good start_index and still calls play_index. CancelledError propagates. Still open: AI Radio raises InvalidDataError for an expected race (queue changed during weather), which the core logs as an exception with traceback. There is also no time bound on the hook.\n\nNon-AI-Radio queues: every PLAY/REPLACE now awaits each plugin's on_queue_start sequentially. The base returns immediately, and AI Radio returns early when no show station is in the queue sources, so the cost is negligible today. Resume, seek, next and play_index from the queue UI never call the hook. Neither does the dynamic-mode start at queue_loader.py:1166, which is irrelevant for a finite show.\n\nTests: thorough but heavy, about 490 new lines in test_queue_dj.py, most of them chasing races Copilot raised over five iterations. The core tests are fine. The three-plugin start_index chaining test covers a scenario with one real implementer. There is a real-path test for eager event dispatch during loading. No test changes affect existing behaviour.\n\nOpen threads: OzGav 'catch expected errors' (queue_loader.py:251) and Bot-MArley's matching thread are addressed in code but unresolved. OzGav's docstring thread (plugin.py:81) is not addressed. OzGav's scope question in the conversation (why the locking rework, multi-clip slots and duplicated planning) has no reply.",
-   "whats_new": "adamlonsdale offered OzGav a smaller PR (the lock rework came from earlier review feedback). Your core-hook call is still open.",
+   "whats_new": "OzGav (15:05Z): adapt _replan_queue for the first pass, keep this PR to that, multi-clip slots as a follow-up. Your core-hook call is still open.",
    "blockers": [
     "Your call: a core on_queue_start hook to bring the intro back (a #6372 reversal), or a provider-only fix",
     "f1: on_queue_start duplicates _replan_queue and bundles a lock rework and multi-clip slots",
@@ -12399,7 +12346,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-27 07:40 CET",
-   "changed_now": "author replied"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -13035,7 +12982,7 @@
    "title": "Update Yandex Station provider to v1.5.33: Alice speech API commands and voice control fixes",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7242",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "attention",
@@ -13057,7 +13004,7 @@
    "stacked": false,
    "tldr": "Almost: v1.5.33 makes a cancelled pause/stop roll back like a rejected command and ties auto-resume to voice requests that interrupted MA's own playback; 241 tests pass. Our guest-scope finding is the only open point, now through four versions, still unposted: party guests can drive the Yandex smart home via yandex_station/command once alice_text_commands is on. Patch still applies.",
    "summary": "Delta b4a84dbfd..079f5941b (v1.5.33, player.py + tests only). (1) _stop_playback wraps glagol.send in try/except CancelledError, calls the new _roll_back_transport_command, publishes state and re-raises. Before this, a cancelled pause/stop left _pause_stop_pending=True and the session reset while the Station may still have been playing, so every playing=True report was swallowed. The rollback is now shared with the rejected-command path and adds an explicit generation check, the same as the `current` check it replaces. Behaviour is unchanged for rejections, and the cancelled case is tested for pause and stop. Treating 'unknown delivery' as rejected is a reasonable trade-off: if the Station did stop, its playing=False report is then handled as a physical pause. (2) _voice_interaction_active: set in _handle_voice_interrupt, cleared by _cancel_voice_resume (stop/pause, physical pause, completion, native track takeover) and when IDLE schedules or declines the auto-resume. _handle_voice_end returns early without it, which replaces the _prev_alice_state check. NONE while an interaction is active counts as Alice answering, which matches the existing server-action test that shows the Station reports NONE while speaking. Effect: after an MA pause or a physical pause, an unrelated Alice question or a say() phrase no longer auto-resumes the queue (new test), and BUSY/NONE/LISTENING during a voice answer keeps the pending request queued (new test). play_media does not clear the flag, but every path that sets _needs_replay=True clears or resets it first, so a stale flag cannot trigger a resume. (3) Guest exposure, unchanged: provider.py:317 still registers yandex_station/command with Scope.PLAYERS_CONTROL. On origin/dev, auth_middleware._GUEST_SCOPES includes PLAYERS_CONTROL, and guest_access.get_or_create_guest_user (used by party, music_quiz and dashboards) creates role GUEST with no player filter. Anyone with a party join link can therefore send free text to Alice, including smart home commands, once alice_text_commands is enabled. The PR is up to date with origin/dev and touches only the provider, its tests and en.json.",
-   "whats_new": "v1.5.33 (079f5941b) answers Copilot's previously missed points. Re-reviewed: Opus almost (our f1), GPT Sol agrees.",
+   "whats_new": "Copilot CRITICAL on rollback during an Alice interaction (15:09Z); gate drafted it at 15:26Z. Our guest-scope finding is still unposted.",
    "blockers": [
     "f1 (ours, unposted): party guests can drive the Yandex smart home via yandex_station/command; `post 7242 f1` or `fix 7242`"
    ],
@@ -13101,9 +13048,9 @@
    "related_prs": [
     "#7227 maps yandex_station/command to system:admin over MCP"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-27 16:20 CET",
-   "changed_now": "pushed"
+   "changed_now": "drafted"
   },
   {
    "repo": "server",
@@ -13436,8 +13383,207 @@
     "#6708 per-user image picker",
     "support#6602"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-27 16:20 CET",
+   "changed_now": ""
+  },
+  {
+   "repo": "server",
+   "number": 7248,
+   "state": "open",
+   "closed_at": null,
+   "title": "Stop the MusicBrainz link run reporting merged items as failed",
+   "author": "OzGav",
+   "url": "https://github.com/music-assistant/server/pull/7248",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "attention",
+   "attention_since": "2026-10-27T15:49:00Z",
+   "waiting_on": "you: approve (core)",
+   "gpt_sol": "clean",
+   "size": "S",
+   "code": 8,
+   "add": 0,
+   "del": 0,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 291ddf919",
+   "head_sha": "2b3368ced",
+   "core_touched": true,
+   "providers_touched": [],
+   "stacked": false,
+   "tldr": "The guard reuses the existing _in_library check before the inter-item pause, so an item that has left the library is skipped with no failure, no warning and no budget spent. It is correct and cheap: one PK read per item, at most 50 per run. On dev the run cannot merge away a later item of its own batch. That only becomes reachable with #7212 (still open), or when a sync or user removes an item during a run. So the PR is safe to land in either order. 34 tests pass.",
+   "summary": "Verified against origin/dev (291ddf9198). _in_library (enrichment.py:788) does get_library_item and maps MediaNotFoundError to False, the same check update_metadata already uses at controller.py:364. Before this PR the stale item went to link_item_to_musicbrainz: it spent a MusicBrainz lookup, then update_item_in_library raised MediaNotFoundError (in _SCAN_ITEM_ERRORS), giving failed+1, a task failure and a warning. Placing the check before the sleep and progress update means a skipped item uses no budget and no wait, and 'processed' only counts items actually linked. Reachability: on dev the only in-run merge is merge_library_artists_by_mbid. It merges artists that already carry the mbid, and the artist phase only selects artists without an MB id. link_musicbrainz_mappings does not merge on mapping conflicts. So on dev the run cannot remove a later batch item itself; only a concurrent sync or delete can. With #7212 an identified artist in a relink phase can follow a MusicBrainz merge to an id that other artists in the same batch hold, and merge_library_artists_by_mbid keeps the lowest item_id. Because the batch is ordered by timestamp_added, a later batch item can then be the source. The test mocks get_library_item with [MediaNotFoundError, kept] and checks the item is skipped, the remaining one is linked, nothing is reported and the summary counts are right. It fails without the change, because the 'gone' album would be linked.",
+   "whats_new": "Opened and ready 15:49Z. Clean from Opus, GPT Sol and Copilot.",
+   "blockers": [
+    "Core metadata controller: `approve 7248`"
+   ],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "PR description",
+     "line": 0,
+     "title": "Description scenario depends on #7212, and the related-issue line is a placeholder",
+     "detail": "The body says identifying one artist can merge another artist from the same batch. On origin/dev the artist phase only selects artists without an MB id, merge_library_artists_by_mbid only merges artists that already carry the id, and link_musicbrainz_mappings never merges. So that path only exists once #7212 (open) lands. Today the guard covers a sync or user removal during a run. The body also still has 'related issue <link to issue>'.",
+     "fix": "Mention #7212 in the body, and drop the placeholder line or link a real issue.",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7248",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on 2b3368ced (15:48Z).",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": {
+    "rec": "no",
+    "why": "The MusicBrainz link run (_link_library_to_musicbrainz) is not on stable, so there is nothing to backport."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "#7212 (yours to approve)"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-27 17:30 CET",
+   "changed_now": "new"
+  },
+  {
+   "repo": "server",
+   "number": 7247,
+   "state": "open",
+   "closed_at": null,
+   "title": "Keep genres a provider adds after import when the genre scan runs",
+   "author": "GoatsAndMonkeys",
+   "url": "https://github.com/music-assistant/server/pull/7247",
+   "draft": false,
+   "verdict": "not_ready",
+   "assessment": "request_changes",
+   "status": "attention",
+   "attention_since": "2026-10-27T15:58:00Z",
+   "waiting_on": "you + OzGav: genre removal semantics; GoatsAndMonkeys: OzGav's changes",
+   "gpt_sol": "1 problem (= ours)",
+   "size": "S",
+   "code": 43,
+   "add": 0,
+   "del": 0,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 291ddf919",
+   "head_sha": "99f0ec1c5",
+   "core_touched": true,
+   "providers_touched": [],
+   "stacked": false,
+   "tldr": "The diagnosis is right: the sync links provider genres that the stored metadata.genres lacks, and the scan's stale-alias cleanup then unlinks them. The fix works around this with a raw json_set from the genre controller. That skips MEDIA_ITEM_UPDATED and makes these genres permanent. OzGav's requested changes are not addressed yet, and the removal semantics need a maintainer decision first.",
+   "summary": "Checked against origin/dev (291ddf9198). sync_media_item_genres now runs _store_genre_names first, which appends the missing names to <table>.metadata.$.genres. It is one UPDATE guarded by EXISTS, compares with LOWER(TRIM()) like _cleanup_stale_genre_mappings does, and leaves the other metadata fields alone (covered by a test). Throwaway probes confirmed the bug and the fix. One probe also found a nuance the review thread missed. A genre present at import that the provider later drops is relinked by the next scan on dev already, because the stale cleanup and _bulk_scan_unmapped_genres both read metadata.genres. The PR extends that stickiness to genres added after import. Routing through update_item_in_library, as OzGav asks, would not restore removal by itself: MediaItemMetadata.update unions set fields, so metadata.genres is append-only on that path too. Real removal needs per-provider genre provenance or an overwrite rule, which is a design decision. Cost: the sync loops wrap each item in deferred_commit, so no extra commit is added there. It is still one extra JSON UPDATE per item on the unchanged path. Measured 36 to 83 us per item on the genre fast path (about +5 s per 100k items). The podcast media-type fix in _sync_playlist_tracks is correct and carries no provider-contract risk: only the base class (raises NotImplementedError) and the test provider implement get_item_genre_names, and the test provider handles PODCAST. It is coupled to this change, though (see findings).",
+   "whats_new": "Opened 15:2xZ. OzGav reviewed at 15:58Z (route through the media controller, split the podcast fix). Reviewed by Opus, GPT Sol and Copilot.",
+   "blockers": [
+    "Design call with OzGav: should a genre the provider drops be unlinked? Stored names are append-only, so the scan relinks it (Copilot CRITICAL, ours, GPT Sol)",
+    "Raw json_set from the genre controller skips MEDIA_ITEM_UPDATED",
+    "Podcast media-type fix must land first if split out"
+   ],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/music/media/genres.py",
+     "line": 2266,
+     "title": "Stored genres are append-only, so a genre the provider drops is never unlinked",
+     "detail": "Probe on the PR: metadata ['Rock'], sync {'Rock','SzLaterDrop'}, scan, sync {'Rock'}, scan. SzLaterDrop is still linked because the scan recreates it from the stored name. On dev the same sequence ends with it unlinked. The same probe with the genre present at import stays linked on dev as well, so the gap already exists. This PR widens it to every genre a provider adds later. Routing through update_item_in_library would not fix it either, because MediaItemMetadata.update unions sets. There is no test for a provider removing a genre, which OzGav asked for.",
+     "fix": "Settle the semantics with OzGav first. Either accept append-only (matching how import-time genres and update_item_in_library behave today) and pin it with a removal test, or design per-provider genre provenance so the sync can drop a provider's own names. That second option is a separate design and not this PR.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/music/media/genres.py",
+     "line": 1189,
+     "title": "Raw json_set into the media tables from the genre controller skips the media controller",
+     "detail": "The genre controller writes another controller's rows directly. No MEDIA_ITEM_UPDATED is sent, so clients keep showing the old metadata.genres. The update_<table>_timestamp trigger still bumps timestamp_modified without an event. The maintainer asked for the change to go through the media controller instead.",
+     "fix": "Add the stored genres to LibraryItemSyncDetails (json_extract(metadata,'$.genres') in the sync-details query). Make _library_item_needs_update return True when prov_item.metadata.genres is not covered by the stored set, so the existing update_item_in_library branch rewrites the item and sends the event. This only costs anything when genres actually changed, and sync_media_item_genres stays unchanged.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/controllers/music/media/genres.py",
+     "line": 1189,
+     "title": "Extra UPDATE on every item's sync, including the unchanged fast path",
+     "detail": "Measured over 3000 unchanged syncs: 36 us/item on dev and 83 us/item on the PR, about +5 s per 100k items. No extra commit on the provider sync path, since each item is already inside deferred_commit. _link_genres_if_unmapped (music/controller.py:3055) passes the item's own metadata.genres, so the statement can never match there but still runs and commits.",
+     "fix": "The sync-details comparison in the finding above removes the per-item statement entirely.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/models/music_provider.py",
+     "line": 1761,
+     "title": "Podcast media-type fix must not land after the storing change",
+     "detail": "Before this fix, a playlist's podcast genres were synced as MediaType.TRACK against the podcast's db id, so they linked an unrelated track. Today the scan removes those misrouted links, because the alias is not in that track's metadata.genres. If OzGav's split happens and the storing change lands without this fix, the podcast's genres get written permanently into the unrelated track's metadata.genres.",
+     "fix": "When splitting, merge the media-type fix (with its own test) first, or keep both in one PR.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/controllers/music/media/genres.py",
+     "line": 1177,
+     "title": "Docstrings explain internals",
+     "detail": "The new sentences in the sync_media_item_genres docstring describe the scan's internals. _store_genre_names is private but has a multi-paragraph docstring with :param: lines.",
+     "fix": "Revert the public docstring addition, make the private docstring one line, and move the reasoning into a short inline comment at the call.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "tests/controllers/music/test_genres.py",
+     "line": 1045,
+     "title": "Test pins storing case and whitespace near-duplicates",
+     "detail": "The test asserts metadata.genres == {'Électronique', '\\tRock\\t', 'Rock', 'électronique'}. Matching SQLite's ASCII-only LOWER and space-only TRIM means users get near-duplicate genre strings wherever metadata.genres is shown.",
+     "fix": "If the storing approach stays, compare in Python with the same normalization the genre resolver uses, and drop this test.",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": false,
+    "comments": 2,
+    "findings": 2,
+    "review_url": "https://github.com/music-assistant/server/pull/7247#discussion_r4391164003",
+    "titles": [
+     "[CRITICAL] a genre removed at the provider is relinked from the stored name (r4391164003, = ours)",
+     "[PROBLEM] the podcast fix is separate and untested (r4391164129)"
+    ]
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Changes recommended on 99f0ec1c5 (16:13Z); gate will draft.",
+   "suggested_fix": null,
+   "prompt": "",
+   "backport": {
+    "rec": "no",
+    "why": "The bug is on stable too (support#6883, same sync and scan code), but the approach and the removal semantics are still undecided, and the change runs on every item of every provider sync. Revisit once a reworked fix has merged and soaked on dev."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "support#6883"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-27 17:30 CET",
    "changed_now": "new"
   }
  ]
