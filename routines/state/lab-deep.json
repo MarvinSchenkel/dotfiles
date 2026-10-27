@@ -1,0 +1,12 @@
+{
+  "last_run": null,
+  "runs": {"dev": [], "stable": []},
+  "known_red": [
+    {
+      "test": "scenarios/gate/test_queue.py::test_queue[snap-1] and scenarios/deep/test_queue.py::test_album_plays_through[snap-1]",
+      "since": "2026-10-27",
+      "note": "Snapcast queue index never advances with the 10 s album; the flow stream finishes in under a second and the index derivation lags (dev 291ddf9198ff). Capture shows the album gapless. To be investigated on the server side."
+    }
+  ],
+  "last_flakes": []
+}
