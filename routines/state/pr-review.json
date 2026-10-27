@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-27T12:00:00+01:00",
+ "last_run": "2026-10-27T13:00:00+01:00",
  "dev": "291ddf919",
- "run_note": "Quiet hour. #7219 is now clean from all three reviewers and only waits on your generated-files call. trudenboy drafted #7220 himself for an upstream cursor rework, and #7242 stays a draft; our three unposted findings (#7242 guest scope, #7220 replay, #7227 listen_in) still stand.",
+ "run_note": "Only #7220 moved: trudenboy's v4.4.6 cursor rework fixes Copilot's last two CRITICALs, but our replay finding survives its third round because nobody has posted it; Copilot adds one new CRITICAL. Our #7242 and #7227 findings are also still unposted.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -11520,23 +11520,23 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-27 11:25 CET",
-   "changed_now": "author replied"
+   "changed_now": ""
   },
   {
    "repo": "server",
    "number": 7220,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Music Connect (Ynison) provider to v4.4.5: Ynison go-away handling and official-client alignment",
+   "title": "Update Yandex Music Connect (Ynison) provider to v4.4.6: Ynison go-away handling and official-client alignment",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7220",
-   "draft": true,
+   "draft": false,
    "verdict": "almost",
    "assessment": "comment",
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "trudenboy (drafted himself; upstream rework #236/#238)",
-   "gpt_sol": "1 problem (= ours)",
+   "status": "attention",
+   "attention_since": "2026-10-27T11:28:00Z",
+   "waiting_on": "you: post f1 (track replay, 3rd round) or `fix 7220`; trudenboy: Copilot CRITICAL",
+   "gpt_sol": "2 critical (1 = ours, 1 = Copilot's)",
    "size": "XL",
    "code": 1774,
    "add": 1200,
@@ -11544,28 +11544,29 @@
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 291ddf919",
-   "head_sha": "2947c057c",
+   "head_sha": "1e31d3813",
    "core_touched": false,
    "providers_touched": [
     "yandex_ynison"
    ],
    "stacked": false,
-   "tldr": "Almost: v4.4.5 fixes Copilot's three CRITICALs (trim echo, pending-restart position, our own RADIO append). Our finding is only partly fixed: a peer device appending to the queue, or a reconnect while the RADIO batch is fetched, still returns \"superseded\" and the finished track replays from 0. Opus reproduced both on 2947c05; the one-retry patch still applies and fixes them (504 tests pass). Copilot never raised this one, so it needs posting.",
-   "summary": "Delta since fa3e18df6. (1) Trim echo racing the send: publish_items now calls on_trim inside the mutation, under _send_lock and before _send_locked. _update_queue_list adds the shift there, so an echo handled during the write meets pending_index_shift already set. On YnisonSendError or ResourceTemporarilyUnavailable the registered amount is subtracted, clamped at 0, which also covers an echo that already consumed the shift. Fixed; test_trim_echo_during_the_send_keeps_the_track and test_trim_reports_the_shift_before_sending cover it. (2) Pause/play during a pending restart: _current_progress_ms returns restart_at_ms while restart_requested() and the restart targets the current track. _handle_ynison_state sets playback.track_id to the new track before request_restart, so the branch applies on a track change, and the loop-top consume_restart/take_start run with no await between them. Fixed. (3) Own append/trim of the same entity: is_current_playback and advance_queue's mutate now use _keeps_navigation_target. It accepts an unchanged identity, or a queue authored by our device_id with the same entity_type/entity_id and the same playable_id current. A peer-authored queue, an active-device change or a pause change still reject. Correct as designed. Our open finding is still open: the stream loop's 'superseded' branch did not change. Remaining triggers: (a) a peer device appends or reorders upcoming items during the completion window. The queue carries version.device_id == peer, so _keeps_navigation_target rejects it, and _parse_state also bumps _queue_epoch. (b) A reconnect (_connect_state -> _reset_pending_queue) while _replenish_radio_queue runs: the queue_generation check returns 'superseded'. (c) A reconnect while advance_queue's edit is being sent. In each case get_audio_stream sets track_id=None, re-reads the unchanged current track and streams it from take_start()==0. Probe (d7220/probe_superseded_replay.py, real _signal_track_completion over the wired mock): peer append during reconnect streamed [('t1',0),('t1',0)]; reconnect during RADIO refill streamed [('t1',0),('t1',0)]. With fix.patch applied both advance ([('t1',0),('t2',0)] and [('t1',0),('r2',0)]) and the suite passes (504 + 2 probes). No unresolved review threads (11 resolved). Branch is up to date with origin/dev (merge-base 291ddf919) and touches only providers/yandex_ynison and its tests.",
-   "whats_new": "trudenboy drafted it himself at 10:19Z and is reworking queue lineage and the playing-item cursor upstream (ma-provider-yandex-ynison #236, #238). Our replay finding is still unposted; it may get covered by the rework.",
+   "tldr": "Almost: v4.4.6 is trudenboy's upstream cursor rework. It fixes Copilot's two 10:11Z CRITICALs and Opus finds no new bugs (514 tests pass). Our finding survives a third round: a peer append, or a reconnect during the RADIO refill, still returns \"superseded\" while the finished track is current, and it replays from 0. Copilot never raised it, so trudenboy hasn't seen it; a validated one-retry patch is ready. Copilot's new CRITICAL: Next between two copies of the same track can be lost.",
+   "summary": "Delta 2947c057c..1e31d3813: follow_window_trim/pending_index_shift are replaced by YnisonState.current_item_kept, which the client sets on our own non-navigation queue echo that keeps the current playable. The index comparison in _wait_for_track_change is replaced by navigation_confirmed, which needs the confirmed own queue version to reach the version registered before the navigation send, or a lineage or active-device change. NavigationBaseline now carries a queue lineage that only changes when a foreign queue is adopted. Position reporting uses PlaybackSession.position_ms or the extrapolated StatusBaseline (estimated_progress_ms). Literal outcomes become the NavigationOutcome StrEnum.\n(b) Copilot r4387417104: fixed. A trim echo carries an older own version than _navigation_version, so it cannot settle the wait, and current_item_kept re-indexes the cursor without a restart. Covered by test_trim_echo_does_not_end_the_wait_for_navigation and test_navigation_is_confirmed_by_its_own_echo.\n(c) Copilot r4387417196: fixed. Own frames never change _queue_lineage, so a peer replacement that our set_repeat_mode re-publishes still fails _matches_baseline (test_option_edit_does_not_adopt_a_peer_queue).\n(a) not fixed. The adapted probe reproduces both cases at 1e31d38 ([t1,t1] streamed instead of [t1,t2] and [t1,r2]). A second probe with the real YnisonClient confirms the trigger: a phone-authored append parsed during the RADIO fetch bumps lineage and epoch, and _complete_track returns SUPERSEDED with t1 still current. The stream loop's SUPERSEDED branch is `pass`, so the next iteration re-reads t1 and plays it from 0.\nReviewed with no finding: pause, play and seek positions (position_ms falls back to the server estimate between tracks and after pause), the RESTART and duplicate-id CHANGE paths, stale own echoes (dropped before they reach state), and unload/task cleanup (unchanged). Against origin/dev (4.3.13): dev's string-literal completion had the same replay-on-superseded behaviour, so (a) is not a regression.",
+   "whats_new": "v4.4.6 (1e31d3813): explicit queue lineage, completion waits for its own navigation echo, client owns the cursor. Re-reviewed: Opus almost (our f1 still open), GPT Sol 2 critical, Copilot 1 CRITICAL + description.",
    "blockers": [
-    "Draft: trudenboy reworking upstream",
-    "Our f1 (replay) still unposted; worth posting so the rework covers it"
+    "f1 (ours, 3rd round, unposted): superseded completion replays the finished track; `post 7220 f1` or `fix 7220`",
+    "Copilot r4388471390 (CRITICAL): duplicate-track Next lost behind an option edit (trudenboy)",
+    "Copilot r4388471463: description"
    ],
    "findings": [
     {
      "model": "Claude",
      "severity": "PROBLEM",
      "file": "music_assistant/providers/yandex_ynison/provider.py",
-     "line": 577,
-     "title": "Superseded completion still replays the finished track from 0 after a peer append or a reconnect during RADIO refill",
-     "detail": "4.4.5 only exempts our own appends and trims (_keeps_navigation_target requires version.device_id == ours). A peer device appending or reordering upcoming items keeps the finished item current but is rejected, and also bumps _queue_epoch. A reconnect during _replenish_radio_queue fails the queue_generation check, and a reconnect during the advance_queue send raises from mutate_player_state. All of these return 'superseded'. get_audio_stream's 'superseded' branch is a pass, so the loop re-reads current_track_id, which is still the finished track, and streams it again from 0. Reproduced at 2947c05 for the peer-append and the RADIO-reconnect triggers.",
-     "fix": "If completion is 'superseded' and Ynison still reports the finished (track_id, old_index), unpaused and with no stop requested, call _signal_track_completion() once more so navigation is planned against the updated queue. A real replacement is still followed.",
+     "line": 584,
+     "title": "Superseded completion still replays the finished track from 0 when the change kept it current",
+     "detail": "_accept_queue bumps _queue_lineage and the epoch for any foreign queue that differs, including a phone appending to the queue. If that lands while completion waits for the connection, the send lock or the RADIO fetch, or a reconnect bumps queue_generation during _replenish_radio_queue or the advance send, _complete_track returns SUPERSEDED. The finished item is still current, and get_audio_stream's SUPERSEDED branch just passes, so the next loop iteration reads the same track_id and streams it again from 0. Reproduced at 1e31d38 with the adapted probe (/tmp/prr/r1300y/d7220/probe_superseded_replay.py: streamed [t1,t1]) and with the real client (/tmp/prr/r1300y/d7220/probe_real_client.py: outcome superseded, current t1). origin/dev behaves the same.",
+     "fix": "When completion is SUPERSEDED, no restart or stop is pending, playback is not paused and the finished track is still current, recapture the baseline and retry _signal_track_completion once (see suggested_fix).",
      "posted": null
     }
    ],
@@ -11574,17 +11575,17 @@
     "green": false,
     "comments": 2,
     "findings": 2,
-    "review_url": "https://github.com/music-assistant/server/pull/7220#discussion_r4387417104",
+    "review_url": "https://github.com/music-assistant/server/pull/7220#discussion_r4388471390",
     "titles": [
-     "[CRITICAL] RADIO append trims while completion waits: stale saved index (r4387417104)",
-     "[CRITICAL] a local repeat/shuffle edit lets a peer replacement pass the guard (r4387417196)"
+     "[CRITICAL] Next between two occurrences of the same track is lost behind a repeat/shuffle edit (r4388471390, GPT Sol agrees)",
+     "[PROBLEM] PR description too long (r4388471463)"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "Changes recommended on 2947c057c (10:11Z), 2 CRITICAL threads.",
+   "copilot_note": "Changes recommended on 1e31d3813 (12:08Z): 1 CRITICAL, 1 PROBLEM thread. The two 10:11Z CRITICALs are fixed. Gate will draft it.",
    "suggested_fix": {
-    "description": "Retry completion once when a superseding change left the finished item current. Unchanged from last round; git apply --check passes on 2947c05. With it, the suite passes and both probes advance instead of replaying.",
-    "patch": "diff --git a/music_assistant/providers/yandex_ynison/provider.py b/music_assistant/providers/yandex_ynison/provider.py\nindex 3bedc443c5..98d1a2f4ee 100644\n--- a/music_assistant/providers/yandex_ynison/provider.py\n+++ b/music_assistant/providers/yandex_ynison/provider.py\n@@ -572,6 +572,16 @@ class YandexYnisonProvider(PluginProvider):\n                     self.logger.info(\"Track %s finished, advancing to next\", track_id)\n                     old_index = self._ynison.state.current_index\n                     completion = await self._signal_track_completion()\n+                    if (\n+                        completion == \"superseded\"\n+                        and not playback.stop_requested()\n+                        and self._ynison is not None\n+                        and not self._ynison.state.is_paused\n+                        and self._ynison.state.current_track_id == track_id\n+                        and self._ynison.state.current_index == old_index\n+                    ):\n+                        # The change kept the finished item current; advance the updated queue.\n+                        completion = await self._signal_track_completion()\n                     if completion == \"restart\":\n                         playback.request_restart(0, RestartReason.REPEAT, grace=False)\n                     elif completion == \"superseded\":\n",
+    "description": "Retry completion once when a superseding change left the finished track current with no restart pending. The new baseline feeds _wait_for_track_change. With it, the suite (514) passes and both probes advance instead of replaying. Validated with git apply --check on 1e31d38.",
+    "patch": "diff --git a/music_assistant/providers/yandex_ynison/provider.py b/music_assistant/providers/yandex_ynison/provider.py\nindex b961f12e3b..d1f8e93c85 100644\n--- a/music_assistant/providers/yandex_ynison/provider.py\n+++ b/music_assistant/providers/yandex_ynison/provider.py\n@@ -578,6 +578,17 @@ class YandexYnisonProvider(PluginProvider):\n                     self.logger.info(\"Track %s finished, advancing to next\", track_id)\n                     baseline = self._ynison.navigation_baseline()\n                     completion = await self._signal_track_completion()\n+                    if (\n+                        completion == NavigationOutcome.SUPERSEDED\n+                        and not playback.restart_requested()\n+                        and not playback.stop_requested()\n+                        and self._ynison is not None\n+                        and not self._ynison.state.is_paused\n+                        and self._ynison.state.current_track_id == track_id\n+                    ):\n+                        # The change kept the finished item current; advance the updated queue.\n+                        baseline = self._ynison.navigation_baseline()\n+                        completion = await self._signal_track_completion()\n                     if completion == NavigationOutcome.RESTART:\n                         playback.request_restart(0, RestartReason.REPEAT, grace=False)\n                     elif completion == NavigationOutcome.SUPERSEDED:\n",
     "pushed": null
    },
    "prompt": "",
@@ -11595,9 +11596,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-27 11:25 CET",
-   "changed_now": "drafted"
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-27 13:15 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
@@ -13066,7 +13067,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-27 10:25 CET",
-   "changed_now": "pushed"
+   "changed_now": ""
   },
   {
    "repo": "server",
