@@ -4962,8 +4962,8 @@
    },
    "summary": "2.10.8 HA add-on, 'since somewhere in 2.10': last track of an album ends ~30 s early on Bluesound (Spotify/Soloist, NFS, Jellyfin); Sonos and web fine. codemonkey2k5 adds 'nothing plays beyond ~80%' (no details; may belong to #6860).",
    "fix": "",
-   "checked": "Flow mode. #5408 (2.10.0) holds the connection open a fixed 8 s (FLOW_STREAM_LEAD_OUT_SECONDS) so Bluesound doesn't drop its buffer. Flow pacing NEAR_REALTIME 1.03x (2.10.5-2.10.8), 1.01x on dev (#6584): the player's lead grows with session length (~3 s + 3 %). 19-min session: expected lead ~37 s minus 8 s = ~29 s cut, matches. Across 20-75 min sessions the gap is 20-34 s. Not a 2.10.8 regression; dev's 1.01x shortens but doesn't remove it.",
-   "plan": "Core design: size the lead-out from the measured lead (served audio minus wall time + margin, capped) and cancel the wait on webserver shutdown. Marcel wrote #5408. Answer asks to confirm with the last track alone.",
+   "checked": "Flow mode. #5408 (2.10.0) holds the connection open a fixed 8 s (FLOW_STREAM_LEAD_OUT_SECONDS) so Bluesound doesn't drop its buffer. Flow pacing NEAR_REALTIME 1.03x (2.10.5-2.10.8), 1.01x on dev (#6584): the player's lead grows with session length (~3 s + 3 %). 19-min session: expected lead ~37 s minus 8 s = ~29 s cut, matches. Across 20-75 min sessions the gap is 20-34 s. Not a 2.10.8 regression; dev's 1.01x shortens but doesn't remove it. 10-27 regression hunt (Opus): nothing overrode #5408 (ce08bb9f30, 2.10.0): the 8 s lead-out, forced_content_length profile (hidden, with migration), connecting hold and flow_queue_exhausted are unchanged on 2.10.0-2.10.8 and dev; the only Bluesound provider change since is a pyblu bump on dev. Every flow pacing change since 2.10.0 (1.05 -> 1.02 -> 1.03 -> dev 1.01) shrank the lead, so pacing isn't a regression either. #5408 was validated on a 13 s track (~5 s lead < 8 s) and likely never covered album-length sessions: a 20-min session at 1.03x gives ~39 s lead minus 8 s = ~31 s cut, matching #6872; the log's Finished->End-of-queue gap grows with session length (14 s at 4.9 min, 20-33 s at 20-75 min). No second GitHub report found; codemonkey2k5's '~80%' comment is a different symptom.",
+   "plan": "Smallest fix (only _finish_flow_stream, controller.py:2479-2504): replace the fixed 8 s sleep with a drain wait: hold the connection while the queue is still PLAYING this session_id, poll 1 s, min 8 s, cap ~90 s, then force_close. Keeps immediate close for restart flows. Needs DEIDE's hardware test; fallback if BluOS drops idle sockets: pad end with silence sized to the lead, or pace Bluesound at 1.0x after the burst. Also affects samsung_wam/yandex_station (forced_content_length) at queue end only.",
    "branch": "",
    "diff": "",
    "prs": [],
@@ -4972,11 +4972,12 @@
    "bookkeeping": [],
    "ask": null,
    "milestone": null,
-   "action": "Cyanogenbot (Bluesound owner) will look; he and Marcel thought this was fixed earlier. The lead-out sizing analysis is on the card for him.",
+   "action": "Not a regression: #5408's fixed 8 s lead-out never covered long sessions (lead grows ~3 % of session time). Fix: drain-wait in _finish_flow_stream (hold while the queue still plays, cap ~90 s). Cyanogenbot/DEIDE to test; your call who builds it.",
    "waiting_on": "team",
    "notes": [
     "10-26 07:30 run: new issue (Opus subagent triage).",
-    "10-26 10:30 run: Cyanogenbot (09:25 UTC) will take a look (thought it was fixed with Marcel; fix may be gone). Waiting on him; design ask cleared."
+    "10-26 10:30 run: Cyanogenbot (09:25 UTC) will take a look (thought it was fixed with Marcel; fix may be gone). Waiting on him; design ask cleared.",
+    "10-27 08:10 (on request, DEIDE's Discord question): nothing overrode #5408; its fixed 8 s lead-out is too short for album-length flow sessions. Drain-wait fix proposed."
    ],
    "sync": {
     "at": "2026-10-27T06:30:12Z",
