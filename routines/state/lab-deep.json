@@ -1,20 +1,35 @@
 {
-  "last_run": null,
+  "last_run": "2026-10-27",
   "runs": {
-    "dev": [],
+    "dev": [
+      "20261027-151301-c8ba",
+      "20261027-154320-67b6",
+      "20261027-154502-4de8",
+      "20261027-154653-fa64",
+      "20261027-154844-f3b3",
+      "20261027-155055-f2e4",
+      "20261027-155246-3639"
+    ],
     "stable": []
   },
   "known_red": [
     {
       "test": "scenarios/gate/test_queue.py::test_queue[snap-1] and scenarios/deep/test_queue.py::test_album_plays_through[snap-1]",
       "since": "2026-10-27",
-      "note": "Snapcast queue index never advances with the 10 s album; the flow stream finishes in under a second and the index derivation lags (dev 291ddf9198ff). Capture shows the album gapless. To be investigated on the server side."
+      "note": "Snapcast queue index never advances with the 10 s album; the flow stream finishes in under a second and the index derivation lags (dev 291ddf9198ff). Capture shows the album gapless. To be investigated on the server side.",
+      "green_days": 0
     },
     {
       "test": "scenarios/tier2/test_continuity.py::test_continuity[sendspin-1] on spotify-a",
       "since": "2026-10-27",
-      "note": "#6860 Soloist (Autoplay off) stops after the first track on dev 291ddf9198ff; fix server#7244 still a draft. Red until it merges."
+      "note": "#6860 Soloist (Autoplay off) stops after the first track on dev 291ddf9198ff; fix server#7244 still a draft. Red until it merges.",
+      "green_days": 0
     }
   ],
-  "last_flakes": []
+  "last_flakes": [
+    "gate/test_streams.py::test_streams reruns 4 passed-on-rerun 0 roles sendspin-1,slim-1",
+    "gate/test_players.py::test_players reruns 3 passed-on-rerun 0 roles slim-1",
+    "gate/test_player_kind.py::test_player_slim reruns 1 passed-on-rerun 0 roles slim-1",
+    "gate/test_player_kind.py::test_player_snap reruns 1 passed-on-rerun 0 roles snap-1"
+  ]
 }
