@@ -27,12 +27,6 @@
       "since": "2026-10-28",
       "note": "Server: Snapcast reports the wrong elapsed after a native announcement, intermittently (23.1/23.2 s vs 4-14 s in 2 of 5 full deep runs on dev f4c51dc251, runs b52f and a67c of 2026-10-28); the capture shows the music resumes in place, only the reported position is off. Not the #7252 skip (merged). Needs the full deep players sequence. Chip mcp:3fe24412.",
       "green_days": 1
-    },
-    {
-      "test": "scenarios/deep/test_players.py::test_pause_holds[snap-1]",
-      "since": "2026-10-28",
-      "note": "Snapcast resumes from 0 after a 20 s stop-style pause (no PAUSE feature): resumed_elapsed_s 1.0, expected the paused position; same on dev 63d21f6877 and f4c51dc251, runs 20261028-115133-cf54 and 20261028-115135-6501; resumes in place after a 5 s pause (elapsed_tracks_pause). Investigation chip spawned 2026-10-28.",
-      "green_days": 1
     }
   ],
   "last_flakes": [
