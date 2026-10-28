@@ -9532,7 +9532,7 @@
    "stacked": false,
    "tldr": "Solid, correct SQL-side aggregation with no N+1 and modest linear cost; CI fails only on the missing models#444 release. One product question (series with finished but no mid-way books shows no badge) and a perf nit. Bumps API_SCHEMA_VERSION to 100, as does #7209.",
    "summary": "A collapsed collection is the listing row that groups items sharing a metadata.collections title (audiobook series, album sets) into one MediaCollection. Previously its items and anything derived from them (count, duration sort, covers) came from the filtered rows, so favorites, genre or played filters changed them. The PR adds a scope_table CTE (same query minus favorite/genre/played/search, keeping listing_filter, author/narrator, provider, in_library and reachable_via) whenever a view filter is set. It computes COUNT, SUM(duration), MIN(fully_played), the in-progress state and the covers over that scope, and keeps media_data, timestamps, play_count, year and random_item_id limited to in-view rows; HAVING MAX(in_view) drops collections with nothing in view. The result goes out as models#444 MediaCollectionMetadata. Covers are the first 3 usable thumbs in sequence order (usable_thumb split out of preferred_thumb, same behaviour), and duration sort uses the scope total in both SQL and apply_listing. Aggregation looks correct: SUM ignores NULL durations, COUNT(*) is never 0, the summary and base audiobook queries both expose fully_played and resume_position_ms, UNION column counts match, and the shared query_params get identical values. get_collection computes over the whole library, which matches its items; frontend#3034 now only copies the played state from it (Copilot thread resolved). All earlier Copilot points are fixed. The models change is small and safe: update() tolerates plain metadata. CI red is only the unreleased models dependency. CI: Only the missing models release. lint: every pre-commit hook passes except mypy, whose 10 errors are all MediaCollectionMetadata / metadata.total_items|duration|fully_played|in_progress missing from the pinned models (1.1.227). pytest 1/2/3: conftest ImportError 'cannot import name MediaCollectionMetadata'. 'test' is the aggregate gate. With models#444 on MYPYPATH/PYTHONPATH, mypy is clean on the changed files and the tests pass. Note: dev now pins models 1.1.228; the branch merges cleanly but needs a pin bump to the release that contains #444. Schema: API_SCHEMA_VERSION 99->100 is correct: new model fields (total_items, duration, fully_played, in_progress) are now sent to clients, which the constants.py policy says needs a bump; origin/dev is still 99, so no clash. DB_SCHEMA_VERSION (71) needs no bump, since nothing stored changes and everything is computed at query time. MIN_SCHEMA_VERSION stays; the new fields default to None and old MediaItemMetadata readers ignore them (models test covers this).",
-   "whats_new": "New 00:44Z on 10-24 with models#444.",
+   "whats_new": "New 00:44Z on 10-24 with models#444. 10-28: you asked what it fixes and why; explanation chat launched.",
    "blockers": [
     "Needs models#444 released and the pin bumped",
     "API_SCHEMA_VERSION 100 clashes with #7209: the second to merge needs 101"
@@ -9586,7 +9586,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "support": null,
-   "fix_thread": null,
+   "fix_thread": "t3-thread://v1/mcp:ad71f680-8218-4fa0-acce-e702adc3819c",
    "related_prs": [
     "models#444"
    ],
