@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-28T14:00:00+01:00",
- "dev": "13cad121e",
- "run_note": "Bot-MArley merged #7272 and #7203 went in through the merge queue; models#444 merged and jgruber closed #7236. The critical gate drafted #7273, #7256 and #7081. #7270 got Copilot's approval, but I held the auto-approve because OzGav asked for a WiiM hardware test. trudenboy pushed Yandex v1.7.6 to #7242, and 3 of its 4 new Copilot CRITICALs are real.",
+ "last_run": "2026-10-28T15:00:00+01:00",
+ "dev": "396ab8ecb",
+ "run_note": "You merged #7275 and client#330, so client 1.7.1 is waiting in client#331. mnestrud took #7235 out of draft; Opus reproduced its open Copilot deadlock. martinbuergi asked you on #7081 whether to add the lock. GPT Sol failed once on an expired login and passed on the retry.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -4170,7 +4170,7 @@
     "bookorbit"
    ],
    "merge_state": "BLOCKED (CHANGES_REQUESTED by OzGav 04:24Z), no conflict with dev",
-   "head_sha": "d9c66418b",
+   "head_sha": "98604d219",
    "tldr": "Not ready: OzGav's four asks are done (no overwrite override, failed books keep their fingerprint, exception list explained, flat 2.6 KB monochrome icon). But the new colour icon.svg is the OpenAI logo, not BookOrbit's mark; it replaced the official book icon on 10-22 and must not ship. get_artist runs a full catalog refresh on every call (Bot-MArley, Copilot, ours: 250 calls gave 250 refreshes, 0 with BYPASS_CACHE). Patch for the latter validated. 136 tests pass.",
    "summary": "The head is 9ace49f7a, one commit past 0d97fd912. That commit imports CONF_USERNAME/PASSWORD/VERIFY_SSL from music_assistant.constants (#7177) and trims private docstrings to one line. The only author commit since 1f680f253 is that one, plus a dev merge, and the delta is clean. OzGav: (1) there is no _sync_library_audiobooks override any more. (2) _handle_sync_item_failure collects failed audiobook ids (core calls it for write failures at models/music_provider.py:1643 and through report_skipped_sync_item), and _commit_applied_mapping_details keeps the previous fingerprint for those ids, so failed books are not marked applied. (3) The per-book except tuple has a comment explaining it (__init__.py:932-935). (4) icon_monochrome.svg is one flat white path of the BookOrbit book-and-orbit mark, 2607 B. However, icon.svg (2380 B, from 983aa2fe41 on 10-22, 'flat color mark for now') renders as the OpenAI knot logo in blue. It replaced the official book-and-galaxy icon.png. Bot-MArley: get_artist calls _refresh_catalog(force=True). That code dates from 26a240d0f (10-15), so our last review missed it. Core's artist enrichment (metadata/enrichment.py:164) calls artists.get_provider_item with force_refresh=False, and that reaches provider.get_artist (media/base.py:1315). The metadata scan and the post-sync schedule_update_metadata do this for every library author and narrator. Each forced refresh runs list_libraries, a paginated per-library book query, one mass.cache read per book (a fetch on a checksum miss), and a paginated /authors list, all while holding _catalog_lock, so browse, search and sync queue behind it. Opening an artist in the UI also pays for a full refresh. A probe (/tmp/prr/r1700z/d7009/probes/probe_get_artist_scan.py) made 250 get_artist calls and got 250 list_libraries calls. With force=BYPASS_CACHE.get() it got 0, and 1 under BYPASS_CACHE (music/refresh_item via get_provider_item(force_refresh=True), music/controller.py:1880). Auth and tokens: the bearer token is held in memory, and the refresh cookie is captured by hand with a DummyCookieJar. Re-authentication is single-flight, keyed on the rejected token, and tries refresh first, then login. Login 401/403 maps to LoginFailed, while 429/5xx stay retryable. The password is a SECURE_STRING. The part proxy uses per-session uuid grants, so stream URLs carry no token. resolve_image only sends auth to base_url paths, and init cancellation closes the owned session. Load: detail concurrency is 8, the catalog TTL is 15 min for browse/search, pagination is capped at 1000 pages and raises an incomplete error instead of truncating, playback-state writes retry at most 3 times on 409/412, and on_played is serialized per book with a generation skip. I found no unbounded loops or blocking IO. Outside providers/bookorbit and its tests, only music_assistant/translations/en.json changes, with the 12 generated provider.bookorbit.* keys. The branch is up to date with origin/dev, and all review threads except Bot-MArley's are resolved.",
    "blockers": [
@@ -5222,8 +5222,8 @@
    "draft": true,
    "verdict": "almost",
    "assessment": "comment",
-   "status": "waiting",
-   "attention_since": null,
+   "status": "attention",
+   "attention_since": "2026-10-28T14:20:00Z",
    "size": "M",
    "code": 157,
    "add": 0,
@@ -5344,7 +5344,7 @@
     "why": "New feature (new config entry and API contract, paired with frontend#3014), not a fix."
    },
    "prompt": "",
-   "whats_new": "martinbuergi pushed the rework you asked for (e510bea55): votes live on the queue item only, no plugin state, 157 lines. All three reviewers flag the same lock race. The critical gate drafted it.",
+   "whats_new": "martinbuergi asked at 13:05Z whether to take the playback lock around the vote and next() or leave the narrow burst race. All three reviewers flagged it and the Copilot CRITICAL keeps the gate red, so the lock is the way to go.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 13:00 CET",
    "auto_approved": null,
@@ -5352,8 +5352,8 @@
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "martinbuergi: 3 Copilot CRITICALs on the rework",
-   "changed_now": "drafted",
+   "waiting_on": "you: answer martinbuergi (lock around the vote and next(), or leave it)",
+   "changed_now": "commented",
    "gpt_sol": "1 critical (same lock race), 1 problem (last item with repeat off reports skipped and drops votes)",
    "support": null,
    "fix_thread": "t3-thread://v1/mcp:c1bbcffb-2367-4774-b433-5cc5bef133c2"
@@ -9066,7 +9066,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -9649,7 +9649,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "commented"
+   "changed_now": ""
   },
   {
    "repo": "models",
@@ -9707,7 +9707,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "models",
@@ -10199,7 +10199,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 14:15 CET",
-   "changed_now": "pushed"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -11851,7 +11851,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-27 07:40 CET",
-   "changed_now": "copilot"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -12851,7 +12851,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "closed"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -12861,49 +12861,127 @@
    "title": "Hold both queues' playback locks while a queue is transferred",
    "author": "mnestrud",
    "url": "https://github.com/music-assistant/server/pull/7235",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "mnestrud (draft)",
-   "gpt_sol": "not run",
-   "size": "S",
-   "code": 0,
+   "draft": false,
+   "verdict": "not_ready",
+   "assessment": "request_changes",
+   "status": "attention",
+   "attention_since": "2026-10-28T14:20:00Z",
+   "waiting_on": "you: post the confirmed deadlock and the two-phase idea (mnestrud also asked about the README)",
+   "gpt_sol": "1 problem (deadlock against cmd_set_members powering on a member with auto-play)",
+   "size": "L",
+   "code": 400,
    "add": 0,
    "del": 0,
-   "ci": "not checked (draft)",
+   "ci": "green",
    "ci_fail": false,
-   "merge_state": "not checked (draft)",
-   "head_sha": "",
-   "core_touched": false,
+   "merge_state": "merge-tree clean on origin/dev 396ab8ecb",
+   "head_sha": "6442a5071",
+   "core_touched": true,
    "providers_touched": [],
    "stacked": false,
-   "tldr": "Draft, not reviewed yet.",
-   "summary": "",
-   "whats_new": "Holds both queues' playback locks during transfer_queue (fixed lock order). This is the #6779 follow-up your chip mcp:25511fac covers; check for overlap.",
+   "tldr": "The lock race is real and the PR closes it for plain transfers, and all tests pass. But Copilot's open CRITICAL r4395432985 is real: I reproduced a transfer and a leadership handover each holding a lock the other waits for, until the 120 s strict timeout fails the transfer. The global turn plus the in-turn bypass is the fourth deadlock design in three commits; a two-phase transfer (source chain, then target chain, never both) would drop most of the 163 lines.",
+   "summary": "transfer_queue now runs under get_playback_locks(source, target, strict=True). That covers the #6779 race where play_index/resume/stop on either queue interleaved with a transfer. _transfer_ad_hoc_leadership holds both leaders through transfer, regroup and resume. The new primitive adds a process-wide turn lock, a bypass for tasks that already hold a playback lock, a retry loop when ownership changed during the wait, and an early-release callable. Earlier CRITICALs r4389512413, r4389512498, r4392794816 and r4392794907 are fixed on 6442a5071. The bypass reopens the inversion the turn exists to prevent: a transfer that planned [a, c] while a was standalone holds a and waits for c, while a cmd_ungroup(c) that got c first hands leadership to a (now a member after a concurrent join), skips the turn and waits for a. With scaled timeouts the repro ends with both waiting the full strict timeout and the transfer raising ResourceBusyError. In production that is 120 s, with every other transfer queued behind the turn. The turn also leaves out other nested two-chain acquirers such as stream_feeder._stop_paused_slot_holder, which runs inside a play action. Each review round has found a new interleaving, so the design itself is fragile rather than any one line. Holding one chain at a time (source phase, then target phase, each through the existing handle_play_action) gives the same protection against play actions without hold-and-wait across chains, so no turn, bypass, replan loop or release callable is needed.",
+   "whats_new": "Out of draft at 13:11Z; mnestrud tagged you about the README paragraph. Reviewed for the first time.",
    "blockers": [
-    "Draft."
+    "Copilot CRITICAL r4395432985 is real (reproduced): a transfer and a leadership handover each hold a lock the other wants, until the 120 s timeout fails the transfer",
+    "GPT Sol: a second deadlock against cmd_set_members powering on a member with auto-play",
+    "Design: a global turn plus an in-turn bypass, the fourth deadlock fix in three commits. A two-phase transfer (source lock, then target lock, via handle_play_action) drops most of the 163 lines"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "CRITICAL",
+     "file": "music_assistant/controllers/players/controller.py",
+     "line": 340,
+     "title": "In-turn bypass lets a leadership handover invert locks against a waiting transfer (r4395432985 is real)",
+     "detail": "Steps: H0 = cmd_set_members(c, add a) holds c. U = cmd_ungroup(c) queues on c. T1 = transfer(a -> c) plans [a, c] because a is standalone, takes the turn and a, and waits for c behind U. H0 syncs a to c and releases. U gets c, and _handle_set_members calls _transfer_ad_hoc_leadership(c, [a]). get_playback_locks skips the turn (the task holds playback_c), plans [c, a] and waits for a. T1 holds a and waits for c. Neither reaches the ownership recheck. Reproduced on the head with a throwaway test (/tmp/prr/r1500w/d7235/repro/test_zz_repro_handover.py): transfer raised ResourceBusyError after the full strict wait, and the handover waited the same. In production that is 120 s of a frozen ungroup and transfer, with all other get_playback_locks callers stuck on the turn. It needs three overlapping commands on the same players, so it is rare, but it is exactly the class the turn was added to rule out.",
+     "fix": "Drop hold-and-wait across chains rather than adding another coordination layer. Either split the transfer into two single-chain phases (see suggested_fix), or acquire every lock after the first with try-lock and back off (release all, wait for the busy one, replan) instead of blocking while holding.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/players/controller.py",
+     "line": 312,
+     "title": "Process-wide turn serializes unrelated transfers and only orders get_playback_locks callers",
+     "detail": "Every transfer in the instance (user move, Sonos moved-group handover, HA transfer) now runs one at a time, over the whole stop + load + play_index on the target. A target that is slow to start delays every other transfer, and a stuck one makes them all fail with ResourceBusyError at 120 s. Other paths that hold one playback chain and then take another stay outside the turn: stream_feeder._stop_paused_slot_holder takes get_group_and_player_lock(holder) from inside a play action, and the sync_group provider takes the leader under the group. A transfer can still invert with them, resolved only by the 30 s non-strict fallback, which then runs unlocked. So the turn adds global latency without making the lock graph safe.",
+     "fix": "Same as above: with single-chain phases there is nothing to serialize globally, so the turn goes.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/player_queues/controller.py",
+     "line": 1330,
+     "title": "Target's former group or leader stays locked through the target's start",
+     "detail": "When the target was synced to leader L or captured by group G, its chain is [L|G, target]. Only the source chain is released early, so L/G stays locked through the ungroup, the load and play_index on the target, which can take seconds on Cast/AirPlay/Sonos. Meanwhile play actions on the rest of L's group (next, previous, pause via play actions) are blocked even though the target already left it. Moving a queue from an unrelated player onto one member of a playing group is a normal UX path.",
+     "fix": "Release the target's former owner once the ungroup is done, or take the target chain only after the ungroup (two-phase design).",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/controllers/players/controller.py",
+     "line": 312,
+     "title": "163 lines of lock machinery for one caller",
+     "detail": "get_playback_locks has a turn, a bypass, a replan loop, per-lock exit stacks and a partial-release callable with shared-chain bookkeeping, and only transfer_queue and the handover use it. Three review rounds each found a new deadlock in it. The protection the PR needs (no play action on source or target runs mid-transfer) comes from holding the source chain while snapshotting, stopping and clearing it, and then the target chain while loading and starting it. handle_play_action already provides both, including strictness and re-entrancy for the handover caller.",
+     "fix": "See suggested_fix.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/controllers/players/controller.py",
+     "line": 316,
+     "title": "Docstrings and README describe internals, not the consumer contract",
+     "detail": "The get_playback_locks docstring and the new README paragraph walk through the algorithm (turn, bypass, replan, shared locks). Copilot r4395433026 flags that the PR description has the same problem.",
+     "fix": "Keep a short consumer-facing docstring and put the ordering rationale in a few README lines.",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/players/controller.py",
+     "line": 3362,
+     "title": "Lock ordering can deadlock against ad-hoc member additions",
+     "detail": "A transfer from standalone a holds a and waits for sync leader z, while cmd_set_members(z, add a) holds z and powers on a; with auto-play, power-on awaits player_queues.resume(a), which takes a's strict lock. Both stall until the 120 s timeout and the transfer holds the global turn meanwhile.",
+     "fix": "",
+     "posted": null
+    }
+   ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "",
-   "suggested_fix": null,
+   "copilot": {
+    "green": false,
+    "comments": 2,
+    "findings": 2,
+    "review_url": "https://github.com/music-assistant/server/pull/7235",
+    "titles": [
+     "Nested handovers can deadlock on regrouped locks",
+     "Clarify PR summary"
+    ]
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Changes recommended on 6442a5071. Its 2 open findings (r4395432985 CRITICAL, r4395433026 description) were resolved by the author without a push; Opus reproduced r4395432985.",
+   "suggested_fix": {
+    "description": "Two single-chain phases instead of holding both queues: ungroup the target first (cmd_ungroup takes its own locks). Then under the source's play-action lock, snapshot the source, stop it and clear it. Then under the target's play-action lock, apply the snapshot, load and start. No task ever waits for one chain while holding another, so the turn, bypass, replan loop and release callable all go. The handover keeps working because the caller's lock on the old leader is re-entrant and the new leader is free after the ungroup. A play on the target between the phases is overwritten by the transfer, which is the intended outcome of a transfer issued after it. Sketch only, untested.",
+    "patch": "--- a/music_assistant/controllers/player_queues/controller.py\n+++ b/music_assistant/controllers/player_queues/controller.py\n@@ async def transfer_queue(self, source_queue_id, target_queue_id, auto_play=None):\n-        async with self.mass.players.get_playback_locks(source_queue_id, target_queue_id, strict=True) as release_lock:\n-            ...\n+        self._check_transfer_target(target_queue_id)  # availability + PLAYBACK_TARGET_TYPES\n+        await self._free_transfer_target(target_queue_id)  # existing ungroup + wait_for_player_update\n+        snapshot = await self._detach_transfer_source(source_queue_id, auto_play)\n+        await self._attach_transfer_target(target_queue_id, snapshot)\n+\n+    @handle_play_action\n+    async def _detach_transfer_source(self, queue_id: str, auto_play: bool | None) -> _TransferSnapshot:\n+        \"\"\"Capture the source's queue and playback state, stop it and empty it.\"\"\"\n+        # existing capture (items, resume_pos, current index/item, toggles, overrides, sources...),\n+        # existing stop(), then self._clear(queue_id, skip_stop=True)\n+\n+    @handle_play_action\n+    async def _attach_transfer_target(self, queue_id: str, snapshot: _TransferSnapshot) -> None:\n+        \"\"\"Apply a captured queue to the target and start it when it was playing.\"\"\"\n+        # existing target mutations, load(), update_items(), play_index()/resume()\n--- a/music_assistant/controllers/players/controller.py\n+++ b/music_assistant/controllers/players/controller.py\n-    _playback_locks_turn, get_playback_locks, _playback_lock_order (all removed)\n@@ async def _transfer_ad_hoc_leadership(...):\n-        async with self.get_playback_locks(leader.player_id, new_leader_id, strict=True):\n+        # the caller holds the old leader; the new one is locked per phase by the transfer\n+        # and again by cmd_set_members/resume\n"
+   },
    "prompt": "",
-   "backport": null,
+   "backport": {
+    "rec": "no",
+    "why": "Core locking change on the queue/player hot path. It adds new 120 s stall modes, and the race it fixes is narrow and was found in review, not reported by users. Let it bake in 2.11."
+   },
    "auto_approved": null,
    "author_replied": null,
    "reporter_reply": null,
    "support": null,
    "fix_thread": null,
    "related_prs": [
-    "#6779 follow-up"
+    6779
    ],
-   "reviewed_now": false,
-   "reviewed_at": null,
-   "changed_now": ""
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-28 15:00 CET",
+   "changed_now": "reviewed"
   },
   {
    "repo": "aiosonos",
@@ -13050,10 +13128,10 @@
    "number": 7242,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Station provider to v1.7.6: Alice speech API commands and report-driven playback state",
+   "title": "Update Yandex Station provider to v1.7.7: Alice speech API commands and report-driven playback state",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7242",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "attention",
@@ -13067,7 +13145,7 @@
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 13cad121e",
-   "head_sha": "fb64c643e",
+   "head_sha": "1e4a54a1d",
    "core_touched": false,
    "providers_touched": [
     "yandex_station"
@@ -13075,7 +13153,7 @@
    "stacked": false,
    "tldr": "The 1.7.6 sync does what it says: a second Alice request now correctly holds back the resumed stream and resumes after her answer, and the intercept no longer hands over during a request. Three of the four new Copilot threads are real. A Station in a Universal Group loses its voice resume, a user stop during a ducked Alice request is undone by an auto-resume, and a cancelled resume can come back. The free-text Alice command is still opt-in but only needs players.control once enabled.",
    "summary": "Delta 4efc0928f..fb64c643e (VERSION, player.py, voice.py, 3 test files) is correct. VoiceRecovery.begin() marks the running resume's stream as dropped, so a request that stops or defers the resumed stream reschedules via finish_resume() instead of reviving a stream that is gone (verified against request_ended/finish_resume). play_media() now goes through one _drop_resumed_stream() helper before and after URL resolution. The post-resolution check can't trigger in production because StreamsController.resolve_stream_url has no await, so it is harmless but dead. _handle_intercept_tick now returns for every REQUEST tick, so a handoff without a session waits until IDLE, and the session-only unmute/pause stays gated. On the head, thread r4400814025 (UGP _capture_members stops the PAUSED Station because its raw active_source is its own id while the group's is None, the stop cancels the running resume and play_media drops the group stream) and thread r4400814072 (the stop response with playing=False while Alice is LISTENING runs _interrupt_for_voice, bumps the generation so stop() skips cleanup, and NONE->IDLE schedules a resume; reproduced in a throwaway script) are real and reachable. Thread r4400814116 is real at the state-machine level (reproduced: cancel() then request_started()+request_ended(spoke) sets superseded back to False), but it needs cmd_resume to stay pending across a native takeover and a whole answered Alice request, so it's a narrow window. Thread r4400813978 is not reachable because URL resolution never yields. yandex_station/command is still registered with Scope.PLAYERS_CONTROL only (provider.py:325-331). It sits behind the new opt-in CONF_ALICE_TEXT_COMMANDS (default off), but once an admin enables it, party guests (guest role, players.control, empty player filter) can send any text to Alice, including smart home actions.",
-   "whats_new": "trudenboy pushed v1.7.6 (fb64c643e), answering the v1.7.5 threads. Copilot raised 4 new CRITICALs; Opus reproduced 2 and confirms a third. The free-text command is now off by default.",
+   "whats_new": "The critical gate drafted it on v1.7.6; trudenboy has since pushed v1.7.7 (1e4a54a1d, still draft).",
    "blockers": [
     "3 real Copilot CRITICALs: a Station in a Universal Group loses its voice resume (player.py:653), a user stop during a ducked Alice request is undone, a cancelled resume can come back",
     "Guest scope: yandex_station/command is opt-in now but still needs only players.control (provider.py:330); suggest CONFIG_PLAYERS_WRITE"
@@ -13204,9 +13282,9 @@
    "related_prs": [
     "#7227 maps yandex_station/command to system:admin over MCP"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-28 14:00 CET",
-   "changed_now": "pushed"
+   "changed_now": "drafted"
   },
   {
    "repo": "server",
@@ -14335,7 +14413,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 13:00 CET",
-   "changed_now": "drafted"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -14713,7 +14791,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 10:15 CET",
-   "changed_now": "commented"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -15220,7 +15298,7 @@
    "tldr": "Fixes the LinkPlay amp that always answers RelTime 00:00:00 (11 new tests fail on dev). The 227-line heuristic misfires though: Copilot has 3 CRITICALs, GPT Sol 3 problems, and Opus reproduced a 20 s to 40 s jump on a normal renderer paused outside MA. A 'position never moved since play_media' rule would cover the reported device with far less state.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 13:00 CET",
-   "changed_now": "drafted"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -15314,7 +15392,7 @@
    "tldr": "Correct and minimal: dlna_dmr reads album art only from metadata.album_art_uri, and the PR now sends it there.\nThe art URL is MA's stream-server imageproxy with an opaque id (size=512 forces the proxy), so there is no token or provider signed URL, and it is reachable wherever the stream is.\nDropping None metadata fixes literal 'None' artist/album text. Tests fail on dev and pass on the PR.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 13:00 CET",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -15375,13 +15453,13 @@
    "tldr": "Opts WiimPlayer into _attr_trusts_reported_source, so a switch to TV/Optical/Phono/Aux In replaces the remembered MA queue as active source.\nSafe: the source list leaves out Network, which is the input MA streams on; airplay/spotify/bluetooth/line_in were already in EXTERNAL_SOURCES.\nQueue goes inactive (active_source not in (queue_id, None)) and the stream feeder aborts, same path Sonos/Chromecast/Bluesound/Raumfeld use.\nTests pass (240). The only Copilot thread was about the description, it's fixed and resolved. Can be auto-approved.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 13:00 CET",
-   "changed_now": "copilot"
+   "changed_now": ""
   },
   {
    "repo": "client",
    "number": 330,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-28T13:45:55Z",
    "url": "https://github.com/music-assistant/client/pull/330",
    "stacked": false,
    "related_prs": [],
@@ -15421,7 +15499,7 @@
    "verdict": "ready",
    "assessment": "approve",
    "status": "waiting",
-   "waiting_on": "a maintainer's approval",
+   "waiting_on": "merged",
    "gpt_sol": "clean",
    "size": "S",
    "code": 5,
@@ -15429,9 +15507,9 @@
    "merge_state": "mergeable",
    "head_sha": "b1578f144",
    "tldr": "Correct 5-line fix: PlayerQueues now drops a queue on PLAYER_REMOVED, the same way Players drops the player. The server only sends that event on a permanent removal, after a final idle QUEUE_UPDATED, so the cache matches the server. A temporarily unavailable player keeps its idle queue in the cache, as Players keeps the player.",
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-28 14:00 CET",
-   "changed_now": "reviewed"
+   "changed_now": "merged"
   },
   {
    "repo": "server",
@@ -15481,6 +15559,238 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
+   "changed_now": ""
+  },
+  {
+   "state": "open",
+   "closed_at": null,
+   "stacked": false,
+   "related_prs": [],
+   "unaddressed_comments": [],
+   "prompt": "",
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "auto_approved": null,
+   "add": 0,
+   "del": 0,
+   "attention_since": "2026-10-28T14:20:00Z",
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "info",
+     "file": "music_assistant/providers/squeezelite/player.py",
+     "line": 402,
+     "title": "abort_existing can also cancel a restart that is already past the lock",
+     "detail": "Only reachable when a second set_members call skips the leader's playback lock (controller remove_player cleanup at controller.py:1891, protocol_linking.py:2676/3078, sync_group/player.py:1499/1506, Player.group/ungroup defaults) or after the 30 s non-strict lock timeout. The in-flight play_index is then cancelled partway through and the replacement restarts every current client right after. On dev the same case gave two full restarts, so this is not worse. There is no lock or task leak: the async-with blocks unwind on CancelledError.",
+     "fix": "None needed.",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "PROBLEM",
+     "file": "tests/providers/squeezelite/test_player.py",
+     "line": 273,
+     "title": "Test doesn't prove the newer restart is the one that runs",
+     "detail": "The test only counts completed resumes. With abort_existing=False the first restart survives and the newer one is dropped, and the test still passes. The fake resume never reads membership or takes the real lock.",
+     "fix": "Have the fake resume record the members it sees and assert it saw the final membership (the re-added member).",
+     "posted": null
+    }
+   ],
+   "suggested_fix": {
+    "description": "Have the fake resume record the members it sees and assert it saw the final membership (the re-added member).",
+    "patch": ""
+   },
+   "backport": {
+    "rec": "yes",
+    "why": "This is a user-facing bug: an announcement on a Squeezelite group member skips the playing track. stable has the same create_task(cmd_resume) block and mass.create_task supports abort_existing there. Dry run against origin/stable and against origin/backport/2.10.9: player.py merges cleanly, but tests/providers/squeezelite/test_player.py conflicts because stable lacks dev's newer tests and imports. Resolve it by keeping stable's tests and appending the new test plus its imports (asyncio, SlimPlayerState, PlaybackState, PropertyMock, patch, AsyncMock, use_real_create_task). Not yet in backport PR #7200, which already carries #7264 from the same Squeezelite area."
+   },
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7276",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on fe1066a32.",
+   "summary": "set_members now creates the leader's resume under task_id squeezelite_regroup_resume_<leader> with abort_existing=True. In the announcement flow the announcement holds the leader's PLAYBACK lock (get_group_and_player_lock) across remove, clip and re-add, so both resume tasks are still waiting in _acquire_player_lock when the second one arrives. Cancelling the first while it waits is clean: asyncio.Lock drops the cancelled waiter, and get_player_lock's finally only releases the lock and clears _task_held_locks when the lock was actually acquired. The surviving resume reads the group members and queue position when it runs, so remove A then add B (or any other mix) still produces one restart with the final membership. In the normal cmd_set_members path the caller holds the leader lock and lock waiters are served FIFO, so the first resume finishes before a second cmd_set_members can run, and nothing gets cancelled mid-start. Cancelling mid-start only happens when a set_members call skips the leader lock (remove_player cleanup, protocol_linking handover, sync_group leader handover, Player.group/ungroup defaults) or after the 30 s lock timeout. The cancelled restart then exits its lock contexts, play_index's finally resets the transitioning flag, and the replacement re-runs play_media on every current sync client, so playback recovers. create_task's done callback only untracks the entry when it is still the same task, so the replacement stays tracked. No task or lock leaks.",
+   "whats_new": "New, yours. Lab players area red on dev, green on the branch.",
+   "core_touched": false,
+   "providers_touched": [
+    "squeezelite"
+   ],
+   "ci_fail": false,
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-28 15:00 CET",
+   "blockers": [
+    "GPT Sol PROBLEM: the test doesn't tell the surviving restart apart",
+    "Your own PR, so another maintainer approves"
+   ],
+   "gpt_sol": "1 problem (test can't tell which restart survives)",
+   "assessment": "comment",
+   "verdict": "almost",
+   "repo": "server",
+   "number": 7276,
+   "url": "https://github.com/music-assistant/server/pull/7276",
+   "title": "Fix Squeezelite group skipping the playing track after an announcement on a member",
+   "author": "MarvinSchenkel",
+   "draft": false,
+   "status": "attention",
+   "waiting_on": "you: tighten the test (GPT Sol), then a maintainer's approval",
+   "size": "S",
+   "code": 7,
+   "ci": "green",
+   "merge_state": "merge-tree clean on origin/dev 396ab8ecb",
+   "head_sha": "fe1066a32",
+   "tldr": "The fix is right: a restart reads members and position when it runs, so letting the newest one replace a pending one loses nothing, and the announcement holds the leader lock so the first is still waiting when it's cancelled. The new test fails on dev. GPT Sol's catch: the test would also pass with abort_existing=False, so it doesn't prove which restart survives.",
+   "changed_now": "new"
+  },
+  {
+   "state": "open",
+   "closed_at": null,
+   "stacked": false,
+   "related_prs": [],
+   "unaddressed_comments": [],
+   "prompt": "",
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "auto_approved": null,
+   "add": 0,
+   "del": 0,
+   "attention_since": null,
+   "findings": [],
+   "suggested_fix": null,
+   "backport": null,
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "summary": "",
+   "whats_new": "",
+   "core_touched": false,
+   "providers_touched": [],
+   "ci_fail": false,
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "blockers": [
+    "Draft."
+   ],
+   "gpt_sol": "not run",
+   "assessment": null,
+   "verdict": null,
+   "repo": "server",
+   "number": 7274,
+   "url": "https://github.com/music-assistant/server/pull/7274",
+   "title": "Release audio prepared for a queue that stopped meanwhile",
+   "author": "MarvinSchenkel",
+   "draft": true,
+   "status": "waiting",
+   "waiting_on": "you (draft)",
+   "size": "S",
+   "code": 0,
+   "ci": "not checked (draft)",
+   "merge_state": "not checked (draft)",
+   "head_sha": "3f4701a28",
+   "tldr": "Your draft, not reviewed yet.",
+   "changed_now": "new"
+  },
+  {
+   "state": "merged",
+   "closed_at": "2026-10-28T13:45:02Z",
+   "stacked": false,
+   "related_prs": [],
+   "unaddressed_comments": [],
+   "prompt": "",
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "auto_approved": null,
+   "add": 0,
+   "del": 0,
+   "attention_since": null,
+   "findings": [],
+   "suggested_fix": null,
+   "backport": null,
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "summary": "",
+   "whats_new": "",
+   "core_touched": false,
+   "providers_touched": [],
+   "ci_fail": false,
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "blockers": [],
+   "gpt_sol": "not run",
+   "assessment": null,
+   "verdict": null,
+   "repo": "server",
+   "number": 7275,
+   "url": "https://github.com/music-assistant/server/pull/7275",
+   "title": "Fix Snapcast elapsed time after a native announcement",
+   "author": "MarvinSchenkel",
+   "draft": false,
+   "status": "waiting",
+   "waiting_on": "merged",
+   "size": "S",
+   "code": 0,
+   "ci": "green",
+   "merge_state": "merged",
+   "head_sha": "",
+   "tldr": "Your PR, merged between runs.",
+   "changed_now": "merged"
+  },
+  {
+   "state": "open",
+   "closed_at": null,
+   "stacked": false,
+   "related_prs": [],
+   "unaddressed_comments": [],
+   "prompt": "",
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "auto_approved": null,
+   "add": 0,
+   "del": 0,
+   "attention_since": "2026-10-28T14:20:00Z",
+   "findings": [],
+   "suggested_fix": null,
+   "backport": null,
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "summary": "",
+   "whats_new": "",
+   "core_touched": false,
+   "providers_touched": [],
+   "ci_fail": false,
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "blockers": [],
+   "gpt_sol": "not run (release PR)",
+   "assessment": "approve",
+   "verdict": "ready",
+   "repo": "client",
+   "number": 331,
+   "url": "https://github.com/music-assistant/client/pull/331",
+   "title": "chore(main): release 1.7.1",
+   "author": "app/musicassistant-bot",
+   "draft": false,
+   "status": "attention",
+   "waiting_on": "you: merge to cut client 1.7.1",
+   "size": "S",
+   "code": 0,
+   "ci": "green",
+   "merge_state": "mergeable",
+   "head_sha": "",
+   "tldr": "Release Please PR for client 1.7.1, CHANGELOG only, listing #330 (drop a removed player's queue). Merging it cuts the release; then the server pin bump (ask first).",
    "changed_now": "new"
   }
  ]
