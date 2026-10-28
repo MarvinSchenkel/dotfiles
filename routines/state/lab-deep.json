@@ -17,12 +17,6 @@
   },
   "known_red": [
     {
-      "test": "scenarios/gate/test_queue.py::test_queue[snap-1] and scenarios/deep/test_queue.py::test_album_plays_through[snap-1]",
-      "since": "2026-10-27",
-      "note": "Snapcast queue index never advances with the 10 s album; the flow stream finishes in under a second and the index derivation lags (dev 291ddf9198ff). Capture shows the album gapless. To be investigated on the server side.",
-      "green_days": 1
-    },
-    {
       "test": "scenarios/tier2/test_continuity.py::test_continuity[sendspin-1] on spotify-a",
       "since": "2026-10-27",
       "note": "#6860 Soloist (Autoplay off) stops after the first track on dev 291ddf9198ff; fix server#7244 still a draft. Red until it merges.",
@@ -30,8 +24,8 @@
     },
     {
       "test": "scenarios/deep/test_players.py::test_announce_ducks_and_resumes[snap-1] (position_kept)",
-      "since": "2026-10-27",
-      "note": "Server: native Snapcast announcement keeps feeding the music stream, ~10 s skipped (chip mcp:66a58e60).",
+      "since": "2026-10-28",
+      "note": "Server: Snapcast reports the wrong elapsed after a native announcement, intermittently (23.1/23.2 s vs 4-14 s in 2 of 5 full deep runs on dev f4c51dc251, runs b52f and a67c of 2026-10-28); the capture shows the music resumes in place, only the reported position is off. Not the #7252 skip (merged). Needs the full deep players sequence. Chip mcp:3fe24412.",
       "green_days": 1
     },
     {
