@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-28T16:00:00+01:00",
- "dev": "b9c7e130f",
- "run_note": "You merged #7276 and closed #7274, and opened #7277 and #7278 as drafts. trudenboy took #7242 out of draft on v1.7.8, which fixes all 3 real issues from last round; the guest scope is the one thing left. OzGav wants a real-device test on #7270 before it merges.",
+ "last_run": "2026-10-28T17:00:00+01:00",
+ "dev": "ea4881afe",
+ "run_note": "You merged #7136 and #7277 and took #7278 out of draft. trudenboy's v1.7.9 fixes the last #7242 race, so only our guest-scope finding stands between it and ready. justinwoodland took #7009 out of draft: the OpenAI icon is gone, two old problems remain and one new one.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -4154,11 +4154,11 @@
    "title": "Add BookOrbit audiobook music provider",
    "author": "justinwoodland",
    "url": "https://github.com/music-assistant/server/pull/7009",
-   "draft": true,
-   "verdict": "not_ready",
+   "draft": false,
+   "verdict": "almost",
    "assessment": "request_changes",
-   "status": "attention",
-   "attention_since": "2026-10-27T15:48:00Z",
+   "status": "waiting",
+   "attention_since": null,
    "size": "XL",
    "code": 2808,
    "add": 6235,
@@ -4169,53 +4169,62 @@
    "providers_touched": [
     "bookorbit"
    ],
-   "merge_state": "BLOCKED (CHANGES_REQUESTED by OzGav 04:24Z), no conflict with dev",
-   "head_sha": "1c9dc7e32",
-   "tldr": "Not ready: OzGav's four asks are done (no overwrite override, failed books keep their fingerprint, exception list explained, flat 2.6 KB monochrome icon). But the new colour icon.svg is the OpenAI logo, not BookOrbit's mark; it replaced the official book icon on 10-22 and must not ship. get_artist runs a full catalog refresh on every call (Bot-MArley, Copilot, ours: 250 calls gave 250 refreshes, 0 with BYPASS_CACHE). Patch for the latter validated. 136 tests pass.",
-   "summary": "The head is 9ace49f7a, one commit past 0d97fd912. That commit imports CONF_USERNAME/PASSWORD/VERIFY_SSL from music_assistant.constants (#7177) and trims private docstrings to one line. The only author commit since 1f680f253 is that one, plus a dev merge, and the delta is clean. OzGav: (1) there is no _sync_library_audiobooks override any more. (2) _handle_sync_item_failure collects failed audiobook ids (core calls it for write failures at models/music_provider.py:1643 and through report_skipped_sync_item), and _commit_applied_mapping_details keeps the previous fingerprint for those ids, so failed books are not marked applied. (3) The per-book except tuple has a comment explaining it (__init__.py:932-935). (4) icon_monochrome.svg is one flat white path of the BookOrbit book-and-orbit mark, 2607 B. However, icon.svg (2380 B, from 983aa2fe41 on 10-22, 'flat color mark for now') renders as the OpenAI knot logo in blue. It replaced the official book-and-galaxy icon.png. Bot-MArley: get_artist calls _refresh_catalog(force=True). That code dates from 26a240d0f (10-15), so our last review missed it. Core's artist enrichment (metadata/enrichment.py:164) calls artists.get_provider_item with force_refresh=False, and that reaches provider.get_artist (media/base.py:1315). The metadata scan and the post-sync schedule_update_metadata do this for every library author and narrator. Each forced refresh runs list_libraries, a paginated per-library book query, one mass.cache read per book (a fetch on a checksum miss), and a paginated /authors list, all while holding _catalog_lock, so browse, search and sync queue behind it. Opening an artist in the UI also pays for a full refresh. A probe (/tmp/prr/r1700z/d7009/probes/probe_get_artist_scan.py) made 250 get_artist calls and got 250 list_libraries calls. With force=BYPASS_CACHE.get() it got 0, and 1 under BYPASS_CACHE (music/refresh_item via get_provider_item(force_refresh=True), music/controller.py:1880). Auth and tokens: the bearer token is held in memory, and the refresh cookie is captured by hand with a DummyCookieJar. Re-authentication is single-flight, keyed on the rejected token, and tries refresh first, then login. Login 401/403 maps to LoginFailed, while 429/5xx stay retryable. The password is a SECURE_STRING. The part proxy uses per-session uuid grants, so stream URLs carry no token. resolve_image only sends auth to base_url paths, and init cancellation closes the owned session. Load: detail concurrency is 8, the catalog TTL is 15 min for browse/search, pagination is capped at 1000 pages and raises an incomplete error instead of truncating, playback-state writes retry at most 3 times on 409/412, and on_played is serialized per book with a generation skip. I found no unbounded loops or blocking IO. Outside providers/bookorbit and its tests, only music_assistant/translations/en.json changes, with the 12 generated provider.bookorbit.* keys. The branch is up to date with origin/dev, and all review threads except Bot-MArley's are resolved.",
+   "merge_state": "merge-tree clean on origin/dev ea4881afe",
+   "head_sha": "156c880e7",
+   "tldr": "Three of the five old findings are fixed: the icon, the get_artist forced refresh and the page overlap. The ten-minute JSON timeout and the full refetch on artist refresh are still open. The new unknown-duration progress path writes a complete or reset that the provider can't read back, so a reset in MA can be undone on the next play.",
+   "summary": "Delta since 9ace49f7a: the BookOrbitAuthError wrapper is replaced by LoginFailed, a shared _reraise_bookorbit_error maps 404/429/HTTP/transport errors to MA errors, TypeError/ValueError from the manifest ordering helper becomes InvalidDataError, grants now survive on_streamed (idle timeout, in-flight transfer count, reusable buffer hold), pagination rejects duplicate ids across pages, progress writes stamp capturedAt before the lock and drop superseded writes after a 409, and single-asset books without a duration send mid-book positions via PUT and complete/reset via the legacy percentage endpoint. The playlog and continue-listening features were added after our last review and fully reverted, with no leftovers. Grant handling matches core: StreamFeeder/AudioBuffer clear streamdetails.buffer and cancelled is a real property, so held grants are bounded by buffer life. Security is fine: part URLs carry only a uuid4 session id scoped to book+assets, the Bearer token goes in a header only, resolve_image only sends credentials to URLs under base_url, and nothing logs a token. Outside providers/bookorbit only translations/en.json changes (the generated keys from strings.json). No requirements changes. The main new issue: for a single asset with unknown duration, a reset (position 0) only goes to legacy /audio-progress. get_resume_position reads playback-state first, which still holds the old mid-book PUT. If playback-state is absent, parse_resume_position still demands every file duration and raises. In both cases the BookOrbit side never reports the reset, and core's 'higher position wins' rule brings the old position back.",
    "blockers": [
-    "f1 (ours, nobody else raised it): icon.svg is the OpenAI logo; post it",
-    "get_artist full refresh per call (Copilot + Bot-MArley threads, justinwoodland)",
-    "Copilot CRITICAL: _stream_duration error handling"
+    "Unknown-duration complete/reset is written where the provider never reads it back, so a reset in MA can come back on the next play",
+    "JSON timeout still 10 minutes while catalog and progress locks are held"
    ],
    "findings": [
     {
      "model": "Claude",
-     "severity": "CRITICAL",
-     "file": "music_assistant/providers/bookorbit/icon.svg",
-     "line": 1,
-     "title": "Colour icon is the OpenAI logo, not BookOrbit's",
-     "detail": "Commit 983aa2fe41 replaced the official BookOrbit icon.png (an open book with a galaxy and an orbit) with an icon.svg that renders as OpenAI's knot mark in blue. Shipping it would show another company's trademark as this provider's logo, and it no longer matches icon_monochrome.svg (book and orbit).",
-     "fix": "Ship a colour icon.svg under 5 KB made from the BookOrbit book-and-orbit mark, for example the same path as icon_monochrome.svg with BookOrbit's brand colour.",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/bookorbit/progress.py",
+     "line": 117,
+     "title": "Unknown-duration complete/reset is written where the provider never reads it back",
+     "detail": "For a single asset without durationMs, mid-book reports PUT playback-state, but fully_played and position 0 return None and go to legacy PATCH /audio-progress only. get_resume_position prefers playback-state whenever it exists, so after a reset it returns the old mid-book positionMs (not completed). Core then takes the higher position (MA 0 vs provider N) and resumes at N, which undoes the reset. When playback-state is absent, parse_resume_position (line 175) still calls _require_known_file_durations and raises ValueError, so the legacy 100% or 0% is never imported either. Other BookOrbit clients that read playback-state also never see the completion. Unless BookOrbit mirrors legacy PATCHes into playback-state (unverified), the new branch only works one way.",
+     "fix": "For a reset, also PUT playback-state with positionMs=0 so the state matches the legacy write. Drop the upfront _require_known_file_durations in parse_resume_position, because only parts before the current file need a duration and _duration already raises for those. Add a round-trip test: mid-book PUT, then reset, then get_resume_position returns 0.",
      "posted": null
     },
     {
      "model": "Claude",
      "severity": "PROBLEM",
-     "file": "music_assistant/providers/bookorbit/__init__.py",
-     "line": 341,
-     "title": "get_artist forces a full catalog refresh on every call",
-     "detail": "Core's artist enrichment calls get_provider_item(force_refresh=False), which reaches get_artist, for each library author and narrator. This happens during the metadata scan and after a sync adds artists. Each call reruns list_libraries, the paginated book query per library, a cache read per book and the paginated /authors list, all under _catalog_lock. Browse, search and sync wait behind each refresh. Probe: 250 calls gave 250 full refreshes, and 0 with the fix.",
-     "fix": "await self._refresh_catalog(force=BYPASS_CACHE.get()). music/refresh_item sets BYPASS_CACHE through get_provider_item(force_refresh=True), so the author-rename fix still applies there. Update test_get_artist_refreshes_edited_author_from_populated_catalog to set BYPASS_CACHE (see suggested_fix).",
+     "file": "music_assistant/providers/bookorbit/constants.py",
+     "line": 8,
+     "title": "JSON requests still allow ten minutes while catalog/progress locks are held",
+     "detail": "AIOHTTP_TIMEOUT is still ClientTimeout(total=600, sock_connect=60) with no sock_read. A BookOrbit server that accepts the connection and then stalls holds _catalog_lock (blocking browse/search/get_artist) or a per-book progress lock for up to ten minutes per request. Unchanged since the last round.",
+     "fix": "Use a short JSON timeout, e.g. ClientTimeout(total=60, sock_connect=15, sock_read=30). Large transfers already use PART_STREAM_TIMEOUT.",
      "posted": null
     },
     {
      "model": "Claude",
      "severity": "SUGGESTION",
      "file": "music_assistant/providers/bookorbit/__init__.py",
-     "line": 988,
-     "title": "A refresh_item on one artist refetches every book detail",
-     "detail": "The BookDetail cache entries are not persistent, so under BYPASS_CACHE mass.cache.get treats them as misses. A forced artist refresh therefore runs get_book (and a manifest call for multipart books) for every catalog book at concurrency 8, which is thousands of requests for one click on a large library. The updatedAt checksum already invalidates changed books, and _enrich_author overlays author renames from /authors.",
-     "fix": "Pass allow_bypass=False to the detail cache.get in _get_book_detail, or accept the cost as user-triggered.",
+     "line": 395,
+     "title": "Refreshing one artist still refetches every book detail and manifest",
+     "detail": "get_artist now forces only under BYPASS_CACHE, which fixes the old problem. But under music/refresh_item BYPASS_CACHE also bypasses the non-persistent CACHE_CATEGORY_BOOK entries in _get_book_detail, so one artist refresh runs GET /books/{id} plus a manifest for every multipart book in all libraries.",
+     "fix": "Refresh only the catalog card lists and author list for an artist refresh, and keep using checksum-matched book cache (pass allow_bypass=False on the book cache get, since updatedAt already invalidates it).",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/providers/bookorbit/client.py",
+     "line": 499,
+     "title": "Title-only sort plus the new duplicate-id rejection can fail sync on title ties",
+     "detail": "The query sorts by title only. With LIMIT/OFFSET paging, rows that share a title have no guaranteed order between pages (Postgres top-N sorts are known for this). Before, that meant a silent duplicate or skip. Now a duplicate raises BookOrbitIncompleteError, so the whole catalog refresh fails, and it can keep failing for libraries with repeated titles across a 100-item page boundary.",
+     "fix": "Add a unique tiebreaker: \"sort\": [{\"field\": \"title\", \"dir\": \"asc\"}, {\"field\": \"id\", \"dir\": \"asc\"}] (if BookOrbit accepts multi-key sort), or sort by id alone since order does not matter for a sync.",
      "posted": null
     },
     {
      "model": "GPT Sol",
      "severity": "PROBLEM",
-     "file": "music_assistant/providers/bookorbit/client.py",
-     "line": 450,
-     "title": "Pagination counts rows, not distinct ids; a shifted page can publish a partial catalog and delete books (unverified)",
-     "detail": "GPT Sol: reject repeated ids as incomplete.",
+     "file": "music_assistant/providers/bookorbit/progress.py",
+     "line": 69,
+     "title": "Unknown-duration legacy updates can't round-trip",
+     "detail": "The new branch writes single-file completion or reset without a duration, but parse_resume_position() still requires every file duration, so reading it back raises ValueError and the provider falls back to MA's position.",
      "fix": "",
      "posted": null
     },
@@ -4224,8 +4233,8 @@
      "severity": "PROBLEM",
      "file": "music_assistant/providers/bookorbit/constants.py",
      "line": 8,
-     "title": "Ten-minute JSON timeouts can hold the catalog and sync locks for hours (unverified)",
-     "detail": "GPT Sol: shorter metadata timeouts and a refresh-wide failure budget.",
+     "title": "JSON requests still hold locks for ten minutes",
+     "detail": "AIOHTTP_TIMEOUT stays total=600 with no read timeout, so a stalled server blocks catalog refresh and per-book progress sync while their locks are held.",
      "fix": "",
      "posted": null
     }
@@ -4258,34 +4267,33 @@
    ],
    "copilot": {
     "green": false,
-    "comments": 2,
-    "findings": 2,
-    "review_url": "https://github.com/music-assistant/server/pull/7009#discussion_r4391119090",
-    "titles": [
-     "[CRITICAL] _stream_duration fetches BookDetail outside the manifest error handling (r4391119090)",
-     "[PROBLEM] every artist lookup forces a full catalog refresh (r4391118975, = Bot-MArley + ours)"
-    ]
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7009",
+    "titles": []
    },
-   "copilot_reviewed_head": true,
-   "copilot_note": "Changes recommended on 9ace49f7a (16:09Z); gate will draft.",
+   "copilot_reviewed_head": false,
+   "copilot_note": "Last Copilot review is on 00dea5a3f (Needs a closer look). Re-requested on 156c880e7 after CI went green; the request didn't register an event.",
    "suggested_fix": {
-    "description": "Force the catalog refresh in get_artist only under BYPASS_CACHE (music/refresh_item), and extend the existing test so that a plain get_artist reuses the TTL catalog and a refresh_item picks up the rename. git apply --check passes on 9ace49f7a, and 136 tests pass with it. The patch changes the PR's own test, as Bot-MArley asked.",
-    "patch": "diff --git a/music_assistant/providers/bookorbit/__init__.py b/music_assistant/providers/bookorbit/__init__.py\nindex b3ab54ae37..88d2274f24 100644\n--- a/music_assistant/providers/bookorbit/__init__.py\n+++ b/music_assistant/providers/bookorbit/__init__.py\n@@ -30,6 +30,7 @@ from music_assistant_models.media_items import (\n from music_assistant_models.streamdetails import MultiPartPath, StreamDetails\n \n from music_assistant.constants import CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL\n+from music_assistant.controllers.cache import BYPASS_CACHE\n from music_assistant.helpers.aiohttp_client import create_clientsession\n from music_assistant.helpers.datetime import utc\n from music_assistant.models.music_provider import SYNC_RUN_STATE, MusicProvider\n@@ -337,8 +338,8 @@ class BookOrbitProvider(MusicProvider):\n         \"\"\"\n         if not prov_artist_id.startswith((AUTHOR_PREFIX, NARRATOR_PREFIX)):\n             raise MediaNotFoundError(f\"Invalid BookOrbit artist id {prov_artist_id}\")\n-        # Explicit lookups (incl. music/refresh_item) must not return TTL-stale catalog data.\n-        await self._refresh_catalog(force=True)\n+        # Only music/refresh_item forces a refresh; the metadata scan calls this per artist.\n+        await self._refresh_catalog(force=BYPASS_CACHE.get())\n         if artist := self._catalog_artists().get(prov_artist_id):\n             return artist\n         raise MediaNotFoundError(f\"BookOrbit artist {prov_artist_id} not found\")\ndiff --git a/tests/providers/bookorbit/test_sync.py b/tests/providers/bookorbit/test_sync.py\nindex 724c4f1572..2097eeb781 100644\n--- a/tests/providers/bookorbit/test_sync.py\n+++ b/tests/providers/bookorbit/test_sync.py\n@@ -21,6 +21,7 @@ from music_assistant.constants import (\n     CONF_USERNAME,\n     CONF_VERIFY_SSL,\n )\n+from music_assistant.controllers.cache import BYPASS_CACHE\n from music_assistant.controllers.music.media.base import AudiobookSyncDetails\n from music_assistant.models.music_provider import SYNC_RUN_STATE, SyncRunState\n from music_assistant.providers.bookorbit import SUPPORTED_FEATURES, BookOrbitProvider\n@@ -547,7 +548,7 @@ async def test_get_audiobook_and_artist(\n async def test_get_artist_refreshes_edited_author_from_populated_catalog(\n     provider: BookOrbitProvider, book_audiobook: dict[str, Any]\n ) -> None:\n-    \"\"\"refresh_item / get_artist must not return TTL-stale author metadata from `_catalog`.\"\"\"\n+    \"\"\"refresh_item refreshes author metadata; plain get_artist reuses the TTL catalog.\"\"\"\n     author_numeric_id = int(book_audiobook[\"authors\"][0][\"id\"])\n     author_id = f\"{AUTHOR_PREFIX}{author_numeric_id}\"\n     await provider._refresh_catalog(force=True)\n@@ -576,6 +577,13 @@ async def test_get_artist_refreshes_edited_author_from_populated_catalog(\n     )\n \n     artist = await provider.get_artist(author_id)\n+    assert artist.name == \"Old Name\"  # metadata scans reuse the TTL catalog\n+\n+    token = BYPASS_CACHE.set(True)  # what music/refresh_item sets\n+    try:\n+        artist = await provider.get_artist(author_id)\n+    finally:\n+        BYPASS_CACHE.reset(token)\n     assert artist.name == \"New Name\"\n \n \n",
-    "pushed": null
+    "description": "Read side of finding 1: only parts before the current file need a known duration, so single-file legacy progress without a duration can be read back. The write side (PUT positionMs=0 on reset) still needs the author to confirm BookOrbit semantics.",
+    "patch": "--- a/music_assistant/providers/bookorbit/progress.py\n+++ b/music_assistant/providers/bookorbit/progress.py\n@@ -37,12 +37,6 @@ def _duration(file: dict[str, Any]) -> float:\n     return float(duration)\n \n \n-def _require_known_file_durations(audio_files: list[dict[str, Any]]) -> None:\n-    \"\"\"Raise when any audio part duration is unknown (unsafe for absolute offsets).\"\"\"\n-    if any(file.get(\"durationSeconds\") is None for file in audio_files):\n-        raise ValueError(\"BookOrbit audio file has unknown duration\")\n-\n-\n def _manifest_assets(manifest: dict[str, Any]) -> list[dict[str, Any]]:\n@@ -172,8 +166,7 @@ def parse_resume_position(\n     percentage = float(progress.get(\"percentage\") or 0)\n     fully_played = percentage >= FULLY_PLAYED_PERCENTAGE\n-    _require_known_file_durations(audio_files)\n-\n+    # Only parts before the current file need a duration; _duration raises otherwise.\n     position = None\n     offset = 0.0\n"
    },
-   "backport": null,
+   "backport": {
+    "rec": "no",
+    "why": "New experimental provider, so it ships with the next minor release."
+   },
    "prompt": "PR music-assistant/server#7009 (BookOrbit audiobook provider, author justinwoodland, head f3db80fda, CI green, CHANGES_REQUESTED by OzGav). PR head is refs/remotes/pr/7009 in /Users/marvin/git/music-assistant/server; read only, do not check out. Core is now untouched. Open on the head: (1) OzGav's 10-20 requests: remove the _sync_library_audiobooks override in music_assistant/providers/bookorbit/__init__.py (around line 1224), record fingerprints only for books that actually updated (around line 283), answer why the per-book exception list (around line 889) was chosen, and ship a flat monochrome icon under 5 KB. The author said at 05:10 he will fix the override. (2) New regression, also flagged by Copilot: skip-and-continue in _load_catalog_books reports skips for AUDIOBOOK only, and artist sync reuses the catalog within the 15 min TTL, so an author whose only book failed to load is deleted and artists.py recursively removes its audiobooks. Fix: force the catalog refresh for ARTIST sync too and call report_skipped_sync_item(MediaType.ARTIST, None, err) on a skip during a sync run. (3) Never posted: on_streamed (around line 395) revokes the stream grant, so a buffered seek on a multi-part book 404s the next part; the card's suggested_fix has an idle-grant patch, and three bookorbit tests assert revoke-on-on_streamed, so ask Marvin before touching tests. Since OzGav is driving this review, Marvin may only want to add (2) and (3). If so, draft a short PR comment that starts with '> [!NOTE] This comment was written by Claude on Marvin\\'s behalf', explains (2) with the single-book author example and the ARTIST skip fix, and (3) with the buffered seek example and the idle-grant fix. Post nothing on GitHub without Marvin's OK.",
-   "whats_new": "Marked ready 15:48Z. Re-reviewed: Opus not_ready (icon, get_artist), GPT Sol 5 problems (pagination dedupe, timeouts, artist fingerprints, cached author fields), Copilot 1 CRITICAL + 1 PROBLEM.",
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-27 17:30 CET",
+   "whats_new": "Out of draft. The OpenAI icon, the get_artist forced refresh and the page overlap are fixed; the timeout and the artist-refresh refetch are not; one new progress problem.",
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-28 17:00 CET",
    "auto_approved": null,
    "stacked": false,
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you: post f1 (OpenAI logo as icon); justinwoodland: get_artist refresh",
-   "changed_now": "",
-   "gpt_sol": "5 problems"
+   "waiting_on": "justinwoodland: unknown-duration reset round-trip, 10-minute JSON timeout (Copilot re-review pending)",
+   "changed_now": "reviewed",
+   "gpt_sol": "2 problems (same as Opus)"
   },
   {
    "repo": "aioslimproto",
@@ -6743,8 +6751,8 @@
   {
    "repo": "server",
    "number": 7136,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-28T15:23:59Z",
    "title": "Keep a track's length after its queue moves to another player",
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7136",
@@ -6753,7 +6761,7 @@
    "assessment": "approve",
    "status": "attention",
    "attention_since": "2026-10-21T12:35:32Z",
-   "waiting_on": "you: approve",
+   "waiting_on": "merged",
    "gpt_sol": "diff only",
    "size": "S",
    "code": 14,
@@ -6807,7 +6815,7 @@
    "fix_thread": null,
    "related_prs": [],
    "reviewed_now": false,
-   "changed_now": "",
+   "changed_now": "merged",
    "reviewed_at": "2026-10-21 15:15 CEST"
   },
   {
@@ -9501,7 +9509,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "commented"
+   "changed_now": ""
   },
   {
    "repo": "models",
@@ -11569,7 +11577,7 @@
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 291ddf919",
-   "head_sha": "984e51599",
+   "head_sha": "17f7a4762",
    "core_touched": false,
    "providers_touched": [
     "yandex_ynison"
@@ -12297,7 +12305,7 @@
    "ci": "pytest (2/3) failed on a uv install network error (infra, rerun)",
    "ci_fail": true,
    "merge_state": "merge-tree clean on origin/dev 5fc232708",
-   "head_sha": "051a56c07",
+   "head_sha": "38f4e0ba3",
    "core_touched": true,
    "providers_touched": [
     "ai_radio"
@@ -13128,7 +13136,7 @@
    "number": 7242,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Station provider to v1.7.8: Alice speech API commands and report-driven playback state",
+   "title": "Update Yandex Station provider to v1.7.9: Alice speech API commands and report-driven playback state",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7242",
    "draft": false,
@@ -13136,27 +13144,26 @@
    "assessment": "comment",
    "status": "attention",
    "attention_since": "2026-10-27T06:49:00Z",
-   "waiting_on": "you: post the guest-scope finding or `fix 7242` (Copilot re-review pending)",
-   "gpt_sol": "1 problem (silent stop revives a held resume)",
+   "waiting_on": "you: post the guest-scope finding or `fix 7242`",
+   "gpt_sol": "1 problem (guest scope only)",
    "size": "XL",
    "code": 1084,
    "add": 0,
    "del": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev b9c7e130f",
-   "head_sha": "577c93477",
+   "merge_state": "merge-tree clean on origin/dev ea4881afe",
+   "head_sha": "4c980cc35",
    "core_touched": false,
    "providers_touched": [
     "yandex_station"
    ],
    "stacked": false,
-   "tldr": "All three Copilot issues from last round are fixed in 1.7.7/1.7.8, each with a regression test. The delta adds no new real race; the only new gap is a narrow one where a later answered request revives a resume that a silent \"Alice, stop\" held back. The free-text Alice command still only needs players.control once enabled, which is the one thing left before ready.",
-   "summary": "Delta fb64c643e..577c93477 (VERSION, player.py, voice.py, 2 test files). _start_external_session now sets _attr_active_source = None for MA streams, so UGP._capture_members (member.active_source != self.active_source, both None) no longer stops a Station that Alice paused, and the group's resume reaches it. stop() counts itself in _stops_in_flight around glagol.send. GlagolClient._handle_message resolves the waiter and calls update_handler synchronously, and the stop coroutine only decrements after it resumes, so every report processed before stop() returns (including buffered follow-ups) sees the counter and takes the 'stopped without Alice' branch instead of _interrupt_for_voice(). VoiceRecovery swaps _resuming/_superseded for a RunningResume enum (NONE/ACTIVE/HELD/CANCELLED). request_started() on CANCELLED returns False without touching the phase, so an answered request can no longer revive a resume that native playback cancelled. I walked every path into AWAITING_ANSWER while CANCELLED: they all go through begin(), which sets _stream_dropped, so request_ended() never flips CANCELLED back to ACTIVE. pause() now stops while awaits_resumed_stream (ACTIVE/HELD), and pauses natively after a native takeover (CANCELLED). Both look correct. The new _resolving_play/_hold_resolving_play_for_request answers r4400813978, which we called unreachable last round. StreamsController.resolve_stream_url still has no await, so it can't fire in production. It is correct if it ever did. New gap: a silent request during a running resume leaves RunningResume.HELD with phase NONE, and request_started() still accepts HELD, so a later answered request sets it back to ACTIVE (or schedules a resume if the stream was already stopped). Reproduced on VoiceRecovery. It needs cmd_resume pending across two whole Alice requests, so the window is tiny. yandex_station/command is unchanged: opt-in via CONF_ALICE_TEXT_COMMANDS (default off) but registered with Scope.PLAYERS_CONTROL (provider.py:325-331).",
-   "whats_new": "trudenboy pushed v1.7.7 and v1.7.8 and took it out of draft. All 3 real issues from last round are fixed with tests; 308 tests pass. One narrow new gap (silent stop during a pending resume).",
+   "tldr": "The silent-stop gap from last round is fixed exactly as suggested, with a regression test. The new failed-resume branch is correct. The free-text Alice command still only needs players.control, and that is the one thing left before ready.",
+   "summary": "Delta 577c93477..4c980cc35 touches VERSION, player.py, voice.py and two test files. VoiceRecovery.request_ended() now turns HELD into CANCELLED on a silent request, so a later answered request goes through request_started() -> False and can't revive the resume. After this change HELD always comes with phase AWAITING_ANSWER, because every silent or answered end moves it to CANCELLED, ACTIVE or SCHEDULED. _resume_after_voice() now sets PAUSED -> IDLE when cmd_resume raises, but only while the resume may still bring the stream back (ACTIVE) and no request holds the playback. This means a failed audio_play/radio_play no longer leaves the Station PAUSED, where the core's next play would send a native play that can't bring the stream back. The guard is right in all three cases: it skips a native takeover (CANCELLED), and it skips a new request that stopped the stream during send (HELD plus AWAITING_ANSWER). That request's end still schedules or idles correctly after finish_resume(). play_index doesn't catch exceptions from players.play_media, so a provider PlayerCommandFailed reaches this except in production too. yandex_station/command is untouched and still registered with Scope.PLAYERS_CONTROL (provider.py:324-331).",
+   "whats_new": "trudenboy pushed v1.7.9: the silent-stop gap is fixed exactly as suggested, with tests (312 pass). The guest scope is the only thing left, and it's ours to post.",
    "blockers": [
-    "Guest scope: yandex_station/command still needs only players.control (provider.py:330), off by default; our finding, unposted",
-    "Copilot hasn't reviewed v1.7.8 yet"
+    "Guest scope: yandex_station/command still needs only players.control (provider.py:330), off by default; our finding, unposted. Patch moving it to CONFIG_PLAYERS_WRITE in suggested_fix"
    ],
    "findings": [
     {
@@ -13165,59 +13172,39 @@
      "file": "music_assistant/providers/yandex_station/provider.py",
      "line": 330,
      "title": "yandex_station/command only requires players.control",
-     "detail": "Unchanged from last round. Free-text Alice commands can drive anything linked to the Yandex account (smart home, purchases). Off by default behind CONF_ALICE_TEXT_COMMANDS, but once an admin enables it, it is registered with Scope.PLAYERS_CONTROL. Guest-role users such as party guests hold that scope with an empty player filter, so they can send any text to Alice on any Station.",
-     "fix": "Register yandex_station/command with a scope guests and regular users lack, e.g. Scope.CONFIG_PLAYERS_WRITE. Keep say on PLAYERS_CONTROL.",
-     "posted": null
-    },
-    {
-     "model": "Claude",
-     "severity": "SUGGESTION",
-     "file": "music_assistant/providers/yandex_station/voice.py",
-     "line": 136,
-     "title": "Answered request revives a resume a silent \"Alice, stop\" held back",
-     "detail": "A request during a running resume moves it to HELD. If that request is silent, request_ended() sets phase NONE and leaves HELD. request_started() still accepts HELD (the `elif not (took_over_timer or self._running == RunningResume.HELD)` branch), so a later answered request sets running back to ACTIVE and the resumed stream plays. If the stream had already been stopped (stream_dropped), it schedules a fresh resume after finish_resume() instead. Reproduced on VoiceRecovery: start_resume -> request_started -> request_ended(spoke=False) -> request_started -> request_ended(spoke=True) leaves running=ACTIVE, drops_resumed_stream=False. Same class as r4400814116, but it needs cmd_resume pending across two full Alice requests.",
-     "fix": "In request_ended()'s silent branch, mark a held resume as final: `if self._running == RunningResume.HELD: self._running = RunningResume.CANCELLED` before returning False.",
+     "detail": "Unchanged since last round. Free-text Alice commands can drive anything linked to the Yandex account (smart home, purchases). The command is off by default behind CONF_ALICE_TEXT_COMMANDS, but once an admin turns it on it registers with Scope.PLAYERS_CONTROL. Guest-role users hold that scope with an empty player filter, so they can send any text to Alice on any Station.",
+     "fix": "Register yandex_station/command with a scope that guests and regular users lack, e.g. Scope.CONFIG_PLAYERS_WRITE. Keep say on PLAYERS_CONTROL.",
      "posted": null
     },
     {
      "model": "Claude",
      "severity": "NIT",
      "file": "music_assistant/providers/yandex_station/player.py",
-     "line": 721,
-     "title": "Holding a play_media() during URL resolution can't trigger",
-     "detail": "_resolving_play / _hold_resolving_play_for_request handle an Alice request that runs entirely while resolve_stream_url is awaited. StreamsController.resolve_stream_url has no await, so no Station report can land in that window. test_request_during_the_url_resolution_decides_the_pending_stream only passes with a mocked async resolver. Same as last round's post-resolution re-check. It is correct if it ever fires, so it's harmless.",
-     "fix": "Optional: drop it, or keep it as cheap insurance against a future await in resolve_stream_url.",
-     "posted": null
-    },
-    {
-     "model": "GPT Sol",
-     "severity": "PROBLEM",
-     "file": "music_assistant/providers/yandex_station/voice.py",
-     "line": 137,
-     "title": "A silent stop leaves the running resume revivable",
-     "detail": "While a resume is preparing, request_started() marks it HELD. A silent 'Alice, stop' clears the phase but leaves HELD, so a later answered request restores ACTIVE and the stopped stream comes back. Opus reproduced it and rates it a SUGGESTION (two whole requests must fit inside one pending resume).",
-     "fix": "",
+     "line": 760,
+     "title": "Failed-resume idle fallback only covers PlayerCommandFailed and PlayerUnavailableError",
+     "detail": "The except clause predates this delta. The new PAUSED -> IDLE fallback only runs for these two errors. If cmd_resume fails with another MusicAssistantError, for example MediaNotFoundError when play_index can't load any item, the error escapes the call_later task and the player stays PAUSED. That is the state the new branch exists to avoid. Uncommon, and it doesn't block.",
+     "fix": "Optional: catch MusicAssistantError here so every failed resume falls back to idle.",
      "posted": null
     }
    ],
    "unaddressed_comments": [],
    "copilot": {
-    "green": false,
+    "green": true,
     "comments": 0,
     "findings": 0,
     "review_url": "https://github.com/music-assistant/server/pull/7242",
     "titles": []
    },
-   "copilot_reviewed_head": false,
-   "copilot_note": "Last Copilot review is on 95cb40d74 (v1.7.7, 1 open issue at the time, all threads now resolved). Nothing on 577c93477 yet; re-requested 15:05Z.",
+   "copilot_reviewed_head": true,
+   "copilot_note": "Needs a closer look on 4c980cc35, no open threads.",
    "suggested_fix": {
-    "description": "Make a silent request final for a resume it held back, so a later answered request can't revive it.",
-    "patch": "--- a/music_assistant/providers/yandex_station/voice.py\n+++ b/music_assistant/providers/yandex_station/voice.py\n@@ -110,6 +110,8 @@\n         if self._phase != VoiceRecoveryPhase.AWAITING_ANSWER:\n             return False\n         if not (spoke or volume != self._baseline_volume):\n+            if self._running == RunningResume.HELD:\n+                self._running = RunningResume.CANCELLED\n             self._phase = VoiceRecoveryPhase.NONE\n             return False\n"
+    "description": "Require an admin-level scope for the free-text Alice command and keep say on players.control.",
+    "patch": "--- a/music_assistant/providers/yandex_station/provider.py\n+++ b/music_assistant/providers/yandex_station/provider.py\n@@ -318,16 +318,16 @@\n     async def loaded_in_mass(self) -> None:\n         \"\"\"Register the provider's API commands once it is loaded.\"\"\"\n         await super().loaded_in_mass()\n-        commands: list[tuple[str, Callable[[str, str], Coroutine[Any, Any, None]]]] = [\n-            (\"yandex_station/say\", self.say)\n-        ]\n+        commands: list[tuple[str, Callable[[str, str], Coroutine[Any, Any, None]], Scope]] = [\n+            (\"yandex_station/say\", self.say, Scope.PLAYERS_CONTROL)\n+        ]\n         if self.config.get_value(CONF_ALICE_TEXT_COMMANDS):\n-            commands.append((\"yandex_station/command\", self.command))\n-        for command, handler in commands:\n+            # free text reaches everything linked to the Yandex account, not just players\n+            commands.append((\"yandex_station/command\", self.command, Scope.CONFIG_PLAYERS_WRITE))\n+        for command, handler, scope in commands:\n             self._unregister_api_commands.append(\n-                self.mass.register_api_command(\n-                    command, handler, required_scope=Scope.PLAYERS_CONTROL\n-                )\n+                self.mass.register_api_command(command, handler, required_scope=scope)\n             )\n"
    },
    "prompt": "",
    "backport": {
     "rec": "no",
-    "why": "Provider version sync with new features (voice recovery, intercept, opt-in text commands), not a stable fix. Only touches the provider, its tests and en.json."
+    "why": "This is a provider version sync with new features, not a stable fix. It only touches the provider and its tests."
    },
    "auto_approved": null,
    "author_replied": null,
@@ -13228,7 +13215,7 @@
     "#7227 maps yandex_station/command to system:admin over MCP"
    ],
    "reviewed_now": true,
-   "reviewed_at": "2026-10-28 16:00 CET",
+   "reviewed_at": "2026-10-28 17:00 CET",
    "changed_now": "pushed"
   },
   {
@@ -14440,7 +14427,7 @@
    "stacked": false,
    "tldr": "Sound idea and conservative gates (exact count, 1..n per disc, every length within 8 s, local files excluded, existing recording id respected). The one gap: the order match ignores the ISRCs and recording ids the tracks already carry, so a swapped pair of similar-length tracks takes each other's recordings and ISRCs even when the service's own ISRCs say otherwise. A small guard fixes it. Tests pass (307). GPT Sol adds that disc numbers themselves are not checked (only disc 2, or discs 1 and 3, still pass).",
    "summary": "_link_tracks_to_release now first asks _recordings_in_order for a per-track recording: per streaming domain, the tracks that are only on streaming providers are sorted by (disc or 1, number), must equal the release's flattened track count, be numbered 1..n on each disc, and every length must be within _TRACK_DURATION_TOLERANCE (8 s) of the release track (release-track length preferred over recording length). If so each track takes the recording at its flat index, unless it already holds a different recording id. Anything else falls back to the old position + title check. Risk review: different edition with a different count, bonus tracks, a hidden track folded into the last track, and continuous numbering across discs (disc 2 numbered 11..20) are all rejected and fall back. A service that puts every disc on disc 1 numbered 1..N is accepted and maps correctly. A remaster with the same count and lengths usually shares MB recordings, so the risk there is low. The remaining hole is reordering: a swap of two tracks within 8 s of each other (common on pop albums, and possible when resolve_release picks a sibling release with a different running order, e.g. vinyl vs CD) passes every gate. 8 s catches an off-by-one shift across the album but not a local swap. Existing data: fill_track_from_recording never overwrites an existing mbid, and the new `track.mbid in (None, recording.id)` guard also stops ISRCs from a different recording being added. So user-set and #7261 ISRC-derived recording ids are not overwritten. But that check is per track, so a track holding the recording id of another position (proof of misalignment) does not stop its neighbours from being assigned in order. ISRCs are not unique external ids, so a wrong order match permanently adds a foreign ISRC to the track, and _matching_provider_track then uses it to link provider tracks. Merges cleanly onto origin/dev (#7261 only touched the MusicBrainz provider).",
-   "whats_new": "Opened 06:43Z. Reviewed: Opus almost (ISRC contradiction), GPT Sol 1 problem (disc gaps), Copilot Approval recommended. Bot-MArley reviewed at 07:38Z (summary only, neither of our points). chrisuthe asked Bot-MArley for a recheck at 14:57Z.",
+   "whats_new": "Bot-MArley rechecked at 15:12Z: nothing to tick off, waiting for a maintainer to merge. Our 2 findings are still unposted.",
    "blockers": [
     "f1 (ours): order match ignores contradicting ISRC/recording ids, so swapped similar-length tracks trade recordings; `fix 7262` adds the guard",
     "f2 (GPT Sol): disc numbers are not required to run 1..n",
@@ -15398,7 +15385,7 @@
    "tldr": "Opts WiimPlayer into _attr_trusts_reported_source, so a switch to TV/Optical/Phono/Aux In replaces the remembered MA queue as active source.\nSafe: the source list leaves out Network, which is the input MA streams on; airplay/spotify/bluetooth/line_in were already in EXTERNAL_SOURCES.\nQueue goes inactive (active_source not in (queue_id, None)) and the stream feeder aborts, same path Sonos/Chromecast/Bluesound/Raumfeld use.\nTests pass (240). The only Copilot thread was about the description, it's fixed and resolved. Can be auto-approved.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 13:00 CET",
-   "changed_now": "commented"
+   "changed_now": ""
   },
   {
    "repo": "client",
@@ -15590,7 +15577,7 @@
    "merge_state": "merge-tree clean on origin/dev 396ab8ecb",
    "head_sha": "fe1066a32",
    "tldr": "The fix is right: a restart reads members and position when it runs, so letting the newest one replace a pending one loses nothing, and the announcement holds the leader lock so the first is still waiting when it's cancelled. The new test fails on dev. GPT Sol's catch: the test would also pass with abort_existing=False, so it doesn't prove which restart survives.",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "state": "closed",
@@ -15640,7 +15627,7 @@
    "merge_state": "not checked (draft)",
    "head_sha": "3f4701a28",
    "tldr": "Your draft, not reviewed yet.",
-   "changed_now": "closed"
+   "changed_now": ""
   },
   {
    "state": "merged",
@@ -15739,8 +15726,8 @@
    "changed_now": ""
   },
   {
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-28T15:49:08Z",
    "stacked": false,
    "related_prs": [],
    "unaddressed_comments": [],
@@ -15776,7 +15763,7 @@
    "author": "MarvinSchenkel",
    "draft": true,
    "status": "waiting",
-   "waiting_on": "you (draft)",
+   "waiting_on": "merged",
    "size": "S",
    "code": 0,
    "ci": "not checked (draft)",
@@ -15786,7 +15773,7 @@
    "blockers": [
     "Draft."
    ],
-   "changed_now": "new"
+   "changed_now": "merged"
   },
   {
    "state": "open",
@@ -15802,41 +15789,76 @@
    "auto_approved": null,
    "add": 0,
    "del": 0,
-   "attention_since": null,
-   "findings": [],
-   "suggested_fix": null,
-   "backport": null,
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "",
-   "summary": "",
-   "whats_new": "",
-   "core_touched": false,
+   "attention_since": "2026-10-28T16:20:00Z",
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/controllers/player_queues/playback_tracker.py",
+     "line": 568,
+     "title": "Dynamic refill can still overtake a play action that hasn't reached play_index yet",
+     "detail": "playback_starts is bumped inside play_index, at the end of a play action. _handle_play_media holds the playback lock while it resolves media, so a REPLACE in that phase hasn't bumped yet. The refill check passes, load() inserts dynamic tracks, and self.play_index() blocks on the lock. Once the user's replace has run play_index(0), the settle task's play_index(next_index) runs on the new list and jumps to an item past index 0. Reached only through the dynamic-source fallback with a user play in flight right as the fetch returns. I traced it in the code, but no test reproduces it.",
+     "fix": "Also bail at line 568 while queue_data.play_action_refcount is non-zero. Between that check and the lock acquire there is no other await, so a play action that starts later waits for the refill instead. The SimpleNamespace stubs in test_autoplay_dispatch._tracker would need play_action_refcount=0, which is a test change.",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "PROBLEM",
+     "file": "tests/controllers/player_queues/test_autoplay_dispatch.py",
+     "line": 641,
+     "title": "No test for the task's own playback counter bump",
+     "detail": "The new tests prove cancellation after an external start, but not that a legitimate continuation survives. Existing dynamic-refill tests leave current_index=None, so they never reach play_index or the expected_starts += 1. Breaking that adjustment would go unnoticed.",
+     "fix": "",
+     "posted": null
+    }
+   ],
+   "suggested_fix": {
+    "description": "Skip the dynamic refill while a play action is in flight, so a replace that is still resolving its media isn't overtaken by the refill's play_index.",
+    "patch": "--- a/music_assistant/controllers/player_queues/playback_tracker.py\n+++ b/music_assistant/controllers/player_queues/playback_tracker.py\n@@ -565,7 +565,9 @@\n                     if self._queue_data.get(queue.queue_id) is not queue_data:\n                         # the queue was removed or re-registered while tracks were fetched\n                         return\n-                    if queue_data.playback_starts != expected_starts:\n+                    # a play action still resolving its media starts playback only after this\n+                    if queue_data.playback_starts != expected_starts or queue_data.play_action_refcount:\n                         return\n                     if dynamic_tracks:\n"
+   },
+   "backport": {
+    "rec": "yes",
+    "why": "Stable has the same _settle_or_resume_delayed with the 'Items added to queue while idle' jump, so the bug exists there. The merge-tree dry run merges controller.py, playback_tracker.py and state.py cleanly. It conflicts in test_autoplay_dispatch.py and test_end_of_queue.py (stable stubs have no served_item_ids), and test_play_report_requires_served_audio.py doesn't exist on stable. The cherry-pick needs hand-adapted tests."
+   },
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7278",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Needs a closer look on 6cd5ae528, no threads; its summary flags the refill race (queue identity and counter not rechecked under the playback lock).",
+   "summary": "Every queue playback start goes through play_index: replace, play, resume, seek, next/previous, transfer_queue, the flow _resume_on_idle and the settle task itself. External sources go through select_source and never start the queue. So the one bump at the top of play_index covers every real start. The replace path swaps the items (load -> update_items, sync) and then calls play_index without yielding (the lock is re-entrant and already held), so the settle loop can't see the new items before the counter moves. ADD and NEXT don't call play_index, so 'items added while idle' still resumes. Autoplay and the dynamic refill still run when nothing started. The task's own refill start bumps expected_starts first, so a refill whose play_index fails after the bump still reaches _finish_queue, same as dev. session_id would not work as the token here: _handle_stop clears it in its finally, which can land after the IDLE report has armed the task, so the task would bail on a legitimate end. The counter is the right choice. Remaining gap: the counter moves at play_index, not when a play action starts. If a user's play_media is still resolving (it holds the playback lock) when the refill fetch returns, the check at playback_tracker.py:568 passes, load() inserts the dynamic tracks, and the task's play_index waits on the lock. After the user's replace has played index 0, it plays next_index (computed against the old list) on the new queue. That is the same symptom, but only when a dynamic-source queue hits the settle fallback and the user starts new media just as the fetch returns.",
+   "whats_new": "Out of draft, reviewed for the first time.",
+   "core_touched": true,
    "providers_touched": [],
    "ci_fail": false,
-   "reviewed_now": false,
-   "reviewed_at": null,
-   "gpt_sol": "not run",
-   "assessment": null,
-   "verdict": null,
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-28 17:00 CET",
+   "gpt_sol": "1 problem (no test for the task's own counter bump)",
+   "assessment": "comment",
+   "verdict": "almost",
    "repo": "server",
    "number": 7278,
    "url": "https://github.com/music-assistant/server/pull/7278",
    "title": "Fix playing something new right after a stop starting at the second track",
    "author": "MarvinSchenkel",
-   "draft": true,
-   "status": "waiting",
-   "waiting_on": "you (draft)",
+   "draft": false,
+   "status": "attention",
+   "waiting_on": "you: the refill race (Copilot + Opus) and the counter test gap (GPT Sol), then a maintainer's approval",
    "size": "S",
-   "code": 0,
-   "ci": "not checked (draft)",
-   "merge_state": "not checked (draft)",
-   "head_sha": "b558409a6",
-   "tldr": "Your draft, not reviewed yet.",
+   "code": 15,
+   "ci": "green",
+   "merge_state": "merge-tree clean on origin/dev ea4881afe",
+   "head_sha": "6cd5ae528",
+   "tldr": "The fix works: a replace or play inside the 5 s window after a stop on the last track now starts at the item asked for, and add-while-idle, autoplay and the dynamic refill still run when nothing else started. Copilot's summary and Opus both point at one gap left: the dynamic refill can still overtake a play action that is still resolving its media, because the counter only moves inside play_index. GPT Sol: no test covers the task's own counter bump.",
    "blockers": [
-    "Draft."
+    "Refill race: a replace still resolving its media can be overtaken by the dynamic refill (playback_tracker.py:568); Opus suggests also checking play_action_refcount",
+    "GPT Sol: no test for the task's own counter bump",
+    "Your own PR, so another maintainer approves"
    ],
-   "changed_now": "new"
+   "changed_now": "reviewed"
   }
  ]
 }
