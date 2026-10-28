@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-28T08:00:00+01:00",
+ "last_run": "2026-10-28T09:00:00+01:00",
  "dev": "8dd8776ab",
- "run_note": "Quiet hour. OzGav's new #7262 (match an album's tracks to MusicBrainz in order) is close: Opus found that swapped tracks of similar length trade recordings despite their own ISRCs (validated guard), and GPT Sol that disc gaps pass. Bot-MArley merged his #7261.",
+ "run_note": "Quiet hour. Bot-MArley reviewed OzGav's #7262 without raising either of our points (swapped-track ISRC guard, disc gaps), so they still need posting. trudenboy pushed #7242 v1.7.2 as a draft.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -12995,7 +12995,7 @@
    "number": 7242,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Station provider to v1.5.33: Alice speech API commands and voice control fixes",
+   "title": "Update Yandex Station provider to v1.7.2: Alice speech API commands and report-driven playback state",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7242",
    "draft": true,
@@ -13020,7 +13020,7 @@
    "stacked": false,
    "tldr": "Almost: v1.5.33 makes a cancelled pause/stop roll back like a rejected command and ties auto-resume to voice requests that interrupted MA's own playback; 241 tests pass. Our guest-scope finding is the only open point, now through four versions, still unposted: party guests can drive the Yandex smart home via yandex_station/command once alice_text_commands is on. Patch still applies.",
    "summary": "Delta b4a84dbfd..079f5941b (v1.5.33, player.py + tests only). (1) _stop_playback wraps glagol.send in try/except CancelledError, calls the new _roll_back_transport_command, publishes state and re-raises. Before this, a cancelled pause/stop left _pause_stop_pending=True and the session reset while the Station may still have been playing, so every playing=True report was swallowed. The rollback is now shared with the rejected-command path and adds an explicit generation check, the same as the `current` check it replaces. Behaviour is unchanged for rejections, and the cancelled case is tested for pause and stop. Treating 'unknown delivery' as rejected is a reasonable trade-off: if the Station did stop, its playing=False report is then handled as a physical pause. (2) _voice_interaction_active: set in _handle_voice_interrupt, cleared by _cancel_voice_resume (stop/pause, physical pause, completion, native track takeover) and when IDLE schedules or declines the auto-resume. _handle_voice_end returns early without it, which replaces the _prev_alice_state check. NONE while an interaction is active counts as Alice answering, which matches the existing server-action test that shows the Station reports NONE while speaking. Effect: after an MA pause or a physical pause, an unrelated Alice question or a say() phrase no longer auto-resumes the queue (new test), and BUSY/NONE/LISTENING during a voice answer keeps the pending request queued (new test). play_media does not clear the flag, but every path that sets _needs_replay=True clears or resets it first, so a stale flag cannot trigger a resume. (3) Guest exposure, unchanged: provider.py:317 still registers yandex_station/command with Scope.PLAYERS_CONTROL. On origin/dev, auth_middleware._GUEST_SCOPES includes PLAYERS_CONTROL, and guest_access.get_or_create_guest_user (used by party, music_quiz and dashboards) creates role GUEST with no player filter. Anyone with a party join link can therefore send free text to Alice, including smart home commands, once alice_text_commands is enabled. The PR is up to date with origin/dev and touches only the provider, its tests and en.json.",
-   "whats_new": "Copilot CRITICAL on rollback during an Alice interaction (15:09Z); gate drafted it at 15:26Z. Our guest-scope finding is still unposted.",
+   "whats_new": "v1.7.2 (a43c2373e) pushed while still a draft; not re-reviewed.",
    "blockers": [
     "f1 (ours, unposted): party guests can drive the Yandex smart home via yandex_station/command; `post 7242 f1` or `fix 7242`"
    ],
@@ -13066,7 +13066,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-27 16:20 CET",
-   "changed_now": ""
+   "changed_now": "pushed"
   },
   {
    "repo": "server",
@@ -14161,7 +14161,7 @@
    "stacked": false,
    "tldr": "Sound idea and conservative gates (exact count, 1..n per disc, every length within 8 s, local files excluded, existing recording id respected). The one gap: the order match ignores the ISRCs and recording ids the tracks already carry, so a swapped pair of similar-length tracks takes each other's recordings and ISRCs even when the service's own ISRCs say otherwise. A small guard fixes it. Tests pass (307). GPT Sol adds that disc numbers themselves are not checked (only disc 2, or discs 1 and 3, still pass).",
    "summary": "_link_tracks_to_release now first asks _recordings_in_order for a per-track recording: per streaming domain, the tracks that are only on streaming providers are sorted by (disc or 1, number), must equal the release's flattened track count, be numbered 1..n on each disc, and every length must be within _TRACK_DURATION_TOLERANCE (8 s) of the release track (release-track length preferred over recording length). If so each track takes the recording at its flat index, unless it already holds a different recording id. Anything else falls back to the old position + title check. Risk review: different edition with a different count, bonus tracks, a hidden track folded into the last track, and continuous numbering across discs (disc 2 numbered 11..20) are all rejected and fall back. A service that puts every disc on disc 1 numbered 1..N is accepted and maps correctly. A remaster with the same count and lengths usually shares MB recordings, so the risk there is low. The remaining hole is reordering: a swap of two tracks within 8 s of each other (common on pop albums, and possible when resolve_release picks a sibling release with a different running order, e.g. vinyl vs CD) passes every gate. 8 s catches an off-by-one shift across the album but not a local swap. Existing data: fill_track_from_recording never overwrites an existing mbid, and the new `track.mbid in (None, recording.id)` guard also stops ISRCs from a different recording being added. So user-set and #7261 ISRC-derived recording ids are not overwritten. But that check is per track, so a track holding the recording id of another position (proof of misalignment) does not stop its neighbours from being assigned in order. ISRCs are not unique external ids, so a wrong order match permanently adds a foreign ISRC to the track, and _matching_provider_track then uses it to link provider tracks. Merges cleanly onto origin/dev (#7261 only touched the MusicBrainz provider).",
-   "whats_new": "Opened 06:43Z. Reviewed: Opus almost (ISRC contradiction), GPT Sol 1 problem (disc gaps), Copilot Approval recommended.",
+   "whats_new": "Opened 06:43Z. Reviewed: Opus almost (ISRC contradiction), GPT Sol 1 problem (disc gaps), Copilot Approval recommended. Bot-MArley reviewed at 07:38Z (summary only, neither of our points).",
    "blockers": [
     "f1 (ours): order match ignores contradicting ISRC/recording ids, so swapped similar-length tracks trade recordings; `fix 7262` adds the guard",
     "f2 (GPT Sol): disc numbers are not required to run 1..n",
@@ -14229,9 +14229,9 @@
     "#7212",
     "#7248"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-28 08:15 CET",
-   "changed_now": "new"
+   "changed_now": "reviewed"
   },
   {
    "repo": "server",
@@ -14279,7 +14279,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged"
+   "changed_now": ""
   }
  ]
 }
