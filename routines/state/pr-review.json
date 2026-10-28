@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-28T10:00:00+01:00",
- "dev": "8dd8776ab",
- "run_note": "Your #7264 (restarted Squeezelite group member stays silent) is clean and backports cleanly; it needs another maintainer. lcisconl's #7263 (NetEase bitrate) is a correct 3-line fix that Copilot wants a test for, then it can be auto-approved. You opened five drafts (#7265-#7269).",
+ "last_run": "2026-10-28T11:00:00+01:00",
+ "dev": "26d289547",
+ "run_note": "You merged #7264 and #7266. Your #7267 (external Snapserver buffer) is ready; your #7265 has a flow-mode regression Opus reproduced, with a one-line fix. trudenboy's #7242 v1.7.4 is sound except our still-unposted guest-scope finding.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -12995,44 +12995,44 @@
    "number": 7242,
    "state": "open",
    "closed_at": null,
-   "title": "Update Yandex Station provider to v1.7.3: Alice speech API commands and report-driven playback state",
+   "title": "Update Yandex Station provider to v1.7.4: Alice speech API commands and report-driven playback state",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7242",
-   "draft": true,
+   "draft": false,
    "verdict": "almost",
    "assessment": "comment",
    "status": "attention",
    "attention_since": "2026-10-27T06:49:00Z",
    "waiting_on": "you: post f1 (guest scope) or `fix 7242`",
-   "gpt_sol": "1 problem (= ours)",
-   "size": "M",
-   "code": 130,
+   "gpt_sol": "2 critical (1 = ours, 1 voice resume, Opus says fixed)",
+   "size": "XL",
+   "code": 1042,
    "add": 0,
    "del": 0,
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 291ddf919",
-   "head_sha": "079f5941b",
+   "head_sha": "2dc6fd231",
    "core_touched": false,
    "providers_touched": [
     "yandex_station"
    ],
    "stacked": false,
-   "tldr": "Almost: v1.5.33 makes a cancelled pause/stop roll back like a rejected command and ties auto-resume to voice requests that interrupted MA's own playback; 241 tests pass. Our guest-scope finding is the only open point, now through four versions, still unposted: party guests can drive the Yandex smart home via yandex_station/command once alice_text_commands is on. Patch still applies.",
-   "summary": "Delta b4a84dbfd..079f5941b (v1.5.33, player.py + tests only). (1) _stop_playback wraps glagol.send in try/except CancelledError, calls the new _roll_back_transport_command, publishes state and re-raises. Before this, a cancelled pause/stop left _pause_stop_pending=True and the session reset while the Station may still have been playing, so every playing=True report was swallowed. The rollback is now shared with the rejected-command path and adds an explicit generation check, the same as the `current` check it replaces. Behaviour is unchanged for rejections, and the cancelled case is tested for pause and stop. Treating 'unknown delivery' as rejected is a reasonable trade-off: if the Station did stop, its playing=False report is then handled as a physical pause. (2) _voice_interaction_active: set in _handle_voice_interrupt, cleared by _cancel_voice_resume (stop/pause, physical pause, completion, native track takeover) and when IDLE schedules or declines the auto-resume. _handle_voice_end returns early without it, which replaces the _prev_alice_state check. NONE while an interaction is active counts as Alice answering, which matches the existing server-action test that shows the Station reports NONE while speaking. Effect: after an MA pause or a physical pause, an unrelated Alice question or a say() phrase no longer auto-resumes the queue (new test), and BUSY/NONE/LISTENING during a voice answer keeps the pending request queued (new test). play_media does not clear the flag, but every path that sets _needs_replay=True clears or resets it first, so a stale flag cannot trigger a resume. (3) Guest exposure, unchanged: provider.py:317 still registers yandex_station/command with Scope.PLAYERS_CONTROL. On origin/dev, auth_middleware._GUEST_SCOPES includes PLAYERS_CONTROL, and guest_access.get_or_create_guest_user (used by party, music_quiz and dashboards) creates role GUEST with no player filter. Anyone with a party join link can therefore send free text to Alice, including smart home commands, once alice_text_commands is enabled. The PR is up to date with origin/dev and touches only the provider, its tests and en.json.",
-   "whats_new": "v1.7.3 pushed while still a draft; not re-reviewed.",
+   "tldr": "The v1.5.33 to v1.7.4 delta looks right. Alice state now goes through one tracker (alice.py) and the auto-resume through one state machine (voice.py). The last Copilot finding, a second answered request cancelling a running resume through the shared task id, is closed: request_ended no longer schedules a second timer while a resume runs. No new cloud calls; the only network change is a debug log in glagol.send. Our open point still stands at provider.py:350, and the patch still applies: party guests hold players.control with an empty player filter, so they can send free text to Alice once alice_text_commands is on.",
+   "summary": "Head 2dc6fd231 (v1.7.4) sits on the current origin/dev (merge-base 26d289547b) and merges cleanly. The PR diff only touches providers/yandex_station, its tests and the two yandex_station keys in translations/en.json (the en.json changes in the raw 079f5941b..head delta are dev merges, not the PR). Since 1.5.33: playback state now comes only from Station reports, attributed by the reported track id rather than the title. MA streams drop PAUSE while they play, so the core stops and resumes the queue. The Station's own playback becomes STATION_SOURCE_ID with EXTERNAL_PAUSE_IDLE_TIMEOUT, and a Station track maps to the linked Yandex Music instance (exact-instance lookup, so no fallback to another account). _publish_media clears stale type/cover on a URI change. VoiceRecovery handles request takeover, a superseded running resume (play_media drops the stream) and play/pause during the wait. All of play, pause, stop, play_media and Station takeover call _end_voice_interruption. play() calling players.cmd_resume from inside cmd_play is safe because get_player_lock is re-entrant per task. No new Yandex cloud calls, retries or timeouts. say/send_command use the existing local Glagol websocket with its existing timeout. No new background tasks beyond the existing per-player call_later timer, which on_unload cancels; provider unload unregisters both API commands. No new API commands since 1.5.33: still say (always) and command (opt-in), both on players.control. All 20 review threads are resolved. Copilot has not reviewed 2dc6fd231 yet (last pass was ed9a957, whose one open finding v1.7.4 fixes). The API_SCHEMA_VERSION question raised earlier is still a maintainer call.",
+   "whats_new": "v1.5.33 to v1.7.4 (alice.py state tracker, voice.py resume state machine); ready again 09:56Z. Re-reviewed: Opus almost (our f1 only), GPT Sol 2 critical.",
    "blockers": [
-    "f1 (ours, unposted): party guests can drive the Yandex smart home via yandex_station/command; `post 7242 f1` or `fix 7242`"
+    "f1 (ours, still unposted after 6 versions): party guests can drive the Yandex smart home via yandex_station/command; `post 7242 f1` or `fix 7242`"
    ],
    "findings": [
     {
      "model": "Claude",
      "severity": "PROBLEM",
      "file": "music_assistant/providers/yandex_station/provider.py",
-     "line": 337,
+     "line": 350,
      "title": "Party guests can send free-text Alice commands (smart home) once alice_text_commands is on",
-     "detail": "yandex_station/command is registered with required_scope=Scope.PLAYERS_CONTROL (line 317). The shared guest account behind party/music_quiz/dashboard join links (helpers/guest_access.get_or_create_guest_user: role GUEST, no player_filter) holds that scope through auth_middleware._GUEST_SCOPES, and the player check in _get_station passes for an empty filter. Anyone holding a join link can hand arbitrary text to Alice and control whatever is linked to the Yandex account (lights, locks, heating). The setting text does not tell the admin that this includes guests. say() is fine at guest level. Unchanged in v1.5.33.",
-     "fix": "Reject UserRole.GUEST in command() with InsufficientPermissions (see suggested_fix), or register command with a scope guests never hold.",
+     "detail": "yandex_station/command is registered with required_scope=Scope.PLAYERS_CONTROL (provider.py:330). On origin/dev, _GUEST_SCOPES in auth_middleware includes PLAYERS_CONTROL. Party guests (helpers/guest_access, role GUEST) have an empty player_filter, so has_player_access treats them as unrestricted and the get_player_state check in _get_station lets them through. A party guest can then hand any text to Alice, which reaches everything on the Yandex account, such as lights and locks. The setting's warning says 'every Music Assistant user and integration with player control', but an admin will not read that as anonymous party guests. This is unchanged since 1.5.33.",
+     "fix": "Reject GUEST callers in command() (patch below; applies to 2dc6fd231 and the 290 tests still pass). Alternative: since dev now has has_scope and custom roles, gate on a second scope guests lack (e.g. has_scope(user, Scope.CONFIG_PROVIDERS_READ)), so admin-defined low-privilege roles are excluded too.",
      "posted": null
     }
    ],
@@ -13045,9 +13045,9 @@
     "titles": []
    },
    "copilot_reviewed_head": false,
-   "copilot_note": "Needs a closer look on b4a84dbfd (14:08Z); re-review of 079f5941b requested.",
+   "copilot_note": "Last Changes recommended on ed9a95790; re-review of 2dc6fd231 pending.",
    "suggested_fix": {
-    "description": "Block party guests from yandex_station/command and keep players.control for household users and integrations. Unchanged from the last round. git apply --check passes on 079f5941b and the provider tests pass (241).",
+    "description": "Reject party guests (role GUEST) in YandexStationProvider.command before the request reaches Alice; say stays available to them. Validated with git apply --check on 2dc6fd231.",
     "patch": "diff --git a/music_assistant/providers/yandex_station/provider.py b/music_assistant/providers/yandex_station/provider.py\nindex c4eb64569d..001b7ebed7 100644\n--- a/music_assistant/providers/yandex_station/provider.py\n+++ b/music_assistant/providers/yandex_station/provider.py\n@@ -9,10 +9,11 @@ import logging\n from typing import TYPE_CHECKING, Any, cast\n \n from aiohttp import ClientSession, CookieJar\n-from music_assistant_models.auth import Scope\n+from music_assistant_models.auth import Scope, UserRole\n from music_assistant_models.config_entries import ConfigEntry\n from music_assistant_models.enums import ConfigEntryType\n from music_assistant_models.errors import (\n+    InsufficientPermissions,\n     InvalidDataError,\n     PlayerUnavailableError,\n )\n@@ -25,6 +26,7 @@ from ya_passport_auth.ma import (\n     KeySpec,\n )\n \n+from music_assistant.controllers.webserver.helpers.auth_middleware import get_current_user\n from music_assistant.models.player_provider import PlayerProvider\n \n from .constants import (\n@@ -341,6 +343,10 @@ class YandexStationProvider(PlayerProvider):\n         :param player_id: The Yandex Station player that handles the request.\n         :param text: The request, e.g. \"включи свет на кухне\".\n         \"\"\"\n+        # Party guests hold players.control, but must not reach the Yandex smart home.\n+        if (user := get_current_user()) and user.role == UserRole.GUEST:\n+            msg = f\"{user.username} may not send text requests to Alice\"\n+            raise InsufficientPermissions(msg)\n         await self._get_station(player_id, text).send_command(text)\n \n     def _get_station(self, player_id: str, text: str) -> YandexStationPlayer:\n",
     "pushed": null
    },
@@ -13064,9 +13064,9 @@
    "related_prs": [
     "#7227 maps yandex_station/command to system:admin over MCP"
    ],
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-27 16:20 CET",
-   "changed_now": "pushed"
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-28 11:25 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
@@ -14284,8 +14284,8 @@
   {
    "repo": "server",
    "number": 7264,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-28T09:26:15Z",
    "title": "Fix a restarted Squeezelite group member staying silent",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7264",
@@ -14311,7 +14311,7 @@
    "stacked": false,
    "tldr": "Correct, minimal provider-side fix: the leader drops a member on a real slimproto disconnect and on the reconnect race aioslimproto never reports.\nsynced_to is still resolvable at both call sites (player not yet unregistered), so the lookup works.\nLeader stream is untouched (dropped subscriber just leaves MultiClientStream); a re-add goes through set_members -> cmd_resume.\n29/29 squeezelite tests pass, CI green, backport merges cleanly onto stable.",
    "summary": "PLAYER_DISCONNECTED: aioslimproto fires it only when the reader loop ends (EOF/timeout/reset), so it is a real connection end. The provider releases the member from its leader before scheduling unregister, while the old MA player is still registered and base Player.synced_to (available players, same provider) still resolves the leader. PLAYER_CONNECTED: when aioslimproto sees a HELO for an id whose old client is no longer connected but was never popped (disconnect() via send_frame cancels the reader, so no DISCONNECTED is emitted), it replaces the client silently; the PR covers this by releasing the still-registered old player before the new SqueezelitePlayer is set up. A first connect is a no-op (get_player returns None), and a duplicate live connection is rejected inside aioslimproto before the event reaches MA. Leader stream: the member's HTTP subscriber drops with its socket, MultiClientStream keeps feeding the others, and remove_disconnected_member intentionally does not restart. The leader clears its list when only itself remains, matching set_members. Member that never returns: dropped on DISCONNECTED; in the silent send_frame path it stays listed until it reconnects (pre-existing aioslimproto behaviour, chip already planned). User ungroup/regroup meanwhile: set_members could never remove a disconnected member (it iterates live slim clients), so this PR fixes that too; a regroup after reconnect adds normally. Leader restart: synced_to is None so nothing happens; the new leader object starts with empty members, so the members come back ungrouped. Unchanged by this PR.",
-   "whats_new": "Opened and ready 08:46Z. Reviewed: Opus ready, GPT Sol 1 problem (by design), Copilot Approval recommended.",
+   "whats_new": "Merged by you at 09:26Z.",
    "blockers": [
     "Your own PR: needs another maintainer's approve",
     "Follow-up (pre-existing): a restarted leader leaves members on an orphaned stream"
@@ -14370,9 +14370,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-28 10:15 CET",
-   "changed_now": "new"
+   "changed_now": "merged"
   },
   {
    "repo": "server",
@@ -14455,9 +14455,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-28 10:15 CET",
-   "changed_now": "new"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -14467,53 +14467,90 @@
    "title": "Stop showing a disconnected player's queue as playing",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7265",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
-   "status": "waiting",
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "comment",
+   "status": "attention",
    "attention_since": null,
-   "waiting_on": "you (draft)",
-   "gpt_sol": "not run",
+   "waiting_on": "you: `fix 7265` (flow resume regression)",
+   "gpt_sol": "clean",
    "size": "S",
-   "code": 0,
+   "code": 21,
    "add": 0,
    "del": 0,
-   "ci": "not checked (draft)",
+   "ci": "green",
    "ci_fail": false,
-   "merge_state": "not checked (draft)",
-   "head_sha": "",
-   "core_touched": false,
+   "merge_state": "merge-tree clean on origin/dev 26d289547",
+   "head_sha": "3132c3c17",
+   "core_touched": true,
    "providers_touched": [],
    "stacked": false,
-   "tldr": "Your draft, not reviewed yet.",
-   "summary": "",
-   "whats_new": "",
+   "tldr": "The fix is right: on_player_remove publishes the dropped queue once as idle, and the protocol transition now drops the queue before PLAYER_REMOVED. The AI Radio guards are needed and correct. One regression: the flow-mode _resume_on_idle task now treats the removal's IDLE as the player finishing and raises KeyError on the gone queue (reproduced). The fix is a one-line identity check. Backport alongside #7249 without the AI Radio hunks.",
+   "summary": "on_player_remove pops the queue data, sets its PlayerQueue.state to IDLE and signals QUEUE_UPDATED. It runs for both a non-permanent unregister (then PLAYER_UPDATED available=False) and a permanent one (then PLAYER_REMOVED), and in both cases the queue update goes out before the player event. The pending cache save was already cancelled earlier in the method, and _save_queue_to_cache/signal_update guard on _queue_data, so the IDLE mutation is never persisted. On reconnect, on_player_register restores from cache into a new PlayerQueueData and re-derives the state through on_player_update. Resume and position behave as on dev. In _finish_player_type_transition the queue now goes before PLAYER_REMOVED, so the frontend cannot re-add the queue after dropping the player. Sync leaders and groups: only the dropped player's own queue changes. Members are inactive anyway, and signal_update for a missing queue is a no-op. Server-side QUEUE_UPDATED subscribers (sendspin, sonos hand-over check, plex_connect, snapcast socket server, websocket filter) all cope with a missing queue. The AI Radio change is needed: the new event reaches _on_dj_queue_event, where player_queues.get() returns None. Without the guards, _maybe_detach_show_dj would detach the show DJ and _forget_armed_show would drop the arm-once record, so a returning player could re-arm a DJ the user had turned off. PLAYER_REMOVED still drops both. Flaw: queue_buffer_completed starts _resume_on_idle, which holds the PlayerQueue object. Before this PR a removed queue stayed PLAYING and the loop timed out harmlessly. Now, if the player drops within 60 s of its flow stream finishing generation (e.g. a speaker switched off during the tail of the last track), the loop sees IDLE and calls get_next_item, and _get_next_index then raises KeyError on _queue_data[queue_id]. A simulation reproduces it: KeyError 'q1' on the PR, a clean finish on dev. If the player re-registers within that second, it can play_index on the restored queue instead. Tests: 1621 passed across player_queues, the player controller and ai_radio. The new tests cover the idle publish (both permanent values), the event order and the AI Radio survival, but not the flow resume path. CI is green and Copilot is clean.",
+   "whats_new": "Marked ready 09:34Z. Reviewed: Opus almost (1 regression, reproduced), GPT Sol and Copilot clean.",
    "blockers": [
-    "Draft."
+    "f1: flow _resume_on_idle reads the removal's IDLE as finished and raises KeyError (or plays next on reconnect); `fix 7265` adds the one-line guard",
+    "Backport with #7249 into #7200, keeping stable's ai_radio files"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/player_queues/controller.py",
+     "line": 1663,
+     "title": "Flow resume task mistakes the removal's IDLE for end of playback",
+     "detail": "_resume_on_idle (from queue_buffer_completed) holds the popped PlayerQueue. on_player_remove now sets that object to IDLE, so a player that drops within 60 s of the flow buffer completing gets past both checks, because session_id is unchanged on the old queue_data. It then calls get_next_item, and _get_next_index raises KeyError on self._queue_data[queue_id]. If the player re-registered in the meantime, it can call play_index on the restored queue instead. Reproduced with a controller harness: KeyError 'q1' on pr/7265, a clean finish on origin/dev.",
+     "fix": "Bail when the queue data is no longer the registered one: add `or self._queue_data.get(queue_id) is not queue_data` to the post-sleep check (see suggested_fix). Optionally add a regression test next to test_removed_queue_is_published_idle.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/controllers/player_queues/controller.py",
+     "line": 1487,
+     "title": "Final queue update still says available=True",
+     "detail": "Only state is reset. The last published queue keeps available=True while the player is reported unavailable. Clients mostly use player availability, so this is cosmetic.",
+     "fix": "Optionally also set queue_data.queue.available = False before signaling.",
+     "posted": null
+    }
+   ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "",
-   "suggested_fix": null,
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7265",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on 3132c3c17.",
+   "suggested_fix": {
+    "description": "Ignore the idle of a queue that was removed (or replaced by a re-registration) in the flow resume task. Validated with git apply --check on pr/7265, and the KeyError simulation finishes cleanly after it.",
+    "patch": "--- a/music_assistant/controllers/player_queues/controller.py\n+++ b/music_assistant/controllers/player_queues/controller.py\n@@ -1660,7 +1660,12 @@\n                 return\n             # player went idle, give it a brief moment to settle\n             await asyncio.sleep(1)\n-            if queue.state != PlaybackState.IDLE or queue_data.session_id != original_session_id:\n+            # a removed queue is published idle, which is not the player finishing the flow\n+            if (\n+                queue.state != PlaybackState.IDLE\n+                or queue_data.session_id != original_session_id\n+                or self._queue_data.get(queue_id) is not queue_data\n+            ):\n                 return\n             # check if new items were added to the queue after the flow stream ended\n             if queue.current_index is not None and (\n",
+    "pushed": null
+   },
    "prompt": "",
-   "backport": null,
+   "backport": {
+    "rec": "yes",
+    "why": "It finishes the user-visible symptom of #7249, which is already in #7200: clients keep showing a dropped player's queue as playing. Stable has the same on_player_remove, the old PLAYER_REMOVED-then-queue order in the protocol transition, and the same _resume_on_idle, so take the resume fix too. The dry-run auto-merges both controllers and test_player_controller.py. It conflicts only in ai_radio/queue_dj.py and its test, because stable has no show-DJ auto-detach and its _on_dj_queue_event only replans, which already returns on a missing queue. Resolve by keeping stable's side of those two files."
+   },
    "auto_approved": null,
    "author_replied": null,
    "reporter_reply": null,
    "support": null,
    "fix_thread": null,
-   "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": null,
-   "changed_now": "new"
+   "related_prs": [
+    "#7249 (in #7200)"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-28 11:25 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
    "number": 7266,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-28T09:54:37Z",
    "title": "Fix WiiM position not updating for up to 30 s after playback starts",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7266",
@@ -14537,7 +14574,7 @@
    "stacked": false,
    "tldr": "Your draft, not reviewed yet.",
    "summary": "",
-   "whats_new": "",
+   "whats_new": "Merged by you at 09:54Z.",
    "blockers": [
     "Draft."
    ],
@@ -14557,7 +14594,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": "merged"
   },
   {
    "repo": "server",
@@ -14567,47 +14604,97 @@
    "title": "Fix Snapcast timing with an external Snapserver",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7267",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "you (draft)",
-   "gpt_sol": "not run",
+   "waiting_on": "you: merge (your PR)",
+   "gpt_sol": "1 problem (announcement test gap)",
    "size": "S",
-   "code": 0,
+   "code": 22,
    "add": 0,
    "del": 0,
-   "ci": "not checked (draft)",
+   "ci": "green",
    "ci_fail": false,
-   "merge_state": "not checked (draft)",
-   "head_sha": "",
+   "merge_state": "merge-tree clean on origin/dev 26d289547",
+   "head_sha": "c2b860b6a",
    "core_touched": false,
    "providers_touched": [],
    "stacked": false,
-   "tldr": "Your draft, not reviewed yet.",
-   "summary": "",
-   "whats_new": "",
+   "tldr": "Correct, small fix. An external Snapserver now gets a configurable buffer (default 1000 ms, its own default), and the elapsed anchor, the announcement lead-in and the #7253 play-out wait all use it. The built-in server path is unchanged because it still reads the built-in entry. 66 snapcast tests pass. Only nits.",
+   "summary": "New INTEGER entry snapcast_external_server_buffer_size (range 20-6000, default 1000, advanced=True, depends_on=CONF_USE_EXTERNAL_SERVER, so only shown for an external server). In handle_async_init the external branch fills _snapcast_server_buffer_size from it, and the built-in branch keeps reading CONF_SERVER_BUFFER_SIZE. The _use_builtin_server gates are gone from _get_playback_delay (which feeds playback_started_at, i.e. the #7250 elapsed anchor, the call_later player refresh and _track_sent_audio/_wait_played_out from #7253) and from the announcement lead-in sleep in player.py. No other buffer-dependent timing in the provider is gated on the built-in server. For the built-in server nothing changes: it reads the same value as before through the same code. strings.json and en.json are consistent and en.json stays sorted. The new anchor test fails on dev (delay was 0 for external), so it is a real regression test. Conftest and the announcement test set the buffer to 0 so the existing tests stay fast. Behaviour change for existing external users: announcements now wait an extra ~1 s before starting, matching the built-in server, and elapsed time shifts by the buffer. Users who run a non-default stream.buffer have to set it by hand. Both PRs are 2 commits behind dev (squeezelite/wiim only) and merge cleanly. CI is green and Copilot found no issues.",
+   "whats_new": "Marked ready 09:43Z. Reviewed: Opus ready (3 nits), GPT Sol 1 problem (no nonzero-buffer announcement test), Copilot Approval recommended.",
    "blockers": [
-    "Draft."
+    "Your own PR: merge when you are happy (docs for the new setting still unticked)"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/snapcast/strings.json",
+     "line": 35,
+     "title": "Description wording",
+     "detail": "\"Only change it if you changed buffer in snapserver.conf\" is missing an article, and \"Default is 1000\" repeats what the UI already shows as the default.",
+     "fix": "e.g. \"Set this to the buffer (in ms) configured in your snapserver.conf. Snapserver does not report it, but Music Assistant needs it to time playback and announcements.\" Mirror it in en.json.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/snapcast/provider.py",
+     "line": 297,
+     "title": "Config wiring is not tested",
+     "detail": "The new test sets _snapcast_server_buffer_size on the fake provider directly. Nothing checks that handle_async_init reads CONF_EXTERNAL_SERVER_BUFFER_SIZE in external mode. That is a trivial line, so this is optional.",
+     "fix": "Optional: no change needed.",
+     "posted": null
+    },
+    {
+     "model": "Claude",
+     "severity": "NIT",
+     "file": "music_assistant/providers/snapcast/provider.py",
+     "line": 227,
+     "title": "New user-facing setting has no docs",
+     "detail": "The docs checkbox is unticked. External Snapserver users with a non-default stream.buffer need to know this setting exists, or their timing stays off.",
+     "fix": "Add one line to the Snapcast docs page in music-assistant.io.",
+     "posted": null
+    },
+    {
+     "model": "GPT Sol",
+     "severity": "SUGGESTION",
+     "file": "tests/providers/snapcast/test_player_announcement.py",
+     "line": 31,
+     "title": "No announcement test with a nonzero external buffer",
+     "detail": "GPT Sol rates it a problem.",
+     "fix": "",
+     "posted": null
+    }
+   ],
    "unaddressed_comments": [],
-   "copilot": null,
-   "copilot_reviewed_head": false,
-   "copilot_note": "",
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7267",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on c2b860b6a.",
    "suggested_fix": null,
    "prompt": "",
-   "backport": null,
+   "backport": {
+    "rec": "no",
+    "why": "It builds on the #7253 play-out wait, and #7253 is not backported (bugfix label only). Stable has neither _get_playback_delay nor _wait_played_out, and the dry-run conflicts in ma_stream.py and both tests (test_player_announcement.py does not exist on stable). Backport it only together with #7253, if at all."
+   },
    "auto_approved": null,
    "author_replied": null,
    "reporter_reply": null,
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": null,
-   "changed_now": "new"
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-28 11:25 CET",
+   "changed_now": "ready for review"
   },
   {
    "repo": "server",
@@ -14657,7 +14744,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -14707,7 +14794,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new"
+   "changed_now": ""
   }
  ]
 }
