@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-28T11:00:00+01:00",
- "dev": "26d289547",
- "run_note": "You merged #7264 and #7266. Your #7267 (external Snapserver buffer) is ready; your #7265 has a flow-mode regression Opus reproduced, with a one-line fix. trudenboy's #7242 v1.7.4 is sound except our still-unposted guest-scope finding.",
+ "last_run": "2026-10-28T12:00:00+01:00",
+ "dev": "601a334ea",
+ "run_note": "You merged #7265, #7267, #7269, models#446 and aioslimproto#590. #7265 went in without the _resume_on_idle guard, so its flow-mode regression is on dev. You posted the #7081 simplification comment; #7156 was only rebased.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -5220,9 +5220,9 @@
    "author": "martinbuergi",
    "url": "https://github.com/music-assistant/server/pull/7081",
    "draft": false,
-   "verdict": "ready",
-   "assessment": "approve",
-   "status": "attention",
+   "verdict": "not_ready",
+   "assessment": "request_changes",
+   "status": "waiting",
    "attention_since": "2026-10-25T16:40:00Z",
    "size": "M",
    "code": 261,
@@ -5239,7 +5239,7 @@
    "tldr": "Both earlier issues fixed, provider-only, 41 party tests green, no blocking findings (1 suggestion, 1 nit): approve. Not auto-approved: it also edits music_assistant/translations/en.json (the same generated-file question as #7161).",
    "summary": "Head 27d3a9b4, merge-base current with origin/dev lineage. Scope is provider-only: providers/party/__init__.py, its strings.json, the generated en.json keys and tests; no core or models changes. Votes are keyed per token id, serialized under the plugin _queue_lock plus the strict re-entrant player playback lock held through next(); there is no suspension point between the current-item check and next() reading current_index, so the acknowledged natural-transition race is effectively closed. Votes reset on QUEUE_UPDATED when the current item changes, the tally is popped with items_changed=True so it persists/clears in the queue cache, stale tallies are removed on load, on queue update and on unload. Threshold changes reload the provider, which clears votes and the tally. Lock order (_queue_lock then player lock) matches the other party paths (load/play_index under _queue_lock), so no inversion. Frontend contract matches frontend#3014 (queue_item_id in; skipped, vote_counted, song_changed, no_next_track, votes, votes_required out; PartyConfig.skip_votes_required; extra_attributes.party_skip_votes). With the default of 1 behavior equals dev except a single-item repeat ALL queue no longer restarts on a guest skip. Old frontend still works at default 1. No reachable CRITICAL or PROBLEM.",
    "blockers": [
-    "Your approve (or say generated translations count as provider-only, then the routine auto-approves PRs like this)"
+    "You asked martinbuergi to simplify: keep the votes on the queue item only, drop the plugin-side state and cleanup"
    ],
    "findings": [
     {
@@ -5276,7 +5276,7 @@
    "suggested_fix": null,
    "backport": null,
    "prompt": "",
-   "whats_new": "martinbuergi pushed 27d3a9b44 and marked it ready at 16:40Z on 10-25. Copilot: Approval recommended. 10-28: you asked whether the tally can live on the queue item alone; design chat with Fable launched.",
+   "whats_new": "You posted the simplification comment at 10:41Z (votes on the queue item only, drop the plugin-side state). Waiting on martinbuergi.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
    "auto_approved": null,
@@ -5284,8 +5284,8 @@
    "related_prs": [],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you: approve",
-   "changed_now": "",
+   "waiting_on": "martinbuergi: your simplification comment (10:41Z)",
+   "changed_now": "reviewed",
    "gpt_sol": "clean",
    "support": null,
    "fix_thread": "t3-thread://v1/mcp:c1bbcffb-2367-4774-b433-5cc5bef133c2"
@@ -7972,7 +7972,7 @@
    "ci": "green on bca16877f (17 checks)",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev d42078eb9; review required, no auto-merge",
-   "head_sha": "bca16877f",
+   "head_sha": "f2579d7b4",
    "core_touched": true,
    "providers_touched": [
     "universal_player"
@@ -7980,7 +7980,7 @@
    "stacked": false,
    "tldr": "A Universal Player now keeps its id across restarts: the startup handover to a stale native config is gone, and a native only takes over the wrapper when it actually registers, through the refuse-aware runtime transfer with the #6610 same-domain guard. Claude finds it ready: 771 tests pass, and 4 of the 5 new tests fail on dev. Copilot recommends approval. GPT Sol notes a partial claim takes the whole wrapper, which you already argued in the Copilot thread.",
    "summary": "Checked each behaviour change against the code. The startup handover is gone and _restore_player always registers the UP. _check_replace_universal_player gains a config-claim gate: the registering native's linked_protocol_ids must intersect the UP's known protocols, and the same-domain guard must not fire. Past that gate it reuses the existing runtime transfer, so refused groups stay on the UP, only moved ids migrate when something is refused, and the UP is removed only when nothing is refused. Unregistered UP protocols migrate in config to the native and recover through the cached parent, so no protocol ends up orphaned or owned twice. Registration order is covered both ways: natives that register after the restore go through _try_link_protocols_to_native, and natives that registered earlier are rechecked by the loop at the end of discover_players. Disabled natives never register (controller.register returns early), so they can't take a UP. Enabling one later triggers the claim path, which matches the PR body. The guard reads persisted protocol_parent_id, so it works before the native's own output has registered, and it behaves like the removed provider guard (same domain set, same exclusions). Nothing else references _reparent_protocols_to_native or the provider-side _owns_domain_of_protocols, no migration or README depends on the startup handover, and dev has not touched these files since the merge-base. The deleted restore tests are either covered by existing runtime tests (config carry-over, native name/DSP/queue precedence, plus the new purge_saved_queue assertion) or were dropped on purpose (cascade-disable and the single-wrapper two-claimer case, both removed behaviour argued in the Copilot thread). Whole-wrapper takeover on a partial claim equals what the identifier path already does on dev, and its reachability was argued in the Copilot thread, so I'm not flagging it.",
-   "whats_new": "Marked ready for review at 07:41Z on bca16877f. Copilot 07:36Z: Approval recommended.",
+   "whats_new": "Rebased to f2579d7b4; code identical to our reviewed head bca16877f. Still waits on another maintainer.",
    "blockers": [
     "Needs another maintainer's approval (your own PR)"
    ],
@@ -8026,7 +8026,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-23 10:00 CEST",
-   "changed_now": ""
+   "changed_now": "pushed"
   },
   {
    "repo": "server",
@@ -9655,8 +9655,8 @@
   {
    "repo": "models",
    "number": 446,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-28T10:33:37Z",
    "title": "Update for python 3.15",
    "author": "afeldman1",
    "url": "https://github.com/music-assistant/models/pull/446",
@@ -9680,7 +9680,7 @@
    "stacked": false,
    "tldr": "Adds Python 3.15 to the test matrix and classifiers, and builds releases on 3.15. Trivial; the release-workflow switch to 3.15 is the only real change. Copilot requested.",
    "summary": "",
-   "whats_new": "New 06:33Z on 10-24. Copilot requested as Marvin.",
+   "whats_new": "Merged by you.",
    "blockers": [
     "Your approve"
    ],
@@ -9700,7 +9700,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "repo": "models",
@@ -12998,7 +12998,7 @@
    "title": "Update Yandex Station provider to v1.7.4: Alice speech API commands and report-driven playback state",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7242",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "attention",
@@ -13064,9 +13064,9 @@
    "related_prs": [
     "#7227 maps yandex_station/command to system:admin over MCP"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-28 11:25 CET",
-   "changed_now": "ready for review"
+   "changed_now": "drafted"
   },
   {
    "repo": "server",
@@ -14372,7 +14372,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 10:15 CET",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -14462,8 +14462,8 @@
   {
    "repo": "server",
    "number": 7265,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-28T10:08:27Z",
    "title": "Stop showing a disconnected player's queue as playing",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7265",
@@ -14487,7 +14487,7 @@
    "stacked": false,
    "tldr": "The fix is right: on_player_remove publishes the dropped queue once as idle, and the protocol transition now drops the queue before PLAYER_REMOVED. The AI Radio guards are needed and correct. One regression: the flow-mode _resume_on_idle task now treats the removal's IDLE as the player finishing and raises KeyError on the gone queue (reproduced). The fix is a one-line identity check. Backport alongside #7249 without the AI Radio hunks.",
    "summary": "on_player_remove pops the queue data, sets its PlayerQueue.state to IDLE and signals QUEUE_UPDATED. It runs for both a non-permanent unregister (then PLAYER_UPDATED available=False) and a permanent one (then PLAYER_REMOVED), and in both cases the queue update goes out before the player event. The pending cache save was already cancelled earlier in the method, and _save_queue_to_cache/signal_update guard on _queue_data, so the IDLE mutation is never persisted. On reconnect, on_player_register restores from cache into a new PlayerQueueData and re-derives the state through on_player_update. Resume and position behave as on dev. In _finish_player_type_transition the queue now goes before PLAYER_REMOVED, so the frontend cannot re-add the queue after dropping the player. Sync leaders and groups: only the dropped player's own queue changes. Members are inactive anyway, and signal_update for a missing queue is a no-op. Server-side QUEUE_UPDATED subscribers (sendspin, sonos hand-over check, plex_connect, snapcast socket server, websocket filter) all cope with a missing queue. The AI Radio change is needed: the new event reaches _on_dj_queue_event, where player_queues.get() returns None. Without the guards, _maybe_detach_show_dj would detach the show DJ and _forget_armed_show would drop the arm-once record, so a returning player could re-arm a DJ the user had turned off. PLAYER_REMOVED still drops both. Flaw: queue_buffer_completed starts _resume_on_idle, which holds the PlayerQueue object. Before this PR a removed queue stayed PLAYING and the loop timed out harmlessly. Now, if the player drops within 60 s of its flow stream finishing generation (e.g. a speaker switched off during the tail of the last track), the loop sees IDLE and calls get_next_item, and _get_next_index then raises KeyError on _queue_data[queue_id]. A simulation reproduces it: KeyError 'q1' on the PR, a clean finish on dev. If the player re-registers within that second, it can play_index on the restored queue instead. Tests: 1621 passed across player_queues, the player controller and ai_radio. The new tests cover the idle publish (both permanent values), the event order and the AI Radio survival, but not the flow resume path. CI is green and Copilot is clean.",
-   "whats_new": "Marked ready 09:34Z. Reviewed: Opus almost (1 regression, reproduced), GPT Sol and Copilot clean.",
+   "whats_new": "Merged by you at 10:08Z. Merged at 3132c3c17 without our _resume_on_idle guard, so the flow-mode KeyError/next-track regression is on dev now.",
    "blockers": [
     "f1: flow _resume_on_idle reads the removal's IDLE as finished and raises KeyError (or plays next on reconnect); `fix 7265` adds the one-line guard",
     "Backport with #7249 into #7200, keeping stable's ai_radio files"
@@ -14542,9 +14542,9 @@
    "related_prs": [
     "#7249 (in #7200)"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-28 11:25 CET",
-   "changed_now": "ready for review"
+   "changed_now": "merged"
   },
   {
    "repo": "server",
@@ -14594,13 +14594,13 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
    "number": 7267,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-28T10:05:11Z",
    "title": "Fix Snapcast timing with an external Snapserver",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7267",
@@ -14624,7 +14624,7 @@
    "stacked": false,
    "tldr": "Correct, small fix. An external Snapserver now gets a configurable buffer (default 1000 ms, its own default), and the elapsed anchor, the announcement lead-in and the #7253 play-out wait all use it. The built-in server path is unchanged because it still reads the built-in entry. 66 snapcast tests pass. Only nits.",
    "summary": "New INTEGER entry snapcast_external_server_buffer_size (range 20-6000, default 1000, advanced=True, depends_on=CONF_USE_EXTERNAL_SERVER, so only shown for an external server). In handle_async_init the external branch fills _snapcast_server_buffer_size from it, and the built-in branch keeps reading CONF_SERVER_BUFFER_SIZE. The _use_builtin_server gates are gone from _get_playback_delay (which feeds playback_started_at, i.e. the #7250 elapsed anchor, the call_later player refresh and _track_sent_audio/_wait_played_out from #7253) and from the announcement lead-in sleep in player.py. No other buffer-dependent timing in the provider is gated on the built-in server. For the built-in server nothing changes: it reads the same value as before through the same code. strings.json and en.json are consistent and en.json stays sorted. The new anchor test fails on dev (delay was 0 for external), so it is a real regression test. Conftest and the announcement test set the buffer to 0 so the existing tests stay fast. Behaviour change for existing external users: announcements now wait an extra ~1 s before starting, matching the built-in server, and elapsed time shifts by the buffer. Users who run a non-default stream.buffer have to set it by hand. Both PRs are 2 commits behind dev (squeezelite/wiim only) and merge cleanly. CI is green and Copilot found no issues.",
-   "whats_new": "Marked ready 09:43Z. Reviewed: Opus ready (3 nits), GPT Sol 1 problem (no nonzero-buffer announcement test), Copilot Approval recommended.",
+   "whats_new": "Merged by you at 10:05Z.",
    "blockers": [
     "Your own PR: merge when you are happy (docs for the new setting still unticked)"
    ],
@@ -14692,9 +14692,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-28 11:25 CET",
-   "changed_now": "ready for review"
+   "changed_now": "merged"
   },
   {
    "repo": "server",
@@ -14749,8 +14749,8 @@
   {
    "repo": "server",
    "number": 7269,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-28T10:49:04Z",
    "title": "Fix Snapcast playing the old track for seconds after next",
    "author": "MarvinSchenkel",
    "url": "https://github.com/music-assistant/server/pull/7269",
@@ -14774,7 +14774,7 @@
    "stacked": false,
    "tldr": "Your draft, not reviewed yet.",
    "summary": "",
-   "whats_new": "",
+   "whats_new": "Merged by you at 10:49Z.",
    "blockers": [
     "Draft."
    ],
@@ -14794,7 +14794,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": ""
+   "changed_now": "merged"
   }
  ]
 }
