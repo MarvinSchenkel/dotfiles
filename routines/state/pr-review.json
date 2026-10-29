@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-29T16:00:00+01:00",
- "dev": "ffa65907a",
- "run_note": "Merged: #7212, #7258, #7262 and #7283. Bot-MArley's recheck clears all three kiosk-port requests on #6948, and trudenboy reports a tablet test; a new push since awaits review. #7293 still has Bot-MArley's two requests. New: #7300 (critical gate on Bot-MArley) and #7299 (Sonos tests).",
+ "last_run": "2026-10-29T17:00:00+01:00",
+ "dev": "5c5fc5840",
+ "run_note": "Merged: #7191, #7242, #7297 and #7300 (critical gate now acts on Bot-MArley). On #6948, trudenboy fixed the three test/stream points but Bot-MArley raised two integration problems and the 12k-line size. #7193 waits on OzGav for your MASS_VERSION comment and on a second maintainer for the ffmpeg part.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -2588,9 +2588,9 @@
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/6948",
    "draft": false,
-   "verdict": "almost",
+   "verdict": "not_ready",
    "assessment": "request_changes",
-   "status": "attention",
+   "status": "waiting",
    "attention_since": null,
    "size": "XL",
    "code": 5516,
@@ -2603,13 +2603,13 @@
     "web_kiosk"
    ],
    "merge_state": "merge-tree clean on origin/dev d42078eb9; review required, no auto-merge",
-   "head_sha": "a919f7ec8",
+   "head_sha": "405a26f25",
    "tldr": "v1.1.0 drops ENQUEUE and plays core's flow stream, which removes the provider's own successor logic and with it the seek-to-end bug (Copilot r4302797493 resolved, page clamp verified, server seeks now safe via flow). Copilot is clean on the head. New: Repeat One leaves the page clock stuck at the end. The 9 older PROBLEMs and the maintainer question remain. Not ready.",
    "summary": "Delta b852cf2f7..257e3ae8b (v1.1.0, +894/-1285): the kiosk drops PlayerFeature.ENQUEUE, so core serves queue media as one /flow/ stream. Removed: the /flow/ to /single/ rewrite, enqueue_next_media, start_enqueued_media, QueueWalk, playback_reached_end and the short-end detection; a browser 'ended' now just reports IDLE. play_media checks resolve_stream_url to set serves_flow. refresh_stream rebuilds the flow at the queue's item and position via cmd_seek with resume_position(). New PlaybackClaim replaces transport_mark/still_plays/take_over_output (GPT Sol found no ownership or pause bug in it). _publish_flow_item sends title, duration and a stream-clock start (queue elapsed minus stream elapsed x speed; GPT Sol confirmed the formula) when the queue's item changes inside the flow. Closing a page that got the current play message rebuilds the flow for the remaining pages. web.js caps seekToSong at floor(dur) - end_margin from the welcome message, clamps its clock to the song duration, and reports position every 2 s. Effect on old findings: fixed or gone are the seek-to-end CRITICAL, the /flow/ rewrite limitation (crossfade and overlays now apply), one-item Repeat All, paused successor resume_pos, radio jumping to the next item, end report during the snapshot seek, and the short complete file stopping the queue. The failed-playback teardown is downgraded to SUGGESTION since there are no enqueue tasks now. The other 9 PROBLEMs are untouched. New PROBLEM: Repeat One (and one-item Repeat All) never sends a new media message, so the page clock and lyrics stay at the end.",
    "blockers": [
-    "New head a919f7ec8 (15:00Z) not reviewed yet",
-    "Bot-MArley's recheck on b0e7c91b2: all three requests fixed (QR opt-in, API allowlist, Sendspin bundle source)",
-    "trudenboy tested on a Lenovo TB-J606L tablet (Android 11)"
+    "Bot-MArley: sendspin_bridge.py changes device_info of a universal_player player owned by another provider; hand it over via the players controller or the Sendspin bridge API",
+    "Bot-MArley: provider.py calls set_members on the Sendspin leader directly, bypassing the players controller",
+    "Bot-MArley: 12k lines, a maintainer should weigh whether the project wants a provider this size"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -2625,7 +2625,7 @@
    "suggested_fix": null,
    "backport": null,
    "prompt": "Context: music-assistant/server PR #6948 (trudenboy, 'Add Web Kiosk browser player provider', head 257e3ae8b, provider v1.1.0, XL, ready for review since 18:44Z, CI green except the pending Dependency Security Review, clean against origin/dev 1dfa0929d, Copilot clean on the head). v1.1.0 drops PlayerFeature.ENQUEUE so core serves the kiosk a /flow/ stream; the provider's own successor logic is gone and the seek-to-end CRITICAL (Copilot r4302797493) is resolved: the page caps seeks at length minus END_MARGIN and server seeks go through core's flow. New PROBLEM from GPT Sol, confirmed: in _publish_flow_item (http_server.py:453) Repeat One keeps the same queue_item_id and generation, so no media message is sent for later passes and the page clock and lyrics stay at the end. Still open from earlier reviews: socket reconnect after HTML5 fallback re-enables Sendspin (web.js connectWS), muted kiosk plays Sendspin after reload, fallback holds the playback lock across a universal group resume, late old-socket close misses the HTML5 move, /ws ownership proves the Sendspin key not the kiosk, sendspinStreaming not restored after stream/clear, on_protocol_player_updated re-asserts Sendspin without an equality guard, universal_player internals coupling, MA credentials over plain HTTP on 8098. Plus the maintainer decision on shipping a second HTTP server and kiosk UI in server. The card's suggested_fix patch covers mute and announcement lyrics. Task: help Marvin decide on the design question, then draft a short review comment listing the Repeat One clock bug and the remaining PROBLEMs. Any comment must start with '> [!NOTE] This comment was written by Claude on Marvin's behalf'. Post nothing on GitHub without Marvin's OK.",
-   "whats_new": "Bot-MArley's recheck: QR opt-in (off by default), /api allowlist and the bundle source are fixed. trudenboy reported a real-device test.",
+   "whats_new": "trudenboy synced 1.1.2 (405a26f25): the three test/stream points are fixed. Bot-MArley found two new integration problems and flags the size (12k lines).",
    "reviewed_now": false,
    "reviewed_at": "2026-10-17 21:30 CEST",
    "auto_approved": null,
@@ -2641,14 +2641,14 @@
     "summary": "The Web Kiosk page runs outside the MA frontend with no login, targets old browsers (ES2015, Chromium 53+) on tablets, kiosks and smart TVs, works with a TV remote, uses Sendspin when the browser supports it and plain HTML5 audio otherwise. Positions it next to FullyKiosk and MSX."
    },
    "reporter_reply": null,
-   "waiting_on": "Bot-MArley on a919f7ec8; then your provider call",
-   "changed_now": "recheck",
+   "waiting_on": "trudenboy: 2 Bot-MArley integration points",
+   "changed_now": "reviewed",
    "marley": {
-    "verdict": "approved",
-    "reviewed_head": false,
+    "verdict": "changes",
+    "reviewed_head": true,
     "open_threads": 2,
-    "review_url": "https://github.com/music-assistant/server/pull/6948#pullrequestreview-5696315819",
-    "note": "Recheck on b0e7c91b2: nothing open; new push since.",
+    "review_url": "",
+    "note": "2 requests (universal_player device_info, direct set_members); 3 earlier threads resolved on 405a26f.",
     "recheck_head": "5ea518ed4"
    },
    "lab": {
@@ -8050,9 +8050,10 @@
    "stacked": false,
    "tldr": "Approve. The UA reaches aiohttp, the pre-checks and every single-input ffmpeg/ffprobe http path; caller UAs are respected and nothing is duplicated; the provider UAs services depend on are untouched. One low follow-up: multi-part concat http parts still send Lavf (also the case on dev). Core helpers change, so it waits on your approve.",
    "summary": "The shared UA reaches every path the PR claims. It is used by the default aiohttp session (with the aiohttp/Python suffix), by HTTP_HEADERS (radio resolve, ICY, HLS, raw Shoutcast socket, mp3 seek probe through ffmpeg_http_headers), by ffmpeg get_ffmpeg_args, probe_audio_stream and the overlay mixer, and by ffprobe/ffmpeg in tags (parse_tags, get_file_duration, embedded image) and ai_radio rendering. The ffmpeg probe and the aiohttp pre-checks see the same UA because HTTP_HEADERS and the -user_agent default are the same constant. Caller UAs win in both places: _sets_user_agent skips on -user_agent or a User-Agent inside -headers, which matches ffmpeg_http_headers' precedence, so headers are neither duplicated nor overwritten. The UA-after-extra-args ordering would be wrong if a caller brought its own '-f ... -i url', but the only '-f' caller is concat with a local input_path, so that can't happen. Provider review: MusicBrainz and Wikipedia get the identical string they had before. LRCLIB (name, version, homepage) and Radio Browser now send a more descriptive UA. Deezer gw, Tidal play reporting, YT Music, Apple Music, Pandora, NetEase, Zvuk and MusicCast keep their custom UAs and only gained comments. Bose was moved to the new UA and confirmed on device by fmunkes. Podcastfeed's browser UA came from #2455, which was the same Buzzsprout host; the author tested the new UA live against it. Residual risk: HTTP_HEADERS changes from 'Lavf/60.16.100.MusicAssistant' (#1193) to the MA UA for every radio/HTTP stream. Any host that allowlists Lavf would now differ, but the author tested 33 streams including HLS. The one gap is concat multi-part http parts, which still send Lavf. That is the same as on dev, and the concat demuxer's per-file option directive fixes it (verified).",
-   "whats_new": "I updated the branch with dev (37f1ecaa9) and reran the lab: library, players, queue and streams all green.",
+   "whats_new": "Bot-MArley's recheck: still nothing to change. Waiting on OzGav for your MASS_VERSION comment, and fmunkes wants a second maintainer on the ffmpeg part.",
    "blockers": [
-    "Your 16:xx comment: one MASS_VERSION source for mass.version and MASS_USER_AGENT instead of a second lookup"
+    "Your 16:xx comment: one MASS_VERSION source for mass.version and MASS_USER_AGENT instead of a second lookup",
+    "fmunkes asked for another maintainer to look at the ffmpeg part"
    ],
    "findings": [
     {
@@ -8093,13 +8094,13 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "",
+   "changed_now": "recheck",
    "marley": {
     "verdict": "approved",
-    "reviewed_head": false,
+    "reviewed_head": true,
     "open_threads": 0,
     "review_url": "https://github.com/music-assistant/server/pull/7193#pullrequestreview-5643690900",
-    "note": "Head moved by the branch update (dev merge only); recheck posted.",
+    "note": "Recheck on 37f1eca: nothing to change; fmunkes asked for a second maintainer on the ffmpeg part.",
     "recheck_head": "37f1ecaa9"
    },
    "lab": {
@@ -8643,8 +8644,8 @@
   {
    "repo": "server",
    "number": 7191,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-29T15:27:12Z",
    "title": "Run tini as PID 1 so orphaned child processes are reaped",
    "author": "cateim",
    "url": "https://github.com/music-assistant/server/pull/7191",
@@ -8653,7 +8654,7 @@
    "assessment": "approve",
    "status": "attention",
    "attention_since": "2026-10-25T21:12:00Z",
-   "waiting_on": "you: approve (Dockerfile)",
+   "waiting_on": "merged",
    "gpt_sol": "not run",
    "size": "S",
    "code": 8,
@@ -8694,7 +8695,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "",
+   "changed_now": "merged",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -8960,7 +8961,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 14:15 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -11542,8 +11543,8 @@
   {
    "repo": "server",
    "number": 7242,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-29T15:37:53Z",
    "title": "Update Yandex Station provider to v1.7.9: Alice speech API commands and report-driven playback state",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7242",
@@ -11552,7 +11553,7 @@
    "assessment": "comment",
    "status": "attention",
    "attention_since": "2026-10-27T06:49:00Z",
-   "waiting_on": "you: API_SCHEMA_VERSION bump for the new client-facing commands?",
+   "waiting_on": "merged",
    "gpt_sol": "1 problem (guest scope only)",
    "size": "XL",
    "code": 1084,
@@ -11600,7 +11601,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 17:00 CET",
-   "changed_now": "",
+   "changed_now": "merged",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -12451,7 +12452,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 07:30 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -12569,13 +12570,13 @@
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
-   "head_sha": "d3fd20089",
+   "head_sha": "5845ee891",
    "core_touched": true,
    "providers_touched": [],
    "stacked": false,
    "tldr": "Down to about 30 lines of logic: reconfigure now unloads the instance, clears its cache through a public MusicController.clear_provider_cache, then reloads it. The private-key import and the non-atomic snapshot rewrite are gone. But exclude_category=1 keeps everything any provider stores in category 1, including Tidal's personalised pages and Overcast's OPML. The combined search cache also survives, and both are open Copilot CRITICALs on the head. A 10-line patch fixes both.",
    "summary": "The delta drops the race guards (listing generations, cancelling flight tasks by name, unloading checks in use_cache and recommendation_payload) and accepts that a lost race serves old data until it expires. What is left: _finish_provider_reconfigure calls unload_provider, then clear_provider_cache, then load_provider_config, and any error restores the old setup_data. clear_provider_cache runs cache.clear(provider LIKE '%id%', persistent = 0, category != 1), deletes the persistent recommendations payload, and drops every library:// listing. Verified: 2302 tests pass across tests/controllers/cache, config, music and tests/models/test_recommendation_payload.py. The problem is that CACHE_CATEGORY_PREV_LIBRARY_IDS = 1 is not reserved. At least 17 providers use category 1 for their own data: Tidal recommendation pages (personalised, keyed by page path), Overcast OPML (the account's subscriptions), Audible and Storytel audiobooks, gpodder sync state, opensubsonic podcast channels, Pandora feedback and Apple Music decrypt keys. Excluding the whole category keeps all of that across an account switch. A scratch repro through the reconfigure flow confirms it: a category-1 'pages/home' entry survives. Combined search results are cached under provider 'music' and survive as well (confirmed). They are dropped at the next sync completion or after SEARCH_CACHE_EXPIRATION_COMBINED. Fix: keep only the snapshot keys (media type values) in category 1, and delete category 10 for 'music'. Both are in suggested_fix, and 2283 cache/config/music tests pass with it. The rest is unchanged from last time and low impact. The LIKE '%id%' match also hits airplay_receiver, hass_players, spotify_connect and sendspin_* when airplay, hass, spotify or sendspin is reconfigured, but the substring is what removes the 'id://...' listing keys, and the cost is one refetch. The clear also runs for every reconfigure (about 70 providers with run_setup, any reason). If cache.clear itself fails, the provider stays unloaded with the old credentials restored. The PR has a test for the credentials but none for a reload. Without the guards, an in-flight old-instance listing fill or use_cache call can still write after the clear. The window is a request's duration, and the author accepted it.",
-   "whats_new": "OzGav worries the approach is wrong: a reconfigure is often a re-login with the same account, and this throws away the whole provider cache each time.",
+   "whats_new": "GoatsAndMonkeys pushed 5845ee891 (still draft), retitled to 'when its account changes', likely answering OzGav's re-login concern.",
    "blockers": [
     "Keeping all of cache category 1 keeps 17 providers' account data (Tidal pages, Overcast subscriptions); 10-line patch in suggested_fix",
     "Combined search results survive the switch"
@@ -12608,7 +12609,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": ""
+   "changed_now": "pushed"
   },
   {
    "repo": "server",
@@ -12723,7 +12724,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 08:15 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -14172,8 +14173,8 @@
    "changed_now": ""
   },
   {
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-29T15:27:12Z",
    "stacked": false,
    "related_prs": [],
    "unaddressed_comments": [],
@@ -14222,14 +14223,14 @@
    "title": "Show song details from Italian RadioMediaset radio stations",
    "author": "OzGav",
    "status": "attention",
-   "waiting_on": "you: approve (core)",
+   "waiting_on": "merged",
    "size": "S",
    "code": 20,
    "ci": "green",
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "85cee3030",
    "tldr": "Small, contained parser addition for RadioMediaset '~' titles. Other stations only change if their title has three or more '~' and a non-empty first and second field, which is rare. Tests pass.",
-   "changed_now": "",
+   "changed_now": "merged",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -14310,7 +14311,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "fa9fdb650",
    "tldr": "Reporting and reading YouTube podcast progress works and is throttled sensibly. Two reachable gaps: a signed-out cookie now makes episode playback fail, and marking an episode unplayed in MA gets overridden by YouTube's old position.",
-   "changed_now": "reviewed",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -14526,7 +14527,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "849fbbefa",
    "tldr": "When a DLNA renderer answers Pause with a UPnP fault, the PR now stops it, the same as replace_pause_with_stop, instead of only logging the error. A renderer that pauses slowly is not affected, because timeouts are not caught. Queue resume picks up at the paused position.",
-   "changed_now": "corrected",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -14598,7 +14599,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "6452f7d05",
    "tldr": "Queue play on a paused queue now goes to the same output-protocol player that queue pause went to, so LinkPlay/Universal players resume again. The fallback keeps native and group players on their old path. The DLNA read-back after play is harmless.",
-   "changed_now": "corrected",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -14969,7 +14970,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "3e920a2ad",
    "tldr": "The server logic is correct, but it builds ListeningTimeItem with an `item` field that no released or open models version has, so the endpoint raises TypeError and pytest/lint are red. That is more than the pre-commit checkbox. Blocked on a models PR that hasn't been opened yet.",
-   "changed_now": "merged",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -15742,8 +15743,8 @@
    "changed_now": ""
   },
   {
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-29T15:00:57Z",
    "draft": false,
    "verdict": "almost",
    "assessment": null,
@@ -15770,7 +15771,7 @@
    "providers_touched": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "merged",
    "auto_approved": null,
    "repo": "server",
    "number": 7300,
@@ -15781,7 +15782,7 @@
    "ci": "red (Verify)",
    "merge_state": "",
    "head_sha": "4ea2beb85",
-   "waiting_on": "Bot-MArley (pushed 14:57Z)",
+   "waiting_on": "merged",
    "tldr": "Updates .github/workflows/critical-gate-poll.yml so the critical-review gate drafts PRs on Bot-MArley's critical findings, not Copilot's. Workflow only; Verify is red (likely the PR label/checklist).",
    "blockers": [
     "Verify red",
@@ -15834,7 +15835,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "reviewed",
    "auto_approved": null,
    "repo": "server",
    "number": 7299,
@@ -15845,18 +15846,18 @@
    "ci": "red (Verify)",
    "merge_state": "",
    "head_sha": "f9b1fa2ba",
-   "waiting_on": "Bot-MArley (pushed 14:52Z)",
-   "tldr": "Tests only: 43 lines in tests/providers/sonos/test_player.py covering the reconnect delay cap, cancellation and shutdown. Verify is red (likely the PR label/checklist).",
+   "waiting_on": "muttleydosomething: PR title (Bot-MArley) + Verify",
+   "tldr": "Tests only: three Sonos reconnect tests (delay cap, cancellation, shutdown). Bot-MArley checked the assertions against player.py; only the PR title needs changing.",
    "blockers": [
-    "Verify red",
-    "No Bot-MArley review yet"
+    "Bot-MArley: drop the `test:` prefix, use a plain title (e.g. 'Add Sonos reconnect regression tests')",
+    "Verify red"
    ],
    "marley": {
-    "verdict": "none",
-    "reviewed_head": false,
+    "verdict": "changes",
+    "reviewed_head": true,
     "open_threads": 0,
     "review_url": "",
-    "note": "",
+    "note": "1 request: plain PR title instead of the `test:` prefix.",
     "recheck_head": null
    },
    "lab": {
