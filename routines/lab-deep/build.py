@@ -515,7 +515,7 @@ def _case(el: ET.Element, run: Run) -> Case:
     if detail is not None:
         traceback = detail.text or ""
         message = _first_line(detail.get("message") or traceback)
-    metrics = {k: v for k, v in props if k not in ("area", "device", "checkpoint", "issues", "failed_checkpoint", "failed_issues") and _is_number(v)}
+    metrics = {k: v for k, v in props if k not in ("area", "device", "checkpoint", "issues", "failed_checkpoint", "failed_issues", "started_at", "ended_at") and _is_number(v)}
     return Case(
         run_id=run.run_id,
         ref=run.ref,
