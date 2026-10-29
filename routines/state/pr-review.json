@@ -8031,11 +8031,11 @@
    "author": "OzGav",
    "url": "https://github.com/music-assistant/server/pull/7193",
    "draft": false,
-   "verdict": "ready",
+   "verdict": "almost",
    "assessment": "approve",
-   "status": "attention",
-   "attention_since": "2026-10-25T14:36:00Z",
-   "waiting_on": "you: approve (core)",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "OzGav: your single-version suggestion (MASS_VERSION)",
    "gpt_sol": "clean",
    "size": "M",
    "code": 108,
@@ -8052,9 +8052,23 @@
    "summary": "The shared UA reaches every path the PR claims. It is used by the default aiohttp session (with the aiohttp/Python suffix), by HTTP_HEADERS (radio resolve, ICY, HLS, raw Shoutcast socket, mp3 seek probe through ffmpeg_http_headers), by ffmpeg get_ffmpeg_args, probe_audio_stream and the overlay mixer, and by ffprobe/ffmpeg in tags (parse_tags, get_file_duration, embedded image) and ai_radio rendering. The ffmpeg probe and the aiohttp pre-checks see the same UA because HTTP_HEADERS and the -user_agent default are the same constant. Caller UAs win in both places: _sets_user_agent skips on -user_agent or a User-Agent inside -headers, which matches ffmpeg_http_headers' precedence, so headers are neither duplicated nor overwritten. The UA-after-extra-args ordering would be wrong if a caller brought its own '-f ... -i url', but the only '-f' caller is concat with a local input_path, so that can't happen. Provider review: MusicBrainz and Wikipedia get the identical string they had before. LRCLIB (name, version, homepage) and Radio Browser now send a more descriptive UA. Deezer gw, Tidal play reporting, YT Music, Apple Music, Pandora, NetEase, Zvuk and MusicCast keep their custom UAs and only gained comments. Bose was moved to the new UA and confirmed on device by fmunkes. Podcastfeed's browser UA came from #2455, which was the same Buzzsprout host; the author tested the new UA live against it. Residual risk: HTTP_HEADERS changes from 'Lavf/60.16.100.MusicAssistant' (#1193) to the MA UA for every radio/HTTP stream. Any host that allowlists Lavf would now differ, but the author tested 33 streams including HLS. The one gap is concat multi-part http parts, which still send Lavf. That is the same as on dev, and the concat demuxer's per-file option directive fixes it (verified).",
    "whats_new": "I updated the branch with dev (37f1ecaa9) and reran the lab: library, players, queue and streams all green.",
    "blockers": [
-    "Your approve (core helpers); optional follow-up: concat streams still send Lavf"
+    "Your 16:xx comment: one MASS_VERSION source for mass.version and MASS_USER_AGENT instead of a second lookup"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Bot-MArley",
+     "severity": "SUGGESTION",
+     "file": "music_assistant/constants.py",
+     "line": 37,
+     "title": "Reuse one version source (MASS_VERSION) instead of a second lookup",
+     "detail": "Posted by Marvin.",
+     "fix": "",
+     "posted": {
+      "at": "2026-10-29T15:30:00Z",
+      "url": "https://github.com/music-assistant/server/pull/7193#discussion_r4414313760"
+     }
+    }
+   ],
    "unaddressed_comments": [],
    "copilot": {
     "green": true,
