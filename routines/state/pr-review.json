@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-29T13:00:00+01:00",
- "dev": "7a59e9b96",
- "run_note": "OzGav merged #7263 and #7279. fmunkes took bookmarks (#7292) out of draft; Bot-MArley says the earlier points are fixed and only the models#451 release blocks it, but the provider-stored half is still your design call.",
+ "last_run": "2026-10-29T14:00:00+01:00",
+ "dev": "d94c65143",
+ "run_note": "models#452 merged, so #7283 now waits on a models release and its pin bump. #6944 is clean per Bot-MArley (lab dev-red only because its 10-13 base lacks #7280). chrisuthe dismissed Bot-MArley's approval on #7290 for lack of a hardware test, and OzGav questioned #7256's clear-on-every-reconfigure approach. trudenboy pushed #6948.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -3012,24 +3012,25 @@
    "author": "thelad-dev",
    "url": "https://github.com/music-assistant/server/pull/6944",
    "draft": false,
-   "verdict": "almost",
-   "assessment": "comment",
-   "status": "waiting",
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "attention",
    "attention_since": null,
    "size": "M",
    "code": "+120/-1",
    "add": 601,
    "del": 1,
    "ci_fail": false,
-   "ci": "All green on 306c090ad (lint, pytest 1-3/3, provider-scope, test).",
+   "ci": "green",
    "core_touched": true,
    "providers_touched": [],
    "merge_state": "merge-tree clean on origin/dev d42078eb9; review required, no auto-merge",
-   "head_sha": "306c090ad",
+   "head_sha": "da0a24fab",
    "tldr": "thelad-dev fixed both Copilot CRITICALs: volume_set errors are now wrapped to PlayerCommandFailed like handle_player_command, and the config reads moved under the VOLUME lock with a race test. Copilot now has 0 inline findings. Side effect: every VOLUME_SET player now waits on its VOLUME lock during register/reconnect while the global register lock is held, even with no pin. Copilot's Previously missed item (no apply on unavailable to available) is real for Chromecast. One small commit plus a reply.",
    "summary": "Delta e2882279a..306c090ad, one commit, controller.py and the pin test file. (1) _apply_native_volume_pin now catches non-MusicAssistantError from player.volume_set and raises PlayerCommandFailed, same pattern as handle_player_command in players/helpers.py. Register and register_or_update keep their MusicAssistantError catch, so device errors no longer abort registration. This resolves our previous blocker and Copilot r4280705863 without touching providers. (2) The CONF_VOLUME_CONTROL and CONF_NATIVE_VOLUME reads moved inside the per-player VOLUME lock, which resolves r4280705925. save_player_config writes storage before calling on_player_config_change, so the recheck sees the new values. get_player_lock is per-task reentrant, so no self-deadlock, and the pin only takes the member lock, so no group/member inversion. The new asyncio test does catch the old ordering: after sleep(0) the old code had already read the pin before blocking. (3) New issue from (2): the early return now happens inside the lock, so every VOLUME_SET player takes its VOLUME lock on each register/register_or_update. Both calls run under the global _register_lock. If a volume command is stuck on that player (likely on a reconnect after a drop), registration of every player waits up to PLAYER_LOCK_TIMEOUT (30s), even though the pin is not configured. GPT Sol flagged the same thing as PROBLEM. Fix: cheap pre-check before the lock, recheck inside (patch below). (4) Pin before set_config: author kept it and replied on the resolved thread r4254688831. Fine. Copilot 06:20Z on 306c090ad: 0 open inline findings, both old threads resolved in its overview (the GitHub threads are still unresolved). Previously missed (1) [CRITICAL]: no pin apply on unavailable to available. Checked: chromecast/player.py sets _attr_available = False at init and flips it in the connection-status handler via update_state, never re-registering. So for Cast the pin is skipped at register and never applied at startup, only on config save while online. Cast into an AVR is a typical setup for this feature, so this is worth fixing in the PR: in signal_player_state_update, when 'available' changed to True on an initialized player, schedule _apply_native_volume_pin as a task that logs errors. The Universal Player item from the last review was not repeated. Our depends_on_value_not = PLAYER_CONTROL_NATIVE suggestion is still unposted. Local tests could not run: the shared .venv has stale models (SortField.FAVORITE_TIMESTAMP missing). CI green. Marvin has not commented on this PR.",
    "blockers": [
-    "Pin only applied on register: players coming back through an availability change (Chromecast, Sonos) never get it; cover that or document it"
+    "Core change (players controller), so you approve",
+    "Lab dev-red: slim-1 playback_resumes on a 10-13 base without #7280; a rebase should clear it"
    ],
    "findings": [
     {
@@ -3082,7 +3083,7 @@
    },
    "backport": null,
    "prompt": "Act on music-assistant/server PR #6944 (https://github.com/music-assistant/server/pull/6944, head 306c090ad, by thelad-dev, optional native volume pin, core: constants.py, controllers/config/players.py, controllers/players/controller.py). Post nothing on GitHub without Marvin's OK. State: the latest commit wraps volume_set errors into PlayerCommandFailed and moved the config reads under the VOLUME lock, which fixes both earlier Copilot CRITICALs. New issue: every VOLUME_SET player now waits on its VOLUME lock during register/register_or_update while the global _register_lock is held, even with no pin. Copilot's 06:20Z review also lists a Previously missed CRITICAL: no pin apply on unavailable to available, which is real for Chromecast (registers unavailable, becomes available via update_state). A patch for the lock issue is in the card (suggested_fix). With Marvin's OK, post this PR comment:\n\n> [!NOTE] This comment was written by Claude on Marvin's behalf\n\nThanks, the error wrapping and the recheck under the lock both look right. One side effect: the config reads now sit inside the VOLUME lock, so every VOLUME_SET player waits on that lock on each register/reconnect while the global _register_lock is held, even with no pin set. A stuck volume command on one player can then stall all registrations for up to 30s. Please keep a cheap pre-check before the lock (return if no active pin) and keep the recheck inside it. Also, Copilot's Previously missed item on availability is real: Chromecast registers unavailable and only becomes available through update_state, so the pin is never applied at startup. Applying it on the unavailable to available transition in signal_player_state_update (as a task, errors logged) would cover Cast and Sonos reconnects.",
-   "whats_new": "First Bot-MArley review: one open point from the earlier review.",
+   "whats_new": "thelad-dev re-applies the pin when a player comes back available (debounced). Bot-MArley: that resolves its open point.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-16 08:45 CEST",
    "auto_approved": null,
@@ -3092,24 +3093,24 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "thelad-dev: re-apply the pin on availability changes",
-   "changed_now": "",
+   "waiting_on": "you: approve (core); rebase for a clean lab run",
+   "changed_now": "pushed",
    "marley": {
-    "verdict": "changes",
+    "verdict": "approved",
     "reviewed_head": true,
     "open_threads": 0,
-    "review_url": "https://github.com/music-assistant/server/pull/6944#pullrequestreview-5696235511",
-    "note": "Open point: the pin is only applied on register, not on an unavailable-to-available transition (Chromecast/Sonos).",
+    "review_url": "https://github.com/music-assistant/server/pull/6944",
+    "note": "Comment on the new head: the availability-transition point is resolved.",
     "recheck_head": "306c090ad"
    },
    "lab": {
-    "head": "306c090ad",
+    "head": "da0a24fab",
     "areas": [
      "players"
     ],
     "result": "dev-red",
-    "run_id": "20261029-082302-51d4",
-    "note": "players slim-1 playback_resumes, the known slim pause flake (fix in your draft #7280); base 10-13"
+    "run_id": "20261029-130326-ac5b",
+    "note": "slim-1 playback_resumes: the slim pause flake #7280 fixed on dev today; the branch (base 10-13) lacks it. Rebase before rerunning"
    }
   },
   {
@@ -3505,7 +3506,7 @@
     "web_kiosk"
    ],
    "merge_state": "merge-tree clean on origin/dev d42078eb9; review required, no auto-merge",
-   "head_sha": "257e3ae8b",
+   "head_sha": "5ea518ed4",
    "tldr": "v1.1.0 drops ENQUEUE and plays core's flow stream, which removes the provider's own successor logic and with it the seek-to-end bug (Copilot r4302797493 resolved, page clamp verified, server seeks now safe via flow). Copilot is clean on the head. New: Repeat One leaves the page clock stuck at the end. The 9 older PROBLEMs and the maintainer question remain. Not ready.",
    "summary": "Delta b852cf2f7..257e3ae8b (v1.1.0, +894/-1285): the kiosk drops PlayerFeature.ENQUEUE, so core serves queue media as one /flow/ stream. Removed: the /flow/ to /single/ rewrite, enqueue_next_media, start_enqueued_media, QueueWalk, playback_reached_end and the short-end detection; a browser 'ended' now just reports IDLE. play_media checks resolve_stream_url to set serves_flow. refresh_stream rebuilds the flow at the queue's item and position via cmd_seek with resume_position(). New PlaybackClaim replaces transport_mark/still_plays/take_over_output (GPT Sol found no ownership or pause bug in it). _publish_flow_item sends title, duration and a stream-clock start (queue elapsed minus stream elapsed x speed; GPT Sol confirmed the formula) when the queue's item changes inside the flow. Closing a page that got the current play message rebuilds the flow for the remaining pages. web.js caps seekToSong at floor(dur) - end_margin from the welcome message, clamps its clock to the song duration, and reports position every 2 s. Effect on old findings: fixed or gone are the seek-to-end CRITICAL, the /flow/ rewrite limitation (crossfade and overlays now apply), one-item Repeat All, paused successor resume_pos, radio jumping to the next item, end report during the snapshot seek, and the short complete file stopping the queue. The failed-playback teardown is downgraded to SUGGESTION since there are no enqueue tasks now. The other 9 PROBLEMs are untouched. New PROBLEM: Repeat One (and one-item Repeat All) never sends a new media message, so the page clock and lyrics stay at the end.",
    "blockers": [
@@ -3714,7 +3715,7 @@
    },
    "backport": null,
    "prompt": "Context: music-assistant/server PR #6948 (trudenboy, 'Add Web Kiosk browser player provider', head 257e3ae8b, provider v1.1.0, XL, ready for review since 18:44Z, CI green except the pending Dependency Security Review, clean against origin/dev 1dfa0929d, Copilot clean on the head). v1.1.0 drops PlayerFeature.ENQUEUE so core serves the kiosk a /flow/ stream; the provider's own successor logic is gone and the seek-to-end CRITICAL (Copilot r4302797493) is resolved: the page caps seeks at length minus END_MARGIN and server seeks go through core's flow. New PROBLEM from GPT Sol, confirmed: in _publish_flow_item (http_server.py:453) Repeat One keeps the same queue_item_id and generation, so no media message is sent for later passes and the page clock and lyrics stay at the end. Still open from earlier reviews: socket reconnect after HTML5 fallback re-enables Sendspin (web.js connectWS), muted kiosk plays Sendspin after reload, fallback holds the playback lock across a universal group resume, late old-socket close misses the HTML5 move, /ws ownership proves the Sendspin key not the kiosk, sendspinStreaming not restored after stream/clear, on_protocol_player_updated re-asserts Sendspin without an equality guard, universal_player internals coupling, MA credentials over plain HTTP on 8098. Plus the maintainer decision on shipping a second HTTP server and kiosk UI in server. The card's suggested_fix patch covers mute and announcement lyrics. Task: help Marvin decide on the design question, then draft a short review comment listing the Repeat One clock bug and the remaining PROBLEMs. Any comment must start with '> [!NOTE] This comment was written by Claude on Marvin's behalf'. Post nothing on GitHub without Marvin's OK.",
-   "whats_new": "First Bot-MArley review: two security requests on the kiosk port.",
+   "whats_new": "trudenboy pushed 5ea518ed4 at 12:52Z, presumably for the two kiosk-port requests; Bot-MArley hasn't reviewed it yet and CI is pending.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-17 21:30 CEST",
    "auto_approved": null,
@@ -3730,14 +3731,14 @@
     "summary": "The Web Kiosk page runs outside the MA frontend with no login, targets old browsers (ES2015, Chromium 53+) on tablets, kiosks and smart TVs, works with a TV remote, uses Sendspin when the browser supports it and plain HTML5 audio otherwise. Positions it next to FullyKiosk and MSX."
    },
    "reporter_reply": null,
-   "waiting_on": "trudenboy: QR auth + API allowlist",
-   "changed_now": "",
+   "waiting_on": "Bot-MArley (new head 12:52Z)",
+   "changed_now": "pushed",
    "marley": {
-    "verdict": "changes",
-    "reviewed_head": true,
+    "verdict": "none",
+    "reviewed_head": false,
     "open_threads": 2,
     "review_url": "https://github.com/music-assistant/server/pull/6948#pullrequestreview-5696315819",
-    "note": "2 requests: the Party QR routes leak the guest join URL without auth; POST /api forwards any JSON-RPC command on every kiosk interface.",
+    "note": "New head 12:52Z; too recent to recheck this run.",
     "recheck_head": "257e3ae8b"
    },
    "lab": {
@@ -14793,7 +14794,7 @@
    "stacked": false,
    "tldr": "Down to about 30 lines of logic: reconfigure now unloads the instance, clears its cache through a public MusicController.clear_provider_cache, then reloads it. The private-key import and the non-atomic snapshot rewrite are gone. But exclude_category=1 keeps everything any provider stores in category 1, including Tidal's personalised pages and Overcast's OPML. The combined search cache also survives, and both are open Copilot CRITICALs on the head. A 10-line patch fixes both.",
    "summary": "The delta drops the race guards (listing generations, cancelling flight tasks by name, unloading checks in use_cache and recommendation_payload) and accepts that a lost race serves old data until it expires. What is left: _finish_provider_reconfigure calls unload_provider, then clear_provider_cache, then load_provider_config, and any error restores the old setup_data. clear_provider_cache runs cache.clear(provider LIKE '%id%', persistent = 0, category != 1), deletes the persistent recommendations payload, and drops every library:// listing. Verified: 2302 tests pass across tests/controllers/cache, config, music and tests/models/test_recommendation_payload.py. The problem is that CACHE_CATEGORY_PREV_LIBRARY_IDS = 1 is not reserved. At least 17 providers use category 1 for their own data: Tidal recommendation pages (personalised, keyed by page path), Overcast OPML (the account's subscriptions), Audible and Storytel audiobooks, gpodder sync state, opensubsonic podcast channels, Pandora feedback and Apple Music decrypt keys. Excluding the whole category keeps all of that across an account switch. A scratch repro through the reconfigure flow confirms it: a category-1 'pages/home' entry survives. Combined search results are cached under provider 'music' and survive as well (confirmed). They are dropped at the next sync completion or after SEARCH_CACHE_EXPIRATION_COMBINED. Fix: keep only the snapshot keys (media type values) in category 1, and delete category 10 for 'music'. Both are in suggested_fix, and 2283 cache/config/music tests pass with it. The rest is unchanged from last time and low impact. The LIKE '%id%' match also hits airplay_receiver, hass_players, spotify_connect and sendspin_* when airplay, hass, spotify or sendspin is reconfigured, but the substring is what removes the 'id://...' listing keys, and the cost is one refetch. The clear also runs for every reconfigure (about 70 providers with run_setup, any reason). If cache.clear itself fails, the provider stays unloaded with the old credentials restored. The PR has a test for the credentials but none for a reload. Without the guards, an in-flight old-instance listing fill or use_cache call can still write after the clear. The window is a request's duration, and the author accepted it.",
-   "whats_new": "Out of draft: the private key import, non-atomic rewrite and listing-generation CRITICAL are fixed by trimming the clear to the account switch. The critical gate drafted it at ~06:25Z on Copilot's new CRITICALs.",
+   "whats_new": "OzGav worries the approach is wrong: a reconfigure is often a re-login with the same account, and this throws away the whole provider cache each time.",
    "blockers": [
     "Keeping all of cache category 1 keeps 17 providers' account data (Tidal pages, Overcast subscriptions); 10-line patch in suggested_fix",
     "Combined search results survive the switch",
@@ -14891,7 +14892,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": ""
+   "changed_now": "commented"
   },
   {
    "repo": "server",
@@ -15286,7 +15287,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 10:15 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "marley": {
     "verdict": "none",
     "reviewed_head": false,
@@ -16921,7 +16922,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "f3b6141b8",
    "tldr": "The bookmarks that MA stores itself work, are kept per user and copy, and pass their tests. The provider-stored half has no provider using it yet, and as written it lists account-wide bookmarks as the user's own and strands MA rows once a provider gains edit support. All three of fmunkes' open PRs bump the API schema 99 to 100, so whichever merges second needs a re-bump.",
-   "changed_now": "pushed",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -17094,7 +17095,7 @@
    "auto_approved": null,
    "add": 0,
    "del": 0,
-   "attention_since": "2026-10-29T06:30:00Z",
+   "attention_since": null,
    "findings": [
     {
      "model": "Claude",
@@ -17125,7 +17126,7 @@
    "copilot_reviewed_head": true,
    "copilot_note": "Approval recommended on 849fbbefa.",
    "summary": "Detection: the PR catches UpnpActionResponseError around the pause calls. async_upnp_client raises that only for a SOAP fault returned with an HTTP status, with any UPnP error code (701 and 501 are typical here). Timeouts and connection errors are UpnpCommunicationError/UpnpConnectionTimeoutError, which the except does not catch. They still go to catch_request_errors as before, so a renderer that pauses slowly is never stopped. Possible false positive: 701 also comes back when the device is TRANSITIONING or already PAUSED/STOPPED (stale MA state). Then the device is stopped instead of ignoring the pause. The user asked for the sound to stop, so this is acceptable.\n\nPosition: queue.pause captures queue.resume_pos before it calls _handle_cmd_pause, and the stop works like the existing replace_pause_with_stop option. Next play takes the resume path from that position. With #7289 that path is not involved, because the queue is no longer PAUSED. Only user pause paths reach DLNA pause() (players.cmd_pause, queue.pause); no announcement or internal flow relies on a real pause there. Like the existing option, the device-level stop leaves the queue session open rather than going through _stop_player_or_its_queue. That is unchanged behaviour.\n\nConflicts with #7273 on dev (as the author notes). It does not conflict with #7289.",
-   "whats_new": "New.",
+   "whats_new": "chrisuthe dismissed Bot-MArley's approval at 12:19Z: not tested on real hardware.",
    "core_touched": false,
    "providers_touched": [
     "dlna"
@@ -17135,10 +17136,9 @@
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "clean",
    "assessment": "approve",
-   "verdict": "ready",
+   "verdict": "almost",
    "blockers": [
-    "Same author as the five PRs you closed at 08:16Z for no hardware verification; this one isn't verified on hardware either",
-    "Pick after #7273, which edits the same pause() lines"
+    "chrisuthe dismissed Bot-MArley's approval: needs a test on real hardware before merging"
    ],
    "draft": false,
    "repo": "server",
@@ -17146,21 +17146,21 @@
    "url": "https://github.com/music-assistant/server/pull/7290",
    "title": "Stop DLNA renderers that refuse to pause instead of leaving them playing",
    "author": "GoatsAndMonkeys",
-   "status": "attention",
-   "waiting_on": "you: close like the others, or keep for a reporter test",
+   "status": "waiting",
+   "waiting_on": "GoatsAndMonkeys: real-hardware test",
    "size": "S",
    "code": 27,
    "ci": "green",
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "849fbbefa",
    "tldr": "When a DLNA renderer answers Pause with a UPnP fault, the PR now stops it, the same as replace_pause_with_stop, instead of only logging the error. A renderer that pauses slowly is not affected, because timeouts are not caught. Queue resume picks up at the paused position.",
-   "changed_now": "",
+   "changed_now": "commented",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
     "open_threads": 0,
     "review_url": "https://github.com/music-assistant/server/pull/7290#pullrequestreview-5689557116",
-    "note": "Thanks @GoatsAndMonkeys, looks good to me :raised_hands: Auto-approved: no issues found, the change is scoped to a single provider, and checks are green.",
+    "note": "Approval dismissed by chrisuthe (no real-hardware test).",
     "recheck_head": null
    }
   },
@@ -17677,7 +17677,7 @@
    "assessment": "request_changes",
    "verdict": "not_ready",
    "blockers": [
-    "Needs models#452 released (ListeningTimeItem.item); CI red until then",
+    "models#452 merged: needs a models release and the pin bump in this PR",
     "No Bot-MArley review on the new head; recheck posted"
    ],
    "draft": false,
@@ -17687,7 +17687,7 @@
    "title": "Return the artist with each listening time result",
    "author": "stvncode",
    "status": "waiting",
-   "waiting_on": "stvncode: models PR for ListeningTimeItem.item, checklist",
+   "waiting_on": "models release, then stvncode: pin bump",
    "size": "S",
    "code": 43,
    "ci": "red (lint, pytest 2/3: needs models#452 released)",
@@ -17836,7 +17836,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "a2f3ca86c",
    "tldr": "Setup errors for custom ListenBrainz servers are now specific and translated, and they log the URL. 401/403 now fail permanently as a bad token instead of retrying. Tests pass, and the new ones fail on dev.",
-   "changed_now": "merged",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -18322,8 +18322,8 @@
   {
    "repo": "models",
    "number": 452,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-29T12:52:53Z",
    "url": "https://github.com/music-assistant/models/pull/452",
    "title": "Add the artist to listening time results",
    "author": "stvncode",
@@ -18332,7 +18332,7 @@
    "assessment": "approve",
    "status": "attention",
    "attention_since": "2026-10-29T09:48:29Z",
-   "waiting_on": "you: approve, then release for server#7283",
+   "waiting_on": "merged",
    "size": "S",
    "code": 4,
    "ci": "green",
@@ -18363,7 +18363,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-29 11:00 CET",
-   "changed_now": "",
+   "changed_now": "merged",
    "suggested_fix": null,
    "marley": {
     "verdict": "approved",
