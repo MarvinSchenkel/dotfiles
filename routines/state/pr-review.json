@@ -2286,6 +2286,7 @@
    "tldr": "No new code of its own: 618d38432 only merges #6802's ba4cd6c21 (hidden-source library playlist is a plain miss without its name). Proven: the sorted +/- lines against the dev merge-base change exactly as in #6802's delta. CI green, no conflict. Copilot's 05:48Z review on b026d8cc9 had no open issues; the re-review on 618d38432 requested 06:14Z has not landed. GPT Sol finds nothing in the merged fix. Still open and never posted: select_source lets a restricted user point their player at any queue and read it (patch below, still applies). set_members without a player access check stays a follow-up.",
    "summary": "Delta b026d8cc9..618d38432: one merge commit (parents b026d8cc9 and ba4cd6c21) of impersonation-reads-basic, nothing else. Checked by diffing the sorted +/- lines of git diff $(git merge-base origin/dev X) X for b026d8cc9 and 618d38432: the 26 added lines are identical to the change in #6802 from 40590f856 to ba4cd6c21 (playlists.py _get_visible_library_item plus its test); merge-base with dev is the same (4a380c19d). git diff b026d8cc9 618d38432 touches only playlists.py (+4/-1) and test_read_visibility.py (+21). The fix is reviewed on #6802; GPT Sol found nothing. Copilot 05:20Z on 1c8b81da5 and 05:48Z on b026d8cc9: no open issues, only the standing note that it needs human security review. All review threads are resolved. Our select_source finding from 10-15 is still present (controller.py unchanged) and was not in your 12:27Z review; patch passes git apply --check on 618d38432. API_SCHEMA_VERSION stays 98 -> 99 against dev 98.",
    "blockers": [
+    "Lab red until rerun on an updated branch (failures look like a stale base, not proven)",
     "Stacked on #6802 (base impersonation-reads-basic), which conflicts with dev",
     "Open autoplay-refill comment on player_queues/controller.py needs your decision"
    ],
@@ -2377,9 +2378,9 @@
      "players",
      "queue"
     ],
-    "result": "dev-red",
+    "result": "red",
     "run_id": "20261029-110346-f96c",
-    "note": "slim-1 playback_resumes (the known slim pause flake) and snap-1 advances: the branch predates the #7250 fix on dev. Rebase before rerunning"
+    "note": "Unverified, not dev-red: dev passes these checks today, the branch is just older than the fixes. Update the branch and rerun. Was: slim-1 playback_resumes (the known slim pause flake) and snap-1 advances: the branch predates the #7250 fix on dev. Rebase before rerunning"
    }
   },
   {
@@ -3029,6 +3030,7 @@
    "tldr": "thelad-dev fixed both Copilot CRITICALs: volume_set errors are now wrapped to PlayerCommandFailed like handle_player_command, and the config reads moved under the VOLUME lock with a race test. Copilot now has 0 inline findings. Side effect: every VOLUME_SET player now waits on its VOLUME lock during register/reconnect while the global register lock is held, even with no pin. Copilot's Previously missed item (no apply on unavailable to available) is real for Chromecast. One small commit plus a reply.",
    "summary": "Delta e2882279a..306c090ad, one commit, controller.py and the pin test file. (1) _apply_native_volume_pin now catches non-MusicAssistantError from player.volume_set and raises PlayerCommandFailed, same pattern as handle_player_command in players/helpers.py. Register and register_or_update keep their MusicAssistantError catch, so device errors no longer abort registration. This resolves our previous blocker and Copilot r4280705863 without touching providers. (2) The CONF_VOLUME_CONTROL and CONF_NATIVE_VOLUME reads moved inside the per-player VOLUME lock, which resolves r4280705925. save_player_config writes storage before calling on_player_config_change, so the recheck sees the new values. get_player_lock is per-task reentrant, so no self-deadlock, and the pin only takes the member lock, so no group/member inversion. The new asyncio test does catch the old ordering: after sleep(0) the old code had already read the pin before blocking. (3) New issue from (2): the early return now happens inside the lock, so every VOLUME_SET player takes its VOLUME lock on each register/register_or_update. Both calls run under the global _register_lock. If a volume command is stuck on that player (likely on a reconnect after a drop), registration of every player waits up to PLAYER_LOCK_TIMEOUT (30s), even though the pin is not configured. GPT Sol flagged the same thing as PROBLEM. Fix: cheap pre-check before the lock, recheck inside (patch below). (4) Pin before set_config: author kept it and replied on the resolved thread r4254688831. Fine. Copilot 06:20Z on 306c090ad: 0 open inline findings, both old threads resolved in its overview (the GitHub threads are still unresolved). Previously missed (1) [CRITICAL]: no pin apply on unavailable to available. Checked: chromecast/player.py sets _attr_available = False at init and flips it in the connection-status handler via update_state, never re-registering. So for Cast the pin is skipped at register and never applied at startup, only on config save while online. Cast into an AVR is a typical setup for this feature, so this is worth fixing in the PR: in signal_player_state_update, when 'available' changed to True on an initialized player, schedule _apply_native_volume_pin as a task that logs errors. The Universal Player item from the last review was not repeated. Our depends_on_value_not = PLAYER_CONTROL_NATIVE suggestion is still unposted. Local tests could not run: the shared .venv has stale models (SortField.FAVORITE_TIMESTAMP missing). CI green. Marvin has not commented on this PR.",
    "blockers": [
+    "Lab red until rerun on an updated branch (failures look like a stale base, not proven)",
     "You asked to drop the setting + core hooks and fix it in squeezelite: store last volume/mute without expiry (persistent or a config value like AirPlay's CONF_STORED_VOLUME)",
     "Bot-MArley asks what was tested on real hardware"
    ],
@@ -3108,9 +3110,9 @@
     "areas": [
      "players"
     ],
-    "result": "dev-red",
+    "result": "red",
     "run_id": "20261029-130326-ac5b",
-    "note": "slim-1 playback_resumes: the slim pause flake #7280 fixed on dev today; the branch (base 10-13) lacks it. Rebase before rerunning"
+    "note": "Unverified, not dev-red: dev passes these checks today, the branch is just older than the fixes. Update the branch and rerun. Was: slim-1 playback_resumes: the slim pause flake #7280 fixed on dev today; the branch (base 10-13) lacks it. Rebase before rerunning"
    },
    "fix_thread": "t3-thread://v1/mcp:bbbd6d56-5a59-45f3-be84-4ff6e3410d00"
   },
@@ -7247,6 +7249,7 @@
    "summary": "45c6ed175 fixes the announcement overwrite (2) with an early return in on_player_elapsed_time_corrected, and the cross-track paused correction (3, Copilot) in playback_tracker. Both are confirmed by probes and by the PR's own tests. The tracker change is safe for other players and also fixes a dev leak of the previous item's played time into the next item. The CRITICAL non-flow regression (1) is still there: the PLAYING-jump rewrite still runs outside flow mode and drops the outgoing track's played report at every gapless change (re-reproduced, dev is fine). Our previous patch still applies, but its players/controller.py announcement guard is now redundant. The rebased patch keeps the flow_mode guard and the Alexa stale-report stamp, each with a regression test (1257 passed). Core: Core is now 32 lines: 28 in player_queues/controller.py and 4 in playback_tracker.py. Marvin still has to sign off on the scope. (a) The announcement guard is correct and mirrors on_player_update. (b) The playback_tracker change applies to all players and is safe. When the queue is not PLAYING, the item only changes with a matching elapsed_time: either from the player's own report (PAUSED, read together with the item), or from MA's play_index/next/previous, which reset elapsed_time, or from restoring the cached item. The outgoing item is still reported from prev_state with its own time, so no played time is lost. It also stops the previous item's played time from carrying over to the new item's resume position and paused progress report, which dev does today, for example after a skip while paused on a non-flow player. (c) The flow index move is fine for other flow players, as last round. (d) The PLAYING-jump rewrite of resume_pos/last_playing still regresses every non-flow player at a gapless track change. Limiting it to flow mode (the one-line fix in the patch) is the remaining core change this PR needs.",
    "whats_new": "nyakaspeter pushed 45c6ed175 (11:12Z) and marked it ready at 12:39Z. Copilot 12:39Z: Needs a closer look, no open threads.",
    "blockers": [
+    "Lab red until rerun on an updated branch (failures look like a stale base, not proven)",
     "Core scope: 32 lines in player_queues (controller + tracker). Accept here or ask for a split",
     "f1 core CRITICAL (reproduced again): a non-flow track change wipes the outgoing item's played time for every non-flow player. `fix 7143` pushes the flow_mode guard plus the stale-report check (adds 2 tests, needs your OK)",
     "f2: the PLAYING blip on every pause is still the mechanism behind the resume fix: your call"
@@ -7322,9 +7325,9 @@
     "areas": [
      "queue"
     ],
-    "result": "dev-red",
+    "result": "red",
     "run_id": "20261029-081803-b7e6",
-    "note": "queue snap-1 advances: the branch (base 10-21) predates the #7250 fix on dev. Rebase before rerunning"
+    "note": "Unverified, not dev-red: dev passes these checks today, the branch is just older than the fixes. Update the branch and rerun. Was: queue snap-1 advances: the branch (base 10-21) predates the #7250 fix on dev. Rebase before rerunning"
    }
   },
   {
@@ -9460,11 +9463,11 @@
    "author": "OzGav",
    "url": "https://github.com/music-assistant/server/pull/7193",
    "draft": false,
-   "verdict": "ready",
+   "verdict": "almost",
    "assessment": "approve",
    "status": "attention",
    "attention_since": "2026-10-25T14:36:00Z",
-   "waiting_on": "you: approve",
+   "waiting_on": "OzGav: update the branch, then a lab rerun",
    "gpt_sol": "clean",
    "size": "M",
    "code": 108,
@@ -9481,6 +9484,7 @@
    "summary": "The shared UA reaches every path the PR claims. It is used by the default aiohttp session (with the aiohttp/Python suffix), by HTTP_HEADERS (radio resolve, ICY, HLS, raw Shoutcast socket, mp3 seek probe through ffmpeg_http_headers), by ffmpeg get_ffmpeg_args, probe_audio_stream and the overlay mixer, and by ffprobe/ffmpeg in tags (parse_tags, get_file_duration, embedded image) and ai_radio rendering. The ffmpeg probe and the aiohttp pre-checks see the same UA because HTTP_HEADERS and the -user_agent default are the same constant. Caller UAs win in both places: _sets_user_agent skips on -user_agent or a User-Agent inside -headers, which matches ffmpeg_http_headers' precedence, so headers are neither duplicated nor overwritten. The UA-after-extra-args ordering would be wrong if a caller brought its own '-f ... -i url', but the only '-f' caller is concat with a local input_path, so that can't happen. Provider review: MusicBrainz and Wikipedia get the identical string they had before. LRCLIB (name, version, homepage) and Radio Browser now send a more descriptive UA. Deezer gw, Tidal play reporting, YT Music, Apple Music, Pandora, NetEase, Zvuk and MusicCast keep their custom UAs and only gained comments. Bose was moved to the new UA and confirmed on device by fmunkes. Podcastfeed's browser UA came from #2455, which was the same Buzzsprout host; the author tested the new UA live against it. Residual risk: HTTP_HEADERS changes from 'Lavf/60.16.100.MusicAssistant' (#1193) to the MA UA for every radio/HTTP stream. Any host that allowlists Lavf would now differ, but the author tested 33 streams including HLS. The one gap is concat multi-part http parts, which still send Lavf. That is the same as on dev, and the concat demuxer's per-file option directive fixes it (verified).",
    "whats_new": "New 14:36Z on 10-25. Copilot: Approval recommended.",
    "blockers": [
+    "Lab red until rerun on an updated branch (failures look like a stale base, not proven)",
     "Your approve (core helpers); optional follow-up: concat streams still send Lavf"
    ],
    "findings": [
@@ -9560,9 +9564,9 @@
      "queue",
      "streams"
     ],
-    "result": "dev-red",
+    "result": "red",
     "run_id": "20261029-081424-1663",
-    "note": "slim-1 in_sync, snap-1 advances and sendspin-1 overlaps (the last passed on rerun) on a 10-24 base without #7250/#7264/#7276. Rebase before rerunning"
+    "note": "Unverified, not dev-red: dev passes these checks today, the branch is just older than the fixes. Update the branch and rerun. Was: slim-1 in_sync, snap-1 advances and sendspin-1 overlaps (the last passed on rerun) on a 10-24 base without #7250/#7264/#7276. Rebase before rerunning"
    }
   },
   {
@@ -13345,6 +13349,7 @@
    "summary": "transfer_queue now runs under get_playback_locks(source, target, strict=True). That covers the #6779 race where play_index/resume/stop on either queue interleaved with a transfer. _transfer_ad_hoc_leadership holds both leaders through transfer, regroup and resume. The new primitive adds a process-wide turn lock, a bypass for tasks that already hold a playback lock, a retry loop when ownership changed during the wait, and an early-release callable. Earlier CRITICALs r4389512413, r4389512498, r4392794816 and r4392794907 are fixed on 6442a5071. The bypass reopens the inversion the turn exists to prevent: a transfer that planned [a, c] while a was standalone holds a and waits for c, while a cmd_ungroup(c) that got c first hands leadership to a (now a member after a concurrent join), skips the turn and waits for a. With scaled timeouts the repro ends with both waiting the full strict timeout and the transfer raising ResourceBusyError. In production that is 120 s, with every other transfer queued behind the turn. The turn also leaves out other nested two-chain acquirers such as stream_feeder._stop_paused_slot_holder, which runs inside a play action. Each review round has found a new interleaving, so the design itself is fragile rather than any one line. Holding one chain at a time (source phase, then target phase, each through the existing handle_play_action) gives the same protection against play actions without hold-and-wait across chains, so no turn, bypass, replan loop or release callable is needed.",
    "whats_new": "Out of draft at 13:11Z; mnestrud tagged you about the README paragraph. Reviewed for the first time.",
    "blockers": [
+    "Lab red until rerun on an updated branch (failures look like a stale base, not proven)",
     "Copilot CRITICAL r4395432985 is real (reproduced): a transfer and a leadership handover each hold a lock the other wants, until the 120 s timeout fails the transfer",
     "GPT Sol: a second deadlock against cmd_set_members powering on a member with auto-play",
     "Design: a global turn plus an in-turn bypass, the fourth deadlock fix in three commits. A two-phase transfer (source lock, then target lock, via handle_play_action) drops most of the 163 lines"
@@ -13458,9 +13463,9 @@
      "players",
      "queue"
     ],
-    "result": "dev-red",
+    "result": "red",
     "run_id": "20261029-081038-4836",
-    "note": "players slim-1 playback_resumes (the known slim pause flake, your draft #7280) and queue snap-1 advances: the branch predates #7250, which fixed that on dev. Rebase before rerunning"
+    "note": "Unverified, not dev-red: dev passes these checks today, the branch is just older than the fixes. Update the branch and rerun. Was: players slim-1 playback_resumes (the known slim pause flake, your draft #7280) and queue snap-1 advances: the branch predates #7250, which fixed that on dev. Rebase before rerunning"
    }
   },
   {
