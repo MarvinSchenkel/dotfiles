@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-29T07:00:00+01:00",
+ "last_run": "2026-10-29T08:00:00+01:00",
  "dev": "7a59e9b96",
- "run_note": "Overnight: OzGav merged #7270 after the reporter tested it on a WiiM Ultra; #7009, #7156, #7281 and #7284 merged too. GoatsAndMonkeys opened 6 more streamer PRs; per OzGav's device-test rule I held auto-approval on #7285, #7286 and #7290. fmunkes reworked #7209 and #7170 as you asked and opened bookmarks (#7292 + models#451). I merged client#332 (models pin). Copilot's poll workflow is off, so I requested it by hand on 18 PRs.",
+ "run_note": "Quiet hour, no new commits. Copilot's reviews from the hand requests landed: the critical gate drafted #7209, #7220, #7256, #7273, #7288, #7291 and #7292, and #7271, #7285, #7287, #7290 and #7297 got Approval recommended. OzGav declined Copilot's short-listen finding on #7293; fmunkes defended the cover cap on #7170.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -4292,7 +4292,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "merged",
-   "changed_now": "merged",
+   "changed_now": "",
    "gpt_sol": "2 problems (same as Opus)"
   },
   {
@@ -8102,7 +8102,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-23 10:00 CEST",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -9392,7 +9392,7 @@
    "title": "Let the sleep timer stop at the end of the current item or chapter",
    "author": "fmunkes",
    "url": "https://github.com/music-assistant/server/pull/7209",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "attention",
@@ -9412,7 +9412,7 @@
    "stacked": false,
    "tldr": "The rework does what Marvin asked: the queue owns the target, stops on the per-second position check, and expires_at is only a UI estimate. Two gaps remain. An announcement on a standalone player goes through _handle_stop and silently drops the item/chapter timer before playback resumes, and an END_OF_ITEM stop still cuts early when the real audio runs longer than the metadata duration. CI is red only because models#448 is not released.",
    "summary": "c177921bec moves the END_OF_ITEM/END_OF_CHAPTER target onto PlayerQueueData as a SleepTimerTarget (mode, queue_item_id, stop_position). PlaybackTrackerMixin._handle_sleep_timer runs on every queue update. _poll_players triggers one per second for every playing player through a 0.5 s debounce, so players that report rarely are still covered through corrected_elapsed_time. It stops when the target item reaches stop_position, and it also stops when the item changes or restarts within 5 s of the stop (enqueue-ahead players and device repeat). Any other item change re-pins, as a device skip. On IDLE it stops, and when the queue goes inactive it clears. _get_next_index returns None for the target on a natural advance (is_skip still moves on), which also covers repeat-one, crossfade and the flow stream. play_index re-pins on every MA next/previous/seek/resume and now also refreshes playback_speed. _handle_stop and mark_ended clear the target, as asked (this covers the 30 s pause auto-stop). _stop_for_sleep_timer clears first so next_item comes back, and _handle_end_of_queue then sees a mid-queue stop instead of the end of the queue. The flow stream that ends through the gate is torn down by the _handle_stop session clear before _resume_on_idle's 1 s + 1 s check. The players controller keeps the API, the duration call_later and sleep_timer_mode. update_sleep_timer_expires_at only publishes the estimate, with a 1 s jitter guard. The cross-controller update_sleep_timer, sleep_timer_ends_item and the MSX change are gone. Switching to DURATION or cancelling drops the target and hands the player its next item again. Sync members are redirected to the playback owner, and every queue keeps its own target. Like the duration timer, nothing is persisted across a restart, and a queue transfer does not carry the timer along. Accuracy: the stop lands 0 to ~1.5 s after the stop point (1 s poll plus 0.5 s debounce, more in media time above 1x speed), which fits Marvin's '±1 s is fine'. In flow mode the stream index gives the position, so the same check applies. Transitional idles during play_index don't count, because on_player_update ignores reports while the queue is transitioning or an announcement is in progress. The previous review's 30 s pause finding is now intended behaviour per Marvin's 'clear on any stop'. The previous stale-duration finding is half addressed: overshoot is handled by the 5 s natural-end margin, undershoot is not. API_SCHEMA_VERSION 99 -> 100 is correct on its own, but #7170 and #7292 make the identical bump (see finding).",
-   "whats_new": "fmunkes reworked it the way you asked: the queue owns the target and stops on the position check.",
+   "whats_new": "fmunkes reworked it the way you asked: the queue owns the target and stops on the position check. The critical gate drafted it at ~06:25Z on Copilot's new CRITICALs.",
    "blockers": [
     "Announcements on players without native announce clear the item/chapter timer, so the book plays on after a night-time TTS",
     "GPT Sol CRITICAL: stopping a single audiobook at a chapter in flow mode can still trigger end-of-queue handling",
@@ -9494,13 +9494,16 @@
    "unaddressed_comments": [],
    "copilot": {
     "green": false,
-    "comments": 0,
-    "findings": 0,
+    "comments": 2,
+    "findings": 2,
     "review_url": "https://github.com/music-assistant/server/pull/7209",
-    "titles": []
+    "titles": [
+     "CRITICAL: clearing the target only avoids end-of-queue when there's another item (matches GPT Sol)",
+     "CRITICAL: restart check matches ordinary forward playback of short items"
+    ]
    },
-   "copilot_reviewed_head": false,
-   "copilot_note": "Last review 8e00de97d 🔵 Needs a closer look; requested on bf13a9c34 by hand (poll workflow is off), no open threads.",
+   "copilot_reviewed_head": true,
+   "copilot_note": "Changes recommended on bf13a9c34: 2 CRITICALs.",
    "suggested_fix": {
     "description": "Keep the target across the announcement stop (resume re-pins it), and leave item ends to the next-item gate instead of the snapshotted duration.",
     "patch": "--- a/music_assistant/controllers/player_queues/controller.py\n+++ b/music_assistant/controllers/player_queues/controller.py\n@@ async def _handle_stop\n-    async def _handle_stop(self, queue_id: str) -> None:\n+    async def _handle_stop(self, queue_id: str, keep_sleep_timer: bool = False) -> None:\n@@\n-        # a stop ends what a sleep timer waited for\n-        self._clear_sleep_timer(queue_id)\n+        # a stop ends what a sleep timer waited for, an announcement resumes into it\n+        if not keep_sleep_timer:\n+            self._clear_sleep_timer(queue_id)\n--- a/music_assistant/controllers/players/announcements.py\n+++ b/music_assistant/controllers/players/announcements.py\n@@\n-                await self.mass.player_queues._handle_stop(active_queue.queue_id)\n+                await self.mass.player_queues._handle_stop(\n+                    active_queue.queue_id, keep_sleep_timer=True\n+                )\n--- a/music_assistant/controllers/player_queues/state.py\n+++ b/music_assistant/controllers/player_queues/state.py\n class SleepTimerTarget(NamedTuple):\n     mode: SleepTimerMode\n     queue_item_id: str\n     stop_position: float\n+    # the item end: the next-item gate ends it, its duration can be off\n+    ends_item: bool = False\n--- a/music_assistant/controllers/player_queues/playback_tracker.py\n+++ b/music_assistant/controllers/player_queues/playback_tracker.py\n@@\n         if new_state[\"state\"] == PlaybackState.PLAYING and (\n-            queue.corrected_elapsed_time >= target.stop_position\n+            (not target.ends_item and queue.corrected_elapsed_time >= target.stop_position)\n             or (left_target_end and queue.corrected_elapsed_time < SLEEP_TIMER_NATURAL_END_MARGIN)\n         ):\n(set ends_item=stop_position >= float(queue_item.duration) where set_sleep_timer_target and _repin_sleep_timer build the target)"
@@ -9518,9 +9521,9 @@
    "related_prs": [
     "models#448"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": "reviewed"
+   "changed_now": "copilot"
   },
   {
    "repo": "models",
@@ -9608,7 +9611,7 @@
    "stacked": false,
    "tldr": "Both your asks are done: a series with some books finished shows in progress, and the query keeps only 3 covers (listing 43.6 ms vs 41.5 on dev). GPT Sol notes that limiting before the visibility filter can show fewer than 3 covers; the author chose that on purpose.",
    "summary": "b5abef0d65 changes two things. (1) in_progress is now `MAX(COALESCE(fully_played,0) OR COALESCE(resume_position_ms,0) > 0) AND NOT MIN(COALESCE(fully_played,0))`, so it is true when any book in scope is started or finished and not every book is finished. Precedence is right (`>` binds before OR), NULL progress rows are coalesced, and a new test case covers 'Gamma': book 1 finished, book 2 untouched gives (fully_played False, in_progress True). (2) The covers aggregate takes ROW_NUMBER() OVER (PARTITION BY collection_title, has_thumb ORDER BY the sequence order) and keeps json_group_array(images) only for has_thumb AND cover_rank <= COLLECTION_COVER_COUNT, so at most 3 books' images per collection leave SQLite. The sequence ORDER BY is shared between the window and the subquery ORDER BY that feeds json_group_array, so the covers and media_data stay in collection order (test_collection_order_follows_the_sequence covers listing, get_collection and covers). Python then drops thumbs the viewer can't be shown, so a stack can now show fewer than 3 covers. The test was updated to show exactly that (1 instead of 3), and the code comment states the trade-off. SQL cost, measured with a throwaway benchmark (3200 audiobooks in 800 series, 4 images each, page of 50, 10 runs): the unfiltered collapsed listing takes 41.5 ms on dev, 61.4 ms on the previous PR head fb056d82 and 43.6 ms now, so the cover cap took back the earlier cost. With a view filter the scope CTE still aggregates every series in scope: favorites-only takes 0.2 ms on dev (nothing in view) against 22.8 ms before and 25.1 ms now. That is bounded by the unfiltered listing and is a single query with no N+1. The rest of the PR is unchanged since the last review: statistics over scope_table, MediaCollectionMetadata from models 1.1.231 (already the dev pin), and the duration sort on the scope total.",
-   "whats_new": "fmunkes did both your asks (partly finished series shows in progress, 3 covers in the query; listing back to 43.6 ms).",
+   "whats_new": "fmunkes answered Copilot's cover-cap thread: the cap sits in the query at your request, so a hidden cover among the first three shrinks the stack. Thread resolved.",
    "blockers": [
     "Core change, no auto-approval",
     "API_SCHEMA_VERSION 100 is also bumped by #7209 and #7292; whoever lands second bumps by hand"
@@ -9654,7 +9657,7 @@
     "titles": []
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "🟡 Changes recommended on 3a32aeb61, no open threads.",
+   "copilot_note": "Changes recommended on 3a32aeb61; its cover-cap thread is answered and resolved.",
    "suggested_fix": null,
    "prompt": "",
    "backport": {
@@ -9669,9 +9672,9 @@
    "related_prs": [
     "models#444"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": "reviewed"
+   "changed_now": "commented"
   },
   {
    "repo": "models",
@@ -11112,7 +11115,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 09:00 CET",
-   "changed_now": "commented"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -11577,7 +11580,7 @@
    "title": "Update Yandex Music Connect (Ynison) provider to v4.4.11: Ynison",
    "author": "trudenboy",
    "url": "https://github.com/music-assistant/server/pull/7220",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "attention",
@@ -11599,7 +11602,7 @@
    "stacked": false,
    "tldr": "v4.4.11 fixes all three Copilot CRITICALs from the last round, and no Copilot thread is open. Our replay finding is half fixed: v4.4.10 handles our own Next racing the natural end, but a reconnect during the RADIO refill or a peer append during reconnect still streams the finished track again from 0. The new peer-status revision adds one more way to reach that replay.",
    "summary": "Delta 17f7a4762..1f5b22413 (v4.4.11), provider and tests only. The dev merge in between adds nothing to the provider. (1) seed_start now seeds only when restart_reason is None, so a pending restart at 0 ms keeps its position and reason (Copilot r4402866110). (2) NavigationBaseline gets peer_status_revision. _parse_state bumps it when a non-relay status comes from another device under a new status version while the frame leaves player_queue unchanged. _matches_baseline compares it, so a peer seek or pause that lands while completion waits for the lock or reconnect supersedes the completion (r4402866339). Own progress reports, relays, own edit echoes that republish a retained peer status (same version) and peer option edits (queue changed) do not bump it. The tests cover each of these. (3) _confirmed_queue_version now advances only after the obsolete-own-echo check, so a rejected echo of navigation N cannot confirm it before N+1 is adopted (r4402866387). All three are correct as far as I can trace. (4) Standing finding, rerun at 1f5b22413. v4.4.10 already sends a superseded completion with a pending own navigation to that navigation's echo (pending_navigation_baseline), so probe_own_next_stream.py and probe_own_next_race.py now pass. probe_superseded_replay.py still fails on both cases (peer append during reconnect, reconnect during RADIO refill), streaming [t1, t1]. The SUPERSEDED branch is still `pass`. (5) The new revision makes one more path reach that branch. A peer status that bumps the revision but that _activate_playback does not treat as a seek requests no restart, and the loop replays the finished track from 0. Two examples are a status that arrives inside the post-reconnect settle window, which _handle_ynison_state skips, and a drift under 3 s. A real peer seek on the finished track does request a restart (drift is large because our position is at the track end), so that case follows the seek correctly. The new test parses the frame on the client alone, so it proves only the superseded outcome, not what plays next. (6) I rewrote the suggested patch. The own-navigation branch of the old patch is now redundant. The new patch retries completion once only when the finished item is still current, playback is unpaused on the same device, no restart or stop is pending, and navigation_version and peer_status_revision are unchanged, so it never overrides a peer seek or our own Next. With it, the suite (542) and all 5 probes pass. Without it, 2 probes fail. One known limit: if a peer replaces the queue with one whose current item is the same track at the same index and requests no restart, the retry advances past it. That is rarer than the replay it fixes. (7) The branch is 5 commits behind origin/dev 7a59e9b96, none of which touch the provider. No core files are touched.",
-   "whats_new": "trudenboy pushed v4.4.11 and took it out of draft: all 3 prior Copilot CRITICALs fixed, 542 tests pass.",
+   "whats_new": "trudenboy pushed v4.4.11 and took it out of draft: all 3 prior Copilot CRITICALs fixed, 542 tests pass. The critical gate drafted it at ~06:25Z on Copilot's new CRITICALs.",
    "blockers": [
     "Our replay finding is only half fixed: a reconnect during the RADIO refill still streams [t1, t1], and a new peer-status path replays the finished track; rewritten patch at /tmp/prr/r0700x/d7220/fix.patch",
     "4 open Copilot threads"
@@ -11673,14 +11676,14 @@
     "findings": 4,
     "review_url": "https://github.com/music-assistant/server/pull/7220",
     "titles": [
-     "[CRITICAL] After Next publishes navigation but before its echo arrives, `_sync_progress()` can still publish t",
-     "[CRITICAL] A peer seek or pause during RADIO replenishment leaves `expected_generation` unchanged, so `go_to_i",
-     "[CRITICAL] Explicit local seeks do not invalidate this baseline: `_on_seek()` sends a status and requests a de",
-     "[CRITICAL] When Next has published index 1 but its echo is pending, a peer option-only update for the retained"
+     "CRITICAL: _sync_progress publishes before Next's echo",
+     "CRITICAL: peer seek/pause during RADIO refill keeps expected_generation",
+     "CRITICAL: local seeks don't invalidate the baseline",
+     "CRITICAL: peer option-only update while Next's echo is pending"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "🟡 Changes recommended on 1f5b22413, 4 open thread(s).",
+   "copilot_note": "Changes recommended on 1f5b22413: 4 new CRITICALs.",
    "suggested_fix": {
     "description": "Replaces the r1700z patch, whose own-navigation branch v4.4.10 made redundant. It retries completion once when a reconnect or peer queue edit superseded it but left the finished item current. A changed peer_status_revision or navigation_version blocks the retry, so a peer seek or our own Next is never overridden. git apply --check passes on 1f5b22413. Suite (542) and 5 probes pass.",
     "patch": "diff --git a/music_assistant/providers/yandex_ynison/provider.py b/music_assistant/providers/yandex_ynison/provider.py\nindex b17489ae70..5baaeffc4c 100644\n--- a/music_assistant/providers/yandex_ynison/provider.py\n+++ b/music_assistant/providers/yandex_ynison/provider.py\n@@ -587,6 +587,11 @@ class YandexYnisonProvider(PluginProvider):\n                         # Our own Next left this item before its end; follow that\n                         # navigation instead of advancing past the item it chose.\n                         completion, baseline = NavigationOutcome.CHANGE, pending\n+                    elif completion == NavigationOutcome.SUPERSEDED and self._finished_item_kept(\n+                        track_id, baseline\n+                    ):\n+                        # A reconnect or peer queue edit kept the finished item; advance once more.\n+                        completion = await self._signal_track_completion()\n                     if completion == NavigationOutcome.RESTART:\n                         playback.request_restart(0, RestartReason.REPEAT, grace=False)\n                     elif completion == NavigationOutcome.SUPERSEDED:\n@@ -724,6 +729,21 @@ class YandexYnisonProvider(PluginProvider):\n         self.logger.info(\"No new track from Ynison after completion, stopping stream\")\n         return False\n \n+    def _finished_item_kept(self, track_id: str, baseline: NavigationBaseline) -> bool:\n+        \"\"\"Return whether a superseded completion left the finished item current and playing.\"\"\"\n+        if not (client := self._ynison) or client.state.current_track_id != track_id:\n+            return False\n+        latest = client.navigation_baseline()\n+        return (\n+            not self._playback.restart_requested()\n+            and not self._playback.stop_requested()\n+            and not latest.paused\n+            and latest.playable_id == baseline.playable_id\n+            and latest.active_device_id == baseline.active_device_id\n+            and latest.peer_status_revision == baseline.peer_status_revision\n+            and latest.navigation_version == baseline.navigation_version\n+        )\n+\n     async def _stream_track(\n         self,\n         track_id: str,\n"
@@ -11696,9 +11699,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": "reviewed"
+   "changed_now": "copilot"
   },
   {
    "repo": "server",
@@ -14196,7 +14199,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 07:30 CET",
-   "changed_now": "commented"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -14296,7 +14299,7 @@
    "title": "Clear a provider's cache after it is reconfigured",
    "author": "GoatsAndMonkeys",
    "url": "https://github.com/music-assistant/server/pull/7256",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "waiting",
@@ -14316,7 +14319,7 @@
    "stacked": false,
    "tldr": "Down to about 30 lines of logic: reconfigure now unloads the instance, clears its cache through a public MusicController.clear_provider_cache, then reloads it. The private-key import and the non-atomic snapshot rewrite are gone. But exclude_category=1 keeps everything any provider stores in category 1, including Tidal's personalised pages and Overcast's OPML. The combined search cache also survives, and both are open Copilot CRITICALs on the head. A 10-line patch fixes both.",
    "summary": "The delta drops the race guards (listing generations, cancelling flight tasks by name, unloading checks in use_cache and recommendation_payload) and accepts that a lost race serves old data until it expires. What is left: _finish_provider_reconfigure calls unload_provider, then clear_provider_cache, then load_provider_config, and any error restores the old setup_data. clear_provider_cache runs cache.clear(provider LIKE '%id%', persistent = 0, category != 1), deletes the persistent recommendations payload, and drops every library:// listing. Verified: 2302 tests pass across tests/controllers/cache, config, music and tests/models/test_recommendation_payload.py. The problem is that CACHE_CATEGORY_PREV_LIBRARY_IDS = 1 is not reserved. At least 17 providers use category 1 for their own data: Tidal recommendation pages (personalised, keyed by page path), Overcast OPML (the account's subscriptions), Audible and Storytel audiobooks, gpodder sync state, opensubsonic podcast channels, Pandora feedback and Apple Music decrypt keys. Excluding the whole category keeps all of that across an account switch. A scratch repro through the reconfigure flow confirms it: a category-1 'pages/home' entry survives. Combined search results are cached under provider 'music' and survive as well (confirmed). They are dropped at the next sync completion or after SEARCH_CACHE_EXPIRATION_COMBINED. Fix: keep only the snapshot keys (media type values) in category 1, and delete category 10 for 'music'. Both are in suggested_fix, and 2283 cache/config/music tests pass with it. The rest is unchanged from last time and low impact. The LIKE '%id%' match also hits airplay_receiver, hass_players, spotify_connect and sendspin_* when airplay, hass, spotify or sendspin is reconfigured, but the substring is what removes the 'id://...' listing keys, and the cost is one refetch. The clear also runs for every reconfigure (about 70 providers with run_setup, any reason). If cache.clear itself fails, the provider stays unloaded with the old credentials restored. The PR has a test for the credentials but none for a reload. Without the guards, an in-flight old-instance listing fill or use_cache call can still write after the clear. The window is a request's duration, and the author accepted it.",
-   "whats_new": "Out of draft: the private key import, non-atomic rewrite and listing-generation CRITICAL are fixed by trimming the clear to the account switch.",
+   "whats_new": "Out of draft: the private key import, non-atomic rewrite and listing-generation CRITICAL are fixed by trimming the clear to the account switch. The critical gate drafted it at ~06:25Z on Copilot's new CRITICALs.",
    "blockers": [
     "Keeping all of cache category 1 keeps 17 providers' account data (Tidal pages, Overcast subscriptions); 10-line patch in suggested_fix",
     "Combined search results survive the switch",
@@ -14391,12 +14394,12 @@
     "findings": 2,
     "review_url": "https://github.com/music-assistant/server/pull/7256",
     "titles": [
-     "[CRITICAL] Category `1` also holds Tidal's personalized recommendation pages (`providers/tidal/recommendations",
-     "[CRITICAL] Combined `music/search` results are cached under `provider=\"music\"` (see `search()`), so neither cl"
+     "CRITICAL: category 1 holds Tidal's personalised pages",
+     "CRITICAL: combined music/search results survive"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "🟡 Changes recommended on d3fd20089, 2 open thread(s).",
+   "copilot_note": "Changes recommended on d3fd20089: both CRITICALs match Opus.",
    "suggested_fix": {
     "description": "Keep only the library snapshot keys in category 1 (new exclude_keys on CacheController.clear) and drop the combined search results. Fixes both open Copilot CRITICALs. 2283 cache/config/music tests pass, plus a scratch repro with a category-1 page and a combined search entry.",
     "patch": "diff --git a/music_assistant/controllers/cache/controller.py b/music_assistant/controllers/cache/controller.py\nindex 81c1c66692..7fdacc0b86 100644\n--- a/music_assistant/controllers/cache/controller.py\n+++ b/music_assistant/controllers/cache/controller.py\n@@ -5,7 +5,7 @@ from __future__ import annotations\n import asyncio\n import os\n import time\n-from collections.abc import AsyncGenerator, Mapping\n+from collections.abc import AsyncGenerator, Collection, Mapping\n from contextlib import asynccontextmanager\n from pathlib import Path\n from typing import TYPE_CHECKING, Any\n@@ -348,6 +348,7 @@ class CacheController(CoreController):\n         provider_filter: str | None = None,\n         include_persistent: bool = False,\n         exclude_category: int | None = None,\n+        exclude_keys: Collection[str] | None = None,\n     ) -> None:\n         \"\"\"Clear all/partial items from cache.\"\"\"\n         assert self.database is not None\n@@ -356,7 +357,10 @@ class CacheController(CoreController):\n         if category_filter is not None:\n             query_parts.append(f\"category = {category_filter}\")\n         if exclude_category is not None:\n-            query_parts.append(f\"category != {exclude_category}\")\n+            # with exclude_keys, only those keys of the category are kept\n+            keys = \", \".join(f\"'{key}'\" for key in exclude_keys or ())\n+            key_part = f\" AND key IN ({keys})\" if keys else \"\"\n+            query_parts.append(f\"NOT (category = {exclude_category}{key_part})\")\n         if provider_filter is not None:\n             query_parts.append(f\"provider LIKE '%{provider_filter}%'\")\n         if key_filter is not None:\ndiff --git a/music_assistant/controllers/music/controller.py b/music_assistant/controllers/music/controller.py\nindex 323fe5e638..c323be23b6 100644\n--- a/music_assistant/controllers/music/controller.py\n+++ b/music_assistant/controllers/music/controller.py\n@@ -543,9 +543,16 @@ class MusicController(MusicDatabaseSetupMixin, CoreController):\n         :param provider_instance: The provider instance id.\n         \"\"\"\n         await self.mass.cache.clear(\n-            provider_filter=provider_instance, exclude_category=CACHE_CATEGORY_PREV_LIBRARY_IDS\n+            provider_filter=provider_instance,\n+            exclude_category=CACHE_CATEGORY_PREV_LIBRARY_IDS,\n+            # providers keep their own data in this category too (e.g. Tidal's pages)\n+            exclude_keys=[media_type.value for media_type in MediaType],\n         )\n         await self.mass.cache.delete(RECOMMENDATION_PAYLOAD_CACHE_KEY, provider=provider_instance)\n+        # combined search results hold the instance's items as well\n+        await self.mass.cache.delete(\n+            None, category=CACHE_CATEGORY_SEARCH_RESULTS, provider=self.domain\n+        )\n         # the library's listings are assembled from the provider's items too\n         await self.mass.cache.clear(\n             category_filter=CACHE_CATEGORY_LISTINGS, provider_filter=\"library://\"\ndiff --git a/tests/controllers/config/test_setup_flows.py b/tests/controllers/config/test_setup_flows.py\nindex f13919e186..fb071ea4fe 100644\n--- a/tests/controllers/config/test_setup_flows.py\n+++ b/tests/controllers/config/test_setup_flows.py\n@@ -146,6 +146,7 @@ async def flow_mass(mass_minimal: MusicAssistant) -> AsyncGenerator[MusicAssista\n     )\n     # the real implementation, as a reconfigure clears the instance's cache through it\n     mass_minimal.music.mass = mass_minimal\n+    mass_minimal.music.domain = MusicController.domain\n     mass_minimal.music.clear_provider_cache = MethodType(\n         MusicController.clear_provider_cache, mass_minimal.music\n     )"
@@ -14412,9 +14415,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": "reviewed"
+   "changed_now": "copilot"
   },
   {
    "repo": "server",
@@ -15275,15 +15278,15 @@
     "findings": 3,
     "review_url": "https://github.com/music-assistant/server/pull/7273",
     "titles": [
-     "7273 r4404772325  Bot-MArley This is a lot of state (stuck-position detection, pause clock, seek flags, two ti",
-     "[CRITICAL] A URI change clears the detection flags but leaves the fallback clock intact when the renderer repo",
-     "[CRITICAL] If a stopped renderer reports a cached position of 200 and then starts playback reporting a fixed 0"
+     "CRITICAL: URI change keeps the fallback clock",
+     "CRITICAL: cached stopped position 200 then playback",
+     "Bot-MArley: a lot of state for one device family"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "🟡 Changes recommended on 9b2ff31d9, 3 open thread(s).",
+   "copilot_note": "Changes recommended on 9b2ff31d9: 2 CRITICALs (the first is Opus's track-change finding).",
    "summary": "The PR went from 227 lines and 9 state fields to 72 lines and 2 fields (_first_position, _position_moved). Until the reported position moves on the current track, it is adopted once. After that MA's own clock runs: a pause holds it, a resume continues it, IDLE resets it to 0. Once the position moves, the renderer is followed exactly as on dev. Verified: 51 DLNA tests pass, and 6 of the new tests fail on dev's player.py. I added scratch repros with the PR's own helpers. A normal renderer paused outside MA at 20 s, noticed at 40 s and then updated again while paused stays at 20 and reads 30 ten seconds after the resume (the old head showed 40, then 50). A backward seek to 5 while paused shows 5 and then 9. A 0.5 s pause on a 0/None renderer continues correctly. A stop starts over at 0 (PR test). The only window left for a normal renderer is before its second distinct report. It needs a pause in the same second as the first report and is not realistic. One rule changed since the last head: _playing_since is no longer reset on a URI change. In non-flow mode (gapless enqueue, not the DLNA default) a stuck-at-0 renderer that moves to the next URI by itself is read from the event. No GetPositionInfo poll runs then, so the 00:00:00 stamp is the last poll's, up to 30 s old. It is adopted with that anchor and never re-read, so the whole track runs ahead (repro: 35 s shown after 10 s). For a renderer reporting None the clock simply carries on from the previous track; Copilot's open CRITICAL at :182 is the same gap. seek() does not move MA's clock either, so a non-flow seek on a stuck renderer is lost. In flow mode a seek goes through play_media and resets everything. Both cases are no worse than dev, which re-anchors 0 at every poll, but the PR now owns the clock for these renderers. Copilot's other open CRITICAL (:669, a cached 200 at STOPPED followed by a fixed 0) cannot happen for MA-started playback, because play_media resets both fields, and a stuck renderer reports 0 while stopped too. Also: the reset now fires when the device reports an empty URI (the previous head required a non-empty one), and that restarts the stuck clock at 0. CI and Copilot: 2 open Copilot CRITICAL threads on 9b2ff31d9.",
-   "whats_new": "Simplified to the 'never moved' rule we suggested (227 to 72 lines) and out of draft. All the old problems are fixed.",
+   "whats_new": "Simplified to the 'never moved' rule we suggested (227 to 72 lines) and out of draft. All the old problems are fixed. The critical gate drafted it at ~06:25Z on Copilot's new CRITICALs.",
    "blockers": [
     "Track change no longer resets _playing_since: a stuck renderer runs up to 30 s ahead for the whole next track (flow mode off); 9-line patch in suggested_fix",
     "3 open Copilot threads incl. the CRITICAL at :182 (same bug)"
@@ -15295,7 +15298,7 @@
    "ci_fail": false,
    "title": "Keep the DLNA position across a pause on renderers that don't report one",
    "author": "GoatsAndMonkeys",
-   "draft": false,
+   "draft": true,
    "verdict": "almost",
    "assessment": "comment",
    "status": "waiting",
@@ -15307,9 +15310,9 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "9b2ff31d9",
    "tldr": "The rewrite to a 'position never moved since play_media' rule fixes the old regression: a normal renderer paused outside MA now stays at its real pause point. Pause, resume and stop work, and so does a backward seek while paused, on both normal and LinkPlay-style renderers. Two non-flow gaps remain: after a gapless track change a stuck renderer can run up to a poll interval (30 s) ahead for the whole track, and a seek is ignored. A 9-line patch fixes both, along with Copilot's open CRITICAL on the URI change.",
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": "reviewed"
+   "changed_now": "copilot"
   },
   {
    "repo": "server",
@@ -15464,7 +15467,7 @@
    "tldr": "Opts WiimPlayer into _attr_trusts_reported_source, so a switch to TV/Optical/Phono/Aux In replaces the remembered MA queue as active source.\nSafe: the source list leaves out Network, which is the input MA streams on; airplay/spotify/bluetooth/line_in were already in EXTERNAL_SOURCES.\nQueue goes inactive (active_source not in (queue_id, None)) and the stream feeder aborts, same path Sonos/Chromecast/Bluesound/Raumfeld use.\nTests pass (240). The only Copilot thread was about the description, it's fixed and resolved. Can be auto-approved.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 13:00 CET",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "client",
@@ -15575,7 +15578,7 @@
     "titles": []
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "🟢 Approval recommended on fec84206f, no open threads.",
+   "copilot_note": "Approval recommended on fec84206f.",
    "summary": "MA seeks on WiiM always go through play_index/play_media with a stream that starts at the seek offset, so the device's position restarts at 0 for each handover. In the wiim 0.3.1 SDK, current_media.uri comes from the AVTransportURIMetaData event, which echoes MA's own DIDL right after SetAVTransportURI. current_media.position is _current_position, which only changes on a GetPositionInfo RelTime read (integer seconds, clamped at >= 0), a RelativeTimePosition/A_ARG_TYPE_SeekTarget event, or not at all when RelTime is missing. So the new URI shows up next to the old stream's position, exactly as the PR describes, and the existing _ma_stream_uri guard (end-of-stream check) let it through. The new guard is _ma_stream_sent = (url, monotonic), set just before async_play and dropped when async_play fails or on seek(). A position is ignored while it is larger than time since handover plus 2 s. A real reading can't trip it: the stream starts at 0, a pause only lowers the position against the clock, and RelTime truncates down. The guard ends at the first plausible reading that is not at the stream's end and is either nonzero or PLAYING at 0. That covers both Copilot CRITICALs (the 1 s stream at its end, and PLAYING at 0 followed by an app seek), and each has a test. The only path that can still be blocked is a WiiM Home app seek forward while the stream is still loading, before any accepted reading. That is a sub-second window and it self-heals as time passes. A stale reading of 2 s or less (a seek within ~2 s of the previous handover) still gets through and ends the guard, so the error there is at most 2 s. Followers read the leader's state and have no guard of their own. Gapless enqueue changes the URI away from the guarded one, so it is unaffected. elapsed is only written in _sync_position, so no other path bypasses the guard. stop() keeps _ma_stream_sent on purpose (test_stopped_stream_still_loading_keeps_its_start_position). Copilot threads are answered, with fixes in ab304ec4d and fec84206f.",
    "whats_new": "Out of draft, reviewed for the first time. Copilot: Approval recommended.",
    "core_touched": false,
@@ -15601,9 +15604,9 @@
     "GPT Sol: a seek from the WiiM app before MA accepts its first report gets rejected for minutes (time check runs before the playing check)",
     "OzGav's rule on #7270: test on a real device or have the reporter test the branch before merging"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": "new"
+   "changed_now": "copilot"
   },
   {
    "state": "merged",
@@ -15970,7 +15973,7 @@
     "GPT Sol: no test for the task's own counter bump",
     "Your own PR, so another maintainer approves"
    ],
-   "changed_now": "closed"
+   "changed_now": ""
   },
   {
    "state": "open",
@@ -16012,13 +16015,13 @@
     "titles": []
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "🟢 Approval recommended on 85cee3030, no open threads.",
+   "copilot_note": "Approval recommended on 85cee3030.",
    "summary": "Renames parse_quoted_stream_title to parse_station_stream_title and adds a third format: split on '~', and with at least 4 fields read artist, title, album from fields 0-2 (each through multi_strip). It is checked after the English/German quoted patterns, so those keep priority. It affects both clean_stream_title (any title without title=/artist= keywords, so ICY, Ogg in-band and HLS display titles) and the ICY structured parse in streams/audio.py. Other streams: decorative titles such as '~~~ Radio XYZ ~~~' and station-only RadioMediaset idle lines ('R101~~~~~') still return None, because artist or title is empty, and behave as before. A false positive needs 3+ '~' with real text in the first two fields, e.g. 'Artist - Song ~ Live ~ 2020 ~ Remaster' now reads as artist 'Artist - Song', title 'Live'. That is unlikely in real ICY data. The Ogg/HLS paths pass artist/title separately, so only their display string could change. Nothing else imports the old name (grepped music_assistant and tests). No security concern.",
    "whats_new": "New.",
    "core_touched": true,
    "providers_touched": [],
    "ci_fail": false,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "clean",
    "assessment": "approve",
@@ -16040,7 +16043,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "85cee3030",
    "tldr": "Small, contained parser addition for RadioMediaset '~' titles. Other stations only change if their title has three or more '~' and a non-empty first and second field, which is rare. Tests pass.",
-   "changed_now": "new"
+   "changed_now": "copilot"
   },
   {
    "state": "open",
@@ -16169,13 +16172,13 @@
    "copilot_reviewed_head": true,
    "copilot_note": "🟡 Changes recommended on fa9fdb650, 1 open thread(s).",
    "summary": "Adds YoutubeMusicProvider.get_resume_position (reads progressPercentage from get_episode, scales by the cached exact duration from get_track) and on_played (announces a playback via videostatsPlaybackUrl with a random 16-char cpn, then sends watchtime pings with st/et/cmt in seconds at most every 300 s, plus one on pause/stop/finish). Mapping is right: on_played positions are seconds and go out as cmt/et seconds; the read path returns ms (duration*percent*10) with floored percent, so it errs low, and the controller's 'higher position wins' rule (provider timestamp is None) keeps MA's own position whenever MA played further. YouTube's cmt-20 s resume offset is YouTube app behaviour and needs nothing here. Ping rate is fine: one get_song + playback ping per playback start (pause/resume starts a new cpn), one watchtime per 5 min, one at stop; reported_at is stamped before the requests so failures are not retried every 30 s tick. Two contract issues: get_resume_position only converts YTMusicError/RequestException/KeyError/MediaNotFoundError to NotImplementedError, but _run_ytmusic turns YouTube's signed-out page into LoginFailed, which escapes MusicController.get_resume_position's suppress(NotImplementedError) and aborts the episode's queue resolution. And the last commit deliberately skips mark played/unplayed reports, so after 'mark unplayed' (MA deletes its progress row) YouTube's old percentage wins and the episode resumes mid-way instead of from 0.",
-   "whats_new": "New. You verified the branch on 10-28 (pings accepted both ways).",
+   "whats_new": "OzGav declined Copilot's short-listen CRITICAL (under ~30 s only, YouTube rounds to whole percent, MA keeps its own position) and resolved it. Our 2 findings are still unposted.",
    "core_touched": false,
    "providers_touched": [
     "ytmusic"
    ],
    "ci_fail": false,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "0 critical, 3 problems",
    "assessment": "comment",
@@ -16200,7 +16203,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "fa9fdb650",
    "tldr": "Reporting and reading YouTube podcast progress works and is throttled sensibly. Two reachable gaps: a signed-out cookie now makes episode playback fail, and marking an episode unplayed in MA gets overridden by YouTube's old position.",
-   "changed_now": "new"
+   "changed_now": "commented"
   },
   {
    "state": "open",
@@ -16329,19 +16332,23 @@
    },
    "copilot": {
     "green": false,
-    "comments": 0,
-    "findings": 0,
+    "comments": 3,
+    "findings": 3,
     "review_url": "https://github.com/music-assistant/server/pull/7292",
-    "titles": []
+    "titles": [
+     "CRITICAL: an unavailable requested provider instance lets get_provider() substitute another",
+     "Native bookmark edits rejected on items outside the library",
+     "Per-user rows survive account deletion"
+    ]
    },
-   "copilot_reviewed_head": false,
-   "copilot_note": "Last review none; requested on 6e8f8fa58 by hand (poll workflow is off), no open threads.",
+   "copilot_reviewed_head": true,
+   "copilot_note": "Changes recommended on 6e8f8fa58: 1 CRITICAL, 2 PROBLEMs (deleted-user rows matches Opus).",
    "summary": "New bookmarks table (created on startup with CREATE TABLE IF NOT EXISTS, so no DB_SCHEMA_VERSION bump or migration is needed and an older server just ignores the table). Its UNIQUE(user_id, media_type, provider_instance, provider_item_id, start) covers every lookup, so no extra index. Rows are keyed per provider copy, and episode rows carry their podcast copy. The daily _cleanup_database sweep drops rows whose copy left the library. Three commands (music/bookmarks LIBRARY_READ, music/set_bookmark and music/remove_bookmark LIBRARY_WRITE) always scope to get_current_user(), filter by visible_music_sources, and emit BOOKMARKS_UPDATED, which the websocket handler only sends to the owning user. Party guests (no LIBRARY_WRITE) can only read, and start_position on play_media gives them nothing beyond seek. A new table is the right call (playlog/media_progress holds one position per item, and bookmarks are many named positions), and per-copy keying fits the existing pinned-copy resume. The questionable part is the provider-backed storage path (4 ProviderFeatures, 3 MusicProvider methods, write-target refusal). No provider implements it in this PR, and its read and remove semantics don't match the per-user MA path. I'd either drop it until the ABS implementation lands, or fix the two issues below. delete_user also leaves bookmark rows behind.",
-   "whats_new": "New, with models#451.",
+   "whats_new": "New, with models#451. The critical gate drafted it at ~06:25Z on Copilot's new CRITICALs.",
    "core_touched": true,
    "providers_touched": [],
    "ci_fail": true,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "1 critical, 2 problems",
    "assessment": "comment",
@@ -16352,7 +16359,7 @@
     "GPT Sol: bookmark start goes through the resume-position path (0 when duration unknown, minus 500 ms)",
     "API_SCHEMA_VERSION 100 clashes with #7209 and #7170"
    ],
-   "draft": false,
+   "draft": true,
    "repo": "server",
    "number": 7292,
    "url": "https://github.com/music-assistant/server/pull/7292",
@@ -16366,7 +16373,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "6e8f8fa58",
    "tldr": "The bookmarks that MA stores itself work, are kept per user and copy, and pass their tests. The provider-stored half has no provider using it yet, and as written it lists account-wide bookmarks as the user's own and strands MA rows once a provider gains edit support. All three of fmunkes' open PRs bump the API schema 99 to 100, so whichever merges second needs a re-bump.",
-   "changed_now": "new"
+   "changed_now": "copilot"
   },
   {
    "state": "open",
@@ -16472,24 +16479,25 @@
    },
    "copilot": {
     "green": false,
-    "comments": 2,
-    "findings": 2,
+    "comments": 3,
+    "findings": 3,
     "review_url": "https://github.com/music-assistant/server/pull/7291",
     "titles": [
-     "7291 r4406901175  Bot-MArley The fallback in `_resolve_source` enables next/previous for library playback, so ",
-     "7291 r4406901195  Bot-MArley This value is the key matched against the device's `service`/`name`, so renaming "
+     "CRITICAL: disables next/previous and seek for Local Music",
+     "Bot-MArley: keep the fallback for skipping",
+     "Bot-MArley: Radio Paradise key rename"
     ]
    },
-   "copilot_reviewed_head": false,
-   "copilot_note": "Last review none; requested on 27aebad37 by hand (poll workflow is off), 2 open thread(s).",
+   "copilot_reviewed_head": true,
+   "copilot_note": "Changes recommended on 27aebad37: CRITICAL matches Opus's lost-controls finding.",
    "summary": "Since #7221 (merged 10-28, verified on a POWERNODE N330), the LocalMusic service falls through to the generic branch of _resolve_source, which builds a source with can_next_previous=True and can_seek=status.can_seek. This PR adds LocalMusic to PLAYER_SOURCE_MAP with can_next_previous=False and can_seek=False. The players controller checks those flags (cmd_next/cmd_previous raise 'unavailable for this source', cmd_seek raises 'does not support seeking'), so library playback loses working transport controls. It also changes SOURCE_RADIOPARADISE from 'RadioParadise' to 'Radio Paradise'. That string is the lookup key matched against status.input_id, service and name, not a display name (the display name is already 'Radio Paradise'), and the PR gives no reason. Because service now wins over an unmapped input_id, the precedence that #7221 tests also changes. pytest fails two test_source.py cases: the LocalMusic name ('Local Music' vs 'LocalMusic') and input_id precedence ('LocalMusic' vs 'custom-input'). No tests were added. The CI template failure is separate. The author wrote the original provider and may have a device, so the RadioParadise change could reflect real firmware output, but that needs to be stated and shown.",
-   "whats_new": "New.",
+   "whats_new": "New. The critical gate drafted it at ~06:25Z on Copilot's new CRITICALs.",
    "core_touched": false,
    "providers_touched": [
     "bluesound"
    ],
    "ci_fail": true,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "0 critical, 1 problems",
    "assessment": "request_changes",
@@ -16500,7 +16508,7 @@
     "Breaks 2 existing test_source.py tests verified on hardware in #7221",
     "PR checklist unticked (CI red)"
    ],
-   "draft": false,
+   "draft": true,
    "repo": "server",
    "number": 7291,
    "url": "https://github.com/music-assistant/server/pull/7291",
@@ -16514,7 +16522,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "27aebad37",
    "tldr": "Mapping LocalMusic to a fixed source turns off next, previous and seek for BluOS library playback, and it breaks two existing tests from #7221. The PR also quietly renames the Radio Paradise lookup key, which can stop that service from matching. The only visible gain is the label 'Local Music' instead of 'LocalMusic'.",
-   "changed_now": "new"
+   "changed_now": "copilot"
   },
   {
    "state": "open",
@@ -16559,7 +16567,7 @@
     "titles": []
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "🟢 Approval recommended on 849fbbefa, no open threads.",
+   "copilot_note": "Approval recommended on 849fbbefa.",
    "summary": "Detection: the PR catches UpnpActionResponseError around the pause calls. async_upnp_client raises that only for a SOAP fault returned with an HTTP status, with any UPnP error code (701 and 501 are typical here). Timeouts and connection errors are UpnpCommunicationError/UpnpConnectionTimeoutError, which the except does not catch. They still go to catch_request_errors as before, so a renderer that pauses slowly is never stopped. Possible false positive: 701 also comes back when the device is TRANSITIONING or already PAUSED/STOPPED (stale MA state). Then the device is stopped instead of ignoring the pause. The user asked for the sound to stop, so this is acceptable.\n\nPosition: queue.pause captures queue.resume_pos before it calls _handle_cmd_pause, and the stop works like the existing replace_pause_with_stop option. Next play takes the resume path from that position. With #7289 that path is not involved, because the queue is no longer PAUSED. Only user pause paths reach DLNA pause() (players.cmd_pause, queue.pause); no announcement or internal flow relies on a real pause there. Like the existing option, the device-level stop leaves the queue session open rather than going through _stop_player_or_its_queue. That is unchanged behaviour.\n\nConflicts with #7273 on dev (as the author notes). It does not conflict with #7289.",
    "whats_new": "New.",
    "core_touched": false,
@@ -16567,7 +16575,7 @@
     "dlna"
    ],
    "ci_fail": false,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "clean",
    "assessment": "approve",
@@ -16590,7 +16598,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "849fbbefa",
    "tldr": "When a DLNA renderer answers Pause with a UPnP fault, the PR now stops it, the same as replace_pause_with_stop, instead of only logging the error. A renderer that pauses slowly is not affected, because timeouts are not caught. Queue resume picks up at the paused position.",
-   "changed_now": "new"
+   "changed_now": "copilot"
   },
   {
    "state": "open",
@@ -16640,11 +16648,11 @@
     "findings": 1,
     "review_url": "https://github.com/music-assistant/server/pull/7289",
     "titles": [
-     "[PROBLEM] This needs to more clearly describe the issue you're having and what it's fixing: the “What does thi"
+     "Description: clarify what it fixes"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "🟡 Changes recommended on 6452f7d05, 1 open thread(s).",
+   "copilot_note": "Changes recommended on 6452f7d05: only the description thread.",
    "summary": "Root cause confirmed: queue pause goes through players._handle_cmd_pause, which resolves _get_control_target(PAUSE, require_active=True) to the active protocol player. Queue _handle_play called queue_player.play() directly, and ProtocolBackedPlayer.play() only forwards to an external source, so LinkPlay (wiim/linkplay_player.py) and UniversalPlayer shells received a no-op. The PR resolves the same target, with a fallback to queue_player.\n\nPaths checked: native player (Sonos, AirPlay native, Cast) has active_output_protocol 'native', so the target is the player itself and behaviour is unchanged. A group or sync_group player has no active output protocol, so the target is None, it falls back to queue_player, and behaviour is unchanged. Universal/LinkPlay with a DLNA, AirPlay or Chromecast protocol now unpauses that protocol player, exactly as the pause did. A protocol without PAUSE never gets here, because pause fell back to stop and the queue is not PAUSED. Sonos with an AirPlay output linked now unpauses the AirPlay protocol that it paused, which is the consistent choice. The wait now targets the protocol player. The parent also updates (on_protocol_player_updated, 0.25 s debounce), so the description's remark that the queue player 'does not change state' is not quite right, but waiting on the protocol is harmless.\n\nReachability is narrower than the title suggests. The frontend's play button uses players/cmd/play_pause, and players.cmd_play -> _handle_cmd_play already routes a paused player to the control target on dev. Only the player_queues/play and player_queues/play_pause API (for example the Python client's queue_command_play) hit the broken path. It is still a real bug.\n\nDLNA: play() now schedules the same 1 s / 5 s state read-back as skip and seek. For a renderer without events this ends the 5 s wait after about 1 s. For evented renderers it adds two cheap polls.",
    "whats_new": "New.",
    "core_touched": true,
@@ -16652,7 +16660,7 @@
     "dlna"
    ],
    "ci_fail": false,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "clean",
    "assessment": "comment",
@@ -16676,7 +16684,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "6452f7d05",
    "tldr": "Queue play on a paused queue now goes to the same output-protocol player that queue pause went to, so LinkPlay/Universal players resume again. The fallback keeps native and group players on their old path. The DLNA read-back after play is harmless.",
-   "changed_now": "new"
+   "changed_now": "copilot"
   },
   {
    "state": "open",
@@ -16756,17 +16764,17 @@
     "findings": 1,
     "review_url": "https://github.com/music-assistant/server/pull/7288",
     "titles": [
-     "[CRITICAL] A lead-out longer than 60 seconds outlasts the idle-resume watcher in `player_queues/controller.py:"
+     "CRITICAL: a lead-out longer than 60 s outlasts the idle-resume watcher"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "🟡 Changes recommended on 0c2001486, 1 open thread(s).",
+   "copilot_note": "Changes recommended on 0c2001486: the CRITICAL matches Opus's 60 s window suggestion.",
    "summary": "At the end of a forced_content_length flow stream, _finish_flow_stream now holds the idle connection for (sum of flow_mode_stream_log seconds_streamed - player.corrected_elapsed_time) + 8 s, capped at 180 s, and polls once a second to release early on a new session, a stop (session_id cleared) or shutdown (mass.closing is set at the start of mass.stop). The arithmetic is the same stream-time vs player-position mapping the playback tracker uses for flow mode, so it holds for crossfade and playback speed. Without a position it keeps the old 8 s.\n\nOther players: only flow streams with http profile forced_content_length go through this. That is Bluesound (forced), Chromecast, Yandex Station and Samsung WAM (default 3), plus any player a user switched to profile 3. Sonos, HEOS, DLNA, squeezelite, AirPlay, Sendspin and Snapcast are not affected unless reconfigured. A player that is caught up gets the same 8 s as before. WAM sets no elapsed, so it stays on 8 s. Cast underruns at EOF are already treated as idle via flow_stream_finished, so a longer hold does not keep a Cast group 'playing'. A player that does not drop its buffer on close now goes idle up to 8 s later than before (behind + 8 instead of max(behind, 8)). That costs little.\n\nLayer: the hold-open mechanism was added to core for Bluesound in #5408 and is already gated on profile + queue exhausted. There is no provider hook that owns the HTTP response, and 'hold until the player's reported position reaches what was streamed' is not vendor specific. A provider-level fix would have to add a hook for the same number. The change is in the right place.\n\nNot tested on BluOS hardware. It depends on BluOS 'secs' being cumulative over the flow stream. MA's flow-mode queue tracking for Bluesound already depends on that, so the risk is low.",
-   "whats_new": "New.",
+   "whats_new": "New. The critical gate drafted it at ~06:25Z on Copilot's new CRITICALs.",
    "core_touched": true,
    "providers_touched": [],
    "ci_fail": false,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "0 critical, 2 problems",
    "assessment": "comment",
@@ -16776,7 +16784,7 @@
     "1 open Copilot thread",
     "Core streams change; nobody has tested on real Bluesound (support#6872 reporter pending)"
    ],
-   "draft": false,
+   "draft": true,
    "repo": "server",
    "number": 7288,
    "url": "https://github.com/music-assistant/server/pull/7288",
@@ -16790,7 +16798,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "0c2001486",
    "tldr": "The end-of-queue hold now follows how far the player is behind the stream instead of a fixed 8 s, capped at 180 s. Core is the right layer: the lead-out already lives in the streams controller since #5408, and the new rule is generic. Small follow-ups only.",
-   "changed_now": "new"
+   "changed_now": "copilot"
   },
   {
    "state": "open",
@@ -16855,7 +16863,7 @@
     "titles": []
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "🟢 Approval recommended on 658361f47, no open threads.",
+   "copilot_note": "Approval recommended on 658361f47.",
    "summary": "On dev, MAX_CONNECTING_POLLS=2 was sized for the 10 s playback poll (about 20 s), so during the 6 x 0.5 s dynamic polls after a command the third 'connecting' poll returns IDLE after about 1.5 s. Switching to time.monotonic() with a 20 s budget gives the same result at 10 s polls (IDLE on the third poll at t=20) and covers the dynamic window. The trade-off (a stream that never connects shows playing for up to about 20 s) is stated in the description. The grace still spans the 8 s FLOW_STREAM_LEAD_OUT_SECONDS from #5408. Two open points. First, the fix only applies when the player was already PLAYING: play_media() only sets PLAYING and dynamic polling when play_url() answers 'stream'. If a slow player answers 'connecting' to /Play, nothing changes, and no device log shows which one the C700 answers (the 'Set BluOS state to %s' debug line would). Second, _connecting_since is not cleared when the grace runs out. A play()/play_media() before the next poll sets PLAYING optimistically, and the first 'connecting' poll then returns IDLE immediately. I reproduced this in a simulation on the PR head. The old counter had the same flaw, but this PR targets exactly the reconnect-after-command path. Cross-PR note: #7288 (same author, streams lead-out) holds the flow stream up to 180 s and grows the lead-out with player lag. If BluOS reports 'connecting' while it plays out that tail, a fixed 20 s grace would end the queue early again. Review the two together.",
    "whats_new": "New.",
    "core_touched": false,
@@ -16863,7 +16871,7 @@
     "bluesound"
    ],
    "ci_fail": false,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "clean",
    "assessment": "comment",
@@ -16887,7 +16895,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "658361f47",
    "tldr": "The connecting grace becomes 20 seconds of wall time instead of 2 polls, so fast 0.5 s polls after a command no longer flip a slow player to idle. The logic is sound and keeps the old behaviour at the 10 s poll interval. The NAD C700 timing is unsourced and untested on hardware, and a stale timer still makes a retry after a stuck stream go idle at once.",
-   "changed_now": "new"
+   "changed_now": "copilot"
   },
   {
    "state": "open",
@@ -16926,7 +16934,7 @@
     "bluesound"
    ],
    "ci_fail": false,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "clean",
    "assessment": "approve",
@@ -16949,7 +16957,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "dd87a85fd",
    "tldr": "A grouped follower now reads its own mute from /SyncStatus instead of the leader's /Status. This is the same logic Home Assistant ships for BluOS followers, which is decent real-world evidence despite no hardware test here. Tests fail on dev and pass on the PR.",
-   "changed_now": "new"
+   "changed_now": ""
   },
   {
    "state": "open",
@@ -16991,7 +16999,7 @@
     "titles": []
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "🟢 Approval recommended on 4115faa60, no open threads.",
+   "copilot_note": "Approval recommended on 4115faa60.",
    "summary": "pyblu 2.1.0 parses Input.text with attrib.get, so an unnamed input gives text=None and MA built 'Input: None'. home-assistant/core#150991 shows this is a real-device case: the reporter's NAD C399 had one input the user never named, and LouisChrist (pyblu author) fixed HA to fall back to id (HA media_player.py source_list: text, elif id). The PR does the same and adds a URL fallback. The source id (input-<url>) and select_source are unchanged, so only the display name moves. An empty text string also falls back, which is fine. The new test fails on dev (2 of 3 cases show 'Input: None') and passes on the PR.",
    "whats_new": "New.",
    "core_touched": false,
@@ -16999,7 +17007,7 @@
     "bluesound"
    ],
    "ci_fail": false,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "clean",
    "assessment": "approve",
@@ -17021,7 +17029,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "4115faa60",
    "tldr": "Inputs without a text attribute now show their id (then URL) instead of 'Input: None'. This mirrors the fix the pyblu author made in Home Assistant for the same NAD C399 report. Small, tested, clean backport.",
-   "changed_now": "new"
+   "changed_now": "copilot"
   },
   {
    "state": "open",
@@ -17079,7 +17087,7 @@
    "core_touched": true,
    "providers_touched": [],
    "ci_fail": true,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "clean",
    "assessment": "request_changes",
@@ -17102,7 +17110,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "582ede968",
    "tldr": "The server logic is correct, but it builds ListeningTimeItem with an `item` field that no released or open models version has, so the endpoint raises TypeError and pytest/lint are red. That is more than the pre-commit checkbox. Blocked on a models PR that hasn't been opened yet.",
-   "changed_now": "new"
+   "changed_now": ""
   },
   {
    "state": "open",
@@ -17178,16 +17186,15 @@
    },
    "copilot": {
     "green": true,
-    "comments": 2,
-    "findings": 2,
+    "comments": 1,
+    "findings": 1,
     "review_url": "https://github.com/music-assistant/server/pull/7279",
     "titles": [
-     "7279 r4403342062 OUTDATED Bot-MArley A hung or unreachable custom server raises `TimeoutError` (the 30s reques",
-     "7279 r4404134207  Bot-MArley A 401/403 from a proxy or auth layer in front of a self-hosted server would perma"
+     "Bot-MArley: a 401/403 from a proxy would permanently fail setup (same as ours)"
     ]
    },
    "copilot_reviewed_head": true,
-   "copilot_note": "🟢 Approval recommended on a2f3ca86c, 2 open thread(s).",
+   "copilot_note": "Approval recommended on a2f3ca86c; Bot-MArley's 403 thread is open.",
    "summary": "_validate_token now maps 401/403 to InvalidToken (core translation 'invalid_token', and mass.load_provider does not retry it), 404 to a translated SetupFailedError 'endpoint_not_found', and ClientConnectionError/TimeoutError to a translated 'connection_failed'. Other ClientError and JSON ValueError keep the generic message. Warnings log api_base_url (or the full validate URL on 404), never the token. strings.json and en.json agree (scripts.build_translations --check passes), and the base URL description now says not to include /1. The behaviour change: a 401/403 used to be a retried SetupFailedError and is now a permanent auth error the user must fix. That is right for a real token rejection, but a reverse proxy 403 (Authelia, Cloudflare) in front of a self-hosted Maloja/Koito would also read as 'token rejected' and stop retrying. Public ListenBrainz returns 200 with valid:false for a bad token, which is unchanged. The old default-URL unreachable test was replaced by a custom-URL parametrized one, so coverage is kept. Each failed setup now logs twice, the provider warning plus the core 'Error loading provider' warning on every retry.",
    "whats_new": "New.",
    "core_touched": false,
@@ -17195,7 +17202,7 @@
     "listenbrainz_scrobble"
    ],
    "ci_fail": false,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "0 critical, 1 problems",
    "assessment": "comment",
@@ -17219,7 +17226,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "a2f3ca86c",
    "tldr": "Setup errors for custom ListenBrainz servers are now specific and translated, and they log the URL. 401/403 now fail permanently as a bad token instead of retrying. Tests pass, and the new ones fail on dev.",
-   "changed_now": "new"
+   "changed_now": "copilot"
   },
   {
    "state": "open",
@@ -17245,11 +17252,11 @@
    "copilot_reviewed_head": false,
    "copilot_note": "",
    "summary": "",
-   "whats_new": "",
+   "whats_new": "Copilot and a Bot-MArley comment landed on models#451.",
    "core_touched": false,
    "providers_touched": [],
    "ci_fail": false,
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "reviewed with server#7292",
    "assessment": "comment",
@@ -17269,7 +17276,7 @@
    "merge_state": "mergeable",
    "head_sha": "",
    "tldr": "Companion of server#7292 (MediaItemBookmark). The 4 provider-bookmark feature flags are premature, stored_by_music_assistant names where a bookmark lives rather than whether it's editable, and a chapter docstring still says chapter/bookmark.",
-   "changed_now": "new"
+   "changed_now": "commented"
   },
   {
    "state": "merged",
@@ -17320,7 +17327,7 @@
    "merge_state": "merged",
    "head_sha": "",
    "tldr": "Pin bump of our own models package, approved by Bot-MArley. Merged by the routine.",
-   "changed_now": "auto-approved"
+   "changed_now": ""
   },
   {
    "state": "merged",
@@ -17368,7 +17375,7 @@
    "merge_state": "merged",
    "head_sha": "",
    "tldr": "Merged between runs.",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "state": "closed",
@@ -17416,7 +17423,7 @@
    "merge_state": "closed",
    "head_sha": "",
    "tldr": "Closed between runs.",
-   "changed_now": "closed"
+   "changed_now": ""
   },
   {
    "state": "merged",
@@ -17464,7 +17471,7 @@
    "merge_state": "merged",
    "head_sha": "",
    "tldr": "Merged between runs.",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "state": "merged",
@@ -17512,7 +17519,7 @@
    "merge_state": "merged",
    "head_sha": "",
    "tldr": "Merged between runs.",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "state": "merged",
@@ -17560,7 +17567,7 @@
    "merge_state": "merged",
    "head_sha": "",
    "tldr": "Merged between runs.",
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "state": "open",
@@ -17610,7 +17617,7 @@
    "merge_state": "not checked (draft)",
    "head_sha": "",
    "tldr": "Draft, not reviewed yet.",
-   "changed_now": "new"
+   "changed_now": ""
   },
   {
    "state": "open",
@@ -17660,7 +17667,7 @@
    "merge_state": "not checked (draft)",
    "head_sha": "",
    "tldr": "Draft, not reviewed yet.",
-   "changed_now": "new"
+   "changed_now": ""
   }
  ]
 }
