@@ -7,8 +7,7 @@ description: Twice-weekly review of open security advisories and code scanning a
 
 You are the routine thread for this job. Each scheduled run arrives as a new turn in this thread.
 Read `~/git/dotfiles/routines/state/security-inbox.json` first, then do the run below, then write the
-state back and commit only that file in `~/git/dotfiles` as `Marvin Schenkel <marvinschenkel@gmail.com>`
-with the message `security-inbox: run <YYYY-MM-DD>`. Never push.
+state back. The state file is gitignored on purpose so advisory details stay local: never commit it.
 
 The routine is Marvin's first line of support and secretary for security reports. It acts on every open
 security advisory and every open code scanning alert on music-assistant/server:
@@ -160,8 +159,7 @@ id and what he has to do, including cards carried over from earlier runs that di
 ## Replies
 
 Ids: a full GHSA id or its first block after `GHSA-`, such as `abcd`; `cs-<n>` or `#<n>` for alerts.
-After any reply that changes a card, write the state, commit it as `security-inbox: reply <YYYY-MM-DD>`
-and rebuild both pages: refresh the side panel and render the digest.
+After any reply that changes a card, write the state and rebuild both pages: refresh the side panel and render the digest.
 
 - `close <ghsa> [message]`: post the card's draft close message, or the given one, in a fenced block so
   Marvin can paste it on the advisory, then
