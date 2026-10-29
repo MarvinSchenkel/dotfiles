@@ -8030,11 +8030,11 @@
    "author": "OzGav",
    "url": "https://github.com/music-assistant/server/pull/7193",
    "draft": false,
-   "verdict": "almost",
+   "verdict": "ready",
    "assessment": "approve",
    "status": "attention",
    "attention_since": "2026-10-25T14:36:00Z",
-   "waiting_on": "OzGav: update the branch, then a lab rerun",
+   "waiting_on": "you: approve (core)",
    "gpt_sol": "clean",
    "size": "M",
    "code": 108,
@@ -8043,15 +8043,14 @@
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev d42078eb9; review required, no auto-merge",
-   "head_sha": "7db6f11b8",
+   "head_sha": "37f1ecaa9",
    "core_touched": true,
    "providers_touched": [],
    "stacked": false,
    "tldr": "Approve. The UA reaches aiohttp, the pre-checks and every single-input ffmpeg/ffprobe http path; caller UAs are respected and nothing is duplicated; the provider UAs services depend on are untouched. One low follow-up: multi-part concat http parts still send Lavf (also the case on dev). Core helpers change, so it waits on your approve.",
    "summary": "The shared UA reaches every path the PR claims. It is used by the default aiohttp session (with the aiohttp/Python suffix), by HTTP_HEADERS (radio resolve, ICY, HLS, raw Shoutcast socket, mp3 seek probe through ffmpeg_http_headers), by ffmpeg get_ffmpeg_args, probe_audio_stream and the overlay mixer, and by ffprobe/ffmpeg in tags (parse_tags, get_file_duration, embedded image) and ai_radio rendering. The ffmpeg probe and the aiohttp pre-checks see the same UA because HTTP_HEADERS and the -user_agent default are the same constant. Caller UAs win in both places: _sets_user_agent skips on -user_agent or a User-Agent inside -headers, which matches ffmpeg_http_headers' precedence, so headers are neither duplicated nor overwritten. The UA-after-extra-args ordering would be wrong if a caller brought its own '-f ... -i url', but the only '-f' caller is concat with a local input_path, so that can't happen. Provider review: MusicBrainz and Wikipedia get the identical string they had before. LRCLIB (name, version, homepage) and Radio Browser now send a more descriptive UA. Deezer gw, Tidal play reporting, YT Music, Apple Music, Pandora, NetEase, Zvuk and MusicCast keep their custom UAs and only gained comments. Bose was moved to the new UA and confirmed on device by fmunkes. Podcastfeed's browser UA came from #2455, which was the same Buzzsprout host; the author tested the new UA live against it. Residual risk: HTTP_HEADERS changes from 'Lavf/60.16.100.MusicAssistant' (#1193) to the MA UA for every radio/HTTP stream. Any host that allowlists Lavf would now differ, but the author tested 33 streams including HLS. The one gap is concat multi-part http parts, which still send Lavf. That is the same as on dev, and the concat demuxer's per-file option directive fixes it (verified).",
-   "whats_new": "New 14:36Z on 10-25. Copilot: Approval recommended.",
+   "whats_new": "I updated the branch with dev (37f1ecaa9) and reran the lab: library, players, queue and streams all green.",
    "blockers": [
-    "Lab red until rerun on an updated branch (failures look like a stale base, not proven)",
     "Your approve (core helpers); optional follow-up: concat streams still send Lavf"
    ],
    "findings": [],
@@ -8079,26 +8078,26 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "old findings dropped",
+   "changed_now": "lab",
    "marley": {
     "verdict": "approved",
-    "reviewed_head": true,
+    "reviewed_head": false,
     "open_threads": 0,
     "review_url": "https://github.com/music-assistant/server/pull/7193#pullrequestreview-5643690900",
-    "note": "I found nothing that needs changing. CI is green and the change is covered by tests. It now waits for another maintainer to take a look and merge.",
+    "note": "I found nothing that needs changing. CI is green and the change is covered by tests. It now waits for another maintainer to take a look and merge. Head moved to 37f1ecaa9 by the dev merge; the code is unchanged.",
     "recheck_head": null
    },
    "lab": {
-    "head": "7db6f11b8",
+    "head": "37f1ecaa9",
     "areas": [
      "library",
      "players",
      "queue",
      "streams"
     ],
-    "result": "red",
-    "run_id": "20261029-081424-1663",
-    "note": "Unverified, not dev-red: dev passes these checks today, the branch is just older than the fixes. Update the branch and rerun. Was: slim-1 in_sync, snap-1 advances and sendspin-1 overlaps (the last passed on rerun) on a 10-24 base without #7250/#7264/#7276. Rebase before rerunning"
+    "result": "green",
+    "run_id": "20261029-141358-5a8c",
+    "note": "Rerun after updating the branch with dev: 10 tests green."
    }
   },
   {
