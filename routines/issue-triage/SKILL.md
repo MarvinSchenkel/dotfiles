@@ -77,13 +77,10 @@ Per new issue, run a triage.
   design gap that needs Marvin's call, so it goes to Reproduced, cannot fix with a row in `design`.
 - Only start working on a fix when the issue can be reproduced locally. If it is reproduced, spin up a
   subagent to fix it with the gogogo skill. A/B test the fix locally: remove the fix and confirm the issue
-  comes back. Then submit a draft PR with the fix, trigger a Copilot review and babysit the PR until Copilot
-  has no more comments. Assign Marvin to the related issue so other people do not pick it up.
-- Copilot reviews on `music-assistant/server` are requested by the copilot-review-poll workflow once
-  `changes`, `lint` and `test` are green. For a re-review, `gh pr edit --add-reviewer @copilot` silently
-  does nothing once Copilot reviewed; use
-  `gh api -X POST repos/<o>/<r>/pulls/<n>/requested_reviewers -f 'reviewers[]=copilot-pull-request-reviewer[bot]'`
-  and confirm a `review_requested` timeline event.
+  comes back. Then submit a draft PR with the fix and babysit the PR until Bot-MArley approved the head.
+  Assign Marvin to the related issue so other people do not pick it up.
+- Right after opening the draft PR, comment `@Bot-MArley review` on it. After every push, comment
+  `@Bot-MArley recheck`. Its review on the head is the latest one whose `commit_id` equals the PR head SHA.
 - A reproduction that only works through a failing test or a simulated device, with no real speaker or
   app, counts as reproduced but is its own outcome. Keep that fix as a local diff in a worktree, open no
   draft PR, put the diff on the card and give it the `local fix` badge. Marvin tests these on real hardware
@@ -153,7 +150,7 @@ Stop early when:
 
 ## Issue bookkeeping
 
-- When one of our draft PRs is fully green according to Copilot, the draft reply becomes a question asking
+- When one of our draft PRs is approved by Bot-MArley on its head, the draft reply becomes a question asking
   the user to verify the fix. Use Marvin's "devaddon" saved reply. The gh token cannot read saved replies,
   so copy the text from his most recent test ask comment; the canonical copy is his comment on
   support#6481. Keep the `[!NOTE]` header, keep both the HAOS and the Docker sections unless the issue
@@ -179,7 +176,7 @@ Stop early when:
 ## GitHub writes
 
 The run does the writes this spec asks for on its own: pushing fix branches, opening draft PRs,
-requesting Copilot reviews, babysitting, assigning Marvin and the merged PR bookkeeping above.
+posting `@Bot-MArley review` and `recheck` comments, babysitting, assigning Marvin and the merged PR bookkeeping above.
 
 The run posts only one kind of comment on its own: an info ask, under the rules in "Autonomous info asks"
 below. Every other reply to a reporter, every discussion comment and every reply on a PR review thread is

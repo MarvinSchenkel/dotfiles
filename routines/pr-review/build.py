@@ -9,7 +9,7 @@ import json
 import re
 import sys
 from datetime import datetime, timedelta, timezone
-from html import escape, unescape
+from html import escape
 
 FULL_LIMIT = 2_000_000
 DIGEST_LIMIT = 40_000
@@ -328,7 +328,7 @@ def _digest(state: dict, now: datetime, title_len: int) -> str:
         rows = "".join(_digest_row(p, now, title_len) for p in changed)
         table = (
             '<div class="sc"><table><thead><tr><th>PR</th><th>Title, author</th><th>Size</th><th>State</th>'
-            f'<th>Copilot</th><th>GPT Sol</th><th>Waits on</th></tr></thead><tbody>{rows}</tbody></table></div>'
+            f'<th>Bot-MArley</th><th>Waits on</th></tr></thead><tbody>{rows}</tbody></table></div>'
         )
     else:
         table = '<p class="muted">No open PR changed this run.</p>'
@@ -369,8 +369,7 @@ def _digest_row(p: dict, now: datetime, title_len: int) -> str:
     change = p.get("changed_now") or ("reviewed" if p.get("reviewed_now") else "")
     if change:
         state += f' <b class="i">{escape(_cut(str(change), 20))}</b>'
-    cp, cp_cls = _copilot_short(p)
-    gs, gs_cls = _gpt_short(p)
+    mv, mv_cls = _marley_short(p)
     waiting = p.get("waiting_on") or ("you" if p.get("status") == "attention" else "author")
     if age is not None:
         waiting += f" {age}d"
@@ -379,30 +378,23 @@ def _digest_row(p: dict, now: datetime, title_len: int) -> str:
         f'<tr{late}><td class="n"><a href="{escape(p.get("url", ""))}">'
         f'{escape(_label(p))}</a></td><td class="t">{escape(_cut(p.get("title", ""), title_len), quote=False)} '
         f'<span class="muted">{escape(_cut(p.get("author", ""), 16))}</span></td><td><b>{escape(str(p.get("size", "?")))}</b></td><td class="s">{state}</td>'
-        f'<td class="{cp_cls}">{cp}</td><td class="{gs_cls}">{gs}</td><td>{escape(_cut(waiting, 24))}</td></tr>'
+        f'<td class="{mv_cls}">{mv}</td><td>{escape(_cut(waiting, 24))}</td></tr>'
     )
 
 
-def _copilot_short(p: dict) -> tuple:
-    """Copilot verdict for a digest cell, with a colour class."""
-    c = p.get("copilot")
-    if not isinstance(c, dict):
+def _marley_short(p: dict) -> tuple:
+    """Bot-MArley verdict for a digest cell, with a colour class."""
+    m = p.get("marley")
+    if not isinstance(m, dict):
+        return "?", "muted"
+    if m.get("verdict") in (None, "none"):
         return "none", "muted"
-    if not p.get("copilot_reviewed_head", True):
+    if not m.get("reviewed_head", True):
         return "old head", "muted"
-    if c.get("green"):
-        return "green", "ok"
-    n = c.get("findings") or 0
-    return (f"{n} open", "wn") if n else ("comments", "muted")
-
-
-def _gpt_short(p: dict) -> tuple:
-    """GPT Sol verdict for a digest cell, from gpt_sol or its findings."""
-    if p.get("gpt_sol"):
-        v = str(p["gpt_sol"])
-        return escape(_cut(v, 18)), "ok" if v == "clean" else "wn"
-    n = sum(1 for f in p.get("findings") or [] if f.get("model") == "GPT Sol")
-    return (f"{n} found", "wn") if n else ("?", "muted")
+    n = m.get("open_threads") or 0
+    if m.get("verdict") == "approved" and not n:
+        return "approved", "ok"
+    return (f"{n} open" if n else "changes"), "wn"
 
 
 def _cut(s: str, n: int) -> str:
@@ -564,10 +556,13 @@ def _signals(p: dict) -> str:
     else:
         out.append(("muted", "Merge n/a", ms))
     tones = {"ok": "ok", "wn": "warn", "bd": "bad"}
-    cp, cc = _copilot_short(p)
-    out.append((tones.get(cc, "muted"), f"Copilot {cp}", str(p.get("copilot_note") or "")))
-    gs, gc = _gpt_short(p)
-    out.append((tones.get(gc, "muted"), f"GPT Sol {'n/a' if gs == '?' else unescape(gs)}", str(p.get("gpt_sol") or "")))
+    mv, mc = _marley_short(p)
+    out.append((tones.get(mc, "muted"), f"Bot-MArley {mv}", str((p.get("marley") or {}).get("note") or "")))
+    lab = p.get("lab")
+    if isinstance(lab, dict) and lab.get("result"):
+        res = str(lab["result"])
+        tone = {"green": "ok", "red": "bad"}.get(res, "muted")
+        out.append((tone, f"Lab {res}", f'{", ".join(lab.get("areas") or [])} {lab.get("run_id") or ""} {lab.get("note") or ""}'.strip()))
     bp = p.get("backport")
     if isinstance(bp, dict) and (p.get("verdict") == "ready" or p.get("auto_approved")):
         out.append(("ok" if bp.get("rec") else "muted", "Backport" if bp.get("rec") else "No backport", str(bp.get("why") or "")))
@@ -594,7 +589,7 @@ def _more(p: dict, col: str, sha: str) -> str:
     bp = p.get("backport")
     if isinstance(bp, dict) and (p.get("verdict") == "ready" or p.get("auto_approved")):
         facts.append(("Backport", ("Recommended. " if bp.get("rec") else "No. ") + _md(bp.get("why"))))
-    facts.append(("Copilot", _md(p.get("copilot_note")) or _copilot(p.get("copilot"))))
+    facts.append(("Bot-MArley", _marley(p.get("marley"))))
     parts.append('<section><h3>Checks</h3><dl class="facts">' + "".join(f"<dt>{k}</dt><dd>{v}</dd>" for k, v in facts) + "</dl></section>")
     sf = p.get("suggested_fix")
     if sf and col != "auto" and p.get("verdict") != "ready":
@@ -657,13 +652,14 @@ def _findings(p: dict) -> str:
     return f'<section><h3>Findings</h3><div class="fl">{"".join(out)}</div></section>'
 
 
-def _copilot(c) -> str:
-    """Summarise the copilot block when no note was written."""
-    if not isinstance(c, dict):
+def _marley(m) -> str:
+    """Summarise the marley block, preferring its note."""
+    if not isinstance(m, dict):
         return "See summary"
-    if c.get("green"):
-        return "No open findings"
-    return f'{c.get("findings", 0)} finding(s), {c.get("comments", 0)} comment(s)'
+    text = _md(m.get("note")) or f'{escape(str(m.get("verdict") or "none"))}, {m.get("open_threads") or 0} open thread(s)'
+    if m.get("review_url"):
+        text += f' <a href="{escape(m["review_url"])}">review</a>'
+    return text
 
 
 def _list(items) -> str:

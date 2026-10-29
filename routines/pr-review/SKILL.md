@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Hourly review of changed and open Music Assistant PRs with Copilot and GPT Sol second opinions, auto-approval of safe PRs, and a PR backlog report rendered inline in this thread
+description: Hourly review of changed and open Music Assistant PRs from Bot-MArley's reviews, auto-approval of safe PRs, and a PR backlog report rendered inline in this thread
 ---
 
 # PR review
@@ -19,7 +19,7 @@ The idea behind the exercise is that Marvin can quickly stay on top of the PRs.
 
 - GitHub through `gh`, already logged in as MarvinSchenkel. No other credentials are needed.
 - Baseline: `last_run` in the state file. Every PR entry also records `head_sha`, so compare heads and the
-  latest Copilot review time against the state as well as `updatedAt`.
+  latest Bot-MArley review time against the state as well as `updatedAt`.
 - Local checkouts live in `/Users/marvin/git/music-assistant/<repo>`. Use `origin/dev`, never the local
   `dev` ref.
 
@@ -50,60 +50,58 @@ is more than 30 days old.
 
 ## Review workflow
 
-Parallelize the reviews using Opus subagents when applicable. Give them the brief inline in the Agent
-prompt and have them write patches to a JSON file, not into their reply. Per PR:
+Bot-MArley reviews every PR with Opus and GPT Sol. Don't run your own reviews, request Copilot or run GPT
+Sol. Per PR:
 
-- Request a Copilot review if no review has taken place yet or if changes have been pushed since the last
-  Copilot review. Copilot's default effort is balanced; the API cannot pick it.
-- Do a review yourself.
-- Ask GPT Sol 6.1 for a second review through the Copilot CLI: `copilot -p` with `--model gpt-6.1-sol`,
-  read-only flags `--allow-tool='read'` plus deny write, shell, url and memory, `--no-ask-user`, and
-  `--add-dir` for the diff folder. The run finished when its output has the "AI Credits" line.
+- Read Bot-MArley's latest review on the head and its open inline threads. Its "**Requested changes**" list
+  and the open threads are the PR's `findings`. Write `tldr`, `summary` and any suggested fix from them and
+  the diff.
+- If the head has no Bot-MArley review and the latest push is over 15 minutes old, comment
+  `@Bot-MArley recheck` on the PR. Do it once per head: skip it when `marley.recheck_head` already equals
+  the head, and set it when you post.
 - Categorize the size as S under 50 lines, M 50 to 299, L 300 to 999 or XL 1000 and up. Count changed lines
   of code, without tests, icons, translations and lockfiles.
 
 Judge it as one of:
 
-- `ready`: ready to merge, both you and Copilot found no criticals or problems.
+- `ready`: ready to merge, Bot-MArley approved the current head and none of its threads is open.
 - `almost`: almost ready, for example a missing test or something we can easily fix with a single commit.
 - `not_ready`: not ready yet, the code really needs attention.
 
-Ready rule: ready to merge needs zero open Copilot CRITICAL or PROBLEM findings on the head. A finding we
-judge invalid, pre-existing or a nit still blocks until it's fixed or answered on its thread. Put such a PR
-in almost ready with the decline reply or the fix as its suggested fix.
-
-Request Copilot with `gh api --method POST repos/music-assistant/<repo>/pulls/N/requested_reviewers -f
-'reviewers[]=copilot-pull-request-reviewer[bot]'` and confirm the `review_requested` event on
-`issues/N/timeline`. Never use `gh pr edit --add-reviewer @copilot`: it silently does nothing.
+Ready rule: ready to merge needs Bot-MArley's review on the head to be `APPROVED` with zero open
+Bot-MArley threads. A finding we judge invalid, pre-existing or a nit still blocks until it's fixed or
+answered on its thread. Put such a PR in almost ready with the decline reply or the fix as its suggested fix.
 
 Set `status` on every PR: `attention` when it is Marvin's call to merge, decide or post, `waiting` when the
 author or reporter has to act.
 
+## Lab gate
+
+Run the lab-gate skill on a non-draft server PR when it touches risky code: core code (anything outside
+`providers/*` and tests) or one of the providers excluded from auto approval below. Once per head, after CI
+is green; skip it when `lab.head` already equals the head.
+
+- Don't let it run the full tier 1 gate: a `models/**` change gets `nightly`.
+- Store the outcome in `lab`. A `red` result is a blocker naming the failing test and keeps the PR out of
+  `ready`. Note `dev-red` and `unreachable` without blocking. Never push fixes to the PR.
+
 ## Rules learned on earlier runs
 
-Copilot:
+Bot-MArley:
 
-- A Copilot review on the head is not proof of a review. Over quota, Copilot posts a COMMENTED review that
-  says it "was unable to review" because of a quota limit. Re-request it as Marvin; the bot account runs
-  out of quota first.
-- Read the whole review body. Copilot can raise a real finding only in its "Previously missed" section
-  while it reports "Findings: None".
-- Paginate reviews with `gh api --paginate`. Busy PRs have over 100 reviews, and the first page shows a
-  stale head.
-- Every run, sweep all non-draft PRs whose last real Copilot review isn't on the current head and
-  re-request. Reviews often land minutes after a subagent's last poll, so re-poll yourself right before you
-  write the state.
-- If the author already requested Copilot, our request can return 201 and do nothing. Wait for theirs.
-- New PRs get their first Copilot review from the repo's poll workflow after CI goes green, so no review on
-  a red PR is expected.
-- Copilot re-reviews a push that only merges dev and can raise fresh findings on unchanged code. Triage
-  them; don't assume the head is green.
-- The critical-gate bot drafts a PR within minutes of a Copilot CRITICAL, so non-draft PRs can flip to
-  draft mid-run.
+- It reviews new PRs on its own; the first review needs no request.
+- Re-review: comment `@Bot-MArley recheck` on the PR, or request it with `gh api --method POST
+  repos/music-assistant/<repo>/pulls/N/requested_reviewers -f 'reviewers[]=Bot-MArley'`.
+- `APPROVED` is clean. `COMMENTED` means changes requested: the body has a "**Requested changes**" list,
+  plus inline review threads.
+- Its review on the head is the latest Bot-MArley review whose `commit_id` equals the PR head SHA. Paginate
+  reviews with `gh api --paginate`. Busy PRs have over 100 reviews, and the first page shows a stale head.
+- Its comments start with a `[!NOTE] This comment was written by Claude and posted by Bot-MArley` header.
+- Reviews often land minutes after a push, so re-poll right before you write the state.
 
 Code state:
 
-- Authors push while reviews run. Recheck heads, checks and Copilot reviews right before writing state.
+- Authors push while reviews run. Recheck heads, checks and Bot-MArley reviews right before writing state.
 - Fetch PR heads with a leading plus, `git fetch origin +pull/N/head:refs/remotes/pr/N`, or a force-push
   keeps the old ref. Refer to `refs/remotes/pr/N`; short `pr/N` names are ambiguous in the server checkout.
 - Run `git merge-tree --write-tree --name-only origin/dev <head>` for every non-draft PR each run, and again
@@ -131,8 +129,6 @@ Tooling:
 - If `gh pr list` returns 502 or 504, fall back to `gh api --paginate
   'repos/music-assistant/<repo>/pulls?state=open&per_page=100'`.
 - macOS has no `timeout`. Run long read loops in the background and wait for them.
-- Never end a turn while a review subagent or GPT Sol run is still pending. Wait for it inline (a blocking
-  `until [ -f <result> ]` loop), and if it hasn't landed after a few minutes, card the PR as review pending.
 - The state file is JSON with a 1-space indent. Write it back with `json.dumps(state, indent=1,
   ensure_ascii=False)` so the run commits stay small diffs.
 - In zsh, `==` inside an inline jq or awk test fails; put such loops in a bash script file.
@@ -142,9 +138,9 @@ Tooling:
 Marvin has a personal SLA of one week. Every run sets `attention_since` on each PR with status
 `attention`: the first human, non-bot activity after Marvin's last comment or review, or
 `ready_for_review` or `created_at` if he never responded. Take events from `issues/N/timeline` plus
-`pulls/N/comments`, because the timeline leaves out inline review replies. Don't count his
-`review_requested` or `copilot_work_started` events; those are this routine requesting Copilot. His own
-PRs get none, unless a reporter reply below sets it.
+`pulls/N/comments`, because the timeline leaves out inline review replies. Bot-MArley's reviews and
+comments are not human activity, and `@Bot-MArley recheck` comments count neither as human activity nor as
+Marvin's last comment. His own PRs get none, unless a reporter reply below sets it.
 
 Set `author_replied` when the author of a PR has replied to any of Marvin's questions or comments on it.
 
@@ -162,11 +158,9 @@ the run summary. Track this per PR in `support`.
 
 You are allowed to auto-approve a PR in the server repository and merge it if:
 
-- The PR is ready to merge: both you and Copilot found 0 issues.
+- The PR is ready to merge: Bot-MArley approved the current head and none of its threads is open.
 - The PR is S, M or L.
 - It does not touch any core code, meaning the diff is scoped to `providers/*` and the related tests only.
-- Copilot's verdict on the head is "Approval recommended". Zero open findings with "Needs a closer look"
-  is not enough: card it ready and needs-attention, and say why in the blockers.
 
 These important providers are excluded from auto approval: Sonos, AirPlay, Spotify, Sendspin,
 Squeezelite.
@@ -175,8 +169,8 @@ When you auto-approve the PR:
 
 - Approve it with a message that thanks the original author by tagging their GitHub handle with a fun
   emoji, for example "Thanks @OzGav, looks good to me :raised_hands:". Start it with `> [!NOTE] This
-  comment was written by Claude on Marvin's behalf` and say it was auto-approved because two reviews were
-  green.
+  comment was written by Claude on Marvin's behalf` and say it was auto-approved because Bot-MArley's review
+  was green.
 - Turn auto-merge on with `gh pr merge --squash --auto`. The server repo uses a merge queue, so the command
   prints that the merge strategy is set by the merge queue and `autoMergeRequest` reads null. The PR still
   merges; don't retry, check its state on the next run.
@@ -187,7 +181,7 @@ Marvin cannot approve his own PRs, so never auto-approve them.
 
 Auto approval for other repositories: only dependabot or bump PRs that are safe to merge. Our own packages,
 for example music-assistant-models, can be auto-merged. Bot pin bumps in the server repo are approved and
-merged by the repo's own workflow: card them as ready and waiting without requesting Copilot.
+merged by the repo's own workflow: card them as ready and waiting.
 
 ## Report
 
@@ -231,9 +225,9 @@ The full report shows:
   days waiting on Marvin.
 - Per PR, in a dialog that opens when Marvin clicks its card, ordered by what he needs first: a next-step
   panel (one line on what to do, up to three blockers, and the reply commands as copy chips), one-word
-  pills for CI, merge, Copilot, GPT Sol and backport, the `tldr`, then the findings one line each with
-  their id `f1`, `f2` and so on so Marvin can reply `post <pr> f2`. Set `model` on every finding: Claude,
-  GPT Sol or Copilot. Everything else (this run's changes, full CI/merge/Copilot notes, the review notes in
+  pills for CI, merge, Bot-MArley, lab and backport, the `tldr`, then the findings one line each with
+  their id `f1`, `f2` and so on so Marvin can reply `post <pr> f2`. Set `model` on every finding to
+  Bot-MArley. Everything else (this run's changes, full CI/merge/Bot-MArley notes, the review notes in
   `summary`, suggested fix, prompt, comments) sits under a collapsed "More details". Keep `blockers` short
   and actionable, since they are the first thing he reads.
 - For almost ready: your suggestion to fix the small outstanding thing, the patch as a coloured diff, and
@@ -243,11 +237,11 @@ The full report shows:
 
 The digest shows the run time, dev sha and run note, then per column how many PRs it holds and how many
 need Marvin, and the count past the SLA. Below that, only the open PRs this run changed, one compact row
-each: the number linked to GitHub, title and author, size, state with the `changed_now` mark, the Copilot
-and GPT Sol verdicts, who it waits on, and red rows past the SLA. Attention rows come first. PRs merged,
+each: the number linked to GitHub, title and author, size, state with the `changed_now` mark, the Bot-MArley
+verdict, who it waits on, and red rows past the SLA. Attention rows come first. PRs merged,
 closed or auto-approved this run follow as a short list. The footer points at the side panel and the
 `open` command, plus the reply grammar. No finding bodies, prompts or patches; Marvin gets those from the
-side panel or with `show <pr>` and `prompt <pr>`. Fill `gpt_sol` and `waiting_on` on every PR so the
+side panel or with `show <pr>` and `prompt <pr>`. Fill `marley` and `waiting_on` on every PR so the
 digest columns say something useful.
 
 Set `changed_now` on every PR this run touched, as a short reason: `new`, `reviewed`, `pushed`, `merged`,
@@ -278,7 +272,8 @@ Marvin answers in this thread. Handle each reply straight away; don't wait for t
 the number for a server PR, with or without `#`, and `<repo>#<n>` for the other repos, the same labels the
 page shows. One reply can hold several commands, for example `post 7045 f1 f3, approve 7130`.
 
-- `post <pr> f<n> [f<m> ...]`: post those findings as review comments. When the finding's line is part of
+- `post <pr> f<n> [f<m> ...]`: post those findings as review comments. Skip findings that already sit
+  on a Bot-MArley thread. When the finding's line is part of
   the PR diff, post it inline on that line of the current head; otherwise post a PR comment. Keep it short
   and in Marvin's style, starting with `> [!NOTE] This comment was written by Claude on Marvin's behalf`.
   Record `posted: {at, url}` on the finding.
@@ -326,20 +321,21 @@ A reply that changes the state writes it back and commits it the same way, with 
       "title": "", "author": "", "url": "", "draft": false,
       "verdict": "ready | almost | not_ready", "assessment": "approve | comment | request_changes",
       "status": "attention | waiting", "attention_since": "2026-10-20T13:12:02Z",
-      "waiting_on": "you | author | reporter | OzGav review | Copilot",
-      "gpt_sol": "clean | 1 critical, 2 problems | not run",
+      "waiting_on": "you | author | reporter | OzGav review | Bot-MArley",
       "size": "S", "code": 10, "add": 29, "del": 6,
       "ci": "", "ci_fail": false, "merge_state": "", "head_sha": "babefc242",
       "core_touched": false, "providers_touched": ["sync_group"], "stacked": false,
       "tldr": "5 to 6 lines max", "summary": "longer review notes", "whats_new": "since the last run",
       "blockers": [""],
       "findings": [
-        { "model": "Claude | GPT Sol | Copilot", "severity": "CRITICAL | PROBLEM | SUGGESTION | NIT",
+        { "model": "Bot-MArley", "severity": "CRITICAL | PROBLEM | SUGGESTION | NIT",
           "file": "", "line": 0, "title": "", "detail": "", "fix": "", "posted": { "at": "", "url": "" } }
       ],
       "unaddressed_comments": [ { "author": "", "at": "", "url": "", "summary": "" } ],
-      "copilot": { "green": true, "comments": 0, "findings": 0, "review_url": "", "titles": [] },
-      "copilot_reviewed_head": true, "copilot_note": "",
+      "marley": { "verdict": "approved | changes | none", "reviewed_head": true, "open_threads": 0,
+                  "review_url": "", "note": "", "recheck_head": "babefc242" },
+      "lab": { "head": "babefc242", "areas": ["queue"], "result": "green | red | dev-red | unreachable | skipped | nightly",
+               "run_id": "", "note": "" },
       "suggested_fix": { "description": "", "patch": "unified diff", "pushed": { "at": "", "sha": "" } },
       "prompt": "fix session prompt",
       "backport": { "rec": true, "why": "" },
@@ -357,5 +353,5 @@ A reply that changes the state writes it back and commits it the same way, with 
 
 `posted`, `pushed`, `author_replied`, `reporter_reply`, `support` and `fix_thread` are null or absent until
 they apply. Set `reviewed_now` only on PRs reviewed in the current run and clear it on the rest.
-`waiting_on` and `gpt_sol` are short strings for the digest columns. Entries with `state` merged or closed
+`waiting_on` is a short string for the digest column. Entries with `state` merged or closed
 and `closed_at` more than 30 days old are dropped at the start of a run.

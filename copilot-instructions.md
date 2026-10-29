@@ -61,8 +61,8 @@ We have a project board available that we use to plan and track bigger features 
 - Use a user friendly PR title - we use labels (in the PR template) to categorize
 - Only create PRs when I ask you to
 - Before publishing a PR, run /fix_comments to sanity check the comment usage of the PR
-- When I ask you to create a PR, always publish the PR as draft first, I will set it to ‘ready for review’ myself. Exception: for a PR created through /gogogo, set it to ready for review once self-review, CI and Copilot are clean
-- After creating a PR, run /babysit until CI and the Copilot review are clean
+- When I ask you to create a PR, always publish the PR as draft first, I will set it to ‘ready for review’ myself. Exception: for a PR created through /gogogo, set it to ready for review once self-review and CI are clean and Bot-MArley approved the current head
+- After creating a PR, run /babysit until CI is clean and Bot-MArley approved the current head
 - Respond on my behalf with comments in my own human style: short and to the point
 - When publishing a comment, always start with a [!NOTE] This comment was written by {harnass, e.g. Claude or Copilot} on Marvin's behalf
 - Make sure that the branch is up to date and rebase it when needed. If a merge conflicts that arises, carefully review why it happened and if another PR didnt test the same code.
