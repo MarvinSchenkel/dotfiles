@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-29T10:00:00+01:00",
+ "last_run": "2026-10-29T11:00:00+01:00",
  "dev": "7a59e9b96",
- "run_note": "Quiet hour, no pushes. Bot-MArley answered the rechecks: #7170 is clean apart from the schema-number clash with #7209, #7172 waits on two design calls. On #6802, #6809, #6944 and aioslimproto#558 'recheck' does nothing without an earlier review; those need '@Bot-MArley review', which the routine spec doesn't cover yet. After your answer I posted '@Bot-MArley review' on those four and #6948, and added the rule to the routine spec.",
+ "run_note": "You merged #7280. stvncode took #7282 and models#452 out of draft and pushed #7283; models#452 is clean per Bot-MArley and #7283 needs its release. Bot-MArley acknowledged the five review requests but hasn't posted those reviews yet. Lab green on #7282 and #7172's new head.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -2100,13 +2100,13 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you",
-   "changed_now": "review asked",
+   "changed_now": "",
    "marley": {
     "verdict": "none",
     "reviewed_head": false,
     "open_threads": 0,
     "review_url": "",
-    "note": "Asked for a full review with '@Bot-MArley review' (10:0x); no review yet.",
+    "note": "'@Bot-MArley review' acknowledged (eyes); review still running.",
     "recheck_head": "ba4cd6c21"
    }
   },
@@ -2354,13 +2354,13 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you",
-   "changed_now": "review asked",
+   "changed_now": "",
    "marley": {
     "verdict": "none",
     "reviewed_head": false,
     "open_threads": 0,
     "review_url": "",
-    "note": "Asked for a full review with '@Bot-MArley review' (10:0x); no review yet.",
+    "note": "'@Bot-MArley review' acknowledged (eyes); review still running.",
     "recheck_head": "618d38432"
    }
   },
@@ -3077,13 +3077,13 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you",
-   "changed_now": "review asked",
+   "changed_now": "",
    "marley": {
     "verdict": "none",
     "reviewed_head": false,
     "open_threads": 0,
     "review_url": "",
-    "note": "Asked for a full review with '@Bot-MArley review' (10:0x); no review yet.",
+    "note": "'@Bot-MArley review' acknowledged (eyes); review still running.",
     "recheck_head": "306c090ad"
    },
    "lab": {
@@ -3457,13 +3457,13 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you",
-   "changed_now": "review asked",
+   "changed_now": "",
    "marley": {
     "verdict": "none",
     "reviewed_head": false,
     "open_threads": 0,
     "review_url": "",
-    "note": "Asked for a full review with '@Bot-MArley review' (10:0x); no review yet.",
+    "note": "'@Bot-MArley review' acknowledged (eyes); review still running.",
     "recheck_head": "262a373ec"
    }
   },
@@ -3717,13 +3717,13 @@
    },
    "reporter_reply": null,
    "waiting_on": "you: decide on the provider",
-   "changed_now": "review asked",
+   "changed_now": "",
    "marley": {
     "verdict": "none",
     "reviewed_head": false,
     "open_threads": 0,
     "review_url": "",
-    "note": "Asked for a full review with '@Bot-MArley review' (10:0x); no review yet.",
+    "note": "'@Bot-MArley review' acknowledged (eyes); review still running.",
     "recheck_head": "257e3ae8b"
    },
    "lab": {
@@ -9954,7 +9954,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": "recheck",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -11025,8 +11025,8 @@
    "del": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 4360495c4; review required, no auto-merge",
-   "head_sha": "8bada73c5",
+   "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
+   "head_sha": "4b02b3493",
    "core_touched": false,
    "providers_touched": [
     "share_provider"
@@ -11034,7 +11034,7 @@
    "stacked": false,
    "tldr": "The rework does what OzGav asked. Resolve, preview and import all go through core matching, and the direct Deezer/iTunes/YTM calls are gone.\nOur problems (3) and (4) are fixed. Problem (2) is only partly fixed: preview is paged and capped at 2 concurrent tracks, but limit has no upper bound and guests can call it.\nProblem (1) still stands. share.music-assistant.io does not resolve and the landing page still lives in dmoo500/music-assistant-share.\nMaintainers still have to choose between this plugin and jetersen's core share API (#7173 + models#447).\nTests: 151 pass, on the PR head and when merged with origin/dev. Core is barely touched: one private helper in helpers/compare.py is renamed to public.",
    "summary": "Since 8d940da2a the plugin was split into payload.py, links.py and resolver.py. Track resolution now does an external-ID lookup via controller.get_item_by_external_id, gated by compare_track_evidence >= LIKELY plus ISRC corroboration, and falls back to tracks.enrich_provider_mappings. Album and artist resolution use core search with compare_album/compare_artist, and ambiguous results stay unresolved. Import sends M3U with SAME_RECORDING, which maps to the same LIKELY threshold, so preview and import agree. Status of our earlier problems: (1) NOT fixed. The default domain has no DNS record and the landing page is still in a personal repo. (2) PARTIAL. There is offset/limit paging (default 50), a semaphore of 2 and dedupe of identical tracks, but no maximum limit and no cap on payload size when decoding. Each track can still trigger up to 3 external-ID lookups times P providers plus P searches. That fan-out now goes through MA's own providers, which is the accepted pattern. (3) FIXED. Deezer and iTunes calls are removed, so only the user's own configured providers are queried. (4) FIXED. Core evidence matching is used, ISRC hits need the title and credited artists to agree, and version mismatches are rejected. The remaining gap is the explicit flag, which dmoo500 declined to carry. OzGav's points: own matcher, fixed (core). Hard-coded service URLs, mostly fixed: links now come only from ProviderMapping.url, but host tables are kept to compact and validate refs, and an artwork CDN allowlist remains (his call). Direct Deezer/iTunes, fixed. M3U with share:// paths, kept as agreed, with a plugin-side delimiter guard that works around generate_m3u not escaping '||'. Security: all four commands are authenticated (generate/resolve/preview need LIBRARY_READ, which guests have; import needs LIBRARY_WRITE). The old public HTTP/CORS resolve route is gone. There is no server-side state and no token, and the payload sits in the URL fragment, so there is nothing to guess or enumerate. Resolution respects per-user music-source visibility, through core filtering plus an explicit visible provider set. There is no rate limiting, so a guest can call preview with a huge limit. Outside the plugin: helpers/compare.py (rename _track_artist_credits_match to compare_track_artist_credits, no other callers on dev), translations/en.json (generated from strings.json) and a new test in tests/providers/builtin/test_import_matching.py. All 39 review threads are resolved. The PR merges cleanly onto origin/dev, which is 67 commits ahead of the merge base. The checklist ticks a docs PR, but none exists.",
-   "whats_new": "Bot-MArley's recheck: the share-link tests are fixed, two design points wait on a maintainer.",
+   "whats_new": "dmoo500 pushed 4b02b3493 after Bot-MArley's recheck; the two design points (private ISRC check, per-service host tables) still wait on a maintainer.",
    "blockers": [
     "Bot-MArley: the private ISRC check next to core's (resolver.py:229) and the per-service host tables (links.py:11-28) need your call",
     "Design: this plugin vs jetersen's core share API (#7173 + models#447); frontend#3040 targets this one",
@@ -11183,22 +11183,22 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 07:30 CET",
-   "changed_now": "recheck",
+   "changed_now": "pushed",
    "marley": {
-    "verdict": "changes",
-    "reviewed_head": true,
+    "verdict": "none",
+    "reviewed_head": false,
     "open_threads": 0,
     "review_url": "https://github.com/music-assistant/server/pull/7172#issuecomment-6491684240",
-    "note": "Recheck: tests fixed; the private ISRC check (resolver.py:229) and the per-service host tables (links.py:11-28) still need a maintainer's call.",
-    "recheck_head": "8bada73c5"
+    "note": "New head; recheck posted. Last recheck: tests fixed, two design calls open.",
+    "recheck_head": "4b02b3493"
    },
    "lab": {
-    "head": "8bada73c5",
+    "head": "4b02b3493",
     "areas": [
      "library"
     ],
     "result": "green",
-    "run_id": "20261029-081609-c15f",
+    "run_id": "20261029-102639-e325",
     "note": ""
    }
   },
@@ -17640,7 +17640,7 @@
    "copilot_reviewed_head": true,
    "copilot_note": "🔵 Needs a closer look on 582ede968, no open threads.",
    "summary": "For group_by='artist' it adds MAX(image) to the existing artist_plays aggregate (TRACK_ARTISTS_CTE already selects image, so the extra cost is one string MAX over rows already grouped) and builds an ItemMapping per row the same way rankings.get_top_items does, then runs _set_library_item_availability (one batched library lookup plus one per provider media type, at most `limit` ids). Grouping stays per (artist_item_id, artist_provider), so same-named artists stay separate. Genre rows get item=None. The SQL is correct, and the name and image come from the play-history snapshot, as in top_items. The blocker: ListeningTimeItem in music-assistant-models (1.1.230 pinned, and models main) only has name and minutes. The PR body says the models change is 'PR to follow' and that the PR 'stays a draft', but no models PR exists and the server PR is not a draft. On the current pin every listening_time call raises TypeError ('unexpected keyword argument item'), and CI shows pytest (2/3), lint and Verify failing, not only the pre-commit checkbox. API contract: once the field lands as `item: ItemMapping | None = None`, the change is additive. Mashumaro and the TS frontend ignore unknown fields, so older clients are unaffected, and skipping the API_SCHEMA_VERSION bump is reasonable. The ItemMapping building is copied from rankings.py.",
-   "whats_new": "stvncode edited the PR (models half is draft models#452); CI still red on Verify, lint and pytest.",
+   "whats_new": "stvncode pushed cc7b438c7 and took the models half (models#452) out of draft. CI stays red until models#452 is released.",
    "core_touched": true,
    "providers_touched": [],
    "ci_fail": true,
@@ -17650,8 +17650,8 @@
    "assessment": "request_changes",
    "verdict": "not_ready",
    "blockers": [
-    "Passes an `item` field no models version has, so statistics/listening_time raises TypeError (7 tests fail); the promised models PR doesn't exist",
-    "CI red: pytest, lint, Verify (checklist)"
+    "Needs models#452 released (ListeningTimeItem.item); CI red until then",
+    "No Bot-MArley review on the new head; recheck posted"
    ],
    "draft": false,
    "repo": "server",
@@ -17663,18 +17663,18 @@
    "waiting_on": "stvncode: models PR for ListeningTimeItem.item, checklist",
    "size": "S",
    "code": 43,
-   "ci": "red",
+   "ci": "red (lint, pytest 2/3: needs models#452 released)",
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
-   "head_sha": "582ede968",
+   "head_sha": "cc7b438c7",
    "tldr": "The server logic is correct, but it builds ListeningTimeItem with an `item` field that no released or open models version has, so the endpoint raises TypeError and pytest/lint are red. That is more than the pre-commit checkbox. Blocked on a models PR that hasn't been opened yet.",
-   "changed_now": "commented",
+   "changed_now": "pushed",
    "marley": {
-    "verdict": "changes",
-    "reviewed_head": true,
+    "verdict": "none",
+    "reviewed_head": false,
     "open_threads": 0,
-    "review_url": "https://github.com/music-assistant/server/pull/7283#pullrequestreview-5687231717",
-    "note": "1. CI fails (`ListeningTimeItem.__init__() got an unexpected keyword argument 'item'` in pytest and mypy errors in pre-commit) because the `item` field only exists in an unreleased `music-assistant-models` change. The PR body says this stays a draft until that",
-    "recheck_head": null
+    "review_url": "",
+    "note": "New head without a Bot-MArley review; recheck posted.",
+    "recheck_head": "cc7b438c7"
    }
   },
   {
@@ -18179,8 +18179,8 @@
    "changed_now": ""
   },
   {
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-29T10:18:48Z",
    "stacked": false,
    "related_prs": [],
    "unaddressed_comments": [],
@@ -18219,14 +18219,14 @@
    "title": "Fix squeezelite position jumping ahead after resume or seek",
    "author": "MarvinSchenkel",
    "status": "waiting",
-   "waiting_on": "you (draft)",
+   "waiting_on": "merged",
    "size": "S",
    "code": 0,
    "ci": "not checked (draft)",
    "merge_state": "not checked (draft)",
    "head_sha": "",
    "tldr": "Draft, not reviewed yet.",
-   "changed_now": ""
+   "changed_now": "merged"
   },
   {
    "state": "open",
@@ -18250,33 +18250,51 @@
    "copilot_reviewed_head": false,
    "copilot_note": "",
    "summary": "",
-   "whats_new": "",
-   "core_touched": false,
+   "whats_new": "Out of draft.",
+   "core_touched": true,
    "providers_touched": [],
    "ci_fail": false,
    "reviewed_now": false,
    "reviewed_at": null,
    "gpt_sol": "not run",
-   "assessment": null,
-   "verdict": null,
+   "assessment": "comment",
+   "verdict": "almost",
    "blockers": [
-    "Draft."
+    "No Bot-MArley review yet; '@Bot-MArley review' posted",
+    "Core change, so no auto-approval"
    ],
-   "draft": true,
+   "draft": false,
    "repo": "server",
    "number": 7282,
    "url": "https://github.com/music-assistant/server/pull/7282",
    "title": "Return every bucket in plays over time",
    "author": "stvncode",
    "status": "waiting",
-   "waiting_on": "stvncode (draft)",
-   "size": "S",
-   "code": 0,
-   "ci": "not checked (draft)",
-   "merge_state": "not checked (draft)",
-   "head_sha": "",
-   "tldr": "Draft, not reviewed yet.",
-   "changed_now": ""
+   "waiting_on": "Bot-MArley (review requested)",
+   "size": "M",
+   "code": 163,
+   "ci": "green",
+   "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
+   "head_sha": "0425d69bf",
+   "tldr": "statistics/plays_over_time now returns every bucket in the period, with 0 for buckets without plays, so the frontend can drop its own gap filling (frontend#2526). Core statistics change; Bot-MArley hasn't reviewed it yet.",
+   "changed_now": "new",
+   "lab": {
+    "head": "0425d69bf",
+    "areas": [
+     "core"
+    ],
+    "result": "green",
+    "run_id": "20261029-102637-ad6b",
+    "note": ""
+   },
+   "marley": {
+    "verdict": "none",
+    "reviewed_head": false,
+    "open_threads": 0,
+    "review_url": "",
+    "note": "Never reviewed; '@Bot-MArley review' posted.",
+    "recheck_head": "0425d69bf"
+   }
   },
   {
    "repo": "models",
@@ -18286,26 +18304,27 @@
    "url": "https://github.com/music-assistant/models/pull/452",
    "title": "Add the artist to listening time results",
    "author": "stvncode",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "stvncode (draft)",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "attention",
+   "attention_since": "2026-10-29T09:48:29Z",
+   "waiting_on": "you: approve, then release for server#7283",
    "size": "S",
-   "code": 0,
-   "ci": "not checked (draft)",
+   "code": 4,
+   "ci": "green",
    "ci_fail": false,
-   "merge_state": "not checked (draft)",
-   "head_sha": "",
+   "merge_state": "mergeable",
+   "head_sha": "7e00418d5",
    "core_touched": false,
    "providers_touched": [],
    "stacked": false,
-   "tldr": "Draft, the models half of server#7283 (ListeningTimeItem.item).",
+   "tldr": "Adds optional item: ItemMapping | None to ListeningTimeItem so clients can tell same-named artists apart; defaults to None, round-trip tests. Bot-MArley: no requested changes. server#7283 needs a models release after it.",
    "summary": "",
-   "whats_new": "",
+   "whats_new": "Out of draft; Bot-MArley found nothing to change.",
    "blockers": [
-    "Draft."
+    "Not a bump, so no auto-merge: your approve",
+    "Release models after merging so server#7283 can pin it"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -18319,10 +18338,18 @@
    "related_prs": [
     7283
    ],
-   "reviewed_now": false,
-   "reviewed_at": null,
-   "changed_now": "",
-   "suggested_fix": null
+   "reviewed_now": true,
+   "reviewed_at": "2026-10-29 11:00 CET",
+   "changed_now": "reviewed",
+   "suggested_fix": null,
+   "marley": {
+    "verdict": "approved",
+    "reviewed_head": true,
+    "open_threads": 0,
+    "review_url": "",
+    "note": "Requested changes: none.",
+    "recheck_head": null
+   }
   }
  ]
 }
