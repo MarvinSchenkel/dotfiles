@@ -27,7 +27,7 @@ state back and commit it in `~/git/dotfiles` as Marvin (marvinschenkel@gmail.com
 3. On Mondays also `lab run --ref stable --deep`, same handling, reported in its own section.
 4. `lab summary <id> ...` over the collected ids, and `lab flakes` for the gate reruns of the last
    30 days.
-5. Hardware (bench): `--deep` does not take `--devices`, so the bench is a separate tier 1 run. First
+5. Hardware (bench): `--deep` does not take devices, so the bench is a separate run. First
    read the bench plug (entity in the state file under `bench.power_entity`; an HA automation powers it
    on workdays 07:15 to 19:00, never switch it yourself):
 
@@ -35,7 +35,7 @@ state back and commit it in `~/git/dotfiles` as Marvin (marvinschenkel@gmail.com
    ssh -i ~/.ssh/claude_ha_ed25519 -o BatchMode=yes marvin@192.168.1.80 'sudo -i python3 -c "import os,json,urllib.request; r=urllib.request.Request(\"http://supervisor/core/api/states/switch.ma_lab_test_bench\", headers={\"Authorization\": \"Bearer \"+os.environ[\"SUPERVISOR_TOKEN\"]}); print(json.load(urllib.request.urlopen(r, timeout=5))[\"state\"])"'
    ```
 
-   Prints `on` or `off`. When `on`: `lab run --ref dev --tier 1 --players none --devices all 2>&1 | tee
+   Prints `on` or `off`. When `on`: `lab run --ref dev --providers devices 2>&1 | tee
    /tmp/lab-deep-hw.log`, collect its run id and include it in the summary step; its tests report under
    `hw` with the `device` property. When `off`, unreachable, or the lab answers that the registry has no
    devices: do not run it, and set `hw_skipped` to the reason in the state; the report shows `hw: skipped (<reason>)`.

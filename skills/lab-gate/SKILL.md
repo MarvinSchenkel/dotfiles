@@ -9,14 +9,18 @@ Run only the end-to-end lab areas a server PR touches and report the result. Inp
 
 ## Steps
 
-1. Map every changed file to its areas with "Which areas for my diff" in `/Users/marvin/git/music-assistant/lab/README.md`. Read it every time, the map changes. Paths there are relative to `server/music_assistant/`. Take the union of the areas.
-2. If no file maps to an area (docs, tests only, frontend), skip: result `skipped`. A provider the README lists as "no lab coverage" also gives `skipped`, with that as the note.
-3. A `models/**` change maps to the full tier 1 gate (20 to 30 min). Run it only when the caller allows it; otherwise the result is `nightly`.
+1. Map every changed file to its areas and `--providers` entries with "Which areas for my diff" in `/Users/marvin/git/music-assistant/lab/README.md`. Read it every time, the map changes. Paths there are relative to `server/music_assistant/`. Take the union of the areas and the union of the provider entries.
+2. If no file maps to an area or a provider entry (docs, tests only, frontend), skip: result `skipped`. A provider the README lists as "no lab coverage" also gives `skipped`, with that as the note.
+3. A `models/**` change maps to `--all`, the full gate (20 to 30 min). Run it only when the caller allows it; otherwise the result is `nightly`.
 4. Run the areas in the background and wait for them. One area takes about 5 min, and the lab takes 4 runs at once.
 
-       /Users/marvin/git/music-assistant/lab/bin/lab run --ref pr/<n> --tier 1 --areas <area>[,<area>]
+       /Users/marvin/git/music-assistant/lab/bin/lab run --ref pr/<n> --areas <area>[,<area>]
 
-   For a device row or a music provider row, use the command the README gives for it. Never run `--deep`: the morning run covers that.
+   Player provider rows (`--providers squeezelite` and so on) are their own command, not part of the `--areas` one: next to `--areas`, `--providers` only picks the players. Put the player domains of all such rows in one:
+
+       /Users/marvin/git/music-assistant/lab/bin/lab run --ref pr/<n> --providers <domain>[,<domain>]
+
+   For a device row or a music provider row, use the `--providers` command the README gives for it. Never run `--deep`: the morning run covers that.
 
 ## Reading the result
 
