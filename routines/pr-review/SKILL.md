@@ -58,7 +58,9 @@ Sol. Per PR:
   the diff.
 - If the head has no Bot-MArley review and the latest push is over 15 minutes old, comment
   `@Bot-MArley recheck` on the PR. Do it once per head: skip it when `marley.recheck_head` already equals
-  the head, and set it when you post.
+  the head, and set it when you post. `recheck` only re-verifies changes it requested earlier: on a PR with
+  no Bot-MArley review at all, comment `@Bot-MArley review` instead, also once per head, merge conflicts
+  included.
 - Categorize the size as S under 50 lines, M 50 to 299, L 300 to 999 or XL 1000 and up. Count changed lines
   of code, without tests, icons, translations and lockfiles.
 
