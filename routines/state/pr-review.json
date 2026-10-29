@@ -8634,7 +8634,7 @@
    "author": "cateim",
    "url": "https://github.com/music-assistant/server/pull/7191",
    "draft": false,
-   "verdict": "almost",
+   "verdict": "ready",
    "assessment": "approve",
    "status": "attention",
    "attention_since": "2026-10-25T21:12:00Z",
@@ -8646,16 +8646,16 @@
    "del": 0,
    "ci": "green (15 checks)",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev d42078eb9; review required, no auto-merge",
+   "merge_state": "merge-tree clean on origin/dev ef5e7da05",
    "head_sha": "2087bd314",
    "core_touched": false,
    "providers_touched": [],
    "stacked": false,
-   "tldr": "Installs tini in the runtime image and makes it PID 1 (-s), so the crash handlers Soloist runs leave behind are reaped instead of piling up as zombies. Small and sensible; Copilot recommends approval. Verify fails on the PR checklist. Check it does not clash with how the HA add-on starts the image.",
+   "tldr": "Installs tini in the runtime image and runs it as PID 1 (-s), so processes orphaned inside the container (the Soloist crash handlers) get reaped instead of piling up as zombies. The add-on runs this image with init: false, so it benefits too. Bot-MArley: looks good; CI green.",
    "summary": "",
-   "whats_new": "Verify is green now (PR checklist fixed). Head unchanged.",
+   "whats_new": "Verdict was stale from 10-26 (Verify red, add-on check); both settled.",
    "blockers": [
-    "Your approve (Dockerfile)"
+    "Dockerfile change, so you approve"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -8679,7 +8679,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "",
+   "changed_now": "verdict fixed",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -8687,6 +8687,13 @@
     "review_url": "https://github.com/music-assistant/server/pull/7191#pullrequestreview-5641362733",
     "note": "Looks good. Checks are green and it is waiting for a maintainer to merge.",
     "recheck_head": null
+   },
+   "lab": {
+    "head": "2087bd314",
+    "areas": [],
+    "result": "skipped",
+    "run_id": "",
+    "note": "Dockerfile only, no lab area"
    }
   },
   {
@@ -15136,24 +15143,26 @@
    "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
    "gpt_sol": "reviewed with server#7292",
-   "assessment": "comment",
-   "verdict": "almost",
-   "blockers": [],
+   "assessment": "approve",
+   "verdict": "ready",
+   "blockers": [
+    "Merge together with server#7292: release models, then #7292 bumps the pin (and its schema to 101+)"
+   ],
    "draft": false,
    "repo": "models",
    "number": 451,
    "url": "https://github.com/music-assistant/models/pull/451",
    "title": "Add bookmarks for audiobooks and podcast episodes",
    "author": "fmunkes",
-   "status": "waiting",
-   "waiting_on": "fmunkes: with server#7292",
+   "status": "attention",
+   "waiting_on": "you: merge with server#7292, then release",
    "size": "M",
    "code": 76,
    "ci": "green",
    "merge_state": "mergeable",
    "head_sha": "",
    "tldr": "Companion of server#7292 (MediaItemBookmark). The 4 provider-bookmark feature flags are premature, stored_by_music_assistant names where a bookmark lives rather than whether it's editable, and a chapter docstring still says chapter/bookmark.",
-   "changed_now": "",
+   "changed_now": "verdict fixed",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
