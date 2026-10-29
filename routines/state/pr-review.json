@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-29T12:00:00+01:00",
+ "last_run": "2026-10-29T13:00:00+01:00",
  "dev": "7a59e9b96",
- "run_note": "Bot-MArley's first reviews landed: #6948 has two security requests on the kiosk port, #6802 and aioslimproto#558 need rebases, #6944 one functional point, #6809 is clean but stacked on #6802. #7282 is clean (lab green) for your approve. fmunkes took #7209 out of draft with both Copilot points fixed; it waits on the models#448 release.",
+ "run_note": "OzGav merged #7263 and #7279. fmunkes took bookmarks (#7292) out of draft; Bot-MArley says the earlier points are fixed and only the models#451 release blocks it, but the provider-stored half is still your design call.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -2099,7 +2099,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "fmunkes: rebase + hidden album leak",
-   "changed_now": "reviewed",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -2361,7 +2361,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: autoplay-refill decision; lands after #6802",
-   "changed_now": "reviewed",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -3093,7 +3093,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "thelad-dev: re-apply the pin on availability changes",
-   "changed_now": "reviewed",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -3471,7 +3471,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "Carunga: resolve the conflict",
-   "changed_now": "reviewed",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -3731,7 +3731,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "trudenboy: QR auth + API allowlist",
-   "changed_now": "reviewed",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -9808,7 +9808,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": "pushed",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -11203,7 +11203,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 07:30 CET",
-   "changed_now": "recheck",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -15206,8 +15206,8 @@
   {
    "repo": "server",
    "number": 7263,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-29T11:39:23Z",
    "title": "Fix NetEase Cloud Music bitrate unit (bps to kbps)",
    "author": "lcisconl",
    "url": "https://github.com/music-assistant/server/pull/7263",
@@ -15216,7 +15216,7 @@
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "lcisconl: 2 Copilot threads (test, description)",
+   "waiting_on": "merged",
    "gpt_sol": "clean",
    "size": "S",
    "code": 3,
@@ -15233,7 +15233,7 @@
    "stacked": false,
    "tldr": "Conversion is identical to AudioFormat.__post_init__ (bit_rate > 10000 -> int(bit_rate / 1000)), so the fix is correct.\nOnly the post-init assignment bypassed it; the other br use (_infer_audio_format_from_level) goes through the constructor and is already converted.\nNot cosmetic: lossy quality score uses bit_rate, so the bps value inflated it.\nOnly gap: no regression test despite an existing tests/providers/neteasecloudmusic dir (Copilot asked too).",
    "summary": "music_assistant_models AudioFormat.__post_init__ does `if self.bit_rate and self.bit_rate > 10000: self.bit_rate = int(self.bit_rate / 1000)`. The PR reproduces that exactly for the stream_info['br'] assignment after construction at line ~1953. Line 648 passes quality_obj['br'] into the AudioFormat constructor, so it was already normalised and needs no change. The 1987 debug log just reads audio_format.bit_rate. Besides the UI showing 3,351,266 kbps, AudioFormat.quality uses bit_rate for lossy content, so MP3/AAC streams were overscored. Current CI is green (the earlier PR Checks/PR Labels failures were stale runs before the body was fixed).",
-   "whats_new": "lcisconl pushed 59bb5ebfb at 10:54Z; Bot-MArley hasn't reviewed it yet (too recent to recheck).",
+   "whats_new": "OzGav merged it.",
    "blockers": [
     "Copilot: regression test and description (lcisconl); then an auto-approve candidate"
    ],
@@ -15286,7 +15286,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 10:15 CET",
-   "changed_now": "pushed",
+   "changed_now": "merged",
    "marley": {
     "verdict": "none",
     "reviewed_head": false,
@@ -16893,7 +16893,7 @@
    "copilot_reviewed_head": true,
    "copilot_note": "Changes recommended on 6e8f8fa58: 1 CRITICAL, 2 PROBLEMs (deleted-user rows matches Opus).",
    "summary": "New bookmarks table (created on startup with CREATE TABLE IF NOT EXISTS, so no DB_SCHEMA_VERSION bump or migration is needed and an older server just ignores the table). Its UNIQUE(user_id, media_type, provider_instance, provider_item_id, start) covers every lookup, so no extra index. Rows are keyed per provider copy, and episode rows carry their podcast copy. The daily _cleanup_database sweep drops rows whose copy left the library. Three commands (music/bookmarks LIBRARY_READ, music/set_bookmark and music/remove_bookmark LIBRARY_WRITE) always scope to get_current_user(), filter by visible_music_sources, and emit BOOKMARKS_UPDATED, which the websocket handler only sends to the owning user. Party guests (no LIBRARY_WRITE) can only read, and start_position on play_media gives them nothing beyond seek. A new table is the right call (playlog/media_progress holds one position per item, and bookmarks are many named positions), and per-copy keying fits the existing pinned-copy resume. The questionable part is the provider-backed storage path (4 ProviderFeatures, 3 MusicProvider methods, write-target refusal). No provider implements it in this PR, and its read and remove semantics don't match the per-user MA path. I'd either drop it until the ABS implementation lands, or fix the two issues below. delete_user also leaves bookmark rows behind.",
-   "whats_new": "New, with models#451. The critical gate drafted it at ~06:25Z on Copilot's new CRITICALs.",
+   "whats_new": "fmunkes pushed f3b6141b8 and took it out of draft. Bot-MArley: the earlier review points are fixed; only the models release blocks.",
    "core_touched": true,
    "providers_touched": [],
    "ci_fail": true,
@@ -16903,26 +16903,33 @@
    "assessment": "comment",
    "verdict": "almost",
    "blockers": [
-    "Needs a models release with MediaItemBookmark (CI red on ImportError); GPT Sol calls the missing pin a CRITICAL",
-    "Provider-stored half (4 flags, 3 methods) is unused: shared-account reads show others' bookmarks, and MA-stored rows get stranded once a provider gains edit support. Opus suggests dropping it until ABS lands",
-    "GPT Sol: bookmark start goes through the resume-position path (0 when duration unknown, minus 500 ms)",
-    "API_SCHEMA_VERSION 100 clashes with #7209 and #7170"
+    "Needs models#451 merged and released, then the pin bumped (CI red)",
+    "Design call still open: the provider-stored half (flags + methods no provider uses yet); Bot-MArley says the earlier points are fixed",
+    "API_SCHEMA_VERSION 100 clashes with #7170 and #7209"
    ],
-   "draft": true,
+   "draft": false,
    "repo": "server",
    "number": 7292,
    "url": "https://github.com/music-assistant/server/pull/7292",
    "title": "Add bookmarks for audiobooks and podcast episodes",
    "author": "fmunkes",
    "status": "attention",
-   "waiting_on": "you: design call on the provider-stored half; models#451 release",
+   "waiting_on": "you: models#451 + the provider-stored half design call",
    "size": "L",
    "code": 362,
-   "ci": "red (models#451 not released)",
+   "ci": "red (needs models#451 released)",
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
-   "head_sha": "6e8f8fa58",
+   "head_sha": "f3b6141b8",
    "tldr": "The bookmarks that MA stores itself work, are kept per user and copy, and pass their tests. The provider-stored half has no provider using it yet, and as written it lists account-wide bookmarks as the user's own and strands MA rows once a provider gains edit support. All three of fmunkes' open PRs bump the API schema 99 to 100, so whichever merges second needs a re-bump.",
-   "changed_now": ""
+   "changed_now": "pushed",
+   "marley": {
+    "verdict": "changes",
+    "reviewed_head": true,
+    "open_threads": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7292#pullrequestreview-5697257682",
+    "note": "1 request: CI red until models#451 is released and the pin bumped.",
+    "recheck_head": null
+   }
   },
   {
    "state": "open",
@@ -17687,7 +17694,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "cc7b438c7",
    "tldr": "The server logic is correct, but it builds ListeningTimeItem with an `item` field that no released or open models version has, so the endpoint raises TypeError and pytest/lint are red. That is more than the pre-commit checkbox. Blocked on a models PR that hasn't been opened yet.",
-   "changed_now": "recheck",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -17698,8 +17705,8 @@
    }
   },
   {
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-10-29T11:57:00Z",
    "stacked": false,
    "related_prs": [],
    "unaddressed_comments": [],
@@ -17801,7 +17808,7 @@
    "copilot_reviewed_head": true,
    "copilot_note": "Approval recommended on a2f3ca86c; Bot-MArley's 403 thread is open.",
    "summary": "_validate_token now maps 401/403 to InvalidToken (core translation 'invalid_token', and mass.load_provider does not retry it), 404 to a translated SetupFailedError 'endpoint_not_found', and ClientConnectionError/TimeoutError to a translated 'connection_failed'. Other ClientError and JSON ValueError keep the generic message. Warnings log api_base_url (or the full validate URL on 404), never the token. strings.json and en.json agree (scripts.build_translations --check passes), and the base URL description now says not to include /1. The behaviour change: a 401/403 used to be a retried SetupFailedError and is now a permanent auth error the user must fix. That is right for a real token rejection, but a reverse proxy 403 (Authelia, Cloudflare) in front of a self-hosted Maloja/Koito would also read as 'token rejected' and stop retrying. Public ListenBrainz returns 200 with valid:false for a bad token, which is unchanged. The old default-URL unreachable test was replaced by a custom-URL parametrized one, so coverage is kept. Each failed setup now logs twice, the provider warning plus the core 'Error loading provider' warning on every retry.",
-   "whats_new": "Tommatheussen resolved the old threads; Bot-MArley and OzGav still want 401/403 retryable.",
+   "whats_new": "OzGav merged it.",
    "core_touched": false,
    "providers_touched": [
     "listenbrainz_scrobble"
@@ -17822,14 +17829,14 @@
    "title": "Improve Listenbrainz_scrobble setup failure handling",
    "author": "Tommatheussen",
    "status": "waiting",
-   "waiting_on": "Tommatheussen: 401/403 retryable (Bot-MArley + OzGav)",
+   "waiting_on": "merged",
    "size": "S",
    "code": 41,
    "ci": "green",
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "a2f3ca86c",
    "tldr": "Setup errors for custom ListenBrainz servers are now specific and translated, and they log the URL. 401/403 now fail permanently as a bad token instead of retrying. Tests pass, and the new ones fail on dev.",
-   "changed_now": "commented",
+   "changed_now": "merged",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -18293,7 +18300,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "0425d69bf",
    "tldr": "statistics/plays_over_time now returns every bucket in the period, with 0 for buckets without plays, so the frontend can drop its own gap filling (frontend#2526). Core statistics change; Bot-MArley hasn't reviewed it yet.",
-   "changed_now": "reviewed",
+   "changed_now": "",
    "lab": {
     "head": "0425d69bf",
     "areas": [
