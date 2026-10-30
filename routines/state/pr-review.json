@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-30T16:00:00+01:00",
+ "last_run": "2026-10-30T17:00:00+01:00",
  "dev": "4444315b8",
- "run_note": "Quiet hour: no pushes, reviews, comments or merges since 15:00. Waiting on you: your answer to OzGav on #7201, approvals in the ready column, the models#448 release and the #6948 call.",
+ "run_note": "GoatsAndMonkeys shrank #7257 to the dedupe you asked for (lab green, Bot-MArley recheck pending). ryanmac8 rebased #6901 and fixed the duplicate helper; only chrisuthe's AI-services question remains.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -1931,8 +1931,8 @@
    "draft": false,
    "verdict": "almost",
    "assessment": "comment",
-   "status": "waiting",
-   "attention_since": null,
+   "status": "attention",
+   "attention_since": "2026-10-30T15:14:50Z",
    "size": "XL",
    "code": 2997,
    "add": 5575,
@@ -1945,13 +1945,12 @@
     "openai_compatible",
     "hass"
    ],
-   "merge_state": "CONFLICT in music_assistant/providers/hass/__init__.py against origin/dev 291ddf919 (from #7181)",
-   "head_sha": "62bc5692c",
+   "merge_state": "merge-tree clean on origin/dev 4444315b8",
+   "head_sha": "b03f7765b",
    "tldr": "Almost: ryanmac8 fixed the stale-overwrite and preview-pause points; Opus confirms the delta (no deadlocks, waits end, unload clean) and all 35 threads are resolved. Still open: the test fake breaks 69 tests on Python 3.14.4, plus two small preview-slot checks (one validated `fix 6901` patch), Copilot's previously missed CRITICAL that a 429 from the HA image download does not pause generation, and your AI_QUERY design call.",
    "summary": "Delta 62bc5692c review. get_playlist_metadata wraps the provider body in AIArtwork.refreshing(), a per-item_id set of asyncio.Events that is set and removed in a finally. _refresh_playlist (used by the worker's _process and the hourly _refresh_playlists) snapshots those events and waits for them before update_metadata(force_refresh=True).\n\nDeadlocks and waits: the wait happens outside every lock (_refresh_lock is only checked with locked() by refresh(), _store_lock is not held, and the controller's Throttler is entered after the wait). No marked get_playlist_metadata awaits the worker, the hourly pass or their locks. Since the list is a snapshot, a refresh that starts later is never waited for, so the wait cannot starve. A refresh that started after the cover file exists picks the new cover up itself through cover() and _touch, and descriptions through _stored_description. Events are always set, including on cancellation. Unload cancels the worker task at done.wait(). Nothing waits on itself: the worker's own refresh marks only after its wait.\n\nResidual window: the mark covers only this provider's part. The controller's update_item_in_library after it is unmarked. That is negligible: it is the only PLAYLIST_METADATA provider, update_metadata goes through Throttler(1, 30), and only a DB write follows. Copilot's controller-level serialization (r4353322199) was not adopted. The provider-local fix is enough for how it is actually called. A provider reload drops _refreshing, so a refresh still running on the old instance is not waited for. The hourly pass's 'file exists but not shown' check heals that, so it is not flagged.\n\nPreview: _render_preview checks _stopped and the image pause under the semaphore, and calls _pause_if_unreachable on failure. RateLimited and ProviderUnavailableError are in TRANSIENT_ERRORS, so with PREVIEW_CONCURRENCY=2 the styles not yet started are skipped. preview() refuses inside _preview_lock before _available/_record, so no slot is taken. Slots reserved for skipped styles are not returned. That matches the worker, which also keeps the slot on failure.\n\nPrevious points: (a) fixed. _download maps 429 to RateLimited and 408/5xx/transport errors to ProviderUnavailableError, and these are not InvalidDataError, so they skip the chat-to-images fallback. The thread is resolved. (b) not fixed: test_ai.py:2040 still has asyncio.Task(coro, eager_start=True), and 69 tests fail on local Python 3.14.4 with AttributeError 'NoneType' has no attribute 'is_running'. CI is green, likely on an older 3.14 patch. (c) not fixed: preview() has no _stopped check after _concept, and _preview_description records the slot before checking _stopped. (d) not fixed: only _stopped is rechecked after _record. (e) open, Marvin's design call (AI_QUERY gating vs a dedicated ProviderFeature, which needs a models release). (f) unchanged. The collage thumb is still returned alone, as on origin/dev, so it is pre-existing.\n\nCore touched: yes. music_assistant/models/plugin.py adds ImageEngine plus the PluginProvider.get_image_engines/ai_generate_image defaults. music_assistant/helpers/plugin_engines.py, music_assistant/strings.json and translations/en.json also change, and the hass and openai_compatible providers are modified. The metadata controller and music_assistant_models are not touched. The branch is 120 commits behind origin/dev but merges cleanly. The dev changes to enrichment.py do not touch the playlist path.",
    "blockers": [
-    "Bot-MArley: _get_font in ai.py copies the provider's own helper",
-    "Merge conflict with dev (hass)"
+    "Bot-MArley: the get_font duplicate is fixed and the branch merges cleanly; chrisuthe's question about Home Assistant's 'use for AI services' option still needs a maintainer answer"
    ],
    "findings": [],
    "unaddressed_comments": [
@@ -1988,7 +1987,7 @@
    "suggested_fix": null,
    "backport": null,
    "prompt": "Server PR #6901 (https://github.com/music-assistant/server/pull/6901), head 05ea062a6, by ryanmac8. Apply /tmp/prr/r0700/d6901/suggested.patch: in tests/providers/playlist_metadata/test_ai.py pass loop=asyncio.get_running_loop() to the worker fake's asyncio.Task (68 tests fail on Python 3.14.4 without it); in music_assistant/providers/playlist_metadata/ai.py raise ActionUnavailable when _stopped right after _concept() in preview(), and recheck _text_engine_paused() next to _stopped after the _record await in _preview_description. Run tests/providers/playlist_metadata and tests/providers/hass. Work in a worktree from refs/remotes/pr/6901.",
-   "whats_new": "62bc5692c applies new covers after running refreshes and pauses the image engine on a failed preview; marked ready 14:55Z. Re-reviewed: Opus almost, GPT Sol point checked and not reachable, Copilot Needs a closer look.",
+   "whats_new": "ryanmac8 rebased onto dev and moved get_font into fonts.py; Bot-MArley confirmed.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 16:25 CET",
    "auto_approved": null,
@@ -1998,23 +1997,23 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "ryanmac8: rebase (hass conflict)",
-   "changed_now": "",
+   "waiting_on": "you/chrisuthe: Home Assistant 'use for AI services' question",
+   "changed_now": "pushed",
    "gpt_sol": "2 problems (1 refuted, 1 narrow race)",
    "marley": {
-    "verdict": "changes",
+    "verdict": "approved",
     "reviewed_head": true,
-    "open_threads": 1,
+    "open_threads": 0,
     "review_url": "https://github.com/music-assistant/server/pull/6901#pullrequestreview-5702517234",
-    "note": "Duplicate _get_font in ai.py; merge conflicts with dev.",
+    "note": "get_font duplicate resolved; nothing else open from Bot-MArley.",
     "recheck_head": null
    },
    "lab": {
-    "head": "62bc5692c",
+    "head": "b03f7765b",
     "areas": [],
     "result": "nightly",
     "run_id": "",
-    "note": "touches music_assistant/models, left to the nightly run"
+    "note": "touches music_assistant/models"
    }
   },
   {
@@ -12075,7 +12074,7 @@
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 291ddf919",
-   "head_sha": "4ee21104d",
+   "head_sha": "7a87b9095",
    "core_touched": true,
    "providers_touched": [],
    "stacked": false,
@@ -12495,25 +12494,24 @@
    "assessment": "approve",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "GoatsAndMonkeys: shrink to the dedupe only (your 13:58Z ask)",
+   "waiting_on": "Bot-MArley recheck on f99687d3a",
    "gpt_sol": "clean (2 suggestions)",
    "size": "M",
-   "code": 142,
+   "code": 52,
    "add": 0,
    "del": 0,
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 63d21f687",
-   "head_sha": "5346fccda",
+   "head_sha": "f99687d3a",
    "core_touched": true,
    "providers_touched": [],
    "stacked": false,
    "tldr": "recently_played LEFT JOINs provider_mappings on its unique key, so provider rows resolve to their library item. It streams rows newest first and keeps the first row per item until limit distinct items are found.\nWith a user filter the (userid,timestamp) index serves the ORDER BY and the read stops early. Without one it sorts the whole joined playlog (fine at realistic sizes).\nmark_item_unplayed now clears every alias and signals only the aliases it actually deleted. All Copilot threads are resolved, CI green, 1615 tests pass.\nOnly SUGGESTION/NIT level notes.",
    "summary": "Dedupe key is (media_type, entry_provider, entry_item_id), where provider rows that map to a library item become ('library', CAST(l.item_id AS TEXT)). That matches how library rows store p.item_id. Ordering is timestamp DESC, rowid DESC, so the newest alias wins and ties are deterministic. Limit counts distinct entries, 0 still means all, and the API has no offset, so there is no paging issue. The media type, user_initiated, always_include, fully_played, userid, queue_id, played_after and provider/visible-source filters still apply per row before the dedupe. A merged entry is only listed if at least one of its rows passes the filter. I measured query plans on a synthetic 200k-row playlog. With a userid: SEARCH via userid_timestamp_idx, the join is a unique-index lookup, no temp sort, first 10 rows in 0.1 ms (same as before). Without a userid (background callers with no session user): SCAN plus temp B-tree over all joined rows, 182 ms against 24 ms before (where LIMIT allowed a top-N sort). The table is unique per item/provider/user, so real sizes are far smaller. On mark_item_unplayed: aliases are the given key, its library item, and all of the library item's mappings. Deletes run per user per alias, and events only go out for aliases whose delete hit a row (the given item always gets one). The 'private alias broadcast' Copilot raised is no different from mark_item_played, which already broadcasts PLAYLOG_UPDATED to all clients. The latest Copilot overview at head 5346fccda lists no open issues.",
-   "whats_new": "Your 13:58Z comment (from the chip): keep the JOIN + streaming dedupe (GROUP BY + LIMIT lost the index early stop, 0.05 ms vs 85-560 ms), drop the rest.",
+   "whats_new": "GoatsAndMonkeys did your 13:58Z ask: plays merge on the library key but each entry keeps its newest row's own item_id/provider; mark_item_unplayed is back to dev and _get_playlog_aliases plus the four tests are gone. Lab library green.",
    "blockers": [
-    "Your ask: dedupe on the resolved key but return the newest row's own item_id/provider",
-    "Revert mark_item_unplayed, drop _get_playlog_aliases and the four mark_unplayed tests"
+    "Shrunk as you asked (dedupe only, mark_item_unplayed reverted); Bot-MArley recheck pending, then your approve (core)"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -12540,22 +12538,22 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 13:00 CET",
-   "changed_now": "",
+   "changed_now": "pushed",
    "marley": {
-    "verdict": "approved",
-    "reviewed_head": true,
+    "verdict": "none",
+    "reviewed_head": false,
     "open_threads": 0,
     "review_url": "https://github.com/music-assistant/server/pull/7257#pullrequestreview-5682004668",
-    "note": "Requested changes: none in the code. Please answer the open review threads and resolve them as OzGav asked, so this is ready for a maintainer to merge once the Copilot review on the new commit is in.",
-    "recheck_head": null
+    "note": "New head; recheck posted.",
+    "recheck_head": "f99687d3a"
    },
    "lab": {
-    "head": "5346fccda",
+    "head": "f99687d3a",
     "areas": [
      "library"
     ],
     "result": "green",
-    "run_id": "20261029-080844-fda1",
+    "run_id": "20261030-160157-e673",
     "note": ""
    }
   },
@@ -14686,7 +14684,7 @@
    "code": 57,
    "ci": "green",
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
-   "head_sha": "0c2001486",
+   "head_sha": "aec69a888",
    "tldr": "The end-of-queue hold now follows how far the player is behind the stream instead of a fixed 8 s, capped at 180 s. Core is the right layer: the lead-out already lives in the streams controller since #5408, and the new rule is generic. Small follow-ups only.",
    "changed_now": ""
   },
