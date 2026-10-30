@@ -14,7 +14,8 @@ state back and commit it in `~/git/dotfiles` as Marvin (marvinschenkel@gmail.com
 
 - The lab CLI runs from the Mac: `/Users/marvin/git/music-assistant/lab/bin/lab`. It syncs the
   local `lab/` checkout to the VM and runs `labctl` there over `ssh lab`.
-- `lab/README.md` (areas, what each check covers), `lab/docs/runbook.md` ("Reading a failed run").
+- `lab/docs/pr-gate.md` (areas, what each check covers), `lab/docs/runbook.md` ("Reading a failed
+  run").
 - `known_red` in the state file: tests that are red on `dev` for a known reason, with the date and
   the note. They stay in the report, marked known, and never count as a regression.
 
