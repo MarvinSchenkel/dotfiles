@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-10-30T12:00:00+01:00",
+ "last_run": "2026-10-30T15:00:00+01:00",
  "dev": "4444315b8",
- "run_note": "Quiet hour: no pushes, reviews or merges since 11:00 (aiosonos#195 only had a background update, no new comments or reviews). Still waiting on your approvals, the models#448 release and the #6948 call.",
+ "run_note": "The 13:00 and 14:00 runs didn't happen; this covers 12:00 on. The 2.10.9 backport merged. OzGav pushed back on your #7201 change request (artist.nfo edits apply via 'update metadata' by design), and requested changes on #7301 (Discover rows off by default, filtering, docs).",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -7965,9 +7965,9 @@
    "draft": false,
    "verdict": "almost",
    "assessment": "request_changes",
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "OzGav: your requested change (artist.nfo edits)",
+   "status": "attention",
+   "attention_since": "2026-10-30T11:58:45Z",
+   "waiting_on": "you: answer OzGav (artist.nfo edits are applied on 'update metadata' by design)",
    "gpt_sol": "2 problems",
    "size": "M",
    "code": 96,
@@ -7982,9 +7982,9 @@
    "stacked": false,
    "tldr": "Fixes shared-artist renames on album/track refresh cleanly, but breaks local artist.nfo and tag updates: filesystem_local only updates artists via track overwrite, which now never touches an existing artist (reproduced). Request changes. GPT Sol agrees and adds that existing provider mappings cannot recover availability. Copilot recommends approval.",
    "summary": "The core fix works. An album/track refresh (refresh_item, _refresh_from_provider_mapping, filesystem rescan with overwrite) no longer renames or overwrites a library artist found by prov id or matched by ids/name. It only adds new mappings and new id types, and writes nothing when there's nothing new (the per-track artist rewrite and UI flash go away). ProviderMapping equality is (instance, item_id), so the no-write check holds. Renames from the artist's own provider still apply through refresh_item(artist) -> update_item_in_library(overwrite=True), and library sync never renamed on dev either. MusicBrainz merges are unaffected: merge_library_artists_by_mbid is only called from metadata, and a differing MBID is ignored rather than replaced, which is stricter than dev. DB writes drop sharply on refreshes. The cost is one extra match query per new artist. Blocking: filesystem_local relies on the track overwrite path to push artist.nfo, artist image, tag name and MBID corrections into the library artist, and its get_artist() echoes the stored name, so after this PR local artist metadata edits are silently lost (reproduced). Code lines: 48 added, 48 removed outside tests.",
-   "whats_new": "You requested changes at 09:01Z: local artist.nfo edits stop syncing (base.py:3667-3669).",
+   "whats_new": "OzGav replied to your changes-requested review: artist.nfo edits now apply via 'update metadata' on the artist, not via a track rescan, by design.",
    "blockers": [
-    "Your review (09:01Z): editing a registered artist.nfo no longer updates the library artist (biography, genre, sort name, artwork); needs a direct artist refresh path plus a test"
+    "OzGav (11:58Z) says it's by design: a scan no longer rewrites the shared artist; an edited artist.nfo is applied when you run 'update metadata' on the artist. Accept that or keep your change request"
    ],
    "findings": [
     {
@@ -8022,7 +8022,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "",
+   "changed_now": "commented",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -15947,7 +15947,7 @@
    "closed_at": null,
    "draft": false,
    "assessment": "approve",
-   "attention_since": "2026-10-29T20:51:24Z",
+   "attention_since": null,
    "ci_fail": false,
    "stacked": false,
    "related_prs": [],
@@ -15963,7 +15963,7 @@
    "suggested_fix": null,
    "backport": null,
    "summary": "",
-   "whats_new": "New.",
+   "whats_new": "OzGav requested changes: docs line, rows hidden by default, filter non-streamable items, avoid per-album fallback calls, Qobuzissime untranslated, more tests.",
    "core_touched": false,
    "providers_touched": [
     "qobuz"
@@ -15972,16 +15972,17 @@
    "reviewed_at": null,
    "auto_approved": null,
    "blockers": [
-    "Not auto-approved: Bot-MArley only commented (no formal APPROVED) and the PR edits the generated translations/en.json"
+    "OzGav: link a docs PR listing the new Discover rows",
+    "OzGav: rows off by default (enabled_by_default), filter non-streamable items, skip items without artist (no extra get_album calls), Qobuzissime untranslated, tests for both"
    ],
    "repo": "server",
    "number": 7301,
    "url": "https://github.com/music-assistant/server/pull/7301",
    "title": "Show Qobuz editorial album lists as Discover recommendation rows",
    "author": "RobinFrcd",
-   "verdict": "ready",
-   "status": "attention",
-   "waiting_on": "you: approve",
+   "verdict": "almost",
+   "status": "waiting",
+   "waiting_on": "RobinFrcd: OzGav requested changes",
    "size": "M",
    "code": 146,
    "ci": "green",
@@ -16003,7 +16004,7 @@
     "run_id": "",
     "note": "Qobuz has no lab coverage outside tier 2; not a risky provider"
    },
-   "changed_now": ""
+   "changed_now": "reviewed"
   },
   {
    "state": "open",
