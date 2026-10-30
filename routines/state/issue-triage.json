@@ -1316,99 +1316,6 @@
    "ask": null
   },
   {
-   "n": 6419,
-   "title": "Sendspin→AirPlay bridge drops 1.7-3.3 s at stream start, and schedules each player at a different lead — a fixed, audible offset between RAOP players in one sync group",
-   "col": "merged",
-   "area": "server / airplay (sendspin_bridge) + sendspin (playback live-source lead)",
-   "since": "2026-09-27 marathon",
-   "summary": "The dropped intro is real: on a realtime source (Spotify via soloist, YouTube Music, radio) Sendspin ignores the bridge's 4500 ms cold-start lead and schedules only min_buffer_ms (1000 ms) ahead, while the bridge can never anchor sooner than connect time + 2500 ms, so ~1.7-2.2 s is always cut on a cold start. The \"per-player lead = audible offset\" claim is disproved by the reporter's own log: the start_unix_ms gap (188 ms) equals the content-shift gap (2188-2000), so both players map the same sample to the same instant. The constant ~199 ms echo is device output latency, which is what sync_adjust is for. Code is identical between 2.10.3 and origin/dev.",
-   "fix": "",
-   "checked": "live_verdict: BLOCKED\nlane: live\nrepro_cmd: worktree triage-6419 (origin/dev fd034e289) + cliairplay v0.5.4 in providers/airplay/bin; `ma-live.sh prepare`, set players.9056826F550E.values.preferred_output_protocol=spb_9056826f550e and players.ap9056826f550e.values.stored_volume=0 in the copy, `ma-live.sh start`, then `triage_logs/2026-09-27/repro/6419.sh <uri> 8` (not run: the pre-play volume guard failed)\nevidence: No playback started. The caller's guard (volume 0 on the NAD AirPlay player and parent, abort if any NAD player reads above 5) can't be met. `players/cmd/volume_set` on ap9056826f550e/spb_9056826f550e is auto-resolved to the parent (\"Auto-resolved protocol player spb_9056826f550e to linked parent 9056826F550E\"), so over the API only the parent goes to 0. With the default config ap/spb read 400 (raw FALLBACK_VOLUME 20 under max_volume=5). With stored_volume=0 seeded, ap reads 0 but spb reads 500. Cause: `sendspin_bridge.py:438` `initial_volume=self.airplay_player.volume_level or 25`, where a 0 is falsy, so the bridge role starts at raw 25. `_enforce_volume_limits` then tries `_handle_cmd_volume_set(spb, 100)` (seen at registration, where it failed with \"Player spb_9056826f550e is not available\"). On a later state update while streaming, that clamp goes spb.volume_set(5) -> role -> `airplay_player.volume_set(5)` -> `VOLUME=5` to the NAD, even though BluOS owns its volume (this path skips the `owns_volume` gate). Under max_volume=5 every protocol-player reading is scaled x20, so any non-zero device volume reads >= 20. The literal \"nothing above 5\" guard can only hold at device volume 0.\nunblock options (need a human decision): (a) guard on device scale instead (parent logical <= 5, ap/spb raw <= 5, no `VOLUME=` > 5 in run.log). The known worst case is a clamp push of VOLUME=5. (b) Seed ap stored_volume=1 and drop max_volume from only the two protocol players, so spb/ap read 1 and nothing gets clamped. The parent keeps max_volume=5 and owns the volume.\nside note (harness): the watchdog clamped WiiM Mini (idle) from volume 100 to 5 nine times right after start. It then read 0. Nothing played.",
-   "plan": "",
-   "branch": "",
-   "diff": "",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/server/pull/7160",
-     "label": "server#7160 (maximmaxim345, merged 10-23 06:52 UTC, bugfix, no backport label; cherry-picks cleanly onto stable)"
-    }
-   ],
-   "badges": [
-    [
-     "muted",
-     "Repro blocked, retest",
-     "retest"
-    ],
-    [
-     "ok",
-     "FtbC labelled",
-     "booked"
-    ],
-    [
-     "muted",
-     "backport? (clean cherry-pick, no label)",
-     "backport?"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-21 15:45 discuss: discussion session started on your main account. Your question first: did the Sendspin 1.0 work on stable/dev change the live-source lead or the bridge anchor floor (the 09-27 'identical code' check predates it)?",
-    "10-22 17:30 run: maximmaxim345 opened server#7160 (related to this issue): YouTube Music and Soloist tracks get the buffered lead instead of the radio one. Moved to Already fixed on dev / someone else's PR; the stale test-ask slot is cleared.",
-    "10-23 09:30 run: maximmaxim345 merged server#7160. Labelled Fix to be Confirmed. No milestone: no backport label but it cherry-picks cleanly onto stable, so backport is your call.",
-    "10-23 15:40 (on request): server#7160 isn't in the latest nightly 2.11.0.dev2026102303 (built 33 min before the merge) or beta 6. Nightly test ask drafted; you approved posting it, the first run after the next nightly checks inclusion and posts.",
-    "10-26 07:30 run: OzGav (10-24 11:14 UTC) already asked johnp3004 to test 2.11.0b7, which has server#7160. Our pending nightly test ask is dropped (would be a duplicate). Waiting on johnp3004."
-   ],
-   "last": "OzGav 2026-10-24 11:14",
-   "gh": {
-    "login": "OzGav",
-    "team": true,
-    "at": "2026-10-24T11:14:11Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "action": "",
-   "ask": null,
-   "milestone": null,
-   "sync": {
-    "at": "2026-10-30T16:30:07Z",
-    "last_human": {
-     "login": "OzGav",
-     "at": "2026-10-24T11:14:11Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6419#issuecomment-6383523922"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/server",
-      "n": 7160,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-10-23T06:52:48Z",
-      "own": false
-     }
-    ],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "airplay",
-     "Fix to be Confirmed",
-     "sendspin",
-     "waiting-for-user"
-    ]
-   },
-   "fix_thread": {
-    "id": "mcp:e35bf36a-64dd-4fb5-a88a-65a2c27cc39a",
-    "title": "Discuss: Sendspin→AirPlay bridge drops the stream start (#6419)",
-    "kind": "discuss",
-    "done": false
-   },
-   "waiting_on": null
-  },
-  {
    "n": 6400,
    "title": "HEOS Integration plays announcements N times",
    "col": "cantfix",
@@ -1812,116 +1719,6 @@
      "needs-attention"
     ]
    }
-  },
-  {
-   "n": 6737,
-   "title": "Universal Player config deleted at startup by a stale native link, recreated with a new id",
-   "col": "merged",
-   "area": "server / providers/universal_player/provider.py _restore_player native claims + controllers/players/protocol_linking.py",
-   "since": "2026-10-14 11:40",
-   "last": "MarvinSchenkel 2026-10-20 12:36",
-   "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-20T12:36:19Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "After upgrading 2.10.2 to 2.10.6, a Juke Audio / Volumio AirPlay player wrapped in a Universal Player came back with a new player_id (upfc94fc52 became up56917d04). At startup MA declined to restore the UP because its AirPlay protocol was recorded as linked to a native player, deleted the UP config, and when no native showed up it wrapped the same AirPlay protocol in a new UP. No diagnostics yet.",
-   "fix": "",
-   "checked": "Opus subagent, code read on origin/dev (87a250a1e5), same in 2.10.2 and 2.10.6. discover_players (universal_player/provider.py:65-89) calls _restore_player (:308) per stored UP. The native_claims loop (:349-367) treats any non-UP config whose stored linked_protocol_ids holds the UP's AirPlay id as the rightful owner, guarded only by _owns_domain_of_protocols (:511, #6610). It reparents the protocol to that native (:532) and deletes the UP config (:389-401) before the native registers. At runtime _try_link_protocol_to_native (protocol_linking.py:161-198) waits 45 s for the cached parent (:448), _delayed_protocol_evaluation (:466-530) creates a UP, and _resolve_stored_universal_player (:621) finds no config via the rewritten protocol_parent_id, so mint_player_id() (:239) makes the new id. Root cause of the stale claim: _save_linked_protocol_ids (:1522-1540) only ever adds ids, so a native that once linked the AirPlay protocol keeps claiming it. #6610 (2.10.5) only covers a stale native that owns its own AirPlay protocol. The existing test test_restore_native_claims_carries_config_and_deletes_wrapper (test_protocol_linking.py:11173) asserts today's deletion with this exact config shape. Likely stale native: an MPD or HA player for the Volumio box (guess). No open PR.",
-   "plan": "Fix doesn't depend on diagnostics. Lean shape agreed in chat; fix also covers home-assistant/core#187029 (mint on fallback).",
-   "branch": "",
-   "diff": "",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/server/pull/6610",
-     "label": "server#6610 (merged, 2.10.5: covers only the native-owns-AirPlay variant)"
-    },
-    {
-     "url": "https://github.com/music-assistant/server/pull/7156",
-     "label": "server#7156 (ours, merged 10-28, no backport label, cherry-picks cleanly)"
-    }
-   ],
-   "badges": [
-    [
-     "info",
-     "Waiting for user",
-     "waiting"
-    ],
-    [
-     "muted",
-     "backport?",
-     "backport?"
-    ],
-    [
-     "ok",
-     "Booked FtbC",
-     "booked"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-14 11:40 run: new issue. Code path confirmed (stale linked_protocol_ids claim deletes the UP config before the native registers, then a new id is minted). No unit repro that isn't just today's intended behaviour, so no fix branch. Fix needs a design call.",
-    "10-16 07:38 run: bwente re-pasted the startup log (18:49 UTC). The empty ids (`protocols ['']`, 'registered: /juke') are an artefact: GitHub dropped the `<redacted-...>` placeholders from the original report as HTML tags. No diagnostics file attached. Root cause unchanged, #6610 is already in 2.10.6, nothing on dev since changes the delete-before-native-registers order. Still unknown: which native player's config holds the stale AirPlay link.",
-    "10-19 07:38 run: bwente (10-17 21:08 UTC): 2.10.7 gave the same player yet another new UP id, no diagnostics, still no answer on which native player holds the stale link. Nothing in 2.10.7 or dev changes this path (only #7010, UP name following). home-assistant/core#187029 (pajikcz, 10-17, assigned arturpragacz) is related but has a different trigger: WiiM native player missing at startup, so after the 45 s fallback its DLNA and AirPlay protocols each got a fresh UP id; the Oct 2 UP was dropped when the native came back. Shared part is the UP id not surviving a native/UP handover (delete on native claim, mint on fallback). Fix item (2) in the plan, reviving a stored UP instead of minting, helps both. The draft reply was never posted.",
-    "10-20 14:xx (on request): posted the reply saying we know the cause and are fixing it, diagnostics optional (issuecomment-6290984396). Diagnostics aren't needed for the fix; they'd only name the stale native.",
-    "10-21 15:05 discuss: discussion session started on your main account (test change OK, pruning safety, overlap with home-assistant/core#187029, backport).",
-    "10-22 15:30 run: the session opened draft server#7156 (shape B, no pruning, 2.11 only). In progress until Copilot is clean and you review.",
-    "10-23 10:30 run: server#7156 is out of draft (ready for review).",
-    "10-28 17:30 run: you merged server#7156. Booked Fix to be Confirmed; no backport label but it cherry-picks cleanly onto stable: backport? badge."
-   ],
-   "action": "",
-   "ask": null,
-   "milestone": null,
-   "sync": {
-    "at": "2026-10-30T16:30:07Z",
-    "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-20T12:36:19Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6737#issuecomment-6290984396"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/server",
-      "n": 6610,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-10-01T10:32:27Z",
-      "own": true
-     },
-     {
-      "repo": "music-assistant/server",
-      "n": 7156,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-10-28T16:25:30Z",
-      "own": true
-     }
-    ],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "airplay",
-     "triage",
-     "Fix to be Confirmed",
-     "waiting-for-user",
-     "triage/reminded-2",
-     "triage/reminded-1"
-    ]
-   },
-   "fix_thread": {
-    "id": "mcp:eb7cd0fc-fb98-4f36-9884-14fa79d460ac",
-    "title": "Discuss: Universal Player config deleted by a stale native link (#6737)",
-    "kind": "discuss",
-    "done": true
-   },
-   "waiting_on": null
   },
   {
    "n": 6739,
@@ -3605,105 +3402,6 @@
      "waiting-for-user",
      "triage/reminded-1"
     ]
-   }
-  },
-  {
-   "n": 6860,
-   "title": "2.10.8 regression: Spotify (Soloist) stops at the end of a track, next track never starts",
-   "col": "merged",
-   "area": "server / providers/spotify/backends/soloist.py _observe_external_pause (server#7117)",
-   "since": "2026-10-26 07:30",
-   "last": "davidfi01 2026-10-27 14:28",
-   "gh": {
-    "login": "davidfi01",
-    "team": false,
-    "at": "2026-10-27T14:28:14Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "2.10.8, HA add-on and Docker, Sendspin/Squeezelite/AirPlay/web players: Spotify playback stops a few seconds before a track ends and doesn't continue; 2.10.7 works. Four more users confirm on Soloist. OP's librespot claim unverified (his log lines are Soloist-only).",
-   "fix": "Deferred external-pause check (80d2e25d0c, replaces the position heuristic f58ee25027): a playing->paused transition arms a run-scoped task that waits 2 s (_EXTERNAL_PAUSE_GRACE_S) and stops the queue (with resume position) only if the engine is still paused and the item still live. Re-armed per transition; _engine_paused tracked so a resume landing as 'buffering' isn't a pause. Covers #6860 (engine exits 2-3 ms after its end-of-item pause) and keeps #6752 (app pause no longer stalls 20 s and skips).",
-   "checked": "Code-confirmed: server#7117 (1c79b553a1, in 2.10.8) added _observe_external_pause (soloist.py:1267-1283) from _handle_event (:1217-1220) on any playing->paused. At the natural end of its item the engine emits 'paused [0:00 / dur]' before exiting (Vigilo23's log) while _item_over/_engine_exited/_delivery_done are all still unset, so the queue stops; engine runs ~10 s ahead (_RUN_CUSHION_S, :143), hence the early cut. #7117's tests set the guards before the pause, so the real order was never covered. Nothing on dev. Local fix f58ee25027: _pause_ends_item() treats a pause at position <= 0 or within 2 s of the duration as the engine finishing the item; a mid-item pause still stops the queue (#7117 kept); an event without a position is still external (keeps #7117's status-only test). A/B: 3 end-of-item cases fail without, 541 spotify tests pass with. Cherry-picks clean onto stable (61 soloist tests pass). Not verified against a live paired Soloist engine. OP's librespot claim very unlikely (the stop line is Soloist-only). Gap: a real app pause in the last 2 s or at 0 is ignored (falls back to the pre-#7117 stall-skip). Fable session 10-26: engine exits 2-3 ms after 'paused [0:00/dur]' (Vigilo23's log; Soloist docs: exits when the item finishes). Kept 'stop with resume position' for an app pause: pausing the queue instead would still hit core's 20 s stall watchdog unless the engine is resumed. No live Soloist repro (no Soloist pairing/API key in the dev data dir). #7117's existing tests changed to wait past a shortened grace: needs your OK. moodwrench's 'next track didn't trigger the stop' on the #7117 test remains unexplained.",
-   "plan": "Treat a pause as external only when it carries a position inside the item (0 < pos < duration - grace); regression test with the real event order; backport to 2.10.9. Local fix building.",
-   "branch": "fix/soloist-end-of-item-pause @ 80d2e25d0c (worktree ~/git/music-assistant/server-fix-6860, not pushed)",
-   "diff": "diff --git a/music_assistant/providers/spotify/backends/soloist.py b/music_assistant/providers/spotify/backends/soloist.py\nindex c4f8c9c81b..4f080885fb 100644\n--- a/music_assistant/providers/spotify/backends/soloist.py\n+++ b/music_assistant/providers/spotify/backends/soloist.py\n@@ -143,6 +143,8 @@ _MAX_LEAD_TRIM_MS: Final[int] = int(_MAX_LEAD_TRIM_S * 1000)\n _RUN_CUSHION_S: Final[float] = 10.0\n # how close to its target a position report has to come to confirm a seek\n _SEEK_CONFIRM_GRACE_MS: Final[int] = 3000\n+# a pause reported this close to the item's end is the engine finishing it\n+_END_PAUSE_GRACE_MS: Final[int] = 2000\n \n # The sink renders exact-zero padding while the engine idles between items, and the\n # item-change event arrives after those frames landed in the outgoing item's channel.\n@@ -1218,7 +1220,9 @@ class _SingleTrackRun:\n             was_playing, self._engine_playing = self._engine_playing, playing\n             # the engine repeats a pause across events: act on the transition only\n             if was_playing and data.status == \"paused\":\n-                self._observe_external_pause()\n+                self._observe_external_pause(\n+                    data.position.position_ms if data.position is not None else None\n+                )\n             if self._started.is_set() and self._reader is not None:\n                 # pause silence stays out of the delivered PCM; the cushion gate\n                 # takes priority over resuming\n@@ -1264,7 +1268,7 @@ class _SingleTrackRun:\n             \"can only play in one place at a time\"\n         )\n \n-    def _observe_external_pause(self) -> None:\n+    def _observe_external_pause(self, position_ms: int | None) -> None:\n         \"\"\"Stop the queue when Spotify paused this run's item from outside Music Assistant.\"\"\"\n         if (\n             self.queue_id is None\n@@ -1275,6 +1279,7 @@ class _SingleTrackRun:\n             or self._engine_exited\n             or self._delivery_done\n             or self._error is not None\n+            or self._pause_ends_item(position_ms)\n         ):\n             return\n         # only the Spotify app or Web API pauses the engine, and a paused engine stalls\n@@ -1282,6 +1287,16 @@ class _SingleTrackRun:\n         self.logger.info(\"Spotify paused %s, stopping queue %s\", self.spotify_uri, self.queue_id)\n         self.mass.create_task(self.mass.player_queues.stop(self.queue_id))\n \n+    def _pause_ends_item(self, position_ms: int | None) -> bool:\n+        \"\"\"Return whether a pause at this position is the engine finishing its item.\"\"\"\n+        # at its item's end the engine pauses rewound to the start, then exits a moment\n+        # later: none of the run-ended flags is set yet\n+        if position_ms is None:\n+            return False\n+        return position_ms <= 0 or (\n+            self._duration_ms is not None and position_ms >= self._duration_ms - _END_PAUSE_GRACE_MS\n+        )\n+\n     def _observe_position(self, position_ms: int) -> None:\n         \"\"\"Confirm an armed seek once the engine reports at (or past) its target.\"\"\"\n         self._position_ms = position_ms\ndiff --git a/tests/providers/spotify/test_soloist_backend.py b/tests/providers/spotify/test_soloist_backend.py\nindex f05dacf0d7..f2f565543a 100644\n--- a/tests/providers/spotify/test_soloist_backend.py\n+++ b/tests/providers/spotify/test_soloist_backend.py\n@@ -51,6 +51,7 @@ from music_assistant.providers.spotify_connect.soloist.runtime import (\n     WS_PORT_FILE,\n     SoloistEvent,\n     SoloistPlaybackState,\n+    SoloistPosition,\n )\n \n TRACK_A = \"spotify:track:aaa\"\n@@ -724,9 +725,18 @@ def test_losing_the_device_after_the_item_is_over_is_not_a_takeover(tmp_path: Pa\n     assert run._error is None\n \n \n-def _playback_event(status: str) -> SoloistEvent:\n-    \"\"\"Return a playback_changed event carrying only the given status.\"\"\"\n-    return SoloistEvent(type=\"playback_changed\", data=SoloistPlaybackState(status=status), raw={})\n+def _playback_event(status: str, position_ms: int | None = None) -> SoloistEvent:\n+    \"\"\"Return a playback_changed event carrying the given status (and position).\"\"\"\n+    position = (\n+        SoloistPosition(position_ms=position_ms, timestamp_ms=1)\n+        if position_ms is not None\n+        else None\n+    )\n+    return SoloistEvent(\n+        type=\"playback_changed\",\n+        data=SoloistPlaybackState(status=status, position=position),\n+        raw={},\n+    )\n \n \n def _live_run(tmp_path: Path) -> _SingleTrackRun:\n@@ -771,6 +781,25 @@ async def test_a_pause_before_audio_flows_does_not_stop_the_queue(tmp_path: Path\n     cast(\"MagicMock\", run.mass).player_queues.stop.assert_not_called()\n \n \n+async def test_a_pause_inside_the_item_stops_the_queue(tmp_path: Path) -> None:\n+    \"\"\"A pause the engine places inside the item is the Spotify app pausing it.\"\"\"\n+    run = _live_run(tmp_path)\n+    await run._handle_event(_playback_event(\"playing\", 60_000))\n+    await run._handle_event(_playback_event(\"paused\", 61_000))\n+    cast(\"MagicMock\", run.mass).player_queues.stop.assert_called_once_with(\"player1\")\n+\n+\n+@pytest.mark.parametrize(\"position_ms\", [0, 179_500, 180_000])\n+async def test_the_engine_pausing_at_its_items_end_does_not_stop_the_queue(\n+    tmp_path: Path, position_ms: int\n+) -> None:\n+    \"\"\"At its item's end the engine pauses (rewound to the start) before it exits.\"\"\"\n+    run = _live_run(tmp_path)\n+    await run._handle_event(_playback_event(\"playing\", 170_000))\n+    await run._handle_event(_playback_event(\"paused\", position_ms))\n+    cast(\"MagicMock\", run.mass).player_queues.stop.assert_not_called()\n+\n+\n def test_the_engine_starting_on_the_wrong_item_fails_the_run(tmp_path: Path) -> None:\n     \"\"\"Before this run's item ever played, a foreign report is not an ending.\"\"\"\n     run = _make_run(tmp_path)",
-   "prs": [
-    {
-     "url": "https://github.com/music-assistant/server/pull/7244",
-     "label": "server#7244 (ours, merged 10-27, backport-to-stable)"
-    }
-   ],
-   "badges": [
-    [
-     "warn",
-     "2.10.8 regression",
-     "regression"
-    ],
-    [
-     "ok",
-     "Tested 10-27 (wdoeland)",
-     "tested"
-    ],
-    [
-     "ok",
-     "Booked 2.10.9 + FtbC",
-     "booked"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "ask": null,
-   "milestone": "2.10.9",
-   "action": "",
-   "waiting_on": null,
-   "notes": [
-    "10-26 07:30 run: new issue (Opus subagent triage).",
-    "10-26 07:30 run: local fix built and A/B'd; no PR until you say so.",
-    "10-26 13:40 fix: fix session started on your main account with Fable 5.1: cover both #6860 and #6752 (re-check #7117's approach), starting from local fix f58ee25027, live Soloist event capture, PR + backport.",
-    "10-26 15:30 run: Fable session finished: deferred 2 s pause check on 80d2e25d0c, PR waiting for your go; #7117 tests adjusted (needs OK); no live Soloist test possible here.",
-    "10-27 09:30 run: server#7244 opened ready for review, CI + Copilot clean; the \"working on a fix\" draft is replaced by a devaddon test ask (pr-7244).",
-    "10-27 10:30 run: you posted the test ask (https://github.com/music-assistant/support/issues/6860#issuecomment-6437834809) and moved server#7244 back to draft. Draft cleared, waiting on the reporters.",
-    "10-27 15:30 run: wdoeland tested pr-7244: fixed, app pause still works. davidfi01 sees it on the nightly (no fix there yet) and will test the PR. You thanked wdoeland. #7244 is ready again: merge call.",
-    "10-27 17:30 run: you merged server#7244. Booked: Fix to be Confirmed + milestone 2.10.9. #6752 (also linked) is already closed and booked to 2.10.8."
-   ],
-   "sync": {
-    "at": "2026-10-30T16:30:07Z",
-    "last_human": {
-     "login": "davidfi01",
-     "at": "2026-10-27T14:28:14Z",
-     "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6860#issuecomment-6444633064"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [
-     {
-      "repo": "music-assistant/server",
-      "n": 7244,
-      "state": "MERGED",
-      "draft": false,
-      "merged_at": "2026-10-27T16:19:10Z",
-      "own": true
-     }
-    ],
-    "test_ask": {
-     "at": "2026-10-27T09:04:41Z",
-     "url": "https://github.com/music-assistant/support/issues/6860#issuecomment-6437834809"
-    },
-    "after_test_ask_reporter": true,
-    "labels": [
-     "triage",
-     "Fix to be Confirmed",
-     "spotify",
-     "waiting-for-user"
-    ]
-   },
-   "fix_thread": {
-    "id": "mcp:a766341e-46d2-4811-b6aa-b49c8e582f61",
-    "title": "Fix: Soloist end-of-track stop (2.10.8 regression) without losing the Spotify-app pause fix (#6860, #6752)",
-    "kind": "fix",
-    "done": true
    }
   },
   {
@@ -5812,22 +5510,13 @@
    ]
   ]
  },
- "gone": "The 30 issues that shipped in 2.10.5, closed with the release comment: #6585, #6583, #6581, #6579, #6573, #6570, #6567, #6561, #6560, #6550, #6542, #6527, #6523, #6517, #6516, #6511, #6496, #6492, #6491, #6478, #6469, #6463, #6462, #6461, #6440, #6345, #6328, #6323, #6273, #4892. Dropped 10-05 as closed: #6470 (closed by reporter 10-02 (Bandcamp back in search)), #6460 (closed 10-02), #6458 (auto-closed 10-03 (no reply)), #6394 (closed 10-02), #6380 (closed by OzGav 10-03 after menaker12 confirmed on beta), #6338 (closed by reporter 10-03 (workaround holds)). Dropped 10-05 08:40: #6517 (auto-closed when you merged server#6702 at 06:31 UTC; booked Fix to be Confirmed + milestone 2.10.6 from its backport-to-stable label). Booked 10-05 09:40 (not on the board): #6629 FtbC + 2.10.6 (server#6691, backport-to-stable), #6620 FtbC (server#6685, backportable, see follow-ups). Dropped 10-05 10:40: #6635 (closed 06:19 UTC after your 2.11 beta reply). #6026 closed 08:03 UTC by your server#5175 merge; card kept in Fix merged until the bookkeeping is queued. Dropped 10-05 14:00: #6636 (closed by Soukyuu 11:40 UTC after your works-as-designed reply and OzGav's follow-up; going back to LMS). Dropped 10-05 15:40: #6026 (bookkeeping landed 12:40 UTC: Fix to be Confirmed + milestone 2.11.0). Dropped 10-06 09:00: #6559 (closed 06:40 UTC with your reply after the AirConnect removal fixed sync; reporter asked to file new issues); #6224 (closed 06:35 UTC when you merged server#6715; booked Fix to be Confirmed, milestone 2.11.0 was already set (migration, no backport)). Dropped 10-06 09:40: #6373 (you closed it 07:11 UTC when server#6611 merged with backport-to-stable; milestone 2.10.6 was set, I added Fix to be Confirmed); #6440 (you closed it 07:10 UTC after explaining Spotify's 1.1x headroom for crossfades); #6616 (you closed it 07:10 UTC as fixed in 2.11, milestone 2.11.0). Dropped 10-06 12:55: #6617 (assigned to jdaberkow, who is iterating on the Deezer family-profile branch with budius). Dropped 10-06 14:40: #6633 (howels closed it at 12:04 UTC, user error: a duplicate HA entity without volume_level). Dropped 10-06 15:40: #6247 (you milestoned and closed it at 13:21 UTC). #6647 closed 14:06 UTC after frontend#2924 merged. Dropped 10-07 as closed: #6641 (you merged server#6726 17:32 UTC, milestone 2.10.6, closed; already in backport/2.10.6). Dropped 10-07 as closed: #6646 (frontend#2923 merged), #6524 (fixed by frontend#2900). Dropped 10-07 13:40: #4377 (you closed it 10:58 UTC; LaneaLucy replied 11:23 UTC that the internal Snapcast server showed it too). #6613 closed 10-08 by the reporter (PO token 2.0.1 + cookie fixed it). Dropped 10-08 13:40 as closed: #6662 (server#6760 merged 11:26 UTC, auto-closed; I set Fix to be Confirmed; no backport label, but it cherry-picks cleanly onto backport/2.10.6 incl. the aiosonos 0.1.14 bump).; #6611 (closed by the reporter 10-09 06:12 UTC, keeps the opt-out on their fork) Dropped 10-12 07:40: #5723 (OzGav closed it 10-10 00:03 UTC as fixed. The reporter split the player-type part into #6688); #6063 (you closed it 10-10 with the 2.10.6 release comment); #6154 (you closed it 10-10 with the 2.10.6 release comment); #6425 (you closed it 10-10 with the 2.10.6 release comment); #6487 (OzGav closed it 10-09 23:58 UTC after parski confirmed the fix); #6562 (you closed it 10-10 with the 2.10.6 release comment); #6570 (you closed it 10-10 with the 2.10.6 release comment); #6571 (you closed it 10-10 with the 2.10.6 release comment); #6624 (closed after server#5868 + server#6858 (MSX Bridge, backport-to-stable) merged 10-10); #6627 (you closed it with the 2.10.6 release comment. magdalar commented 10-11 16:52 UTC that pause still jumps the progress back on Sonos with Audiobookshelf, mostly cosmetic now (see follow-ups)); #6642 (Annikadk confirmed 2.10.6 fixes it and closed it 10-10); #6648 (you closed it 10-10 with the 2.10.6 release comment); #6658 (dentedbread closed it 10-11 11:48 UTC, no repro on 2.11.0b4); #6669 (you closed it 10-10 with the 2.10.6 release comment); #6676 (OzGav closed it 10-11 11:47 UTC as by design: both editions sit in one Local files source, so a rescan of one file drops the other file's link. Advice is a separate source per edition. Our triage-6676 fix branch was never pushed); #6683 (megawubs closed it 10-09 17:33 UTC: 2.10.6 changed Deezer family accounts to one ARL, and the new ARL works); #6659 (now assigned to OzGav, who is working it with dentedbread). Dropped 10-12 09:40: #6493 (you closed it 07:09 UTC, fixed in 2.11). Dropped 10-12 14:40: #6714 (closed by you after server#6910 merged), #6464 (closed by you after server#6613 merged), #6451 (closed by you after server#6528 merged). #6671 and #6481 closed 10-12. Dropped 10-12 16:40: #6722 (Hypopheralcus fixed the Nextcloud proxy setting after your reply and closed it 13:49 UTC). Dropped 10-13 07:40: #6724 (OzGav closed it 22:53 UTC: 4 GB host OOM, reporter stopped Frigate and Grafana and MA kept running). Dropped 10-13 09:40: #6721 (closed 06:40 UTC, jdaberkow had taken it over). Dropped 10-13 10:40: #6577 (you closed it 08:07 UTC, no flip since the last update; reopen if it happens after an HA integration update). Dropped 10-13 15:40: #6666 (lupurs confirmed 2.10.6 fixed it and closed 12:42 UTC). Dropped 10-14 11:40: #6406 (bot auto-closed 03:31 UTC after two reminders) and #6667 (you closed it 18:14 UTC as a side effect of #6645; server#6968 closed with it). Dropped 10-14 13:40: #6725 (whc2001 confirmed the fix on the DEV add-on and closed it 11:02 UTC; server#6810 backport call moved to follow-ups). Dropped 10-14 15:40: #6643 (Asrem2 traced the Voice PE dropouts to a busy 2.4 GHz Wi-Fi channel, 13 h clean on Sendspin after moving the AP, closed 13:34 UTC). Dropped 10-15 10:15: #6186 (endevour confirmed the latest beta fixes it and closed it 10-14 19:36 UTC); #6547 (bot auto-closed 10-15 03:31 UTC after two reminders); #6732 (you closed it 10-15 07:23 UTC as a duplicate). Dropped 10-19 as closed after the 2.10.7 release: #6759, #6704, #6712, #6655, #6601, #6528, #6744 (you closed them 10-18), #6729 (sydlexius confirmed chrisuthe's fix), #6679 (dekiesel: switching to parallel fixed it). Dropped 10-19 08:38: #6811 (assigned to OzGav 06:37 UTC, he is handling the Sendspin Opus stutter). New #6813 and #6814 (ChrisB85, kiwipaulrob) were assigned to OzGav on arrival, not on the board. Dropped 10-20 07:38: #6407 (bot auto-closed 03:32 UTC after two reminders); #6102 (bot auto-closed 03:32 UTC after two reminders, our draft server#6706 is still open (see follow-ups)); #6002 (bot auto-closed 03:32 UTC after two reminders); #6782 (OzGav closed it 01:24 UTC as a feature request (Jellyfin genres were never implemented)); #6653 (anthonws closed the discussion 21:23 UTC, no time to work on it); #6508 (you assigned marcelveldt 10-20 11:50 UTC). #6673 (you closed it 12:56 UTC after the 2.11 provider sharing reply); #6668 (you closed it 12:50 UTC, resolved with the recommended tagging procedure); #6552 (OzGav closed it 13:21 UTC after sragot confirmed server#6425 fixes it on 2.11.0b5). #6682 (assigned to stvncode 13:39 UTC); #6684 (assigned to stvncode 13:39 UTC); #6777 (you closed it 13:45 UTC as duplicate of #6776); #6785 (you closed it 14:34 UTC after frontend#3032 split the review key). Dropped 10-21 07:38: #6639 (bot auto-closed 10-21 03:32 UTC after two reminders); #6663 (limitless-code confirmed the DEV app fixes all scenarios (19:02 UTC) and you closed it 22:30 UTC; FtbC + 2.11.0 were set); #6823 (jo-che confirmed on dev and closed it 19:58 UTC). Dropped 10-21 12:40: #6720 (you posted the thanks from the board 09:50 UTC and closed it). Dropped 10-22 07:30: #6819 (closed as completed by OzGav 10-21 22:53 UTC). Dropped 10-22 07:30: #6395 (closed as not planned by musicassistant-bot 10-22 03:32 UTC). Dropped 10-22 09:30: #6772 (closed as completed by MarvinSchenkel 10-22 06:58 UTC). Dropped 10-22 10:00: #6671 (closed as completed by dekiesel 10-22 07:58 UTC). Dropped 10-22 14:30: #6841 (closed as completed by stormsnsnow 10-22 12:20 UTC). Dropped 10-22 14:30: #6844 (closed as completed by OzGav 10-22 12:11 UTC). Dropped 10-22 15:30: #6757 (closed as completed by zosopage1963 10-22 13:12 UTC). Dropped 10-23 07:30: #6023 (closed as completed by OzGav 10-22 16:21 UTC). Dropped 10-23 07:30: #6752 (closed as completed by OzGav 10-23 01:39 UTC). Dropped 10-23 15:30: #6837 (closed as completed by MarvinSchenkel 10-23 12:33 UTC). Dropped 10-23 16:19: #6839 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6833 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6822 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6675 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6748 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6749 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6751 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6758 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6808 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6807 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6793 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6778 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6797 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6774 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6815 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6849 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:30: #6645 (closed as completed by MarvinSchenkel 10-23 14:21 UTC). Dropped 10-26 07:30: #6821 (closed as completed by jo-che 10-24 15:31 UTC). Dropped 10-26 07:30: #6695 (closed as not planned by musicassistant-bot 10-25 03:33 UTC). Dropped 10-26 07:30: #6680 (closed as completed by OzGav 10-25 10:56 UTC). Dropped 10-26 07:30: #6694 (closed as completed by OzGav 10-23 22:53 UTC). Dropped 10-26 07:30: #6672 (closed as completed by OzGav 10-24 11:16 UTC). Dropped 10-26 07:30: #6490 (closed as completed by OzGav 10-24 11:14 UTC). Dropped 10-26 07:30: #6402 (closed as completed by OzGav 10-24 11:10 UTC). Dropped 10-26 07:30: #6299 (closed as completed by OzGav 10-24 11:10 UTC). Dropped 10-26 07:30: #6150 (closed as completed by OzGav 10-24 11:09 UTC). Dropped 10-26 07:30: #6738 (closed as completed by OzGav 10-23 22:50 UTC). Dropped 10-26 07:30: #6806 (closed as completed by Thyraz 10-24 12:41 UTC). Dropped 10-26 07:30: #6812 (closed as completed by OzGav 10-24 21:08 UTC). Dropped 10-26 07:30: #6798 (closed as completed by OzGav 10-24 11:20 UTC). Dropped 10-26 12:30: #6743 (closed as completed by flibustier 10-26 10:44 UTC). Dropped 10-27 07:30: #6685 (closed as not planned by musicassistant-bot 10-27 03:34 UTC). Dropped 10-27 07:30: #6856 (closed as completed by OzGav 10-26 22:51 UTC). Dropped 10-27 07:30: #6891 (closed as completed by OzGav 10-26 20:57 UTC). Dropped 10-27 08:30: #6894 (closed as completed by MarvinSchenkel 10-27 06:53 UTC). Dropped 10-27 15:30: #6882 (closed as completed by AkoreJepade 10-27 13:30 UTC). Dropped 10-27 15:30: #6899 (closed as completed by OzGav 10-27 13:51 UTC). Dropped 10-27 16:30: #6670 (closed as completed by mnestrud 10-27 14:51 UTC). Dropped 10-27 17:30: #6857 (closed as completed by MarvinSchenkel 10-27 16:07 UTC). Dropped 10-28 07:30: #6731 (closed as completed by OzGav 10-28 01:16 UTC). Dropped 10-28 17:30: #6897 (closed as completed by OzGav 10-28 16:06 UTC). Dropped 10-29 07:30: #6889 (closed as completed by OzGav 10-28 22:26 UTC). Dropped 10-29 08:30: #6706 (closed as duplicate by zsmisi 10-29 07:27 UTC). Dropped 10-29 15:30: #6901 (closed as completed by MarvinSchenkel 10-29 14:27 UTC). Dropped 10-29 16:30: #6879 (closed as completed by MarvinSchenkel 10-29 14:37 UTC). Dropped 10-30 07:30: #6728 (closed as not planned by musicassistant-bot 10-30 03:25 UTC). Dropped 10-30 07:30: #6794 (closed as completed by OzGav 10-29 22:23 UTC). Dropped 10-30 15:30: #6628 (closed as completed by OzGav 10-30 13:17 UTC).",
+ "gone": "The 30 issues that shipped in 2.10.5, closed with the release comment: #6585, #6583, #6581, #6579, #6573, #6570, #6567, #6561, #6560, #6550, #6542, #6527, #6523, #6517, #6516, #6511, #6496, #6492, #6491, #6478, #6469, #6463, #6462, #6461, #6440, #6345, #6328, #6323, #6273, #4892. Dropped 10-05 as closed: #6470 (closed by reporter 10-02 (Bandcamp back in search)), #6460 (closed 10-02), #6458 (auto-closed 10-03 (no reply)), #6394 (closed 10-02), #6380 (closed by OzGav 10-03 after menaker12 confirmed on beta), #6338 (closed by reporter 10-03 (workaround holds)). Dropped 10-05 08:40: #6517 (auto-closed when you merged server#6702 at 06:31 UTC; booked Fix to be Confirmed + milestone 2.10.6 from its backport-to-stable label). Booked 10-05 09:40 (not on the board): #6629 FtbC + 2.10.6 (server#6691, backport-to-stable), #6620 FtbC (server#6685, backportable, see follow-ups). Dropped 10-05 10:40: #6635 (closed 06:19 UTC after your 2.11 beta reply). #6026 closed 08:03 UTC by your server#5175 merge; card kept in Fix merged until the bookkeeping is queued. Dropped 10-05 14:00: #6636 (closed by Soukyuu 11:40 UTC after your works-as-designed reply and OzGav's follow-up; going back to LMS). Dropped 10-05 15:40: #6026 (bookkeeping landed 12:40 UTC: Fix to be Confirmed + milestone 2.11.0). Dropped 10-06 09:00: #6559 (closed 06:40 UTC with your reply after the AirConnect removal fixed sync; reporter asked to file new issues); #6224 (closed 06:35 UTC when you merged server#6715; booked Fix to be Confirmed, milestone 2.11.0 was already set (migration, no backport)). Dropped 10-06 09:40: #6373 (you closed it 07:11 UTC when server#6611 merged with backport-to-stable; milestone 2.10.6 was set, I added Fix to be Confirmed); #6440 (you closed it 07:10 UTC after explaining Spotify's 1.1x headroom for crossfades); #6616 (you closed it 07:10 UTC as fixed in 2.11, milestone 2.11.0). Dropped 10-06 12:55: #6617 (assigned to jdaberkow, who is iterating on the Deezer family-profile branch with budius). Dropped 10-06 14:40: #6633 (howels closed it at 12:04 UTC, user error: a duplicate HA entity without volume_level). Dropped 10-06 15:40: #6247 (you milestoned and closed it at 13:21 UTC). #6647 closed 14:06 UTC after frontend#2924 merged. Dropped 10-07 as closed: #6641 (you merged server#6726 17:32 UTC, milestone 2.10.6, closed; already in backport/2.10.6). Dropped 10-07 as closed: #6646 (frontend#2923 merged), #6524 (fixed by frontend#2900). Dropped 10-07 13:40: #4377 (you closed it 10:58 UTC; LaneaLucy replied 11:23 UTC that the internal Snapcast server showed it too). #6613 closed 10-08 by the reporter (PO token 2.0.1 + cookie fixed it). Dropped 10-08 13:40 as closed: #6662 (server#6760 merged 11:26 UTC, auto-closed; I set Fix to be Confirmed; no backport label, but it cherry-picks cleanly onto backport/2.10.6 incl. the aiosonos 0.1.14 bump).; #6611 (closed by the reporter 10-09 06:12 UTC, keeps the opt-out on their fork) Dropped 10-12 07:40: #5723 (OzGav closed it 10-10 00:03 UTC as fixed. The reporter split the player-type part into #6688); #6063 (you closed it 10-10 with the 2.10.6 release comment); #6154 (you closed it 10-10 with the 2.10.6 release comment); #6425 (you closed it 10-10 with the 2.10.6 release comment); #6487 (OzGav closed it 10-09 23:58 UTC after parski confirmed the fix); #6562 (you closed it 10-10 with the 2.10.6 release comment); #6570 (you closed it 10-10 with the 2.10.6 release comment); #6571 (you closed it 10-10 with the 2.10.6 release comment); #6624 (closed after server#5868 + server#6858 (MSX Bridge, backport-to-stable) merged 10-10); #6627 (you closed it with the 2.10.6 release comment. magdalar commented 10-11 16:52 UTC that pause still jumps the progress back on Sonos with Audiobookshelf, mostly cosmetic now (see follow-ups)); #6642 (Annikadk confirmed 2.10.6 fixes it and closed it 10-10); #6648 (you closed it 10-10 with the 2.10.6 release comment); #6658 (dentedbread closed it 10-11 11:48 UTC, no repro on 2.11.0b4); #6669 (you closed it 10-10 with the 2.10.6 release comment); #6676 (OzGav closed it 10-11 11:47 UTC as by design: both editions sit in one Local files source, so a rescan of one file drops the other file's link. Advice is a separate source per edition. Our triage-6676 fix branch was never pushed); #6683 (megawubs closed it 10-09 17:33 UTC: 2.10.6 changed Deezer family accounts to one ARL, and the new ARL works); #6659 (now assigned to OzGav, who is working it with dentedbread). Dropped 10-12 09:40: #6493 (you closed it 07:09 UTC, fixed in 2.11). Dropped 10-12 14:40: #6714 (closed by you after server#6910 merged), #6464 (closed by you after server#6613 merged), #6451 (closed by you after server#6528 merged). #6671 and #6481 closed 10-12. Dropped 10-12 16:40: #6722 (Hypopheralcus fixed the Nextcloud proxy setting after your reply and closed it 13:49 UTC). Dropped 10-13 07:40: #6724 (OzGav closed it 22:53 UTC: 4 GB host OOM, reporter stopped Frigate and Grafana and MA kept running). Dropped 10-13 09:40: #6721 (closed 06:40 UTC, jdaberkow had taken it over). Dropped 10-13 10:40: #6577 (you closed it 08:07 UTC, no flip since the last update; reopen if it happens after an HA integration update). Dropped 10-13 15:40: #6666 (lupurs confirmed 2.10.6 fixed it and closed 12:42 UTC). Dropped 10-14 11:40: #6406 (bot auto-closed 03:31 UTC after two reminders) and #6667 (you closed it 18:14 UTC as a side effect of #6645; server#6968 closed with it). Dropped 10-14 13:40: #6725 (whc2001 confirmed the fix on the DEV add-on and closed it 11:02 UTC; server#6810 backport call moved to follow-ups). Dropped 10-14 15:40: #6643 (Asrem2 traced the Voice PE dropouts to a busy 2.4 GHz Wi-Fi channel, 13 h clean on Sendspin after moving the AP, closed 13:34 UTC). Dropped 10-15 10:15: #6186 (endevour confirmed the latest beta fixes it and closed it 10-14 19:36 UTC); #6547 (bot auto-closed 10-15 03:31 UTC after two reminders); #6732 (you closed it 10-15 07:23 UTC as a duplicate). Dropped 10-19 as closed after the 2.10.7 release: #6759, #6704, #6712, #6655, #6601, #6528, #6744 (you closed them 10-18), #6729 (sydlexius confirmed chrisuthe's fix), #6679 (dekiesel: switching to parallel fixed it). Dropped 10-19 08:38: #6811 (assigned to OzGav 06:37 UTC, he is handling the Sendspin Opus stutter). New #6813 and #6814 (ChrisB85, kiwipaulrob) were assigned to OzGav on arrival, not on the board. Dropped 10-20 07:38: #6407 (bot auto-closed 03:32 UTC after two reminders); #6102 (bot auto-closed 03:32 UTC after two reminders, our draft server#6706 is still open (see follow-ups)); #6002 (bot auto-closed 03:32 UTC after two reminders); #6782 (OzGav closed it 01:24 UTC as a feature request (Jellyfin genres were never implemented)); #6653 (anthonws closed the discussion 21:23 UTC, no time to work on it); #6508 (you assigned marcelveldt 10-20 11:50 UTC). #6673 (you closed it 12:56 UTC after the 2.11 provider sharing reply); #6668 (you closed it 12:50 UTC, resolved with the recommended tagging procedure); #6552 (OzGav closed it 13:21 UTC after sragot confirmed server#6425 fixes it on 2.11.0b5). #6682 (assigned to stvncode 13:39 UTC); #6684 (assigned to stvncode 13:39 UTC); #6777 (you closed it 13:45 UTC as duplicate of #6776); #6785 (you closed it 14:34 UTC after frontend#3032 split the review key). Dropped 10-21 07:38: #6639 (bot auto-closed 10-21 03:32 UTC after two reminders); #6663 (limitless-code confirmed the DEV app fixes all scenarios (19:02 UTC) and you closed it 22:30 UTC; FtbC + 2.11.0 were set); #6823 (jo-che confirmed on dev and closed it 19:58 UTC). Dropped 10-21 12:40: #6720 (you posted the thanks from the board 09:50 UTC and closed it). Dropped 10-22 07:30: #6819 (closed as completed by OzGav 10-21 22:53 UTC). Dropped 10-22 07:30: #6395 (closed as not planned by musicassistant-bot 10-22 03:32 UTC). Dropped 10-22 09:30: #6772 (closed as completed by MarvinSchenkel 10-22 06:58 UTC). Dropped 10-22 10:00: #6671 (closed as completed by dekiesel 10-22 07:58 UTC). Dropped 10-22 14:30: #6841 (closed as completed by stormsnsnow 10-22 12:20 UTC). Dropped 10-22 14:30: #6844 (closed as completed by OzGav 10-22 12:11 UTC). Dropped 10-22 15:30: #6757 (closed as completed by zosopage1963 10-22 13:12 UTC). Dropped 10-23 07:30: #6023 (closed as completed by OzGav 10-22 16:21 UTC). Dropped 10-23 07:30: #6752 (closed as completed by OzGav 10-23 01:39 UTC). Dropped 10-23 15:30: #6837 (closed as completed by MarvinSchenkel 10-23 12:33 UTC). Dropped 10-23 16:19: #6839 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6833 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6822 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6675 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6748 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6749 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6751 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6758 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6808 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6807 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6793 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6778 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6797 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6774 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6815 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6849 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:30: #6645 (closed as completed by MarvinSchenkel 10-23 14:21 UTC). Dropped 10-26 07:30: #6821 (closed as completed by jo-che 10-24 15:31 UTC). Dropped 10-26 07:30: #6695 (closed as not planned by musicassistant-bot 10-25 03:33 UTC). Dropped 10-26 07:30: #6680 (closed as completed by OzGav 10-25 10:56 UTC). Dropped 10-26 07:30: #6694 (closed as completed by OzGav 10-23 22:53 UTC). Dropped 10-26 07:30: #6672 (closed as completed by OzGav 10-24 11:16 UTC). Dropped 10-26 07:30: #6490 (closed as completed by OzGav 10-24 11:14 UTC). Dropped 10-26 07:30: #6402 (closed as completed by OzGav 10-24 11:10 UTC). Dropped 10-26 07:30: #6299 (closed as completed by OzGav 10-24 11:10 UTC). Dropped 10-26 07:30: #6150 (closed as completed by OzGav 10-24 11:09 UTC). Dropped 10-26 07:30: #6738 (closed as completed by OzGav 10-23 22:50 UTC). Dropped 10-26 07:30: #6806 (closed as completed by Thyraz 10-24 12:41 UTC). Dropped 10-26 07:30: #6812 (closed as completed by OzGav 10-24 21:08 UTC). Dropped 10-26 07:30: #6798 (closed as completed by OzGav 10-24 11:20 UTC). Dropped 10-26 12:30: #6743 (closed as completed by flibustier 10-26 10:44 UTC). Dropped 10-27 07:30: #6685 (closed as not planned by musicassistant-bot 10-27 03:34 UTC). Dropped 10-27 07:30: #6856 (closed as completed by OzGav 10-26 22:51 UTC). Dropped 10-27 07:30: #6891 (closed as completed by OzGav 10-26 20:57 UTC). Dropped 10-27 08:30: #6894 (closed as completed by MarvinSchenkel 10-27 06:53 UTC). Dropped 10-27 15:30: #6882 (closed as completed by AkoreJepade 10-27 13:30 UTC). Dropped 10-27 15:30: #6899 (closed as completed by OzGav 10-27 13:51 UTC). Dropped 10-27 16:30: #6670 (closed as completed by mnestrud 10-27 14:51 UTC). Dropped 10-27 17:30: #6857 (closed as completed by MarvinSchenkel 10-27 16:07 UTC). Dropped 10-28 07:30: #6731 (closed as completed by OzGav 10-28 01:16 UTC). Dropped 10-28 17:30: #6897 (closed as completed by OzGav 10-28 16:06 UTC). Dropped 10-29 07:30: #6889 (closed as completed by OzGav 10-28 22:26 UTC). Dropped 10-29 08:30: #6706 (closed as duplicate by zsmisi 10-29 07:27 UTC). Dropped 10-29 15:30: #6901 (closed as completed by MarvinSchenkel 10-29 14:27 UTC). Dropped 10-29 16:30: #6879 (closed as completed by MarvinSchenkel 10-29 14:37 UTC). Dropped 10-30 07:30: #6728 (closed as not planned by musicassistant-bot 10-30 03:25 UTC). Dropped 10-30 07:30: #6794 (closed as completed by OzGav 10-29 22:23 UTC). Dropped 10-30 15:30: #6628 (closed as completed by OzGav 10-30 13:17 UTC). Closed 10-30 17:45 on release 2.10.9 with a closing comment by you: #6860 (server#7244), #6737 (server#7156), #6419 (server#7160); discussions #6727 (server#7114) and #6594 (server#7168) answered and closed as resolved.",
  "actions_applied_at": "2026-10-23T12:04:33Z",
  "auto_post": {
   "enabled": true
  },
  "release_table": {
-  "2.10.9": [
-   {
-    "n": 6860,
-    "title": "2.10.8 regression: Spotify (Soloist) stops at the end of a track, next track never starts",
-    "prs": [
-     "server#7244"
-    ],
-    "on_stable": true
-   }
-  ],
+  "2.10.9": [],
   "2.11.0": [
    {
     "n": 6842,
