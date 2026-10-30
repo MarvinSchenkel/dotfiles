@@ -1,23 +1,23 @@
 {
   "thread_id": "mcp:dba76884-e5e6-48aa-aa88-914e09fa4301",
   "scheduled_task_id": "scheduled-task:command:mcp:ece76a14-da84-4b32-9dc2-e104d78297bd:schedule-task:triage-ma-nightly-setup-2026-10-21",
-  "last_run_end": "2026-10-29T05:00:15+01:00",
-  "last_run_summary": "Run 2026-10-29: WiiM provider unloaded 16:37-17:22 (cause unlogged), out-of-band WiiM join at 16:32 rewound ~2.5 min (#7157 watch only arms in set_members), Woonkamer flood ended at restart; 10 MA-join resumes OK.",
+  "last_run_end": "2026-10-30T05:00:13+01:00",
+  "last_run_summary": "Run 2026-10-30: quiet; 3 HA-side restarts bounced the hass provider (recovered <2 min each), 7/7 WiiM join resumes, no recurrence of the 10-28 provider unload or out-of-band join.",
   "known": {
     "wiim:native-join-stops-leader": {
       "title": "WiiM native join re-GET rewinds Mancave",
       "severity": "low",
       "first_seen": "2026-10-08",
-      "seen": 8,
-      "last_seen": "2026-10-29",
+      "seen": 9,
+      "last_seen": "2026-10-30",
       "fix": "server#7157 in 2026102303: resumed 5/5 first-join restarts on 10-23"
     },
     "airplay:appletv-mrp-companion-reconnect": {
       "title": "Apple TV MRP + Companion reconnect loop",
       "severity": "medium",
       "first_seen": "2026-10-20",
-      "seen": 9,
-      "last_seen": "2026-10-29"
+      "seen": 10,
+      "last_seen": "2026-10-30"
     },
     "remote_access.gateway._bridge_websocket:ConnectionRefusedError@shutdown": {
       "title": "Shutdown noise: remote access bridges to unloaded Sendspin",
@@ -30,15 +30,15 @@
       "title": "Sendspin non-compliant client warnings",
       "severity": "low",
       "first_seen": "2026-10-08",
-      "seen": 9,
-      "last_seen": "2026-10-29"
+      "seen": 10,
+      "last_seen": "2026-10-30"
     },
     "remote_access:libjuice-turn-403": {
       "title": "libjuice TURN CreatePermission 403 and send failures",
       "severity": "low",
       "first_seen": "2026-10-21",
-      "seen": 9,
-      "last_seen": "2026-10-29"
+      "seen": 10,
+      "last_seen": "2026-10-30"
     },
     "helpers.images:dlna-un_known-404": {
       "title": "DLNA un_known artwork 404 at startup",
@@ -73,10 +73,10 @@
     },
     "pychromecast:socket-connect-retry": {
       "first_seen": "2026-10-20",
-      "seen": 8,
+      "seen": 9,
       "title": "Overnight Cast socket drops (Amp, Living Room TV, Kantoor)",
       "severity": "low",
-      "last_seen": "2026-10-29"
+      "last_seen": "2026-10-30"
     },
     "remote_access:signaling-client-not-found": {
       "first_seen": "2026-10-22",
@@ -87,10 +87,10 @@
     },
     "RetriesExhausted@helpers/throttle_retry.py:wrapper(lrclib)": {
       "first_seen": "2026-10-20",
-      "seen": 6,
+      "seen": 7,
       "title": "LRCLIB lyrics lookups exhausted retries",
       "severity": "low",
-      "last_seen": "2026-10-29"
+      "last_seen": "2026-10-30"
     },
     "remote_access:signaling-4029-at-startup": {
       "first_seen": "2026-10-23",
@@ -115,8 +115,8 @@
     },
     "wiim.sdk:amp-getstatusex-server-disconnected": {
       "first_seen": "2026-10-24",
-      "seen": 6,
-      "last_seen": "2026-10-29",
+      "seen": 7,
+      "last_seen": "2026-10-30",
       "title": "WiiM Amp drops HTTP status polls",
       "severity": "low"
     },
@@ -136,8 +136,8 @@
     },
     "SetupFailedError@providers/hass/__init__.py:handle_async_init": {
       "first_seen": "2026-10-25",
-      "seen": 1,
-      "last_seen": "2026-10-26",
+      "seen": 2,
+      "last_seen": "2026-10-30",
       "title": "HA provider reload hit a restarting Supervisor, retry worked",
       "severity": "low"
     },
@@ -189,6 +189,13 @@
       "last_seen": "2026-10-29",
       "title": "Sendspin proxy logs a traceback when a client drops during auth",
       "severity": "low"
+    },
+    "remote_access:signaling-pong-timeout": {
+      "first_seen": "2026-10-29",
+      "seen": 1,
+      "last_seen": "2026-10-30",
+      "title": "Signaling websocket missed a PONG",
+      "severity": "low"
     }
   },
   "muted": [],
@@ -199,10 +206,10 @@
     "ws_client": "routines/triage-ma-nightly/ma_ws.py with /usr/bin/python3, env via set -a"
   },
   "health": {
-    "rss_mb": 1644.3,
-    "rss_anon_mb": 1057.7,
-    "uptime_seconds": 80141,
-    "event_loop_lag_ms": 0.2,
-    "version": "2.11.0.dev2026102804"
+    "rss_mb": 1428.1,
+    "rss_anon_mb": 996.8,
+    "uptime_seconds": 79750,
+    "event_loop_lag_ms": 0.4,
+    "version": "2.11.0.dev2026102904"
   }
 }
