@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-02T14:00:00+01:00",
+ "last_run": "2026-11-02T15:00:00+01:00",
  "dev": "724a4256d",
- "run_note": "#6901 merged, so I launched the agreed follow-up chip (central Throttler, engine backoff, run_background_task). client 1.7.1 is released. #7292's recheck is clean and now waits on fmunkes for your start_position comment. New: #7336 (Deezer explicit filter), Bot-MArley wants 3 changes.",
+ "run_note": "Quiet hour. maximmaxim345 opened draft #7337 (re-pair a Sendspin device after unpairing). OzGav asked on #7336 whether an explicit filter belongs in core instead of the Deezer provider. dev is unchanged.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -1997,7 +1997,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "merged",
-   "changed_now": "merged",
+   "changed_now": "",
    "gpt_sol": "2 problems (1 refuted, 1 narrow race)",
    "marley": {
     "verdict": "approved",
@@ -4284,7 +4284,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: answer martinbuergi (lock around the vote and next(), or leave it)",
-   "changed_now": "pushed",
+   "changed_now": "",
    "gpt_sol": "1 critical (same lock race), 1 problem (last item with repeat off reports skipped and drops votes)",
    "support": null,
    "fix_thread": "t3-thread://v1/mcp:c1bbcffb-2367-4774-b433-5cc5bef133c2"
@@ -13928,7 +13928,7 @@
    "merge_state": "mergeable",
    "head_sha": "4ee4f21fd",
    "tldr": "Release Please PR for client 1.7.1, CHANGELOG only, listing #330 (drop a removed player's queue). Merging it cuts the release; then the server pin bump (ask first).",
-   "changed_now": "merged",
+   "changed_now": "",
    "marley": {
     "verdict": "none",
     "reviewed_head": false,
@@ -14298,7 +14298,7 @@
    "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "88d68628f",
    "tldr": "The bookmarks that MA stores itself work, are kept per user and copy, and pass their tests. The provider-stored half has no provider using it yet, and as written it lists account-wide bookmarks as the user's own and strands MA rows once a provider gains edit support. All three of fmunkes' open PRs bump the API schema 99 to 100, so whichever merges second needs a re-bump.",
-   "changed_now": "commented",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -17810,7 +17810,7 @@
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "realroywalker: Bot-MArley's 3 points",
+   "waiting_on": "realroywalker: Bot-MArley's 3 points; provider vs core question (OzGav)",
    "size": "L",
    "code": 380,
    "add": 784,
@@ -17825,7 +17825,7 @@
    "stacked": false,
    "tldr": "Adds an explicit content filter to the Deezer provider (hide everywhere or only from recommendations), with a playback guard.",
    "summary": "",
-   "whats_new": "Opened 11:40Z; Bot-MArley asked for changes.",
+   "whats_new": "OzGav (13:15Z) isn't sure the filter belongs in the provider rather than core, and asked jdaberkow for a Deezer view. Bot-MArley's 3 requested changes still stand.",
    "blockers": [
     "Bot-MArley: 3 requested changes (podcast episodes never flagged explicit, so the filter skips them; tests for browse, recommendations and library generators missing)"
    ],
@@ -17852,9 +17852,66 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "commented",
    "suggested_fix": null,
    "del": 28,
+   "lab": null
+  },
+  {
+   "repo": "server",
+   "number": 7337,
+   "state": "open",
+   "closed_at": null,
+   "url": "https://github.com/music-assistant/server/pull/7337",
+   "title": "Allow pairing a Sendspin device again after it was unpaired",
+   "author": "maximmaxim345",
+   "draft": true,
+   "verdict": null,
+   "assessment": "comment",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "maximmaxim345 (draft)",
+   "size": "M",
+   "code": 131,
+   "add": 122,
+   "ci": "not checked (draft)",
+   "ci_fail": false,
+   "merge_state": "not checked (draft)",
+   "head_sha": "",
+   "core_touched": false,
+   "providers_touched": [
+    "sendspin"
+   ],
+   "stacked": false,
+   "tldr": "Draft: after unpairing a Sendspin device (or turning off its guest access) it never reconnects and can't be paired again; this lets you set it up again from the player settings.",
+   "summary": "",
+   "whats_new": "Opened 13:07Z as draft.",
+   "blockers": [
+    "Draft."
+   ],
+   "findings": [],
+   "unaddressed_comments": [],
+   "marley": {
+    "verdict": "none",
+    "reviewed_head": false,
+    "open_threads": 0,
+    "review_url": "",
+    "note": "",
+    "recheck_head": null
+   },
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": "new",
+   "suggested_fix": null,
+   "del": 9,
    "lab": null
   }
  ]
