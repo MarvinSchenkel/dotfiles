@@ -1680,7 +1680,7 @@
    "author": "fmunkes",
    "url": "https://github.com/music-assistant/server/pull/6809",
    "draft": false,
-   "verdict": "almost",
+   "verdict": "ready",
    "assessment": "comment",
    "status": "attention",
    "attention_since": "2026-10-19T16:42:06Z",
@@ -1702,12 +1702,11 @@
    "providers_touched": [],
    "merge_state": "merge-tree clean on origin/dev 885abd250",
    "head_sha": "e160c2ffb",
-   "whats_new": "Merged the updated base and fixed the mock in a test; Bot-MArley found nothing new.",
+   "whats_new": "Merged the updated base and fixed the mock in a test; Bot-MArley found nothing new. The 'autoplay-refill' blocker was stale: it was Copilot's 10-20 CRITICAL, fixed by fmunkes in 98a3b5d50 with a test; no unresolved threads.",
    "tldr": "No new code of its own: 618d38432 only merges #6802's ba4cd6c21 (hidden-source library playlist is a plain miss without its name). Proven: the sorted +/- lines against the dev merge-base change exactly as in #6802's delta. CI green, no conflict. Copilot's 05:48Z review on b026d8cc9 had no open issues; the re-review on 618d38432 requested 06:14Z has not landed. GPT Sol finds nothing in the merged fix. Still open and never posted: select_source lets a restricted user point their player at any queue and read it (patch below, still applies). set_members without a player access check stays a follow-up.",
    "summary": "Delta b026d8cc9..618d38432: one merge commit (parents b026d8cc9 and ba4cd6c21) of impersonation-reads-basic, nothing else. Checked by diffing the sorted +/- lines of git diff $(git merge-base origin/dev X) X for b026d8cc9 and 618d38432: the 26 added lines are identical to the change in #6802 from 40590f856 to ba4cd6c21 (playlists.py _get_visible_library_item plus its test); merge-base with dev is the same (4a380c19d). git diff b026d8cc9 618d38432 touches only playlists.py (+4/-1) and test_read_visibility.py (+21). The fix is reviewed on #6802; GPT Sol found nothing. Copilot 05:20Z on 1c8b81da5 and 05:48Z on b026d8cc9: no open issues, only the standing note that it needs human security review. All review threads are resolved. Our select_source finding from 10-15 is still present (controller.py unchanged) and was not in your 12:27Z review; patch passes git apply --check on 618d38432. API_SCHEMA_VERSION stays 98 -> 99 against dev 98.",
    "blockers": [
-    "Stacked on #6802 (base impersonation-reads-basic), which conflicts with dev",
-    "Open autoplay-refill comment on player_queues/controller.py needs your decision"
+    "Stacked on #6802: merge that first, then retarget this PR to dev"
    ],
    "findings": [],
    "copilot": {
@@ -1744,7 +1743,7 @@
    "reviewed_at": "2026-10-20 08:40 CEST",
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you: your open comments (autoplay-refill); lands after #6802",
+   "waiting_on": "you: approve after #6802 merges (then retarget to dev)",
    "changed_now": "",
    "marley": {
     "verdict": "approved",
