@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-02T13:00:00+01:00",
- "dev": "d96210531",
- "run_note": "Big merge hour: #6940, #7257, #7313, #7314, #7333 and the models 1.1.233 pin (#7334, client#339) all landed. fmunkes rebased #7292 onto it with schema 102 (recheck requested); #7209 still needs the same rebase and the next number. #6901 is clean apart from the queue design you accepted and waits on your merge.",
+ "last_run": "2026-11-02T14:00:00+01:00",
+ "dev": "724a4256d",
+ "run_note": "#6901 merged, so I launched the agreed follow-up chip (central Throttler, engine backoff, run_background_task). client 1.7.1 is released. #7292's recheck is clean and now waits on fmunkes for your start_position comment. New: #7336 (Deezer explicit filter), Bot-MArley wants 3 changes.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -1857,7 +1857,7 @@
    "providers_touched": [
     "ai_radio"
    ],
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "4734ce669",
    "whats_new": "Bot-MArley approved the head, but marcelveldt's 10-12 design concern (late lyrics can only push the onset later) is still the open question.",
    "tldr": "Follow-up to #6866. An AI Radio post now times its overlap from the synced-lyrics onset, and the stored analysis onset only wins when it is more than 5 s later. The new commit adds the exact-5 s boundary case and a lyrics-timeout test, so the code and tests are done. Copilot cleared the boundary finding on the new head. One Copilot PROBLEM is still open: it wants the PR body trimmed. That needs a body edit or a reply, no code change.",
@@ -1922,15 +1922,15 @@
   {
    "repo": "server",
    "number": 6901,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-02T12:02:55Z",
    "title": "Add AI generated covers and descriptions to the Playlist Metadata provider",
    "author": "ryanmac8",
    "url": "https://github.com/music-assistant/server/pull/6901",
    "draft": false,
    "verdict": "ready",
    "assessment": "comment",
-   "status": "attention",
+   "status": "waiting",
    "attention_since": "2026-10-30T15:14:50Z",
    "size": "XL",
    "code": 2997,
@@ -1986,7 +1986,7 @@
    "suggested_fix": null,
    "backport": null,
    "prompt": "Server PR #6901 (https://github.com/music-assistant/server/pull/6901), head 05ea062a6, by ryanmac8. Apply /tmp/prr/r0700/d6901/suggested.patch: in tests/providers/playlist_metadata/test_ai.py pass loop=asyncio.get_running_loop() to the worker fake's asyncio.Task (68 tests fail on Python 3.14.4 without it); in music_assistant/providers/playlist_metadata/ai.py raise ActionUnavailable when _stopped right after _concept() in preview(), and recheck _text_engine_paused() next to _stopped after the _record await in _preview_description. Run tests/providers/playlist_metadata and tests/providers/hass. Work in a worktree from refs/remotes/pr/6901.",
-   "whats_new": "Bot-MArley's 11:46Z recheck: the font helper fix is in, and its AIArtwork queue point stays open as accepted by you, with a follow-up to move to the central helpers after merge. GitHub shows the PR approved.",
+   "whats_new": "Merged 12:02Z. Follow-up chip launched for the central Throttler / engine backoff / run_background_task swap.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 16:25 CET",
    "auto_approved": null,
@@ -1996,8 +1996,8 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you: merge (core: helpers/plugin_engines.py, models/plugin.py)",
-   "changed_now": "recheck",
+   "waiting_on": "merged",
+   "changed_now": "merged",
    "gpt_sol": "2 problems (1 refuted, 1 narrow race)",
    "marley": {
     "verdict": "approved",
@@ -2013,7 +2013,8 @@
     "result": "nightly",
     "run_id": "",
     "note": "touches music_assistant/models, left to the nightly run"
-   }
+   },
+   "fix_thread": "t3-thread://v1/mcp:3a6b8a3e-f2df-4326-a3af-38d60bafbcb9"
   },
   {
    "repo": "server",
@@ -2221,7 +2222,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "merged",
-   "changed_now": "merged",
+   "changed_now": "",
    "gpt_sol": "1 problem (shuffle, no longer claimed)",
    "marley": {
     "verdict": "none",
@@ -2339,7 +2340,7 @@
    "providers_touched": [
     "dlna_receiver"
    ],
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "e77b4d756",
    "tldr": "Out of draft again since 08:52Z and OzGav is re-requested. All 58 review threads are resolved, and the three OzGav points from September (owner_player_id rename, conftest.py removed, deferred import removed) are done in the code. Scope is clean: only the new provider, its tests and en.json keys. Two real bugs remain against the current AudioSource session model. The plugin never calls deselect_source, so a second cast on the same renderer reuses the first cast's cached stream details (with the codec ffmpeg detected), and a DLNA Stop leaves the player showing the DLNA source. Also, any stream teardown during Pause is treated as Stop.",
    "summary": "New plugin provider synced from ma-provider-dlna-receiver v1.2.8. It runs one aiohttp UPnP server per MA player (ports from 8298 upward, on one detected IPv4) and one SSDP advertiser per renderer, each with its own UDP 1900 socket (SO_REUSEPORT). Playback goes through play_media with an AUDIO_SOURCE uri, and get_audio_stream proxies the sender's URL. Files touched: only music_assistant/providers/dlna_receiver/*, tests/providers/dlna_receiver/* and 9 new keys in translations/en.json. No core changes. Conventions are mostly fine: get_config_entries is an instance method on dev's model, the registry uses the event bus, tasks go through mass.create_task, and narrow excepts are used. The VERSION file matches other synced providers (yandex_*, kion_music, msx_bridge). The docs URL in the manifest returns 404 until music-assistant.io#626 merges. Unload cancels the metadata task, unsubscribes the player events, sends byebye, closes both UDP transports, stops the aiohttp runner, cancels GENA tasks and leaves mass.http_session open. GPT Sol and I found no leak. Security of the unauthenticated endpoint is reasonable for DLNA: SetAVTransportURI and GENA callbacks are validated against loopback, link-local, multicast and reserved addresses on every redirect hop, redirects are capped at 5, GENA is capped at 32 subs per service with a 1800 s TIMEOUT clamp, and SOAP/DIDL parsing rejects DOCTYPE/ENTITY and anything over 64 KiB. Anyone on the LAN can still play to and set the volume of every exposed player. That is inherent to DLNA and the plugin is opt-in. The remaining issues are about the newer AudioSource session contract. Sessions survive cmd_stop and keep session.streamdetails on re-select (_start_audio_source_session with preserve_details). ffmpeg writes the detected codec into that AudioFormat in place, so the next cast on the same renderer is launched with the old -acodec. Other receivers (airplay_receiver, spotify_connect, ariacast, sendspin_source) call deselect_source with the session's playback_session_id when their session ends. This plugin does not. on_source_unselected also sets STOPPED and clears elapsed on every stream teardown, but dev documents that a paused source's stream can be torn down while the source stays selected.",
@@ -2596,7 +2597,7 @@
    "providers_touched": [
     "web_kiosk"
    ],
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "aefcd311e",
    "tldr": "v1.1.0 drops ENQUEUE and plays core's flow stream, which removes the provider's own successor logic and with it the seek-to-end bug (Copilot r4302797493 resolved, page clamp verified, server seeks now safe via flow). Copilot is clean on the head. New: Repeat One leaves the page clock stuck at the end. The 9 older PROBLEMs and the maintainer question remain. Not ready.",
    "summary": "Delta b852cf2f7..257e3ae8b (v1.1.0, +894/-1285): the kiosk drops PlayerFeature.ENQUEUE, so core serves queue media as one /flow/ stream. Removed: the /flow/ to /single/ rewrite, enqueue_next_media, start_enqueued_media, QueueWalk, playback_reached_end and the short-end detection; a browser 'ended' now just reports IDLE. play_media checks resolve_stream_url to set serves_flow. refresh_stream rebuilds the flow at the queue's item and position via cmd_seek with resume_position(). New PlaybackClaim replaces transport_mark/still_plays/take_over_output (GPT Sol found no ownership or pause bug in it). _publish_flow_item sends title, duration and a stream-clock start (queue elapsed minus stream elapsed x speed; GPT Sol confirmed the formula) when the queue's item changes inside the flow. Closing a page that got the current play message rebuilds the flow for the remaining pages. web.js caps seekToSong at floor(dur) - end_margin from the welcome message, clamps its clock to the song duration, and reports position every 2 s. Effect on old findings: fixed or gone are the seek-to-end CRITICAL, the /flow/ rewrite limitation (crossfade and overlays now apply), one-item Repeat All, paused successor resume_pos, radio jumping to the next item, end report during the snapshot seek, and the short complete file stopping the queue. The failed-playback teardown is downgraded to SUGGESTION since there are no enqueue tasks now. The other 9 PROBLEMs are untouched. New PROBLEM: Repeat One (and one-item Repeat All) never sends a new media message, so the page clock and lyrics stay at the end.",
@@ -4056,7 +4057,7 @@
    "ci": "green on 6b5beb793 (lint, pytest, Verify, CodSpeed); no run against current dev because of the conflict",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "CONFLICT with origin/dev d96210531 in pyproject.toml, requirements_all.txt",
+   "merge_state": "CONFLICT with origin/dev 724a4256d in pyproject.toml, requirements_all.txt",
    "head_sha": "6b5beb793",
    "tldr": "Optional OIDC login. ashtonian took it out of draft at 03:51Z, head unchanged, and now conflicts with dev on the models pin. All card blockers still hold. He says recent Copilot findings are pre-existing; that is true for the in-flight auth race (r4309422583) but not for the CRITICAL re-auth subscription leak (r4309722568), which his new re-validation branch introduces. OzGav said maintainers will give feedback. Next move is a maintainer's: the LoginProvider vs auth-framework decision and a reply on the CRITICAL.",
    "summary": "No new commits since 6b5beb793. ashtonian marked it ready at 03:51:51Z without fixing the open Copilot CRITICAL, which bypasses the critical gate (no override-critical label). Rechecked blockers on the same head: (1) models pin still on ashtonian/music-assistant-models@82a0865, models#439 and frontend#3011 still draft. (2) LAN HTTP sign-in 400 on the HTTPS callback hop: unchanged. (3) Proxy redirect loop without X-Forwarded-Proto: unchanged. (4) Copilot r4309722568: on dev a failed re-auth returns early and keeps the old identity and subscription; the PR's re-validation loop clears _authenticated_user to None while the old subscription stays live, so player_access_filter(None) drops player restrictions. That is new in this PR. (5) Copilot r4309422583 in-flight revocation race exists on dev and the PR narrows it, so 'pre-existing' fits there. Merge conflict is only the models version line in both files.",
@@ -4247,7 +4248,7 @@
     "party"
    ],
    "merge_state": "merge-tree clean on origin/dev 63d21f687",
-   "head_sha": "e510bea55",
+   "head_sha": "b4d7be78f",
    "tldr": "The rework is what you asked for: votes on the queue item, no plugin state, listener or cleanup, 33/33 tests. All three reviewers hit the same gap: the tally is popped before next() takes the strict playback lock, so votes queued behind that lock can skip a second, unvoted song. Copilot also flags stale tallies on replayed items.",
    "summary": "Head e510bea55 (merge-base 44bd993bc) does what Marvin asked on 10-28. The voters are a comma-joined string in extra_attributes['party_skip_voters'] with the count in 'party_skip_votes'. _on_queue_updated, _remove_stale_skip_tally, _clear_skip_votes, _has_next_track, the skip locks and the plugin vote fields are all gone (grep finds no leftover QUEUE_UPDATED subscription or vote state). The has_player_access gate and the optional queue_item_id stay. song_changed is returned when the guest's item is no longer current.\n\nAtomicity: _get_voter_id is the only await before the read, and the read, add, write and signal_update(items_changed=True) are all synchronous. On the threshold both keys are popped and signal_update runs before 'await next()'. Uncontended, next() moves queue.current_item synchronously: the lock acquire does not yield and the item is set before call_later(play_index). So a concurrent vote gets song_changed. Contended, next() first waits on get_group_and_player_lock(strict=True), for example while the debounced play_index of an earlier skip, or a host or party play action, holds it. current_item stays on the old item for that time, so votes naming the old item still count on an empty ledger, and reaching the threshold again queues a second next(). test_skip_votes_are_dropped_before_skipping encodes this 'starts over' behaviour.\n\nPersistence: queue.current_item is the same object as in queue_data.items (get_item, update_items keep the references). QueueItem.to_cache keeps extra_attributes, and items_cache_dirty causes the debounced items write, so the votes survive a restart or reload.\n\nDouble voting: the same token twice is deduped. Rejoining still mints a new token_id, because the join code can be reused until it expires and exchange_join_code only rate-limits failures, so a second vote from the same person counts. This is the best per-device identity available. The guest already has QUEUES_CONTROL plus player access, so it could call player_queues/next directly, and skip rate limiting is client-side, so the threshold is a UX control, not enforcement.\n\nThreshold change: votes_required is read on every vote. Lowering it does not act on an existing tally until the next request, and then even a duplicate (uncounted) vote skips, because 'skipped' does not depend on vote_counted.\n\nSame song later: a re-request is a new QueueItem with a new queue_item_id, so it starts at zero. But a partial tally on an item that played to the end stays on that item and comes back if that same QueueItem is replayed (previous, Repeat All wrap, play_index on history). That contradicts the string 'Votes reset when the next song starts'.\n\nLast track with repeat off: the votes are dropped and next() does nothing, so the response says skipped=True and the frontend shows 'Song skipped!'. Marvin accepted this. The frontend resets its voted state when the tally drops to 0, so guests can vote again.\n\nFrontend#3014 (head 4a25ff31) sends queue_item_id, and handles song_changed, vote_counted, skipped, votes and votes_required. It reads party_skip_votes from current_item and shows the tally only for position=current, and it has already dropped no_next_track, so the contract matches. Dev drift since the merge-base (auth_middleware impersonation scope, transfer_queue) does not touch this path.",
    "blockers": [
@@ -4274,7 +4275,7 @@
     "why": "New feature (new config entry and API contract, paired with frontend#3014), not a fix."
    },
    "prompt": "",
-   "whats_new": "martinbuergi asked at 13:05Z whether to take the playback lock around the vote and next() or leave the narrow burst race. All three reviewers flagged it and the Copilot CRITICAL keeps the gate red, so the lock is the way to go.",
+   "whats_new": "martinbuergi pushed b4d7be78f (still draft).",
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 13:00 CET",
    "auto_approved": null,
@@ -4283,7 +4284,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: answer martinbuergi (lock around the vote and next(), or leave it)",
-   "changed_now": "",
+   "changed_now": "pushed",
    "gpt_sol": "1 critical (same lock race), 1 problem (last item with repeat off reports skipped and drops votes)",
    "support": null,
    "fix_thread": "t3-thread://v1/mcp:c1bbcffb-2367-4774-b433-5cc5bef133c2"
@@ -4681,7 +4682,7 @@
    "providers_touched": [
     "musicbrainz"
    ],
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "3ac44a43d",
    "tldr": "get_url_data now deletes the 30-day settled entry when a lookup finds the URL unknown or ambiguous. Keys match the set call and cache.get honours BYPASS_CACHE, so a refresh really re-asks and clears it. The declined CRITICAL needs three rare conditions at once, and the harm is a duplicate rather than a wrong merge. Ready. Copilot recommends approval on the head. Core touched, so it's your approve.",
    "summary": "Delta 80c73af04..3ac44a43d adds an else branch in MusicBrainzAPIClient.get_url_data that calls mass.cache.delete(settled_key, provider=self.domain) whenever the lookup does not resolve to exactly one entity. The key and provider are the same as in the set call. delete() with category None matches any category, and set uses the default 0, so the entry is removed. cache.get_with_freshness returns a miss under BYPASS_CACHE for non-persistent entries, so a bypassing refresh skips the settled entry, re-queries and now drops it. That closes r4337198057. Concurrent lookups for one URL are last-writer-wins, and both writers reflect MusicBrainz at their own time, so no harmful race. A 400/401/404 response (None) also drops the settled entry, which is right for 404 and harmless otherwise because the 1-day cache re-asks. The new test drives the real set/delete sequence with BYPASS_CACHE. On the declined r4337197972: the recovered MBID is only applied at insert, after _get_library_item_by_match has run its external-id pass without it. A duplicate therefore needs a same-provider name clash, a MusicBrainz URL link, and a third library artist carrying that MBID under a name that normalises differently (localised names, P!nk/Pink). OzGav's premise that library artists carry the MusicBrainz name is not quite right: names come from the first provider. Even so the combination is rare, and the outcome (a duplicate with the same MBID, mergeable by hand) is better than the pre-PR behaviour, which merged the item into the wrong same-name artist. Decline accepted. A cheap follow-up would look up the recovered MBID before inserting.",
@@ -7968,7 +7969,7 @@
    "del": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "7dc19112b",
    "core_touched": true,
    "providers_touched": [],
@@ -8241,7 +8242,7 @@
    "del": 0,
    "ci": "red (SleepTimerMode missing: models#448 not released)",
    "ci_fail": true,
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "9e2c25581",
    "core_touched": true,
    "providers_touched": [],
@@ -8283,7 +8284,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": "base moved",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -9453,7 +9454,7 @@
    "del": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "4b02b3493",
    "core_touched": false,
    "providers_touched": [
@@ -10369,7 +10370,7 @@
    "del": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "73c7529cc",
    "core_touched": false,
    "providers_touched": [
@@ -11334,7 +11335,7 @@
    "del": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev d96210531 in music_assistant/controllers/player_queues/controller.py, music_assistant/controllers/players/controller.py",
+   "merge_state": "CONFLICT with origin/dev 724a4256d in music_assistant/controllers/player_queues/controller.py, music_assistant/controllers/players/controller.py",
    "head_sha": "6442a5071",
    "core_touched": true,
    "providers_touched": [],
@@ -12534,7 +12535,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 13:00 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -13880,8 +13881,8 @@
    "changed_now": ""
   },
   {
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-02T12:21:48Z",
    "stacked": false,
    "related_prs": [],
    "unaddressed_comments": [],
@@ -13919,15 +13920,15 @@
    "title": "chore(main): release 1.7.1",
    "author": "app/musicassistant-bot",
    "draft": false,
-   "status": "attention",
-   "waiting_on": "you: merge to cut client 1.7.1",
+   "status": "waiting",
+   "waiting_on": "merged",
    "size": "S",
    "code": 0,
    "ci": "green",
    "merge_state": "mergeable",
    "head_sha": "4ee4f21fd",
    "tldr": "Release Please PR for client 1.7.1, CHANGELOG only, listing #330 (drop a removed player's queue). Merging it cuts the release; then the server pin bump (ask first).",
-   "changed_now": "",
+   "changed_now": "merged",
    "marley": {
     "verdict": "none",
     "reviewed_head": false,
@@ -14208,7 +14209,7 @@
    "size": "M",
    "code": 160,
    "ci": "green",
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "d1dce0415",
    "tldr": "Reporting and reading YouTube podcast progress works and is throttled sensibly. Two reachable gaps: a signed-out cookie now makes episode playback fail, and marking an episode unplayed in MA gets overridden by YouTube's old position.",
    "changed_now": "",
@@ -14233,7 +14234,14 @@
    "closed_at": null,
    "stacked": false,
    "related_prs": [],
-   "unaddressed_comments": [],
+   "unaddressed_comments": [
+    {
+     "author": "MarvinSchenkel",
+     "at": "2026-11-02T12:24:47Z",
+     "url": "https://github.com/music-assistant/server/pull/7292#issuecomment-6577063233",
+     "summary": "start_position asks + provider bookmarks question"
+    }
+   ],
    "prompt": "",
    "author_replied": null,
    "reporter_reply": null,
@@ -14263,7 +14271,7 @@
    "copilot_reviewed_head": true,
    "copilot_note": "Changes recommended on 6e8f8fa58: 1 CRITICAL, 2 PROBLEMs (deleted-user rows matches Opus).",
    "summary": "New bookmarks table (created on startup with CREATE TABLE IF NOT EXISTS, so no DB_SCHEMA_VERSION bump or migration is needed and an older server just ignores the table). Its UNIQUE(user_id, media_type, provider_instance, provider_item_id, start) covers every lookup, so no extra index. Rows are keyed per provider copy, and episode rows carry their podcast copy. The daily _cleanup_database sweep drops rows whose copy left the library. Three commands (music/bookmarks LIBRARY_READ, music/set_bookmark and music/remove_bookmark LIBRARY_WRITE) always scope to get_current_user(), filter by visible_music_sources, and emit BOOKMARKS_UPDATED, which the websocket handler only sends to the owning user. Party guests (no LIBRARY_WRITE) can only read, and start_position on play_media gives them nothing beyond seek. A new table is the right call (playlog/media_progress holds one position per item, and bookmarks are many named positions), and per-copy keying fits the existing pinned-copy resume. The questionable part is the provider-backed storage path (4 ProviderFeatures, 3 MusicProvider methods, write-target refusal). No provider implements it in this PR, and its read and remove semantics don't match the per-user MA path. I'd either drop it until the ABS implementation lands, or fix the two issues below. delete_user also leaves bookmark rows behind.",
-   "whats_new": "fmunkes rebased at 11:40Z: models pin 1.1.233, API_SCHEMA_VERSION 102, conflict gone, CI green. Recheck requested. Your start_position discussion runs in the chip.",
+   "whats_new": "Bot-MArley's recheck is clean (pin 1.1.233, schema 102). You commented at 12:24Z: start_position also for a whole podcast, frontend 'Play from beginning' as start_position: 0, InvalidDataError when it has no effect or comes with a chapter, whether an Audiobookshelf bookmark implementation is coming, and the description still says schema 100.",
    "core_touched": true,
    "providers_touched": [],
    "ci_fail": false,
@@ -14273,8 +14281,7 @@
    "assessment": "comment",
    "verdict": "almost",
    "blockers": [
-    "No Bot-MArley review on the head yet; recheck requested",
-    "Your open question on the new start_position parameter (chip running)",
+    "Your 12:24Z comment on start_position (whole-podcast case, 'Play from beginning' as 0, InvalidDataError cases, provider bookmarks without a provider, description says schema 100)",
     "Core change, so you approve"
    ],
    "draft": false,
@@ -14284,20 +14291,20 @@
    "title": "Add bookmarks for audiobooks and podcast episodes",
    "author": "fmunkes",
    "status": "waiting",
-   "waiting_on": "Bot-MArley recheck on 88d68628f; your start_position chip",
+   "waiting_on": "fmunkes: your 12:24Z start_position asks",
    "size": "L",
    "code": 362,
    "ci": "green",
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "88d68628f",
    "tldr": "The bookmarks that MA stores itself work, are kept per user and copy, and pass their tests. The provider-stored half has no provider using it yet, and as written it lists account-wide bookmarks as the user's own and strands MA rows once a provider gains edit support. All three of fmunkes' open PRs bump the API schema 99 to 100, so whichever merges second needs a re-bump.",
-   "changed_now": "pushed",
+   "changed_now": "commented",
    "marley": {
-    "verdict": "none",
-    "reviewed_head": false,
+    "verdict": "approved",
+    "reviewed_head": true,
     "open_threads": 0,
-    "review_url": "https://github.com/music-assistant/server/pull/7292#pullrequestreview-5705453316",
-    "note": "Recheck requested on 88d68628f.",
+    "review_url": "https://github.com/music-assistant/server/pull/7292",
+    "note": "Recheck clean on 88d68628f.",
     "recheck_head": "88d68628f"
    }
   },
@@ -14425,7 +14432,7 @@
    "size": "S",
    "code": 27,
    "ci": "green",
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "849fbbefa",
    "tldr": "When a DLNA renderer answers Pause with a UPnP fault, the PR now stops it, the same as replace_pause_with_stop, instead of only logging the error. A renderer that pauses slowly is not affected, because timeouts are not caught. Queue resume picks up at the paused position.",
    "changed_now": "",
@@ -15764,7 +15771,7 @@
    "author": "muttleydosomething",
    "code": 0,
    "ci": "red (Verify)",
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "f9b1fa2ba",
    "waiting_on": "muttleydosomething: PR title (Bot-MArley) + Verify",
    "tldr": "Tests only: three Sonos reconnect tests (delay cap, cancellation, shutdown). Bot-MArley checked the assertions against player.py; only the PR title needs changing.",
@@ -16143,7 +16150,7 @@
    "add": 2,
    "ci": "red (pytest, lint, audit, benchmarks)",
    "ci_fail": true,
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "ed8fcc07f",
    "core_touched": true,
    "providers_touched": [],
@@ -16197,7 +16204,7 @@
    "add": 2,
    "ci": "red (pytest 1-3)",
    "ci_fail": true,
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "313836f5c",
    "core_touched": true,
    "providers_touched": [
@@ -16322,7 +16329,7 @@
    "add": 2,
    "ci": "green (Dependency Security Review pending)",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "4786116f3",
    "core_touched": false,
    "providers_touched": [
@@ -16449,7 +16456,7 @@
    "add": 1039,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "be361679f",
    "core_touched": true,
    "providers_touched": [
@@ -16551,7 +16558,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 16,
    "lab": {
@@ -16617,7 +16624,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 2,
    "lab": {
@@ -16649,7 +16656,7 @@
    "add": 437,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "196f8d3a2",
    "core_touched": true,
    "providers_touched": [
@@ -16824,7 +16831,7 @@
    "add": 479,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "fa48e9213",
    "core_touched": true,
    "providers_touched": [],
@@ -16896,7 +16903,7 @@
    "add": 219,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev d96210531",
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
    "head_sha": "278333779",
    "core_touched": true,
    "providers_touched": [],
@@ -17612,7 +17619,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 4,
    "lab": null
@@ -17668,7 +17675,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 2,
    "lab": null
@@ -17722,7 +17729,7 @@
    "merge_state": "",
    "head_sha": "76ce9ee52",
    "tldr": "Own-package pin bump in the client to models 1.1.233, CI green. Auto-approved and auto-merge on.",
-   "changed_now": "merged",
+   "changed_now": "",
    "marley": {
     "verdict": "none",
     "reviewed_head": false,
@@ -17788,6 +17795,66 @@
    "changed_now": "",
    "suggested_fix": null,
    "del": 306,
+   "lab": null
+  },
+  {
+   "repo": "server",
+   "number": 7336,
+   "state": "open",
+   "closed_at": null,
+   "url": "https://github.com/music-assistant/server/pull/7336",
+   "title": "Add explicit content filter to the Deezer provider",
+   "author": "realroywalker",
+   "draft": false,
+   "verdict": "not_ready",
+   "assessment": "comment",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "realroywalker: Bot-MArley's 3 points",
+   "size": "L",
+   "code": 380,
+   "add": 784,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 724a4256d",
+   "head_sha": "017d02824",
+   "core_touched": false,
+   "providers_touched": [
+    "deezer"
+   ],
+   "stacked": false,
+   "tldr": "Adds an explicit content filter to the Deezer provider (hide everywhere or only from recommendations), with a playback guard.",
+   "summary": "",
+   "whats_new": "Opened 11:40Z; Bot-MArley asked for changes.",
+   "blockers": [
+    "Bot-MArley: 3 requested changes (podcast episodes never flagged explicit, so the filter skips them; tests for browse, recommendations and library generators missing)"
+   ],
+   "findings": [],
+   "unaddressed_comments": [],
+   "marley": {
+    "verdict": "changes",
+    "reviewed_head": true,
+    "open_threads": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7336#pullrequestreview-5736919813",
+    "note": "3 requested changes.",
+    "recheck_head": null
+   },
+   "prompt": "",
+   "backport": {
+    "rec": false,
+    "why": "Enhancement."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": "new",
+   "suggested_fix": null,
+   "del": 28,
    "lab": null
   }
  ]
