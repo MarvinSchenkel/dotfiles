@@ -25,7 +25,8 @@ state back and commit it in `~/git/dotfiles` as Marvin (marvinschenkel@gmail.com
 2. `lab run --ref dev --deep 2>&1 | tee /tmp/lab-deep-dev.log`. It starts one tier 1 run over every
    deep role (`deep` marker, no rerun) and then one tier 2 run per frozen account set; every run prints
    `run <id>: ...`. Collect the run ids from the output.
-3. On Mondays also `lab run --ref stable --deep`, same handling, reported in its own section.
+3. The nightly runs `dev` only. `stable` runs on demand when a release is being prepared, never
+   from this thread.
 4. `lab summary <id> ...` over the collected ids, and `lab flakes` for the gate reruns of the last
    30 days.
 5. Hardware (bench): `--deep` does not take devices, so the bench is a separate run. First
