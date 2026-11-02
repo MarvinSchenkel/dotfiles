@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-02T15:00:00+01:00",
+ "last_run": "2026-11-02T16:00:00+01:00",
  "dev": "724a4256d",
- "run_note": "Quiet hour. maximmaxim345 opened draft #7337 (re-pair a Sendspin device after unpairing). OzGav asked on #7336 whether an explicit filter belongs in core instead of the Deezer provider. dev is unchanged.",
+ "run_note": "OzGav extended #7201 so an edited artist.nfo applies after a scan and pushed a fix for Bot-MArley's cache point; recheck next run. illright agreed to drop the uv_build switch on aioslimproto#591. dev is unchanged.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -7959,9 +7959,9 @@
    "draft": false,
    "verdict": "almost",
    "assessment": "request_changes",
-   "status": "attention",
+   "status": "waiting",
    "attention_since": "2026-10-30T11:58:45Z",
-   "waiting_on": "you: answer OzGav (artist.nfo edits are applied on 'update metadata' by design)",
+   "waiting_on": "Bot-MArley recheck on 470994a8f (pushed 14:51Z)",
    "gpt_sol": "2 problems",
    "size": "M",
    "code": 96,
@@ -7970,15 +7970,16 @@
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 724a4256d",
-   "head_sha": "7dc19112b",
+   "head_sha": "470994a8f",
    "core_touched": true,
    "providers_touched": [],
    "stacked": false,
    "tldr": "Fixes shared-artist renames on album/track refresh cleanly, but breaks local artist.nfo and tag updates: filesystem_local only updates artists via track overwrite, which now never touches an existing artist (reproduced). Request changes. GPT Sol agrees and adds that existing provider mappings cannot recover availability. Copilot recommends approval.",
    "summary": "The core fix works. An album/track refresh (refresh_item, _refresh_from_provider_mapping, filesystem rescan with overwrite) no longer renames or overwrites a library artist found by prov id or matched by ids/name. It only adds new mappings and new id types, and writes nothing when there's nothing new (the per-track artist rewrite and UI flash go away). ProviderMapping equality is (instance, item_id), so the no-write check holds. Renames from the artist's own provider still apply through refresh_item(artist) -> update_item_in_library(overwrite=True), and library sync never renamed on dev either. MusicBrainz merges are unaffected: merge_library_artists_by_mbid is only called from metadata, and a differing MBID is ignored rather than replaced, which is stricter than dev. DB writes drop sharply on refreshes. The cost is one extra match query per new artist. Blocking: filesystem_local relies on the track overwrite path to push artist.nfo, artist image, tag name and MBID corrections into the library artist, and its get_artist() echoes the stored name, so after this PR local artist metadata edits are silently lost (reproduced). Code lines: 48 added, 48 removed outside tests.",
-   "whats_new": "OzGav replied to your changes-requested review: artist.nfo edits now apply via 'update metadata' on the artist, not via a track rescan, by design.",
+   "whats_new": "OzGav added 'Apply an edited artist.nfo to its artist after a scan' (5862bd8ba). Bot-MArley flagged at 14:35Z that the 120 s artist-info cache made it apply the track's spelling; OzGav pushed a fix at 14:51Z (470994a8f). Recheck goes out next run if Bot-MArley hasn't reviewed it.",
    "blockers": [
-    "OzGav (11:58Z) says it's by design: a scan no longer rewrites the shared artist; an edited artist.nfo is applied when you run 'update metadata' on the artist. Accept that or keep your change request"
+    "No Bot-MArley review on the head yet (pushed 14:51Z)",
+    "Core change, so you approve"
    ],
    "findings": [
     {
@@ -8016,13 +8017,13 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "",
+   "changed_now": "pushed",
    "marley": {
-    "verdict": "approved",
-    "reviewed_head": true,
+    "verdict": "none",
+    "reviewed_head": false,
     "open_threads": 0,
     "review_url": "https://github.com/music-assistant/server/pull/7201#pullrequestreview-5644161268",
-    "note": "Requested changes: none, it looks good. It's waiting for a maintainer to approve and merge.",
+    "note": "PROBLEM on 5862bd8ba (cached track spelling); fix pushed in 470994a8f, not reviewed yet.",
     "recheck_head": null
    },
    "lab": {
@@ -17206,7 +17207,7 @@
    "assessment": "comment",
    "status": "waiting",
    "attention_since": "2026-11-01T09:56:12Z",
-   "waiting_on": "illright: paste the -e build error",
+   "waiting_on": "illright: drop the backend switch (agreed 14:04Z)",
    "size": "S",
    "code": 11,
    "add": 8,
@@ -17219,7 +17220,7 @@
    "stacked": false,
    "tldr": "Build backend switch to uv_build so an editable install next to the server builds. Packaging only.",
    "summary": "",
-   "whats_new": "You replied at 10:03Z: py.typed and license fix are good, but no backend switch in just this repo; you couldn't reproduce the -e error and asked for it.",
+   "whats_new": "illright agreed at 14:04Z to drop the uv_build switch and keep py.typed + license; will report back if the -e error still reproduces.",
    "blockers": [],
    "findings": [],
    "unaddressed_comments": [],
@@ -17241,7 +17242,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "commented",
    "suggested_fix": null,
    "del": 3
   },
@@ -17852,7 +17853,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "commented",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 28,
    "lab": null
@@ -17909,7 +17910,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 9,
    "lab": null
