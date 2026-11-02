@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-02T07:00:00+01:00",
+ "last_run": "2026-11-02T08:00:00+01:00",
  "dev": "604192943",
- "run_note": "Busy weekend: 17 new PRs. mnestrud's content-length trio (#7306, #7307, #7308), #7314, #7288 and #6802 are approved by Bot-MArley and lab green, waiting on your core approve (#7312 too, lab left to nightly); models#448 is clean, and releasing it unblocks #7209. OzGav reopened #7273 after a reporter test, fmunkes asked #7316 to keep core out of a provider PR, and the av 19 bump (#7324) breaks pytest.",
+ "run_note": "Quiet hour. whitty opened #7330 (ytmusic crash on uploaded albums) and already applied Bot-MArley's one fix; the recheck goes out next run once the push is 15 min old. aioslimproto#592 merged. Nothing else moved, dev is unchanged.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -1367,7 +1367,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "merged",
-   "changed_now": "merged",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -1580,7 +1580,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: approve (core); #6809 is stacked on it",
-   "changed_now": "recheck",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -1669,7 +1669,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "author",
-   "changed_now": "commented"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -1745,7 +1745,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: your open comments (autoplay-refill); lands after #6802",
-   "changed_now": "pushed",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -2304,7 +2304,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "thelad-dev (draft): hardware test",
-   "changed_now": "drafted",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -2983,7 +2983,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "merged",
-   "changed_now": "merged",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -3411,7 +3411,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "illright: alternatives to extra_routes",
-   "changed_now": "commented",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -8279,7 +8279,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": "recheck",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -8352,7 +8352,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "recheck",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -9135,7 +9135,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "closed"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -10406,7 +10406,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-27 07:40 CET",
-   "changed_now": "pushed",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -12529,7 +12529,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 13:00 CET",
-   "changed_now": "reviewed",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -12608,7 +12608,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": "pushed"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -13386,7 +13386,7 @@
    "tldr": "The rewrite to a 'position never moved since play_media' rule fixes the old regression: a normal renderer paused outside MA now stays at its real pause point. Pause, resume and stop work, and so does a backward seek while paused, on both normal and LinkPlay-style renderers. Two non-flow gaps remain: after a gapless track change a stuck renderer can run up to a poll interval (30 s) ahead for the whole track, and a seek is ignored. A 9-line patch fixes both, along with Copilot's open CRITICAL on the URI change.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": "reopened",
+   "changed_now": "",
    "marley": {
     "verdict": "none",
     "reviewed_head": false,
@@ -14493,7 +14493,7 @@
    "merge_state": "merge-tree clean on origin/dev 7a59e9b96",
    "head_sha": "6452f7d05",
    "tldr": "Queue play on a paused queue now goes to the same output-protocol player that queue pause went to, so LinkPlay/Universal players resume again. The fallback keeps native and group players on their old path. The DLNA read-back after play is harmless.",
-   "changed_now": "closed",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -14572,7 +14572,7 @@
    "merge_state": "merge-tree clean on origin/dev 604192943",
    "head_sha": "aec69a888",
    "tldr": "The end-of-queue hold now follows how far the player is behind the stream instead of a fixed 8 s, capped at 180 s. Core is the right layer: the lead-out already lives in the streams controller since #5408, and the new rule is generic. Small follow-ups only.",
-   "changed_now": "ready for review",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -15842,7 +15842,7 @@
     "run_id": "20261030-060330-8139",
     "note": ""
    },
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "state": "merged",
@@ -15906,7 +15906,7 @@
     "run_id": "",
     "note": "Qobuz has no lab coverage outside tier 2; not a risky provider"
    },
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "state": "open",
@@ -16113,7 +16113,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 2
   },
@@ -16167,7 +16167,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 2
   },
@@ -16221,7 +16221,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 2
   },
@@ -16279,7 +16279,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 4,
    "lab": {
@@ -16348,7 +16348,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 2,
    "lab": {
@@ -16416,7 +16416,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 2
   },
@@ -16473,7 +16473,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "recheck",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 35,
    "lab": {
@@ -16541,7 +16541,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 16,
    "lab": {
@@ -16584,12 +16584,23 @@
    "blockers": [
     "Bot-MArley: a forced refresh writes None over stored lyrics when no lyrics provider answered (none enabled, lookup failed, no artist/duration)"
    ],
-   "findings": [],
+   "findings": [
+    {
+     "model": "Bot-MArley",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/metadata/enrichment.py",
+     "line": 508,
+     "title": "A forced refresh writes None over stored lyrics when no lyrics provider answered",
+     "detail": "[PROBLEM] `online_metadata and not retry_soon` is also true when no lyrics provider is enabled, when a lyrics provider fails with an error outside `_TEMPORARY_ERRORS` (the generic handler just logs and continues), or when the provider skips the track (e.g. LRCLIB returns early without an artist or duration). In those cases the stored lyrics are overwritten with `None` even though no lookup completed. Please record whether a `LYRICS` provider actually answered (found or not found) and keep `prev_lyrics` otherwise.",
+     "fix": "",
+     "posted": null
+    }
+   ],
    "unaddressed_comments": [],
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
-    "open_threads": 0,
+    "open_threads": 1,
     "review_url": "https://github.com/music-assistant/server/pull/7313#pullrequestreview-5732719892",
     "note": "Forced refresh can wipe lyrics when no provider answers.",
     "recheck_head": "1ec62a38a"
@@ -16604,7 +16615,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "reviewed",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 2,
    "lab": {
@@ -16672,7 +16683,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "recheck",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 7,
    "lab": {
@@ -16788,7 +16799,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "recheck",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 0
   },
@@ -16849,7 +16860,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 17,
    "lab": {
@@ -16920,7 +16931,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 9,
    "lab": {
@@ -16991,7 +17002,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 2,
    "lab": {
@@ -17056,7 +17067,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 306
   },
@@ -17110,7 +17121,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 8
   },
@@ -17169,7 +17180,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 691
   },
@@ -17221,15 +17232,15 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "recheck",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 3
   },
   {
    "repo": "aioslimproto",
    "number": 592,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-02T06:05:16Z",
    "url": "https://github.com/music-assistant/aioslimproto/pull/592",
    "title": "Bump pytest from 9.1.1 to 9.2.0",
    "author": "app/dependabot",
@@ -17238,7 +17249,7 @@
    "assessment": "approve",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "merging (auto-merge on)",
+   "waiting_on": "merged",
    "size": "S",
    "code": 2,
    "add": 1,
@@ -17251,7 +17262,7 @@
    "stacked": false,
    "tldr": "Dependabot dev-dependency bump, CI green. Auto-merge turned on by the routine.",
    "summary": "",
-   "whats_new": "Opened since Friday.",
+   "whats_new": "Merged by auto-merge at 06:05Z.",
    "blockers": [],
    "findings": [],
    "unaddressed_comments": [],
@@ -17276,9 +17287,82 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "auto-approved",
+   "changed_now": "merged",
    "suggested_fix": null,
    "del": 1
+  },
+  {
+   "repo": "server",
+   "number": 7330,
+   "state": "open",
+   "closed_at": null,
+   "url": "https://github.com/music-assistant/server/pull/7330",
+   "title": "ytmusicapi fails on uploaded album playlist",
+   "author": "whitty",
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "comment",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "Bot-MArley recheck on 53444306f (pushed 06:57Z)",
+   "size": "S",
+   "code": 8,
+   "add": 6,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 604192943",
+   "head_sha": "53444306f",
+   "core_touched": false,
+   "providers_touched": [
+    "ytmusic"
+   ],
+   "stacked": false,
+   "tldr": "Uploaded albums break the ytmusic album lookup because ytmusicapi can't resolve their audioPlaylistId (sigma67/ytmusicapi#1022, KeyError). The provider now drops that id for upload albums and falls back to the plain album tracks. Provider-only, 8 lines.",
+   "summary": "",
+   "whats_new": "Opened 06:43Z. Bot-MArley asked for pop() instead of del; whitty pushed exactly that at 06:57Z, so it needs a recheck.",
+   "blockers": [
+    "Bot-MArley's pop() ask is applied on the head; its thread is outdated but unresolved, recheck due after 07:12Z"
+   ],
+   "findings": [
+    {
+     "model": "Bot-MArley",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/ytmusic/helpers.py",
+     "line": 86,
+     "title": "`del` raises a `KeyError` when the key is missing; use pop with a default",
+     "detail": "Fixed on 53444306f (album.pop(\"audioPlaylistId\", None)).",
+     "fix": "",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "marley": {
+    "verdict": "changes",
+    "reviewed_head": false,
+    "open_threads": 1,
+    "review_url": "https://github.com/music-assistant/server/pull/7330#pullrequestreview-5732953772",
+    "note": "Reviewed 426976279: use pop instead of del. Applied on the head.",
+    "recheck_head": null
+   },
+   "prompt": "",
+   "backport": {
+    "rec": true,
+    "why": "Small provider bugfix for a crash on uploaded albums; ytmusic helpers exist on stable."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "sigma67/ytmusicapi#1022"
+   ],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": "new",
+   "suggested_fix": null,
+   "del": 2,
+   "lab": null
   }
  ]
 }
