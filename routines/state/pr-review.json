@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-03T13:00:00+01:00",
+ "last_run": "2026-11-03T14:00:00+01:00",
  "dev": "1c6013ae6",
- "run_note": "#7337 (Sendspin re-pairing) and #7351 (Open Subsonic image URLs) merged. anatosun pushed to draft #7204. Nothing else moved.",
+ "run_note": "OzGav approved the Auracast provider #7142; it only needs a merge. New: #7352 adds srptools to the AirPlay provider so Apple TV pairing works; Bot-MArley wants a real Apple TV test, and the lab AirPlay gate runs once CI is green.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -6044,11 +6044,11 @@
    "author": "Yagoor",
    "url": "https://github.com/music-assistant/server/pull/7142",
    "draft": false,
-   "verdict": "almost",
+   "verdict": "ready",
    "assessment": null,
    "status": "attention",
    "attention_since": "2026-11-03T06:48:52Z",
-   "waiting_on": "you: open maintainer conversations; review + merge (XL, new requirement)",
+   "waiting_on": "OzGav approved 12:56Z; merge (you or OzGav)",
    "gpt_sol": "not run",
    "size": "XL",
    "code": 1382,
@@ -6065,10 +6065,9 @@
    "stacked": false,
    "tldr": "New Auracast provider (Bluetooth LE broadcast audio) by Yagoor. Provider-only plus a requirement and en.json strings, about 1.4k lines.",
    "summary": "",
-   "whats_new": "Bot-MArley's 07:15Z recheck: everything it asked is fixed (broadcast name validation and more). The conversations waiting on a maintainer are still open. CI was still running.",
+   "whats_new": "OzGav approved da4c4ea1b at 12:56Z. Bot-MArley's recheck is clean. CI still had a pending job.",
    "blockers": [
-    "Open conversations waiting on a maintainer",
-    "XL new provider with a new requirement: your review and merge"
+    "Merge: approved by OzGav, auto-merge not set"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -6094,7 +6093,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "approved",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -9068,7 +9067,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "pushed"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -17944,7 +17943,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 9,
    "lab": {
@@ -18734,7 +18733,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "title": "Fix Open Subsonic remote image URLs being passed to getCoverArt",
@@ -18751,6 +18750,67 @@
     "open_threads": 0,
     "review_url": "https://github.com/music-assistant/server/pull/7351#pullrequestreview-5750820822",
     "note": "One test fix requested.",
+    "recheck_head": null
+   }
+  },
+  {
+   "repo": "server",
+   "number": 7352,
+   "state": "open",
+   "closed_at": null,
+   "url": "https://github.com/music-assistant/server/pull/7352",
+   "draft": false,
+   "assessment": "comment",
+   "attention_since": null,
+   "size": "S",
+   "code": 3,
+   "add": 2,
+   "ci": "pending",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 1c6013ae6",
+   "core_touched": false,
+   "providers_touched": [
+    "airplay"
+   ],
+   "stacked": false,
+   "summary": "",
+   "whats_new": "Opened 12:05Z. Bot-MArley: nothing to change in the code, but it asks for a real Apple TV pairing test (DEV app pr-7352). Lab airplay gate runs once CI is green.",
+   "blockers": [
+    "Hardware confirmation: pairing tested on a real Apple TV",
+    "AirPlay is excluded from auto-approval and it adds a requirement: you approve and merge"
+   ],
+   "findings": [],
+   "unaddressed_comments": [],
+   "prompt": "",
+   "backport": {
+    "rec": true,
+    "why": "Two-line requirement fix for broken Apple TV pairing."
+   },
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": "new",
+   "suggested_fix": null,
+   "lab": null,
+   "title": "Fix Apple TV pairing not working",
+   "author": "cleverer",
+   "verdict": "almost",
+   "status": "waiting",
+   "waiting_on": "cleverer: confirm a real Apple TV pairing test",
+   "del": 1,
+   "tldr": "Adds srptools==1.0.1 to the AirPlay provider's requirements (manifest + requirements_all.txt); pyatv needs it for Apple TV pairing and it isn't installed today.",
+   "head_sha": "b481ef616",
+   "marley": {
+    "verdict": "approved",
+    "reviewed_head": true,
+    "open_threads": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7352#pullrequestreview-5752400026",
+    "note": "No code changes requested; hardware test asked.",
     "recheck_head": null
    }
   }
