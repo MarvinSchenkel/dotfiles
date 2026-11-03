@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-03T09:00:00+01:00",
+ "last_run": "2026-11-03T10:00:00+01:00",
  "dev": "f67cc14dd",
- "run_note": "Both 08:00 rechecks came back clean. Auracast #7142 has nothing open from Bot-MArley but still has maintainer conversations, and client#297 leaves you one call on the podcast_episode gate. Nothing else moved; dev is unchanged.",
+ "run_note": "Simanias opened #7350 (Raumfeld speaker keeps its player after a room move); Bot-MArley approved it and I queued it for merge. Nothing else moved; dev is unchanged.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -1506,7 +1506,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: confirm the podcast_episode gate",
-   "changed_now": "recheck",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -6094,7 +6094,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "recheck",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -18445,6 +18445,73 @@
    "suggested_fix": null,
    "del": 9,
    "lab": null
+  },
+  {
+   "repo": "server",
+   "number": 7350,
+   "state": "open",
+   "closed_at": null,
+   "url": "https://github.com/music-assistant/server/pull/7350",
+   "draft": false,
+   "assessment": "approve",
+   "attention_since": null,
+   "size": "S",
+   "code": 47,
+   "add": 150,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev f67cc14dd",
+   "core_touched": false,
+   "providers_touched": [
+    "raumfeld"
+   ],
+   "stacked": false,
+   "summary": "",
+   "whats_new": "Opened 08:29Z; Bot-MArley approved and auto-approved it at 08:48Z. I turned on auto-merge (merge queue).",
+   "blockers": [],
+   "findings": [],
+   "unaddressed_comments": [],
+   "prompt": "",
+   "backport": {
+    "rec": true,
+    "why": "Provider-only bugfix; raumfeld provider exists on stable (check it applies)."
+   },
+   "auto_approved": {
+    "at": "2026-11-03 10:03 CET",
+    "note": "Bot-MArley approved (provider-only raumfeld, S); auto-merge on via the merge queue."
+   },
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": "auto-approved",
+   "suggested_fix": null,
+   "lab": {
+    "head": "53f74c581",
+    "areas": [],
+    "result": "skipped",
+    "run_id": "",
+    "note": "raumfeld has no lab coverage"
+   },
+   "title": "Raumfeld: a speaker keeps its player when it moves to another room",
+   "author": "Simanias",
+   "verdict": "ready",
+   "status": "waiting",
+   "waiting_on": "merge queue (auto-approved)",
+   "del": 1,
+   "tldr": "A Raumfeld player's id comes from the renderer's hardware serial, but the serial read for a room stayed cached under the room name, so a speaker that moved rooms could lose its player. The cache now follows the renderer. Provider-only, tested on the author's speakers.",
+   "head_sha": "53f74c581",
+   "marley": {
+    "verdict": "approved",
+    "reviewed_head": true,
+    "open_threads": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7350#pullrequestreview-5749290606",
+    "note": "APPROVED, found nothing to change.",
+    "recheck_head": null
+   }
   }
  ]
 }
