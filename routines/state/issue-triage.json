@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-11-04 17:30 CET",
+ "last_run": "2026-11-05 07:30 CET",
  "columns": [
   [
    "info",
@@ -89,7 +89,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T05:36:23Z",
@@ -166,7 +166,7 @@
    "diff": "diff --git a/aioaudiobookshelf/schema/audio.py b/aioaudiobookshelf/schema/audio.py\nindex 28ade35..16fa8af 100644\n--- a/aioaudiobookshelf/schema/audio.py\n+++ b/aioaudiobookshelf/schema/audio.py\n@@ -44,7 +44,8 @@ class AudioTrack(_BaseModel):\n class AudioFile(_BaseModel):\n     \"\"\"Audiofile.\"\"\"\n \n-    index: int\n+    # null for podcast episodes abs scanned in before its v2.21.0\n+    index: int | None = None\n     ino: str\n     metadata: FileMetadata\n     added_at: Annotated[int, Alias(\"addedAt\")]\ndiff --git a/tests/test_podcasts.py b/tests/test_podcasts.py\nnew file mode 100644\nindex 0000000..dff6ea6\n--- /dev/null\n+++ b/tests/test_podcasts.py\n@@ -0,0 +1,100 @@\n+\"\"\"Tests for decoding podcast payloads.\"\"\"\n+\n+import json\n+from typing import Any\n+\n+from aioaudiobookshelf.schema.library import LibraryItemExpandedPodcast\n+\n+_FILE_METADATA = {\n+    \"filename\": \"episode1.mp3\",\n+    \"ext\": \".mp3\",\n+    \"path\": \"/podcasts/show1/episode1.mp3\",\n+    \"relPath\": \"episode1.mp3\",\n+    \"size\": 1000,\n+    \"mtimeMs\": 1700000000000,\n+    \"ctimeMs\": 1700000000000,\n+    \"birthtimeMs\": 0,\n+}\n+\n+\n+def _episode() -> dict[str, Any]:\n+    \"\"\"Build an episode as abs sends it for a file scanned in before abs v2.21.0.\"\"\"\n+    audio_file = {\n+        \"index\": None,\n+        \"ino\": \"2\",\n+        \"metadata\": _FILE_METADATA,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"manuallyVerified\": False,\n+        \"exclude\": False,\n+        \"error\": None,\n+        \"format\": \"MP2/3 (MPEG audio layer 2/3)\",\n+        \"duration\": 60.0,\n+        \"bitRate\": 128000,\n+        \"codec\": \"mp3\",\n+        \"channels\": 2,\n+        \"channelLayout\": \"stereo\",\n+        \"mimeType\": \"audio/mpeg\",\n+    }\n+    return {\n+        \"libraryItemId\": \"item1\",\n+        \"podcastId\": \"podcast1\",\n+        \"id\": \"episode1\",\n+        \"index\": None,\n+        \"title\": \"Episode 1\",\n+        \"chapters\": [],\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"audioFile\": audio_file,\n+        \"audioTrack\": {\n+            \"index\": None,\n+            \"startOffset\": 0,\n+            \"duration\": 60.0,\n+            \"title\": \"episode1.mp3\",\n+            \"contentUrl\": \"/api/items/item1/file/2\",\n+            \"mimeType\": \"audio/mpeg\",\n+            \"metadata\": _FILE_METADATA,\n+        },\n+        \"duration\": 60.0,\n+        \"size\": 1000,\n+    }\n+\n+\n+def _podcast_item(episode: dict[str, Any]) -> bytes:\n+    item = {\n+        \"id\": \"item1\",\n+        \"ino\": \"1\",\n+        \"libraryId\": \"library1\",\n+        \"folderId\": \"folder1\",\n+        \"path\": \"/podcasts/show1\",\n+        \"relPath\": \"show1\",\n+        \"isFile\": False,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"isMissing\": False,\n+        \"isInvalid\": False,\n+        \"mediaType\": \"podcast\",\n+        \"libraryFiles\": [],\n+        \"size\": 1000,\n+        \"media\": {\n+            \"id\": \"podcast1\",\n+            \"libraryItemId\": \"item1\",\n+            \"autoDownloadEpisodes\": False,\n+            \"maxEpisodesToKeep\": 0,\n+            \"maxNewEpisodesToDownload\": 3,\n+            \"tags\": [],\n+            \"size\": 1000,\n+            \"metadata\": {\"title\": \"Show 1\", \"genres\": [], \"explicit\": False},\n+            \"episodes\": [episode],\n+        },\n+    }\n+    return json.dumps(item).encode()\n+\n+\n+def test_an_episode_scanned_before_abs_2_21_has_no_audio_file_index() -> None:\n+    \"\"\"Abs never backfilled the null index of older scans, see support#6842.\"\"\"\n+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(_episode()))\n+\n+    audio_file = item.media.episodes[0].audio_file\n+    assert audio_file is not None\n+    assert audio_file.index is None\n",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-26T22:53:17Z",
@@ -258,7 +258,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-11-03T22:45:38Z",
@@ -322,7 +322,7 @@
    "action": "Auto-post held: GPT says the bot already asked for a dropout log, so ours repeats it. davidfi01: nightlies fixed most dropouts (Spotify, SiriusXM), occasional ~1 s self-correcting gaps on DLNA, offers logs. Send the drafted log ask, or close as mostly resolved.",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "davidfi01",
      "at": "2026-10-30T13:06:19Z",
@@ -397,7 +397,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-11-04T15:10:44Z",
@@ -487,7 +487,7 @@
    "action": "amodig confirms WAV works where FLAC fails, asks (1) is WAV the recommended workaround for HEOS, (2) do you have a HEOS/Denon contact. janoj: still short stutters on b7 (also MP3 via Jellyfin). OzGav said it'll be closed soon. Your call: answer + keep open or close.",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "janoj",
      "at": "2026-10-25T12:02:51Z",
@@ -519,67 +519,6 @@
     ]
    },
    "ask": "input"
-  },
-  {
-   "n": 6817,
-   "title": "Opening the web UI starts playback on the selected player (play+pause pair, pause no-ops while IDLE)",
-   "col": "info",
-   "area": "frontend / mediaSession play handlers (PlayerBrowserMediaControls.vue, SendspinPlayer.vue) + server players/controller.py _handle_cmd_pause",
-   "since": "2026-10-19 11:38",
-   "last": "MarvinSchenkel 2026-10-21 14:35",
-   "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-21T14:35:07Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "2.11.0b5 Docker. Opening the web UI makes a 2-HomePod AirPlay sync group play a few seconds of the radio station left in its stopped queue. It also started on its own at 05:18 with nobody at the UI. Verbose webserver log: players/cmd/play and players/cmd/pause for the syncgroup 1 ms apart, then two more pauses, all while the queue is still IDLE, so every pause is dropped and the group starts. Report written with Claude, diagnostics attached (uptime 18 min, doesn't cover either event).",
-   "fix": "",
-   "checked": "Code read on frontend origin/main and server origin/dev, no repro. The frontend only sends play/pause from the mediaSession action handlers (PlayerBrowserMediaControls.vue:149-160, SendspinPlayer.vue:455-470) and the companion tray (companion.ts:296-300). Both browser handlers delay pause by 250 ms, so a play and pause 1 ms apart is not one click: it fits a pause action ~250 ms before a play action, i.e. the OS or browser firing media keys (tab grabbing Now Playing, headphones connecting, Mac waking). Nothing in the page-load path calls play itself, the silent <audio> element play() never reaches the server. The 05:18 start without anyone opening the UI points the same way: an MA tab or app left open somewhere. Server side, _handle_cmd_pause returns early when the player is IDLE (controller.py:5101), so a pause that lands while a play is still starting the group is lost. The Received: log line has no client id, so the log can't say which tab or device sent it. 10-21 (frontend origin/main = b5's 2.17.341 on these paths): in 'Built-in web player only' mode PlayerBrowserMediaControls.vue is never mounted (App.vue:35, :137-144) and SendspinPlayer.vue's handlers (455-470) target the web player only (getTargetPlayerId :442); keyboard and player buttons send play_pause, visibility/focus handlers send no commands, the companion tray needs Tauri. No frontend path sends play/pause to the syncgroup in this mode (~70% not a frontend bug); likely another WebSocket client (HA integration) or a different stored setting in that Zen profile.",
-   "plan": "Ask which Browser media controls mode each client uses (Settings > User Interface > Display, per device, default web player only) plus browser/OS, other open clients and media keys. If it's 'Any actively selected player', that explains it; then consider guarding the play handler or letting pause cancel a play that is still starting.",
-   "branch": "",
-   "diff": "",
-   "prs": [],
-   "badges": [
-    [
-     "info",
-     "Waiting for user",
-     "waiting"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-19 11:38 run: new issue. Code read only: the frontend's mediaSession play/pause handlers are the only browser senders and pause is delayed 250 ms, so the 1 ms pair looks like OS/browser media actions, not page load code. Reply asks for browser/OS, other open clients at 05:18 and headphones/media keys.",
-    "10-20 14:00 (on request): reply now points to the per-device Browser media controls setting (frontend#2626, in 2.10.7 and 2.11.0b5). The 'Any actively selected player' mode sends media keys to the selected player, which fits the syncgroup play/pause pair. Dropped the private-window question, the setting test replaces it.",
-    "10-20 14:38 run: you posted the Browser media controls reply (11:47 UTC). Waiting for CaseyRo.",
-    "10-21 16:30 run: CaseyRo (14:02 UTC): 'Built-in web player only', Zen (Firefox) on macOS, one MA tab, no desktop or companion app. Posted on your behalf (https://github.com/music-assistant/support/issues/6817#issuecomment-6318669160): capture the tab's outgoing WebSocket messages during one reproduction to see whether this tab sends the play/pause. GPT: revise (one capture first, HA-disable test later), accepted."
-   ],
-   "action": "",
-   "milestone": null,
-   "sync": {
-    "at": "2026-11-04T16:30:13Z",
-    "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-21T14:35:07Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6817#issuecomment-6318669160"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "airplay",
-     "sendspin",
-     "waiting-for-user",
-     "triage/reminded-2",
-     "triage/reminded-1"
-    ]
-   }
   },
   {
    "n": 6709,
@@ -633,7 +572,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "bdeprez",
      "at": "2026-10-13T20:17:14Z",
@@ -708,7 +647,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T12:46:25Z",
@@ -796,7 +735,7 @@
    "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-30T13:14:51Z",
@@ -832,11 +771,11 @@
    "col": "cantfix",
    "area": "server / controllers/metadata _reconcile_duplicate_albums (candidate query) + single library DB connection",
    "since": "2026-10-09 07:40",
-   "last": "tamas-unter 2026-10-26 09:01",
+   "last": "kiwipaulrob 2026-11-04 18:25",
    "gh": {
-    "login": "tamas-unter",
+    "login": "kiwipaulrob",
     "team": false,
-    "at": "2026-10-26T09:01:10Z",
+    "at": "2026-11-04T18:25:34Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -867,19 +806,20 @@
     "10-13 16:40 run: you posted the reply (14:04 UTC) asking kiwipaulrob to disable the reconcile task. The fix shape is being worked out in the chip session started at 15:40 (DB wedge + single connection).",
     "10-15 10:40 run: kiwipaulrob: one of their own agents cancelled Reconcile duplicate albums on 10-08 20:03 UTC and switched the schedule off, so it hasn't run for six days. Since then: 10-11 17:29 a backlog (40 pending, 20 filesystem syncs running, cache DB 1.85 GB), restart 19:20; 10-13 19:04 idle, counts and library_items answer in 0.00-0.02 s. The 10-11 episode had no album reconcile, so the slowdown also follows the other hourly tasks (MusicBrainz link, missing-metadata scan) and big filesystem syncs, which fits the single exclusive DB connection more than one query. They offer to re-enable the task and capture a freeze with debug logging. Last 'No such file' error 10-13 06:54 from the remote share.",
     "10-20 14:38 run: you posted the reply (12:16 UTC): yes to the controlled repro (album reconcile back on, debug log + diagnostics at the next freeze), and the MusicBrainz-link and missing-metadata scans join the fix scope. Fix waits for that log; design row stays.",
-    "10-26 10:30 run: tamas-unter (09:01 UTC) has the same freezes (search/browse too, not just login) with a large library full of untagged 'unknown artist'/'Track 01.wav' files, offers to help, couldn't get logs from the UI."
+    "10-26 10:30 run: tamas-unter (09:01 UTC) has the same freezes (search/browse too, not just login) with a large library full of untagged 'unknown artist'/'Track 01.wav' files, offers to help, couldn't get logs from the UI.",
+    "11-05 07:30 run: kiwipaulrob: album reconcile still off since 10-08, box idle and fast on 2.10.9; offers a monitored repro window."
    ],
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
-     "login": "tamas-unter",
-     "at": "2026-10-26T09:01:10Z",
+     "login": "kiwipaulrob",
+     "at": "2026-11-04T18:25:34Z",
      "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6674#issuecomment-6412154940"
+     "url": "https://github.com/music-assistant/support/issues/6674#issuecomment-6638634421"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [
@@ -895,9 +835,7 @@
     "test_ask": null,
     "after_test_ask_reporter": false,
     "labels": [
-     "waiting-for-user",
-     "triage/reminded-2",
-     "triage/reminded-1"
+     "needs-attention"
     ]
    }
   },
@@ -955,7 +893,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:17:32Z",
@@ -1038,7 +976,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "josiasmontag",
      "at": "2026-10-26T11:46:00Z",
@@ -1124,7 +1062,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T12:45:34Z",
@@ -1180,7 +1118,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-11-04T15:24:17Z",
@@ -1246,7 +1184,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "Geweldich",
      "at": "2026-09-30T11:09:20Z",
@@ -1372,7 +1310,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-06T13:51:35Z",
@@ -1423,7 +1361,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "marcelveldt",
      "at": "2026-08-26T21:48:58Z",
@@ -1474,7 +1412,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "skylerwshaw",
      "at": "2026-10-28T03:46:59Z",
@@ -1541,7 +1479,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T12:45:57Z",
@@ -1624,7 +1562,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "GoatsAndMonkeys",
      "at": "2026-10-30T16:53:38Z",
@@ -1709,7 +1647,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "suporte640",
      "at": "2026-10-19T00:58:04Z",
@@ -1772,7 +1710,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "GoatsAndMonkeys",
      "at": "2026-10-31T12:08:07Z",
@@ -1831,7 +1769,7 @@
    "action": "meggsico (Soloist, DEBUG): Soloist starts and MA connects, but 'debian | Music Assistant' never shows in the Spotify Android device list, so no first login. Asks whether Soloist reuses the provider's auth or how to pair when invisible. Soloist is Marcel's; your answer or hand off.",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "meggsico",
      "at": "2026-10-23T17:51:30Z",
@@ -1894,7 +1832,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "Vivi92821",
      "at": "2026-10-21T14:34:40Z",
@@ -1917,14 +1855,14 @@
   {
    "n": 6791,
    "title": "External Snapserver resyncs MA's stream, all Snapcast clients skip at once",
-   "col": "info",
+   "col": "cantfix",
    "area": "server providers/snapcast/ma_stream.py",
    "since": "2026-10-19 07:38",
-   "last": "GoatsAndMonkeys 2026-11-02 18:41",
+   "last": "ChangoMunk 2026-11-04 18:36",
    "gh": {
-    "login": "GoatsAndMonkeys",
+    "login": "ChangoMunk",
     "team": false,
-    "at": "2026-11-02T18:41:17Z",
+    "at": "2026-11-04T18:36:55Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -1937,9 +1875,9 @@
    "prs": [],
    "badges": [
     [
-     "info",
-     "Waiting for user",
-     "waiting"
+     "ok",
+     "Confirmed 11-04 (Verbose log)",
+     "tested"
     ]
    ],
    "reply": "",
@@ -1950,19 +1888,20 @@
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6791#issuecomment-6409788347), GPT: revise, accepted GPT's text as is (no claim about where the loss happens, asks for the time zone). Ask: Tidal Verbose + Streams Debug log around a skip.",
     "10-28 07:30 run: ChangoMunk will run the requested test over the next couple of days.",
     "11-02 07:30 run: ChangoMunk's 10-30 log analysed (Opus subagent): likely ffmpeg dashdec dropping failed Tidal DASH segments (local repro). GPT: marvin (review log first). Held.",
-    "11-03 07:30 run: GoatsAndMonkeys posted the same DASH-segment explanation and asked ChangoMunk for a Verbose Streams log; our held draft is covered and dropped. Waiting on the log; design (Tidal segment fetching with retry) with jozefKruszynski after that."
+    "11-03 07:30 run: GoatsAndMonkeys posted the same DASH-segment explanation and asked ChangoMunk for a Verbose Streams log; our held draft is covered and dropped. Waiting on the log; design (Tidal segment fetching with retry) with jozefKruszynski after that.",
+    "11-05 07:30 run: ChangoMunk (now 2.10.9) confirmed with Verbose after a restart: every skip lines up with '[tls] IO error: End of file' then '[dash] Failed to open fragment of playlist' from Tidal's CDN; ~4.00 s missing per failure (2 of 2), 0 on 3 clean tracks; ffmpeg exits 0. Also confirmed the Streams log level only applies after a restart on 2.10.x (#6833 fixes it on dev, not backported). Asks for a retry or at least a warning."
    ],
-   "action": "",
+   "action": "Confirmed root cause: Tidal's CDN drops TLS on a DASH segment, ffmpeg's dashdec skips it (~4 s) without retry and exits 0. Design with jozefKruszynski: Tidal fetches DASH segments itself with retry (feed ffmpeg), or at least log fragment failures as WARNING. Side call: backport #6833 (log level needs a restart on 2.10.x)?",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
-     "login": "GoatsAndMonkeys",
-     "at": "2026-11-02T18:41:17Z",
+     "login": "ChangoMunk",
+     "at": "2026-11-04T18:36:55Z",
      "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6791#issuecomment-6585267404"
+     "url": "https://github.com/music-assistant/support/issues/6791#issuecomment-6638890327"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -1975,8 +1914,8 @@
      "needs-attention"
     ]
    },
-   "ask": null,
-   "waiting_on": "reporter"
+   "ask": "design",
+   "waiting_on": null
   },
   {
    "n": 6775,
@@ -2019,7 +1958,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-29T20:57:21Z",
@@ -2076,7 +2015,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T21:30:55Z",
@@ -2095,73 +2034,6 @@
      "filesystem_local",
      "needs-attention"
     ]
-   }
-  },
-  {
-   "n": 6773,
-   "title": "Stale web player configs pile up, no expiry or bulk removal",
-   "col": "info",
-   "area": "server / sendspin provider + config/players; frontend settings",
-   "since": "2026-10-19 07:38",
-   "last": "MarvinSchenkel 2026-10-21 16:29",
-   "gh": {
-    "login": "MarvinSchenkel",
-    "team": true,
-    "at": "2026-10-21T16:29:06Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "Over months, every browser that opened the web player left a Sendspin player config behind (47 configs for 9 real players, many identically named 'Web (Safari on Mac)'). There is no expiry, no bulk removal and no last-seen info, and stale entries are offered in plugin 'connected players' lists. 2.10.6 HA add-on.",
-   "fix": "",
-   "checked": "The web player id is the sendspin Noise public key kept in browser storage (frontend web_player.ts:357-360), so a new browser, profile, cleared site data or Safari's storage expiry creates a new player; the old `ma_` ids are the legacy per-session scheme and no longer return, as the reporter measured. On dev the sendspin provider only evicts stale pairing records at startup (sendspin/provider.py:298-322, 469-477), never player configs, and removal is per player via players controller remove (controllers/players/controller.py:1867). get_player_configs (config/players.py:160) includes unavailable configs by default, which is what plugin player pickers list. Works as designed today; what's asked is a feature. Server #6773 in memory is an unrelated PR with the same number. 10-21 discussion session: not reproduced. In 2.10.6 Settings > Players lists only connected players plus disabled ones; a web player whose browser is gone drops out a few minutes after it disconnects. The config stays stored, so the API with include_unavailable still returns all of them. Verdict: needs info, not a feature request; hold any fix until the reporter answers. Confirmed secondary bug: _player_options in helpers/config_entries.py:119-128 offers live private web players in the plugin connected-players pickers; agreed fix: skip players that are both private and hide_in_ui, mirroring the frontend's groupMemberPickerVisible.",
-   "plan": "Wait for theseal666: a screenshot of where the duplicates show (MA Settings > Players or HA media players) and whether they were disabled. The plugin picker fix is tracked as a follow-up.",
-   "branch": "",
-   "diff": "",
-   "prs": [],
-   "badges": [
-    [
-     "info",
-     "Waiting for user",
-     "waiting"
-    ]
-   ],
-   "reply": "",
-   "bookkeeping": [],
-   "notes": [
-    "10-19 07:38 run: new issue. Real, needs a design call or isn't ours.",
-    "10-21 15:20 discuss: discussion session started on your main account. Your remark: web players aren't exposed across instances by default, so stale ones in plugin pickers may be a visibility bug (check vs #6822 and server#7121) before the expiry/bulk-remove call.",
-    "10-21 18:30 edit + reply: your text after the discussion session (can't reproduce the cluttered list; asks for a screenshot, where it showed, and whether disabled), posted on your OK (16:29 UTC, https://github.com/music-assistant/support/issues/6773#issuecomment-6321033345). Card moved to Not enough info, design row dropped, discussion session done."
-   ],
-   "action": "",
-   "milestone": null,
-   "sync": {
-    "at": "2026-11-04T16:30:13Z",
-    "last_human": {
-     "login": "MarvinSchenkel",
-     "at": "2026-10-21T16:29:06Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6773#issuecomment-6321033345"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "airplay",
-     "Spotify Connect",
-     "sendspin",
-     "waiting-for-user",
-     "triage/reminded-2",
-     "triage/reminded-1"
-    ]
-   },
-   "fix_thread": {
-    "id": "mcp:84dcc4a9-2be6-44a3-91a1-d214f9ce6fdb",
-    "title": "Discuss: stale web player configs pile up (#6773)",
-    "kind": "discuss",
-    "done": true
    }
   },
   {
@@ -2217,7 +2089,7 @@
     "done": true
    },
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "cooljimy84",
      "at": "2026-10-28T13:01:48Z",
@@ -2246,6 +2118,7 @@
      "triage",
      "fully_kiosk",
      "waiting-for-user",
+     "triage/reminded-2",
      "triage/reminded-1"
     ]
    }
@@ -2307,7 +2180,7 @@
     "done": true
    },
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-22T14:35:19Z",
@@ -2347,11 +2220,11 @@
    "col": "cantfix",
    "area": "server / providers/sonos provider.py _setup_player, player.py SonosLocalApiClient + _is_reachable; aiosonos utils.get_discovery_info, client.connect",
    "since": "2026-10-23 07:30",
-   "last": "billyfw 2026-10-23 00:06",
+   "last": "bluerush2072-stack 2026-11-04 21:20",
    "gh": {
-    "login": "billyfw",
+    "login": "bluerush2072-stack",
     "team": false,
-    "at": "2026-10-23T00:06:27Z",
+    "at": "2026-11-04T21:20:42Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -2362,24 +2235,31 @@
    "branch": "",
    "diff": "",
    "prs": [],
-   "badges": [],
+   "badges": [
+    [
+     "bad",
+     "2 reporters",
+     "multi"
+    ]
+   ],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, this is a great write-up, and I can confirm it in the code. Music Assistant always asks port 1443 for the zone info and connects every zone's websocket from that answer, so zones 2-4 end up with zone 1's name and commands. The player ids themselves are fine, it's only the port. It's the same on stable and dev. The fix is to pass the port from the mDNS announcement through aiosonos, which needs a small aiosonos release and a server change. No need for a diagnostics file.",
    "bookkeeping": [],
    "ask": "input",
    "milestone": null,
    "action": "Real on stable and dev, small fix (pass the mDNS port through aiosonos + server). Say `fix 6850` for the aiosonos PR + server PR. Answer drafted.",
    "notes": [
-    "10-23 07:30 run: new issue, confirmed in code (hardcoded port 1443 in aiosonos discovery and client). Fix needs aiosonos + server. Answer drafted."
+    "10-23 07:30 run: new issue, confirmed in code (hardcoded port 1443 in aiosonos discovery and client). Fix needs aiosonos + server. Answer drafted.",
+    "11-05 07:30 run: bluerush2072-stack confirms on 2.10.9 with 2x Sonos Amp Multi (4 zones, one IP per amp): play_media to zone 2-4 starts zone 1 (UPnP GetTransportInfo: port 1400 PLAYING, the zone's 1700 STOPPED). Sonos app, AirPlay and HA's soco address zones correctly."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
-     "login": "billyfw",
-     "at": "2026-10-23T00:06:27Z",
+     "login": "bluerush2072-stack",
+     "at": "2026-11-04T21:20:42Z",
      "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6850"
+     "url": "https://github.com/music-assistant/support/issues/6850#issuecomment-6642410455"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -2438,7 +2318,7 @@
     "10-26 07:30 run: Simanias opened draft server#7180 (reproduced with a 2-speaker room); culmat's server#7183 closed. Waiting on test/merge."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-24T12:46:43Z",
@@ -2507,7 +2387,7 @@
     "10-23 14:50: curl ran 1260 s clean against DR. Moved to Reproduced, cannot fix (pending repro) with an input ask."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "BlochHansen",
      "at": "2026-10-23T11:43:27Z",
@@ -2565,7 +2445,7 @@
     "10-23 16:30 run: you asked UnfundedNag (14:19 UTC) whether it still happens on 2.10.8. Added to the board as waiting on the reporter."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-23T14:19:57Z",
@@ -2618,7 +2498,7 @@
     "10-26 07:30 run: tagged discussion. Feature idea with a concrete proposal; design call for you."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-25T13:20:55Z",
@@ -2672,7 +2552,7 @@
     "10-27 16:30 run: GoatsAndMonkeys opened server#7247: the sync now writes synced genre names into the item's stored metadata.genres, so the genre scan cleanup keeps them. Picks 'trust the provider sync' for the design call; decide in review. Draft answer dropped."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "theomega",
      "at": "2026-10-25T14:02:42Z",
@@ -2738,7 +2618,7 @@
     "10-28 07:30 run: GoatsAndMonkeys opened draft server#7256 (generic: clear the provider's cache after a reconfigure, not YTM-only). Also linked from #6706. Draft answer dropped."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "philippecottier",
      "at": "2026-10-25T09:18:35Z",
@@ -2822,7 +2702,7 @@
     "11-03 07:30 run: robsonke fixed a missed refresh before playback and merged server#7343 (docs io#1189). Labelled Fix to be Confirmed; cherry-pick conflicts on stable, so milestone 2.11.0."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "robsonke",
      "at": "2026-11-02T18:41:33Z",
@@ -2902,7 +2782,7 @@
     "11-02 07:30 run: cateim retested a88e3cc on the AudioCast AMP: elapsed within ±0.6 s after 5 s and 20 s pauses (stock -12.6/-10.7 s); 40 s pause unchanged (+3.6/+3.7 s, goes through the 30 s queue stop). Waiting on GoatsAndMonkeys to reopen server#7273."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "cateim",
      "at": "2026-10-30T18:00:46Z",
@@ -2969,7 +2849,7 @@
     "10-26 07:30 run: auto-post held. GPT: marvin (bot already asked diagnostics; DLNA debug doesn't capture the metadata or device responses). Our draft stays for you."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "kprzekop",
      "at": "2026-10-25T19:20:03Z",
@@ -3023,7 +2903,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-24T11:51:31Z",
@@ -3095,7 +2975,7 @@
     "11-03 07:30 run: GoatsAndMonkeys explained the root: #5408 closes the Cast profile-3 flow 8 s after the last byte, #6782 (2.11.0b5) refuses the receiver's reconnect, so it errors, loads 'next' and the queue restarts earlier; not NP5-only, stop/restart approach dropped. dentedbread thanked, now runs the NP5 over DLNA (occasional 1-2 s skips, filed as #6970). OzGav told them to use stable if frustrated; dentedbread called that patronising and pointed out edg2s hit it on 2.10.9 stable."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-11-02T22:23:06Z",
@@ -3154,7 +3034,7 @@
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6888#issuecomment-6409954530), GPT: revise, accepted its text (dropped the mDNS causal framing)."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-26T06:44:07Z",
@@ -3216,7 +3096,7 @@
     "10-26 07:30 run: posted on your behalf (https://github.com/music-assistant/support/issues/6887#issuecomment-6409955139), GPT: revise, accepted its text (no claim it covers #6888 too)."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-26T06:44:10Z",
@@ -3273,7 +3153,7 @@
     "10-27 17:30 run: Verbose log analysed: receiver app keeps playing per its own logs while the amp is silent; nothing MA can see. Your call: hand to maximmaxim345."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "tueboesen",
      "at": "2026-10-27T16:00:51Z",
@@ -3329,7 +3209,7 @@
     "10-26 09:30 run: vertex0 sent solo/solo/grouped diagnostics; the real complaint is the ESP32 dropping out when grouped. Not auto-posting a follow-up: the next step is a judgement call between two tests."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "vertex0",
      "at": "2026-10-26T08:13:47Z",
@@ -3395,7 +3275,7 @@
     "11-02 07:30 run: GoatsAndMonkeys posted a test ask (10-31) for branch fix-6865-subgroup-member-drop: frees the native follower first after a leader switch so the Sonos member stays in the sync group. No PR yet; the design it picks gets reviewed when the PR opens. Off your list until the reporter tests."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "GoatsAndMonkeys",
      "at": "2026-10-31T12:08:11Z",
@@ -3454,7 +3334,7 @@
     "10-28 13:30 run: GoatsAndMonkeys opened server#7271 for this; your pick between the options moves to the PR review. Draft answer dropped."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "riskywhat",
      "at": "2026-10-24T13:40:54Z",
@@ -3532,7 +3412,7 @@
     "11-02 07:30 run: GoatsAndMonkeys posted a test ask (10-31) for branch fix-6863-bluesound-ipv6: brackets IPv6 for pyblu and keeps a known player on its IPv4 address when it re-announces IPv6-only. No PR yet; the design it picks gets reviewed when the PR opens. Off your list until the reporter tests."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "GoatsAndMonkeys",
      "at": "2026-10-31T12:08:09Z",
@@ -3583,7 +3463,7 @@
     "10-26 11:30 run: new issue from Simanias with a precise repro and server-side proof. Follow-up to your frontend#3031."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-26T09:40:39Z",
@@ -3645,7 +3525,7 @@
     "11-02 07:30 run: GoatsAndMonkeys posted a test ask (10-31) for branch fix-6896-member-start-keeps-group: a failed start on a member of a playing group leaves the group alone instead of stopping the member. No PR yet; the design it picks gets reviewed when the PR opens. Off your list until the reporter tests."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "GoatsAndMonkeys",
      "at": "2026-10-31T12:08:13Z",
@@ -3709,7 +3589,7 @@
     "11-02 12:30 run: edg2s (2.10.9, Nest Audio over Cast, flow FLAC): speaker re-requests the same flow URL mid-stream twice (~3.5 min and ~2.8 min after start), each restarts the current track, then buffering and stop. Unverified guess: the 3.5 min FLAC ≈ 24 MiB matches the Android Cast cutoff from #6748, so the Nest Audio may not be covered by the per-model HTTP profile (#7245, in 2.10.9). 2.10.9 helpers.http_profile_entry (#7245): only model 'Google Home Speaker' (and Android TV receivers, groups) default to HTTP profile 2; a Nest Audio gets profile 3. A cheap test: edg2s sets the Nest Audio's HTTP profile to 2 and replays."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "edg2s",
      "at": "2026-11-02T11:13:47Z",
@@ -3765,7 +3645,7 @@
     "10-27 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "adamlonsdale",
      "at": "2026-10-26T17:12:16Z",
@@ -3831,7 +3711,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "david-cd",
      "at": "2026-10-27T23:51:22Z",
@@ -3890,7 +3770,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "BsnizND",
      "at": "2026-10-28T00:41:57Z",
@@ -3964,7 +3844,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "mattford63",
      "at": "2026-11-02T12:10:19Z",
@@ -4027,7 +3907,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "bryanbrews",
      "at": "2026-10-29T22:57:45Z",
@@ -4080,7 +3960,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-29T07:47:02Z",
@@ -4135,7 +4015,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "mattford63",
      "at": "2026-11-01T00:46:17Z",
@@ -4194,7 +4074,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "luucasiser",
      "at": "2026-11-01T13:17:08Z",
@@ -4253,7 +4133,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "maximmaxim345",
      "at": "2026-11-03T12:42:53Z",
@@ -4306,7 +4186,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "iVolt1",
      "at": "2026-10-30T13:18:34Z",
@@ -4359,7 +4239,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "Rob801801",
      "at": "2026-10-31T20:18:42Z",
@@ -4375,60 +4255,6 @@
     "labels": [
      "needs-attention",
      "Bluesound"
-    ]
-   }
-  },
-  {
-   "n": 6942,
-   "repo": "music-assistant/support",
-   "discussion": false,
-   "title": "Sonos: removing a group member stops playback on the remaining player",
-   "col": "info",
-   "area": "server controllers/players/controller.py:1477,1486,3807-3836,3949,5064; models/player.py:2027; sonos/player.py:781-798",
-   "since": "2026-11-02 07:30",
-   "last": "atomsk2000 2026-11-04 05:55",
-   "gh": {
-    "login": "atomsk2000",
-    "team": false,
-    "at": "2026-11-04T05:55:20Z",
-    "pr_open": false,
-    "pr_draft": false
-   },
-   "summary": "atomsk2000, 2.10.9 HA add-on: Era 100 playing, Beam added; media_player.unjoin on Beam makes Era 100 go idle ('Clearing active output protocol on Era 100'). Workaround media_play. OzGav asked whether the removed player is the leader.",
-   "action": "",
-   "ask": null,
-   "badges": [],
-   "reply": "",
-   "prs": [],
-   "fix": "",
-   "checked": "That log line only follows a stop. Removing a plain member never stops the leader; the only stop is when MA sees the removed player as the sync leader and the leader's queue isn't playing (controller.py:1486 -> 3807/3836). Fits MA seeing Beam as leader, e.g. a coordinator move outside MA (support#6670, fix server#6779 dev-only). No Sonos/sync-group change in 2.10.8..2.10.9. Diagnostics WARNING-only. No duplicates. Lab-catchable with Sonos (start A, join B, unjoin B, A keeps playing).",
-   "plan": "Wait for OzGav's leader question; then the unjoin log lines ('Calling set_members on native player ...', 'Dissolving sync group ...').",
-   "diff": "",
-   "waiting_on": "team",
-   "notes": [
-    "11-02 07:30 run: new issue (Opus subagent triage).",
-    "11-04 07:30 run: atomsk2000: removing a member (Beam unjoined by an HA automation), not the leader; worked before the latest update. OzGav couldn't reproduce with two Era 100s and asked how the group is formed and whether the MA UI shows the same. Our held log ask dropped; OzGav is driving."
-   ],
-   "milestone": null,
-   "sync": {
-    "at": "2026-11-04T16:30:13Z",
-    "last_human": {
-     "login": "atomsk2000",
-     "at": "2026-11-04T05:55:20Z",
-     "team": false,
-     "url": "https://github.com/music-assistant/support/issues/6942#issuecomment-6623758002"
-    },
-    "reporter_new": false,
-    "team_new": false,
-    "closed": false,
-    "pr": [],
-    "test_ask": null,
-    "after_test_ask_reporter": false,
-    "labels": [
-     "triage",
-     "sonos",
-     "hass-integration",
-     "needs-attention"
     ]
    }
   },
@@ -4464,7 +4290,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "ricman01",
      "at": "2026-11-01T21:48:06Z",
@@ -4520,7 +4346,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "Janos-Suto",
      "at": "2026-11-03T12:51:38Z",
@@ -4575,7 +4401,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "fmunkes",
      "at": "2026-11-03T17:42:39Z",
@@ -4603,18 +4429,24 @@
    "col": "dev",
    "area": "airplay-cli (SETPEERS/SETPEERSX, #74 auto-follow); server providers/airplay/stream.py:2160-2165; Dockerfile:7",
    "since": "2026-11-02 07:30",
-   "last": "OzGav 2026-11-01 12:24",
+   "last": "karJordan 2026-11-04 17:05",
    "gh": {
-    "login": "OzGav",
-    "team": true,
-    "at": "2026-11-01T12:24:47Z",
+    "login": "karJordan",
+    "team": false,
+    "at": "2026-11-04T17:05:08Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "Shammy01011101, Gijsie-tech, stoppyz0r (+ jazzphone on 11 units), 2.10.9 HA add-on: HomePod mini 2 (AudioAccessory11,1, OS 27.2) shows playing on native PTP but is silent; compat/RAOP fine. OzGav: stay on compat until a fixed build.",
    "action": "Fix exists as airplay-cli#100 (contributor, unreviewed): SETPEERSX instead of bare SETPEERS for Apple receivers. Needs your review (scope: all Apple receivers), then a release and pin bump. No reply needed, OzGav covered it.",
    "ask": "input",
-   "badges": [],
+   "badges": [
+    [
+     "bad",
+     "4+ reporters",
+     "multi"
+    ]
+   ],
    "reply": "",
    "prs": [
     {
@@ -4628,18 +4460,19 @@
    "diff": "",
    "waiting_on": null,
    "notes": [
-    "11-02 07:30 run: new issue (Opus subagent triage)."
+    "11-02 07:30 run: new issue (Opus subagent triage).",
+    "11-05 07:30 run: karJordan: another HomePod mini 2 silent on 2.10.9 (HA add-on). Still waiting on airplay-cli#100."
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
-     "login": "OzGav",
-     "at": "2026-11-01T12:24:47Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6935#issuecomment-6557905601"
+     "login": "karJordan",
+     "at": "2026-11-04T17:05:08Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6935#issuecomment-6636868559"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [
@@ -4702,14 +4535,14 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "BoldForester",
      "at": "2026-11-04T16:18:59Z",
      "team": false,
      "url": "https://github.com/music-assistant/support/issues/6955#issuecomment-6635800683"
     },
-    "reporter_new": true,
+    "reporter_new": false,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -4753,7 +4586,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "whitty",
      "at": "2026-11-01T10:39:51Z",
@@ -4806,7 +4639,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "whitty",
      "at": "2026-11-01T11:16:24Z",
@@ -4859,7 +4692,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "markxroberts",
      "at": "2026-10-31T14:11:48Z",
@@ -4923,7 +4756,7 @@
    ],
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "sjbeeny",
      "at": "2026-11-02T08:36:37Z",
@@ -4985,7 +4818,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-11-02T13:00:41Z",
@@ -5038,7 +4871,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "CDrummond",
      "at": "2026-11-03T05:59:42Z",
@@ -5091,7 +4924,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "fuglphoenix",
      "at": "2026-11-03T05:35:35Z",
@@ -5119,11 +4952,11 @@
    "col": "info",
    "area": "server providers/audiobookshelf/__init__.py:251; aioaudiobookshelf 0.1.25 /api/authorize; mass.py:122",
    "since": "2026-11-03 07:30",
-   "last": "fmunkes 2026-11-03 18:53",
+   "last": "ChrisColotti 2026-11-04 21:39",
    "gh": {
-    "login": "fmunkes",
-    "team": true,
-    "at": "2026-11-03T18:53:23Z",
+    "login": "ChrisColotti",
+    "team": false,
+    "at": "2026-11-04T21:39:59Z",
     "pr_open": false,
     "pr_draft": false
    },
@@ -5146,18 +4979,19 @@
    "waiting_on": "reporter",
    "notes": [
     "11-03 07:30 run: new issue (Opus subagent triage).",
-    "11-04 07:30 run: fmunkes set up ABS on stable fine (API key and user/password) and asked the reporter to check URL/port and the ABS server log. Covers our held draft; dropped."
+    "11-04 07:30 run: fmunkes set up ABS on stable fine (API key and user/password) and asked the reporter to check URL/port and the ABS server log. Covers our held draft; dropped.",
+    "11-05 07:30 run: ErwanLucas: on 2.10.9 http connections fail for ABS and Subsonic with 'Connect call failed' (refused, a different symptom than the reporter's silent hang). ChrisColotti will test via a reverse proxy. Likely local network, unconfirmed."
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
-     "login": "fmunkes",
-     "at": "2026-11-03T18:53:23Z",
-     "team": true,
-     "url": "https://github.com/music-assistant/support/issues/6971#issuecomment-6612708767"
+     "login": "ChrisColotti",
+     "at": "2026-11-04T21:39:59Z",
+     "team": false,
+     "url": "https://github.com/music-assistant/support/issues/6971#issuecomment-6642801914"
     },
-    "reporter_new": false,
+    "reporter_new": true,
     "team_new": false,
     "closed": false,
     "pr": [],
@@ -5166,7 +5000,7 @@
     "labels": [
      "triage",
      "audiobookshelf",
-     "waiting-for-user"
+     "needs-attention"
     ]
    }
   },
@@ -5208,7 +5042,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-11-02T21:17:26Z",
@@ -5267,7 +5101,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-11-04T06:31:20Z",
@@ -5323,7 +5157,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-11-03T13:34:52Z",
@@ -5380,7 +5214,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "Boisti13",
      "at": "2026-11-03T19:39:55Z",
@@ -5446,7 +5280,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "nicksmart69",
      "at": "2026-11-03T17:42:37Z",
@@ -5506,7 +5340,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "PascalLaine1961",
      "at": "2026-11-04T09:57:50Z",
@@ -5558,7 +5392,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-04T16:30:13Z",
+    "at": "2026-11-05T06:30:13Z",
     "last_human": {
      "login": "marklam",
      "at": "2026-11-04T11:59:02Z",
@@ -5736,7 +5570,7 @@
    ]
   ]
  },
- "gone": "The 30 issues that shipped in 2.10.5, closed with the release comment: #6585, #6583, #6581, #6579, #6573, #6570, #6567, #6561, #6560, #6550, #6542, #6527, #6523, #6517, #6516, #6511, #6496, #6492, #6491, #6478, #6469, #6463, #6462, #6461, #6440, #6345, #6328, #6323, #6273, #4892. Dropped 10-05 as closed: #6470 (closed by reporter 10-02 (Bandcamp back in search)), #6460 (closed 10-02), #6458 (auto-closed 10-03 (no reply)), #6394 (closed 10-02), #6380 (closed by OzGav 10-03 after menaker12 confirmed on beta), #6338 (closed by reporter 10-03 (workaround holds)). Dropped 10-05 08:40: #6517 (auto-closed when you merged server#6702 at 06:31 UTC; booked Fix to be Confirmed + milestone 2.10.6 from its backport-to-stable label). Booked 10-05 09:40 (not on the board): #6629 FtbC + 2.10.6 (server#6691, backport-to-stable), #6620 FtbC (server#6685, backportable, see follow-ups). Dropped 10-05 10:40: #6635 (closed 06:19 UTC after your 2.11 beta reply). #6026 closed 08:03 UTC by your server#5175 merge; card kept in Fix merged until the bookkeeping is queued. Dropped 10-05 14:00: #6636 (closed by Soukyuu 11:40 UTC after your works-as-designed reply and OzGav's follow-up; going back to LMS). Dropped 10-05 15:40: #6026 (bookkeeping landed 12:40 UTC: Fix to be Confirmed + milestone 2.11.0). Dropped 10-06 09:00: #6559 (closed 06:40 UTC with your reply after the AirConnect removal fixed sync; reporter asked to file new issues); #6224 (closed 06:35 UTC when you merged server#6715; booked Fix to be Confirmed, milestone 2.11.0 was already set (migration, no backport)). Dropped 10-06 09:40: #6373 (you closed it 07:11 UTC when server#6611 merged with backport-to-stable; milestone 2.10.6 was set, I added Fix to be Confirmed); #6440 (you closed it 07:10 UTC after explaining Spotify's 1.1x headroom for crossfades); #6616 (you closed it 07:10 UTC as fixed in 2.11, milestone 2.11.0). Dropped 10-06 12:55: #6617 (assigned to jdaberkow, who is iterating on the Deezer family-profile branch with budius). Dropped 10-06 14:40: #6633 (howels closed it at 12:04 UTC, user error: a duplicate HA entity without volume_level). Dropped 10-06 15:40: #6247 (you milestoned and closed it at 13:21 UTC). #6647 closed 14:06 UTC after frontend#2924 merged. Dropped 10-07 as closed: #6641 (you merged server#6726 17:32 UTC, milestone 2.10.6, closed; already in backport/2.10.6). Dropped 10-07 as closed: #6646 (frontend#2923 merged), #6524 (fixed by frontend#2900). Dropped 10-07 13:40: #4377 (you closed it 10:58 UTC; LaneaLucy replied 11:23 UTC that the internal Snapcast server showed it too). #6613 closed 10-08 by the reporter (PO token 2.0.1 + cookie fixed it). Dropped 10-08 13:40 as closed: #6662 (server#6760 merged 11:26 UTC, auto-closed; I set Fix to be Confirmed; no backport label, but it cherry-picks cleanly onto backport/2.10.6 incl. the aiosonos 0.1.14 bump).; #6611 (closed by the reporter 10-09 06:12 UTC, keeps the opt-out on their fork) Dropped 10-12 07:40: #5723 (OzGav closed it 10-10 00:03 UTC as fixed. The reporter split the player-type part into #6688); #6063 (you closed it 10-10 with the 2.10.6 release comment); #6154 (you closed it 10-10 with the 2.10.6 release comment); #6425 (you closed it 10-10 with the 2.10.6 release comment); #6487 (OzGav closed it 10-09 23:58 UTC after parski confirmed the fix); #6562 (you closed it 10-10 with the 2.10.6 release comment); #6570 (you closed it 10-10 with the 2.10.6 release comment); #6571 (you closed it 10-10 with the 2.10.6 release comment); #6624 (closed after server#5868 + server#6858 (MSX Bridge, backport-to-stable) merged 10-10); #6627 (you closed it with the 2.10.6 release comment. magdalar commented 10-11 16:52 UTC that pause still jumps the progress back on Sonos with Audiobookshelf, mostly cosmetic now (see follow-ups)); #6642 (Annikadk confirmed 2.10.6 fixes it and closed it 10-10); #6648 (you closed it 10-10 with the 2.10.6 release comment); #6658 (dentedbread closed it 10-11 11:48 UTC, no repro on 2.11.0b4); #6669 (you closed it 10-10 with the 2.10.6 release comment); #6676 (OzGav closed it 10-11 11:47 UTC as by design: both editions sit in one Local files source, so a rescan of one file drops the other file's link. Advice is a separate source per edition. Our triage-6676 fix branch was never pushed); #6683 (megawubs closed it 10-09 17:33 UTC: 2.10.6 changed Deezer family accounts to one ARL, and the new ARL works); #6659 (now assigned to OzGav, who is working it with dentedbread). Dropped 10-12 09:40: #6493 (you closed it 07:09 UTC, fixed in 2.11). Dropped 10-12 14:40: #6714 (closed by you after server#6910 merged), #6464 (closed by you after server#6613 merged), #6451 (closed by you after server#6528 merged). #6671 and #6481 closed 10-12. Dropped 10-12 16:40: #6722 (Hypopheralcus fixed the Nextcloud proxy setting after your reply and closed it 13:49 UTC). Dropped 10-13 07:40: #6724 (OzGav closed it 22:53 UTC: 4 GB host OOM, reporter stopped Frigate and Grafana and MA kept running). Dropped 10-13 09:40: #6721 (closed 06:40 UTC, jdaberkow had taken it over). Dropped 10-13 10:40: #6577 (you closed it 08:07 UTC, no flip since the last update; reopen if it happens after an HA integration update). Dropped 10-13 15:40: #6666 (lupurs confirmed 2.10.6 fixed it and closed 12:42 UTC). Dropped 10-14 11:40: #6406 (bot auto-closed 03:31 UTC after two reminders) and #6667 (you closed it 18:14 UTC as a side effect of #6645; server#6968 closed with it). Dropped 10-14 13:40: #6725 (whc2001 confirmed the fix on the DEV add-on and closed it 11:02 UTC; server#6810 backport call moved to follow-ups). Dropped 10-14 15:40: #6643 (Asrem2 traced the Voice PE dropouts to a busy 2.4 GHz Wi-Fi channel, 13 h clean on Sendspin after moving the AP, closed 13:34 UTC). Dropped 10-15 10:15: #6186 (endevour confirmed the latest beta fixes it and closed it 10-14 19:36 UTC); #6547 (bot auto-closed 10-15 03:31 UTC after two reminders); #6732 (you closed it 10-15 07:23 UTC as a duplicate). Dropped 10-19 as closed after the 2.10.7 release: #6759, #6704, #6712, #6655, #6601, #6528, #6744 (you closed them 10-18), #6729 (sydlexius confirmed chrisuthe's fix), #6679 (dekiesel: switching to parallel fixed it). Dropped 10-19 08:38: #6811 (assigned to OzGav 06:37 UTC, he is handling the Sendspin Opus stutter). New #6813 and #6814 (ChrisB85, kiwipaulrob) were assigned to OzGav on arrival, not on the board. Dropped 10-20 07:38: #6407 (bot auto-closed 03:32 UTC after two reminders); #6102 (bot auto-closed 03:32 UTC after two reminders, our draft server#6706 is still open (see follow-ups)); #6002 (bot auto-closed 03:32 UTC after two reminders); #6782 (OzGav closed it 01:24 UTC as a feature request (Jellyfin genres were never implemented)); #6653 (anthonws closed the discussion 21:23 UTC, no time to work on it); #6508 (you assigned marcelveldt 10-20 11:50 UTC). #6673 (you closed it 12:56 UTC after the 2.11 provider sharing reply); #6668 (you closed it 12:50 UTC, resolved with the recommended tagging procedure); #6552 (OzGav closed it 13:21 UTC after sragot confirmed server#6425 fixes it on 2.11.0b5). #6682 (assigned to stvncode 13:39 UTC); #6684 (assigned to stvncode 13:39 UTC); #6777 (you closed it 13:45 UTC as duplicate of #6776); #6785 (you closed it 14:34 UTC after frontend#3032 split the review key). Dropped 10-21 07:38: #6639 (bot auto-closed 10-21 03:32 UTC after two reminders); #6663 (limitless-code confirmed the DEV app fixes all scenarios (19:02 UTC) and you closed it 22:30 UTC; FtbC + 2.11.0 were set); #6823 (jo-che confirmed on dev and closed it 19:58 UTC). Dropped 10-21 12:40: #6720 (you posted the thanks from the board 09:50 UTC and closed it). Dropped 10-22 07:30: #6819 (closed as completed by OzGav 10-21 22:53 UTC). Dropped 10-22 07:30: #6395 (closed as not planned by musicassistant-bot 10-22 03:32 UTC). Dropped 10-22 09:30: #6772 (closed as completed by MarvinSchenkel 10-22 06:58 UTC). Dropped 10-22 10:00: #6671 (closed as completed by dekiesel 10-22 07:58 UTC). Dropped 10-22 14:30: #6841 (closed as completed by stormsnsnow 10-22 12:20 UTC). Dropped 10-22 14:30: #6844 (closed as completed by OzGav 10-22 12:11 UTC). Dropped 10-22 15:30: #6757 (closed as completed by zosopage1963 10-22 13:12 UTC). Dropped 10-23 07:30: #6023 (closed as completed by OzGav 10-22 16:21 UTC). Dropped 10-23 07:30: #6752 (closed as completed by OzGav 10-23 01:39 UTC). Dropped 10-23 15:30: #6837 (closed as completed by MarvinSchenkel 10-23 12:33 UTC). Dropped 10-23 16:19: #6839 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6833 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6822 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6675 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6748 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6749 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6751 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6758 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6808 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6807 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6793 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6778 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6797 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6774 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6815 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6849 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:30: #6645 (closed as completed by MarvinSchenkel 10-23 14:21 UTC). Dropped 10-26 07:30: #6821 (closed as completed by jo-che 10-24 15:31 UTC). Dropped 10-26 07:30: #6695 (closed as not planned by musicassistant-bot 10-25 03:33 UTC). Dropped 10-26 07:30: #6680 (closed as completed by OzGav 10-25 10:56 UTC). Dropped 10-26 07:30: #6694 (closed as completed by OzGav 10-23 22:53 UTC). Dropped 10-26 07:30: #6672 (closed as completed by OzGav 10-24 11:16 UTC). Dropped 10-26 07:30: #6490 (closed as completed by OzGav 10-24 11:14 UTC). Dropped 10-26 07:30: #6402 (closed as completed by OzGav 10-24 11:10 UTC). Dropped 10-26 07:30: #6299 (closed as completed by OzGav 10-24 11:10 UTC). Dropped 10-26 07:30: #6150 (closed as completed by OzGav 10-24 11:09 UTC). Dropped 10-26 07:30: #6738 (closed as completed by OzGav 10-23 22:50 UTC). Dropped 10-26 07:30: #6806 (closed as completed by Thyraz 10-24 12:41 UTC). Dropped 10-26 07:30: #6812 (closed as completed by OzGav 10-24 21:08 UTC). Dropped 10-26 07:30: #6798 (closed as completed by OzGav 10-24 11:20 UTC). Dropped 10-26 12:30: #6743 (closed as completed by flibustier 10-26 10:44 UTC). Dropped 10-27 07:30: #6685 (closed as not planned by musicassistant-bot 10-27 03:34 UTC). Dropped 10-27 07:30: #6856 (closed as completed by OzGav 10-26 22:51 UTC). Dropped 10-27 07:30: #6891 (closed as completed by OzGav 10-26 20:57 UTC). Dropped 10-27 08:30: #6894 (closed as completed by MarvinSchenkel 10-27 06:53 UTC). Dropped 10-27 15:30: #6882 (closed as completed by AkoreJepade 10-27 13:30 UTC). Dropped 10-27 15:30: #6899 (closed as completed by OzGav 10-27 13:51 UTC). Dropped 10-27 16:30: #6670 (closed as completed by mnestrud 10-27 14:51 UTC). Dropped 10-27 17:30: #6857 (closed as completed by MarvinSchenkel 10-27 16:07 UTC). Dropped 10-28 07:30: #6731 (closed as completed by OzGav 10-28 01:16 UTC). Dropped 10-28 17:30: #6897 (closed as completed by OzGav 10-28 16:06 UTC). Dropped 10-29 07:30: #6889 (closed as completed by OzGav 10-28 22:26 UTC). Dropped 10-29 08:30: #6706 (closed as duplicate by zsmisi 10-29 07:27 UTC). Dropped 10-29 15:30: #6901 (closed as completed by MarvinSchenkel 10-29 14:27 UTC). Dropped 10-29 16:30: #6879 (closed as completed by MarvinSchenkel 10-29 14:37 UTC). Dropped 10-30 07:30: #6728 (closed as not planned by musicassistant-bot 10-30 03:25 UTC). Dropped 10-30 07:30: #6794 (closed as completed by OzGav 10-29 22:23 UTC). Dropped 10-30 15:30: #6628 (closed as completed by OzGav 10-30 13:17 UTC). Closed 10-30 17:45 on release 2.10.9 with a closing comment by you: #6860 (server#7244), #6737 (server#7156), #6419 (server#7160); discussions #6727 (server#7114) and #6594 (server#7168) answered and closed as resolved. Dropped 11-02 07:30: #6602 (closed as completed by OzGav 10-30 22:10 UTC). Dropped 11-02 07:30: #6855 (closed as completed by LesPaul1962 10-31 12:53 UTC). Dropped 11-02 07:30: #6873 (closed as completed by OzGav 10-30 21:53 UTC). Dropped 11-02 07:30: #6870 (closed as completed by robsonke 10-31 07:25 UTC). Dropped 11-02 07:30: #6910 (closed as completed by OzGav 11-02 00:26 UTC). Dropped 11-02 07:30: #6927 (closed as completed by bryanbrews 10-30 22:43 UTC). Dropped 11-02 07:30: core#189474 (closed as completed by zweckj 10-31 06:24 UTC). Dropped 11-02 07:30: #6932 (closed as completed by OzGav 10-30 22:06 UTC). Dropped 11-02 07:30: #6933 (closed as completed by dylan09 10-31 14:51 UTC). Dropped 11-02 11:30: #6872 (closed as completed by OzGav 11-02 09:51 UTC). Dropped 11-02 12:30: #6786 (closed as completed by MarvinSchenkel 11-02 11:11 UTC). Dropped 11-03 13:30: #6975 (closed as completed by OzGav 11-03 11:40 UTC). Dropped 11-03 14:30: #6930 (closed as completed by OzGav 11-03 12:51 UTC). Dropped 11-04 07:30: #6762 (closed as not planned by musicassistant-bot 11-04 03:22 UTC). Dropped 11-04 07:30: #6303 (closed as not planned by musicassistant-bot 11-04 03:22 UTC). Dropped 11-04 07:30: #6799 (closed as not planned by musicassistant-bot 11-04 03:22 UTC). Dropped 11-04 07:30: #6816 (closed as not planned by musicassistant-bot 11-04 03:21 UTC). Dropped 11-04 07:30: #6828 (closed as not planned by musicassistant-bot 11-04 03:21 UTC).",
+ "gone": "The 30 issues that shipped in 2.10.5, closed with the release comment: #6585, #6583, #6581, #6579, #6573, #6570, #6567, #6561, #6560, #6550, #6542, #6527, #6523, #6517, #6516, #6511, #6496, #6492, #6491, #6478, #6469, #6463, #6462, #6461, #6440, #6345, #6328, #6323, #6273, #4892. Dropped 10-05 as closed: #6470 (closed by reporter 10-02 (Bandcamp back in search)), #6460 (closed 10-02), #6458 (auto-closed 10-03 (no reply)), #6394 (closed 10-02), #6380 (closed by OzGav 10-03 after menaker12 confirmed on beta), #6338 (closed by reporter 10-03 (workaround holds)). Dropped 10-05 08:40: #6517 (auto-closed when you merged server#6702 at 06:31 UTC; booked Fix to be Confirmed + milestone 2.10.6 from its backport-to-stable label). Booked 10-05 09:40 (not on the board): #6629 FtbC + 2.10.6 (server#6691, backport-to-stable), #6620 FtbC (server#6685, backportable, see follow-ups). Dropped 10-05 10:40: #6635 (closed 06:19 UTC after your 2.11 beta reply). #6026 closed 08:03 UTC by your server#5175 merge; card kept in Fix merged until the bookkeeping is queued. Dropped 10-05 14:00: #6636 (closed by Soukyuu 11:40 UTC after your works-as-designed reply and OzGav's follow-up; going back to LMS). Dropped 10-05 15:40: #6026 (bookkeeping landed 12:40 UTC: Fix to be Confirmed + milestone 2.11.0). Dropped 10-06 09:00: #6559 (closed 06:40 UTC with your reply after the AirConnect removal fixed sync; reporter asked to file new issues); #6224 (closed 06:35 UTC when you merged server#6715; booked Fix to be Confirmed, milestone 2.11.0 was already set (migration, no backport)). Dropped 10-06 09:40: #6373 (you closed it 07:11 UTC when server#6611 merged with backport-to-stable; milestone 2.10.6 was set, I added Fix to be Confirmed); #6440 (you closed it 07:10 UTC after explaining Spotify's 1.1x headroom for crossfades); #6616 (you closed it 07:10 UTC as fixed in 2.11, milestone 2.11.0). Dropped 10-06 12:55: #6617 (assigned to jdaberkow, who is iterating on the Deezer family-profile branch with budius). Dropped 10-06 14:40: #6633 (howels closed it at 12:04 UTC, user error: a duplicate HA entity without volume_level). Dropped 10-06 15:40: #6247 (you milestoned and closed it at 13:21 UTC). #6647 closed 14:06 UTC after frontend#2924 merged. Dropped 10-07 as closed: #6641 (you merged server#6726 17:32 UTC, milestone 2.10.6, closed; already in backport/2.10.6). Dropped 10-07 as closed: #6646 (frontend#2923 merged), #6524 (fixed by frontend#2900). Dropped 10-07 13:40: #4377 (you closed it 10:58 UTC; LaneaLucy replied 11:23 UTC that the internal Snapcast server showed it too). #6613 closed 10-08 by the reporter (PO token 2.0.1 + cookie fixed it). Dropped 10-08 13:40 as closed: #6662 (server#6760 merged 11:26 UTC, auto-closed; I set Fix to be Confirmed; no backport label, but it cherry-picks cleanly onto backport/2.10.6 incl. the aiosonos 0.1.14 bump).; #6611 (closed by the reporter 10-09 06:12 UTC, keeps the opt-out on their fork) Dropped 10-12 07:40: #5723 (OzGav closed it 10-10 00:03 UTC as fixed. The reporter split the player-type part into #6688); #6063 (you closed it 10-10 with the 2.10.6 release comment); #6154 (you closed it 10-10 with the 2.10.6 release comment); #6425 (you closed it 10-10 with the 2.10.6 release comment); #6487 (OzGav closed it 10-09 23:58 UTC after parski confirmed the fix); #6562 (you closed it 10-10 with the 2.10.6 release comment); #6570 (you closed it 10-10 with the 2.10.6 release comment); #6571 (you closed it 10-10 with the 2.10.6 release comment); #6624 (closed after server#5868 + server#6858 (MSX Bridge, backport-to-stable) merged 10-10); #6627 (you closed it with the 2.10.6 release comment. magdalar commented 10-11 16:52 UTC that pause still jumps the progress back on Sonos with Audiobookshelf, mostly cosmetic now (see follow-ups)); #6642 (Annikadk confirmed 2.10.6 fixes it and closed it 10-10); #6648 (you closed it 10-10 with the 2.10.6 release comment); #6658 (dentedbread closed it 10-11 11:48 UTC, no repro on 2.11.0b4); #6669 (you closed it 10-10 with the 2.10.6 release comment); #6676 (OzGav closed it 10-11 11:47 UTC as by design: both editions sit in one Local files source, so a rescan of one file drops the other file's link. Advice is a separate source per edition. Our triage-6676 fix branch was never pushed); #6683 (megawubs closed it 10-09 17:33 UTC: 2.10.6 changed Deezer family accounts to one ARL, and the new ARL works); #6659 (now assigned to OzGav, who is working it with dentedbread). Dropped 10-12 09:40: #6493 (you closed it 07:09 UTC, fixed in 2.11). Dropped 10-12 14:40: #6714 (closed by you after server#6910 merged), #6464 (closed by you after server#6613 merged), #6451 (closed by you after server#6528 merged). #6671 and #6481 closed 10-12. Dropped 10-12 16:40: #6722 (Hypopheralcus fixed the Nextcloud proxy setting after your reply and closed it 13:49 UTC). Dropped 10-13 07:40: #6724 (OzGav closed it 22:53 UTC: 4 GB host OOM, reporter stopped Frigate and Grafana and MA kept running). Dropped 10-13 09:40: #6721 (closed 06:40 UTC, jdaberkow had taken it over). Dropped 10-13 10:40: #6577 (you closed it 08:07 UTC, no flip since the last update; reopen if it happens after an HA integration update). Dropped 10-13 15:40: #6666 (lupurs confirmed 2.10.6 fixed it and closed 12:42 UTC). Dropped 10-14 11:40: #6406 (bot auto-closed 03:31 UTC after two reminders) and #6667 (you closed it 18:14 UTC as a side effect of #6645; server#6968 closed with it). Dropped 10-14 13:40: #6725 (whc2001 confirmed the fix on the DEV add-on and closed it 11:02 UTC; server#6810 backport call moved to follow-ups). Dropped 10-14 15:40: #6643 (Asrem2 traced the Voice PE dropouts to a busy 2.4 GHz Wi-Fi channel, 13 h clean on Sendspin after moving the AP, closed 13:34 UTC). Dropped 10-15 10:15: #6186 (endevour confirmed the latest beta fixes it and closed it 10-14 19:36 UTC); #6547 (bot auto-closed 10-15 03:31 UTC after two reminders); #6732 (you closed it 10-15 07:23 UTC as a duplicate). Dropped 10-19 as closed after the 2.10.7 release: #6759, #6704, #6712, #6655, #6601, #6528, #6744 (you closed them 10-18), #6729 (sydlexius confirmed chrisuthe's fix), #6679 (dekiesel: switching to parallel fixed it). Dropped 10-19 08:38: #6811 (assigned to OzGav 06:37 UTC, he is handling the Sendspin Opus stutter). New #6813 and #6814 (ChrisB85, kiwipaulrob) were assigned to OzGav on arrival, not on the board. Dropped 10-20 07:38: #6407 (bot auto-closed 03:32 UTC after two reminders); #6102 (bot auto-closed 03:32 UTC after two reminders, our draft server#6706 is still open (see follow-ups)); #6002 (bot auto-closed 03:32 UTC after two reminders); #6782 (OzGav closed it 01:24 UTC as a feature request (Jellyfin genres were never implemented)); #6653 (anthonws closed the discussion 21:23 UTC, no time to work on it); #6508 (you assigned marcelveldt 10-20 11:50 UTC). #6673 (you closed it 12:56 UTC after the 2.11 provider sharing reply); #6668 (you closed it 12:50 UTC, resolved with the recommended tagging procedure); #6552 (OzGav closed it 13:21 UTC after sragot confirmed server#6425 fixes it on 2.11.0b5). #6682 (assigned to stvncode 13:39 UTC); #6684 (assigned to stvncode 13:39 UTC); #6777 (you closed it 13:45 UTC as duplicate of #6776); #6785 (you closed it 14:34 UTC after frontend#3032 split the review key). Dropped 10-21 07:38: #6639 (bot auto-closed 10-21 03:32 UTC after two reminders); #6663 (limitless-code confirmed the DEV app fixes all scenarios (19:02 UTC) and you closed it 22:30 UTC; FtbC + 2.11.0 were set); #6823 (jo-che confirmed on dev and closed it 19:58 UTC). Dropped 10-21 12:40: #6720 (you posted the thanks from the board 09:50 UTC and closed it). Dropped 10-22 07:30: #6819 (closed as completed by OzGav 10-21 22:53 UTC). Dropped 10-22 07:30: #6395 (closed as not planned by musicassistant-bot 10-22 03:32 UTC). Dropped 10-22 09:30: #6772 (closed as completed by MarvinSchenkel 10-22 06:58 UTC). Dropped 10-22 10:00: #6671 (closed as completed by dekiesel 10-22 07:58 UTC). Dropped 10-22 14:30: #6841 (closed as completed by stormsnsnow 10-22 12:20 UTC). Dropped 10-22 14:30: #6844 (closed as completed by OzGav 10-22 12:11 UTC). Dropped 10-22 15:30: #6757 (closed as completed by zosopage1963 10-22 13:12 UTC). Dropped 10-23 07:30: #6023 (closed as completed by OzGav 10-22 16:21 UTC). Dropped 10-23 07:30: #6752 (closed as completed by OzGav 10-23 01:39 UTC). Dropped 10-23 15:30: #6837 (closed as completed by MarvinSchenkel 10-23 12:33 UTC). Dropped 10-23 16:19: #6839 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6833 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6822 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6675 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6748 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6749 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6751 (closed as completed by MarvinSchenkel 10-23 14:18 UTC). Dropped 10-23 16:19: #6758 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6808 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6807 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6793 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6778 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6797 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6774 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6815 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:19: #6849 (closed as completed by MarvinSchenkel 10-23 14:19 UTC). Dropped 10-23 16:30: #6645 (closed as completed by MarvinSchenkel 10-23 14:21 UTC). Dropped 10-26 07:30: #6821 (closed as completed by jo-che 10-24 15:31 UTC). Dropped 10-26 07:30: #6695 (closed as not planned by musicassistant-bot 10-25 03:33 UTC). Dropped 10-26 07:30: #6680 (closed as completed by OzGav 10-25 10:56 UTC). Dropped 10-26 07:30: #6694 (closed as completed by OzGav 10-23 22:53 UTC). Dropped 10-26 07:30: #6672 (closed as completed by OzGav 10-24 11:16 UTC). Dropped 10-26 07:30: #6490 (closed as completed by OzGav 10-24 11:14 UTC). Dropped 10-26 07:30: #6402 (closed as completed by OzGav 10-24 11:10 UTC). Dropped 10-26 07:30: #6299 (closed as completed by OzGav 10-24 11:10 UTC). Dropped 10-26 07:30: #6150 (closed as completed by OzGav 10-24 11:09 UTC). Dropped 10-26 07:30: #6738 (closed as completed by OzGav 10-23 22:50 UTC). Dropped 10-26 07:30: #6806 (closed as completed by Thyraz 10-24 12:41 UTC). Dropped 10-26 07:30: #6812 (closed as completed by OzGav 10-24 21:08 UTC). Dropped 10-26 07:30: #6798 (closed as completed by OzGav 10-24 11:20 UTC). Dropped 10-26 12:30: #6743 (closed as completed by flibustier 10-26 10:44 UTC). Dropped 10-27 07:30: #6685 (closed as not planned by musicassistant-bot 10-27 03:34 UTC). Dropped 10-27 07:30: #6856 (closed as completed by OzGav 10-26 22:51 UTC). Dropped 10-27 07:30: #6891 (closed as completed by OzGav 10-26 20:57 UTC). Dropped 10-27 08:30: #6894 (closed as completed by MarvinSchenkel 10-27 06:53 UTC). Dropped 10-27 15:30: #6882 (closed as completed by AkoreJepade 10-27 13:30 UTC). Dropped 10-27 15:30: #6899 (closed as completed by OzGav 10-27 13:51 UTC). Dropped 10-27 16:30: #6670 (closed as completed by mnestrud 10-27 14:51 UTC). Dropped 10-27 17:30: #6857 (closed as completed by MarvinSchenkel 10-27 16:07 UTC). Dropped 10-28 07:30: #6731 (closed as completed by OzGav 10-28 01:16 UTC). Dropped 10-28 17:30: #6897 (closed as completed by OzGav 10-28 16:06 UTC). Dropped 10-29 07:30: #6889 (closed as completed by OzGav 10-28 22:26 UTC). Dropped 10-29 08:30: #6706 (closed as duplicate by zsmisi 10-29 07:27 UTC). Dropped 10-29 15:30: #6901 (closed as completed by MarvinSchenkel 10-29 14:27 UTC). Dropped 10-29 16:30: #6879 (closed as completed by MarvinSchenkel 10-29 14:37 UTC). Dropped 10-30 07:30: #6728 (closed as not planned by musicassistant-bot 10-30 03:25 UTC). Dropped 10-30 07:30: #6794 (closed as completed by OzGav 10-29 22:23 UTC). Dropped 10-30 15:30: #6628 (closed as completed by OzGav 10-30 13:17 UTC). Closed 10-30 17:45 on release 2.10.9 with a closing comment by you: #6860 (server#7244), #6737 (server#7156), #6419 (server#7160); discussions #6727 (server#7114) and #6594 (server#7168) answered and closed as resolved. Dropped 11-02 07:30: #6602 (closed as completed by OzGav 10-30 22:10 UTC). Dropped 11-02 07:30: #6855 (closed as completed by LesPaul1962 10-31 12:53 UTC). Dropped 11-02 07:30: #6873 (closed as completed by OzGav 10-30 21:53 UTC). Dropped 11-02 07:30: #6870 (closed as completed by robsonke 10-31 07:25 UTC). Dropped 11-02 07:30: #6910 (closed as completed by OzGav 11-02 00:26 UTC). Dropped 11-02 07:30: #6927 (closed as completed by bryanbrews 10-30 22:43 UTC). Dropped 11-02 07:30: core#189474 (closed as completed by zweckj 10-31 06:24 UTC). Dropped 11-02 07:30: #6932 (closed as completed by OzGav 10-30 22:06 UTC). Dropped 11-02 07:30: #6933 (closed as completed by dylan09 10-31 14:51 UTC). Dropped 11-02 11:30: #6872 (closed as completed by OzGav 11-02 09:51 UTC). Dropped 11-02 12:30: #6786 (closed as completed by MarvinSchenkel 11-02 11:11 UTC). Dropped 11-03 13:30: #6975 (closed as completed by OzGav 11-03 11:40 UTC). Dropped 11-03 14:30: #6930 (closed as completed by OzGav 11-03 12:51 UTC). Dropped 11-04 07:30: #6762 (closed as not planned by musicassistant-bot 11-04 03:22 UTC). Dropped 11-04 07:30: #6303 (closed as not planned by musicassistant-bot 11-04 03:22 UTC). Dropped 11-04 07:30: #6799 (closed as not planned by musicassistant-bot 11-04 03:22 UTC). Dropped 11-04 07:30: #6816 (closed as not planned by musicassistant-bot 11-04 03:21 UTC). Dropped 11-04 07:30: #6828 (closed as not planned by musicassistant-bot 11-04 03:21 UTC). Dropped 11-05 07:30: #6817 (closed as not planned by musicassistant-bot 11-05 03:22 UTC). Dropped 11-05 07:30: #6773 (closed as not planned by musicassistant-bot 11-05 03:22 UTC). Dropped 11-05 07:30: #6942 (closed as completed by atomsk2000 11-04 19:04 UTC).",
  "actions_applied_at": "2026-10-23T12:04:33Z",
  "auto_post": {
   "enabled": true
@@ -5796,6 +5630,7 @@
   6756,
   6776,
   6787,
+  6791,
   6810,
   6827,
   6831,
