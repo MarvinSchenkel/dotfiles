@@ -1,8 +1,8 @@
 {
   "thread_id": "mcp:dba76884-e5e6-48aa-aa88-914e09fa4301",
   "scheduled_task_id": "scheduled-task:command:mcp:ece76a14-da84-4b32-9dc2-e104d78297bd:schedule-task:triage-ma-nightly-setup-2026-10-21",
-  "last_run_end": "2026-11-04T05:00:16+01:00",
-  "last_run_summary": "Run 2026-11-04: quiet day; anon memory back down to 1513 MB (high-water, not a leak so far); add-on 3 nightlies behind, reboot_required repair still open; HA Core restart 08:45 recovered.",
+  "last_run_end": "2026-11-05T05:00:15+01:00",
+  "last_run_summary": "Run 2026-11-05: quiet; add-on 4 nightlies behind (reboot_required still open); anon steady 1556 MB at 110 h; Amp restart-like blip 16:41 while idle.",
   "known": {
     "wiim:native-join-stops-leader": {
       "title": "WiiM native join re-GET rewinds Mancave",
@@ -16,8 +16,8 @@
       "title": "Apple TV MRP + Companion reconnect loop",
       "severity": "medium",
       "first_seen": "2026-10-20",
-      "seen": 15,
-      "last_seen": "2026-11-04"
+      "seen": 16,
+      "last_seen": "2026-11-05"
     },
     "remote_access.gateway._bridge_websocket:ConnectionRefusedError@shutdown": {
       "title": "Shutdown noise: remote access bridges to unloaded Sendspin",
@@ -30,8 +30,8 @@
       "title": "Sendspin non-compliant client warnings",
       "severity": "low",
       "first_seen": "2026-10-08",
-      "seen": 15,
-      "last_seen": "2026-11-04"
+      "seen": 16,
+      "last_seen": "2026-11-05"
     },
     "remote_access:libjuice-turn-403": {
       "title": "libjuice TURN CreatePermission 403 and send failures",
@@ -73,10 +73,10 @@
     },
     "pychromecast:socket-connect-retry": {
       "first_seen": "2026-10-20",
-      "seen": 13,
+      "seen": 14,
       "title": "Overnight Cast socket drops (Amp, Living Room TV, Kantoor)",
       "severity": "low",
-      "last_seen": "2026-11-04"
+      "last_seen": "2026-11-05"
     },
     "remote_access:signaling-client-not-found": {
       "first_seen": "2026-10-22",
@@ -108,8 +108,8 @@
     },
     "wiim.sdk:mini-http-upnp-timeout": {
       "first_seen": "2026-10-23",
-      "seen": 8,
-      "last_seen": "2026-11-02",
+      "seen": 9,
+      "last_seen": "2026-11-05",
       "title": "WiiM Mini unreachable for ~10 s",
       "severity": "low"
     },
@@ -192,8 +192,8 @@
     },
     "remote_access:signaling-pong-timeout": {
       "first_seen": "2026-10-29",
-      "seen": 2,
-      "last_seen": "2026-10-31",
+      "seen": 3,
+      "last_seen": "2026-11-05",
       "title": "Signaling websocket missed a PONG",
       "severity": "low"
     },
@@ -206,15 +206,15 @@
     },
     "health:anon-memory-growth": {
       "first_seen": "2026-11-03",
-      "seen": 2,
-      "last_seen": "2026-11-04",
+      "seen": 3,
+      "last_seen": "2026-11-05",
       "title": "Memory grew 608 MB in 24 h",
       "severity": "low"
     },
     "addon:nightly-auto-update-stalled": {
       "first_seen": "2026-11-01",
-      "seen": 2,
-      "last_seen": "2026-11-04",
+      "seen": 3,
+      "last_seen": "2026-11-05",
       "title": "Nightly add-on not auto-updating",
       "severity": "medium"
     },
@@ -235,10 +235,10 @@
     "addon_info_over_ssh": "works (2026-11-03): sudo docker exec hassio_cli ha apps info d5369777_music_assistant_nightly --raw-json"
   },
   "health": {
-    "rss_mb": 2016.1,
-    "rss_anon_mb": 1512.8,
-    "uptime_seconds": 308982,
-    "event_loop_lag_ms": 1.3,
+    "rss_mb": 2073.1,
+    "rss_anon_mb": 1556.1,
+    "uptime_seconds": 395381,
+    "event_loop_lag_ms": 0.4,
     "version": "2.11.0.dev2026103104"
   }
 }
