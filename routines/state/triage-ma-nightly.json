@@ -1,8 +1,8 @@
 {
   "thread_id": "mcp:dba76884-e5e6-48aa-aa88-914e09fa4301",
   "scheduled_task_id": "scheduled-task:command:mcp:ece76a14-da84-4b32-9dc2-e104d78297bd:schedule-task:triage-ma-nightly-setup-2026-10-21",
-  "last_run_end": "2026-11-05T05:00:15+01:00",
-  "last_run_summary": "Run 2026-11-05: quiet; add-on 4 nightlies behind (reboot_required still open); anon steady 1556 MB at 110 h; Amp restart-like blip 16:41 while idle.",
+  "last_run_end": "2026-11-06T05:00:15+01:00",
+  "last_run_summary": "Run 2026-11-06: add-on caught up to 2026110504 at 08:02 (looks manual), memory reset to 692 MB anon; 3 HA Core restarts during app updates recovered; light day.",
   "known": {
     "wiim:native-join-stops-leader": {
       "title": "WiiM native join re-GET rewinds Mancave",
@@ -16,8 +16,8 @@
       "title": "Apple TV MRP + Companion reconnect loop",
       "severity": "medium",
       "first_seen": "2026-10-20",
-      "seen": 16,
-      "last_seen": "2026-11-05"
+      "seen": 17,
+      "last_seen": "2026-11-06"
     },
     "remote_access.gateway._bridge_websocket:ConnectionRefusedError@shutdown": {
       "title": "Shutdown noise: remote access bridges to unloaded Sendspin",
@@ -30,8 +30,8 @@
       "title": "Sendspin non-compliant client warnings",
       "severity": "low",
       "first_seen": "2026-10-08",
-      "seen": 16,
-      "last_seen": "2026-11-05"
+      "seen": 17,
+      "last_seen": "2026-11-06"
     },
     "remote_access:libjuice-turn-403": {
       "title": "libjuice TURN CreatePermission 403 and send failures",
@@ -73,10 +73,10 @@
     },
     "pychromecast:socket-connect-retry": {
       "first_seen": "2026-10-20",
-      "seen": 14,
+      "seen": 15,
       "title": "Overnight Cast socket drops (Amp, Living Room TV, Kantoor)",
       "severity": "low",
-      "last_seen": "2026-11-05"
+      "last_seen": "2026-11-06"
     },
     "remote_access:signaling-client-not-found": {
       "first_seen": "2026-10-22",
@@ -108,8 +108,8 @@
     },
     "wiim.sdk:mini-http-upnp-timeout": {
       "first_seen": "2026-10-23",
-      "seen": 9,
-      "last_seen": "2026-11-05",
+      "seen": 10,
+      "last_seen": "2026-11-06",
       "title": "WiiM Mini unreachable for ~10 s",
       "severity": "low"
     },
@@ -136,8 +136,8 @@
     },
     "SetupFailedError@providers/hass/__init__.py:handle_async_init": {
       "first_seen": "2026-10-25",
-      "seen": 3,
-      "last_seen": "2026-11-04",
+      "seen": 4,
+      "last_seen": "2026-11-06",
       "title": "HA provider reload hit a restarting Supervisor, retry worked",
       "severity": "low"
     },
@@ -150,8 +150,8 @@
     },
     "KeyError@providers/chromecast/sendspin_bridge.py:_flag_bridge_experimental": {
       "first_seen": "2026-10-26",
-      "seen": 1,
-      "last_seen": "2026-10-27",
+      "seen": 2,
+      "last_seen": "2026-11-06",
       "title": "Sendspin Cast bridge flagged after it was torn down",
       "severity": "low"
     },
@@ -206,17 +206,18 @@
     },
     "health:anon-memory-growth": {
       "first_seen": "2026-11-03",
-      "seen": 3,
-      "last_seen": "2026-11-05",
+      "seen": 4,
+      "last_seen": "2026-11-06",
       "title": "Memory grew 608 MB in 24 h",
       "severity": "low"
     },
     "addon:nightly-auto-update-stalled": {
       "first_seen": "2026-11-01",
-      "seen": 3,
-      "last_seen": "2026-11-05",
+      "seen": 4,
+      "last_seen": "2026-11-06",
       "title": "Nightly add-on not auto-updating",
-      "severity": "medium"
+      "severity": "low",
+      "status": "caught up 11-05 08:02 (manual?), reboot_required still open; check next nightly auto-installs"
     },
     "sonos:error-no-content-unprompted": {
       "first_seen": "2026-11-02",
@@ -235,10 +236,10 @@
     "addon_info_over_ssh": "works (2026-11-03): sudo docker exec hassio_cli ha apps info d5369777_music_assistant_nightly --raw-json"
   },
   "health": {
-    "rss_mb": 2073.1,
-    "rss_anon_mb": 1556.1,
-    "uptime_seconds": 395381,
-    "event_loop_lag_ms": 0.4,
-    "version": "2.11.0.dev2026103104"
+    "rss_mb": 955.1,
+    "rss_anon_mb": 692.1,
+    "uptime_seconds": 75454,
+    "event_loop_lag_ms": 0.5,
+    "version": "2.11.0.dev2026110504"
   }
 }
