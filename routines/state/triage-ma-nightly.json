@@ -1,23 +1,23 @@
 {
   "thread_id": "mcp:dba76884-e5e6-48aa-aa88-914e09fa4301",
   "scheduled_task_id": "scheduled-task:command:mcp:ece76a14-da84-4b32-9dc2-e104d78297bd:schedule-task:triage-ma-nightly-setup-2026-10-21",
-  "last_run_end": "2026-11-07T05:00:16+01:00",
-  "last_run_summary": "Run 2026-11-07: nightly updated on time (2026110604); new Bluesound IPv6-only mDNS record crashes player setup (unbracketed URL); memory normal.",
+  "last_run_end": "2026-11-08T05:00:17+01:00",
+  "last_run_summary": "Run 2026-11-08: busy healthy day; 11-07 nightly not installed (reboot_required still open); unavailable YTM track logs 3 skip warnings per preload pass; Supervisor + Core restarts recovered.",
   "known": {
     "wiim:native-join-stops-leader": {
       "title": "WiiM native join re-GET rewinds Mancave",
       "severity": "low",
       "first_seen": "2026-10-08",
-      "seen": 14,
-      "last_seen": "2026-11-07",
+      "seen": 15,
+      "last_seen": "2026-11-08",
       "fix": "server#7157 in 2026102303: resumed 5/5 first-join restarts on 10-23"
     },
     "airplay:appletv-mrp-companion-reconnect": {
       "title": "Apple TV MRP + Companion reconnect loop",
       "severity": "medium",
       "first_seen": "2026-10-20",
-      "seen": 18,
-      "last_seen": "2026-11-07"
+      "seen": 19,
+      "last_seen": "2026-11-08"
     },
     "remote_access.gateway._bridge_websocket:ConnectionRefusedError@shutdown": {
       "title": "Shutdown noise: remote access bridges to unloaded Sendspin",
@@ -30,15 +30,15 @@
       "title": "Sendspin non-compliant client warnings",
       "severity": "low",
       "first_seen": "2026-10-08",
-      "seen": 18,
-      "last_seen": "2026-11-07"
+      "seen": 19,
+      "last_seen": "2026-11-08"
     },
     "remote_access:libjuice-turn-403": {
       "title": "libjuice TURN CreatePermission 403 and send failures",
       "severity": "low",
       "first_seen": "2026-10-21",
-      "seen": 15,
-      "last_seen": "2026-11-07"
+      "seen": 16,
+      "last_seen": "2026-11-08"
     },
     "helpers.images:dlna-un_known-404": {
       "title": "DLNA un_known artwork 404 at startup",
@@ -73,10 +73,10 @@
     },
     "pychromecast:socket-connect-retry": {
       "first_seen": "2026-10-20",
-      "seen": 16,
+      "seen": 17,
       "title": "Overnight Cast socket drops (Amp, Living Room TV, Kantoor)",
       "severity": "low",
-      "last_seen": "2026-11-07"
+      "last_seen": "2026-11-08"
     },
     "remote_access:signaling-client-not-found": {
       "first_seen": "2026-10-22",
@@ -108,8 +108,8 @@
     },
     "wiim.sdk:mini-http-upnp-timeout": {
       "first_seen": "2026-10-23",
-      "seen": 11,
-      "last_seen": "2026-11-07",
+      "seen": 12,
+      "last_seen": "2026-11-08",
       "title": "WiiM Mini unreachable for ~10 s",
       "severity": "low"
     },
@@ -136,8 +136,8 @@
     },
     "SetupFailedError@providers/hass/__init__.py:handle_async_init": {
       "first_seen": "2026-10-25",
-      "seen": 4,
-      "last_seen": "2026-11-06",
+      "seen": 5,
+      "last_seen": "2026-11-08",
       "title": "HA provider reload hit a restarting Supervisor, retry worked",
       "severity": "low"
     },
@@ -213,11 +213,11 @@
     },
     "addon:nightly-auto-update-stalled": {
       "first_seen": "2026-11-01",
-      "seen": 5,
-      "last_seen": "2026-11-07",
+      "seen": 6,
+      "last_seen": "2026-11-08",
       "title": "Nightly add-on not auto-updating",
       "severity": "low",
-      "status": "updating again: 1105 on 11-05 08:02, 1106 on 11-06 08:38; reboot_required still open"
+      "status": "11-07 nightly not installed; reboot_required still open; supervisor restarted 11-07 14:15 (not a host reboot)"
     },
     "sonos:error-no-content-unprompted": {
       "first_seen": "2026-11-02",
@@ -232,6 +232,13 @@
       "last_seen": "2026-11-07",
       "title": "Bluesound setup crashes on IPv6-only mDNS record",
       "severity": "low"
+    },
+    "player_queues:unavailable-item-repeat-skip": {
+      "first_seen": "2026-11-07",
+      "seen": 1,
+      "last_seen": "2026-11-08",
+      "title": "Unavailable track logged as skipped 3x per preload pass",
+      "severity": "low"
     }
   },
   "muted": [],
@@ -243,10 +250,10 @@
     "addon_info_over_ssh": "works (2026-11-03): sudo docker exec hassio_cli ha apps info d5369777_music_assistant_nightly --raw-json"
   },
   "health": {
-    "rss_mb": 1596.8,
-    "rss_anon_mb": 884.8,
-    "uptime_seconds": 73273,
-    "event_loop_lag_ms": 0.9,
+    "rss_mb": 1790.3,
+    "rss_anon_mb": 1107.9,
+    "uptime_seconds": 159675,
+    "event_loop_lag_ms": 0.8,
     "version": "2.11.0.dev2026110604"
   }
 }
