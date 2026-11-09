@@ -4243,8 +4243,8 @@
    "author": "martinbuergi",
    "url": "https://github.com/music-assistant/server/pull/7081",
    "draft": false,
-   "verdict": "almost",
-   "assessment": "comment",
+   "verdict": "ready",
+   "assessment": "approve",
    "status": "attention",
    "attention_since": "2026-11-02T20:20:31Z",
    "size": "M",
@@ -4257,13 +4257,13 @@
    "providers_touched": [
     "party"
    ],
-   "merge_state": "merge-tree clean on origin/dev 86be33066",
+   "merge_state": "merge-tree clean on origin/dev",
    "head_sha": "b4d7be78f",
    "tldr": "The rework is what you asked for: votes on the queue item, no plugin state, listener or cleanup, 33/33 tests. All three reviewers hit the same gap: the tally is popped before next() takes the strict playback lock, so votes queued behind that lock can skip a second, unvoted song. Copilot also flags stale tallies on replayed items.",
    "summary": "Head e510bea55 (merge-base 44bd993bc) does what Marvin asked on 10-28. The voters are a comma-joined string in extra_attributes['party_skip_voters'] with the count in 'party_skip_votes'. _on_queue_updated, _remove_stale_skip_tally, _clear_skip_votes, _has_next_track, the skip locks and the plugin vote fields are all gone (grep finds no leftover QUEUE_UPDATED subscription or vote state). The has_player_access gate and the optional queue_item_id stay. song_changed is returned when the guest's item is no longer current.\n\nAtomicity: _get_voter_id is the only await before the read, and the read, add, write and signal_update(items_changed=True) are all synchronous. On the threshold both keys are popped and signal_update runs before 'await next()'. Uncontended, next() moves queue.current_item synchronously: the lock acquire does not yield and the item is set before call_later(play_index). So a concurrent vote gets song_changed. Contended, next() first waits on get_group_and_player_lock(strict=True), for example while the debounced play_index of an earlier skip, or a host or party play action, holds it. current_item stays on the old item for that time, so votes naming the old item still count on an empty ledger, and reaching the threshold again queues a second next(). test_skip_votes_are_dropped_before_skipping encodes this 'starts over' behaviour.\n\nPersistence: queue.current_item is the same object as in queue_data.items (get_item, update_items keep the references). QueueItem.to_cache keeps extra_attributes, and items_cache_dirty causes the debounced items write, so the votes survive a restart or reload.\n\nDouble voting: the same token twice is deduped. Rejoining still mints a new token_id, because the join code can be reused until it expires and exchange_join_code only rate-limits failures, so a second vote from the same person counts. This is the best per-device identity available. The guest already has QUEUES_CONTROL plus player access, so it could call player_queues/next directly, and skip rate limiting is client-side, so the threshold is a UX control, not enforcement.\n\nThreshold change: votes_required is read on every vote. Lowering it does not act on an existing tally until the next request, and then even a duplicate (uncounted) vote skips, because 'skipped' does not depend on vote_counted.\n\nSame song later: a re-request is a new QueueItem with a new queue_item_id, so it starts at zero. But a partial tally on an item that played to the end stays on that item and comes back if that same QueueItem is replayed (previous, Repeat All wrap, play_index on history). That contradicts the string 'Votes reset when the next song starts'.\n\nLast track with repeat off: the votes are dropped and next() does nothing, so the response says skipped=True and the frontend shows 'Song skipped!'. Marvin accepted this. The frontend resets its voted state when the tally drops to 0, so guests can vote again.\n\nFrontend#3014 (head 4a25ff31) sends queue_item_id, and handles song_changed, vote_counted, skipped, votes and votes_required. It reads party_skip_votes from current_item and shows the tally only for position=current, and it has already dropped no_next_track, so the contract matches. Dev drift since the merge-base (auth_middleware impersonation scope, transfer_queue) does not touch this path.",
    "blockers": [
-    "Open CRITICAL threads on vote bursts: your call to resolve as accepted",
-    "Provider-only (party), so auto-approve once the threads are resolved"
+    "translations/en.json is outside the provider folder, so no auto-approval",
+    "Companion frontend#3014 is still open"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -4286,7 +4286,7 @@
     "why": "New feature (new config entry and API contract, paired with frontend#3014), not a fix."
    },
    "prompt": "",
-   "whats_new": "martinbuergi took it out of draft at 20:20Z. Bot-MArley found nothing to change; the open CRITICAL threads about a burst of votes on a short/busy queue were left out by design and need a maintainer to resolve them. Goes with frontend#3014.",
+   "whats_new": "Corrected: you accepted the vote-burst trade-off on 11-02 and the Copilot CRITICAL threads are resolved; Bot-MArley found nothing to change on b4d7be78f. Ready for your approve.",
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 13:00 CET",
    "auto_approved": null,
@@ -4296,7 +4296,7 @@
    ],
    "author_replied": null,
    "reporter_reply": null,
-   "waiting_on": "you: decide the open CRITICAL vote-burst threads",
+   "waiting_on": "you: approve (en.json outside the provider); frontend#3014 companion",
    "changed_now": "",
    "gpt_sol": "1 critical (same lock race), 1 problem (last item with repeat off reports skipped and drops votes)",
    "support": null,
