@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-09T08:00:00+01:00",
- "dev": "86be33066",
- "run_note": "My 07:00 auto-approval of #7440 (MusicCast MP3 default) was wrong: it switched existing installs from FLAC, and fmunkes opened revert #7458, which needs your approval. New: #7459 m4a album artists (Bot-MArley wants a test, lab green) and models#459 for dmoo500's listening history.",
+ "last_run": "2026-11-09T09:00:00+01:00",
+ "dev": "8099492ef",
+ "run_note": "The MusicCast revert #7458 merged, so FLAC is the default again. #7456 (Subsonic setup) and #7443 (libs bump) merged too. OzGav nudged ryanmac8 on #7373; kieranhogg asked on #7407 for a hook so BBC Sounds can use the HLS offset.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -16236,7 +16236,7 @@
    "ci": "red (pytest 1-3)",
    "ci_fail": true,
    "merge_state": "merge-tree clean on origin/dev 86be33066",
-   "head_sha": "c27166853",
+   "head_sha": "98f50a1cd",
    "core_touched": true,
    "providers_touched": [
     "sendspin"
@@ -16244,7 +16244,7 @@
    "stacked": false,
    "tldr": "Major PyAV bump: drops Python 3.11, removes CodecContext.hwaccel, changes rational attribute types. Pytest fails on all shards, so something in MA uses a changed API.",
    "summary": "",
-   "whats_new": "Dependabot rebased 11-04; Bot-MArley still asks for the PyAV 19 base image and a Sendspin test.",
+   "whats_new": "Dependabot rebased at 08:46Z; recheck next run if Bot-MArley has not reviewed it.",
    "blockers": [
     "CI base image ships PyAV 18.1.0; rebuild it with 19.0.2",
     "aiosendspin on PyAV 19 needs a real Sendspin player test"
@@ -16269,7 +16269,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "pushed",
    "suggested_fix": null,
    "del": 2
   },
@@ -18894,17 +18894,17 @@
   {
    "repo": "server",
    "number": 7456,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-09T08:39:34Z",
    "url": "https://github.com/music-assistant/server/pull/7456",
    "title": "Subsonic setup refactor",
    "author": "khers",
    "draft": false,
    "verdict": "ready",
    "assessment": "comment",
-   "status": "attention",
+   "status": "waiting",
    "attention_since": null,
-   "waiting_on": "you: approve (en.json outside the provider)",
+   "waiting_on": "merged",
    "size": "M",
    "code": 64,
    "add": 127,
@@ -18935,7 +18935,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "merged",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -19081,7 +19081,7 @@
    "ci": "not checked (draft)",
    "ci_fail": false,
    "merge_state": "not checked (draft)",
-   "head_sha": "1ed261978",
+   "head_sha": "d60f600c8",
    "core_touched": true,
    "providers_touched": [
     "auracast",
@@ -19333,7 +19333,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "drafted",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -19349,17 +19349,17 @@
   {
    "repo": "server",
    "number": 7443,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-09T08:41:06Z",
    "url": "https://github.com/music-assistant/server/pull/7443",
    "title": "Bump the music-assistant-libs group with 3 updates",
    "author": "dependabot[bot]",
    "draft": false,
    "verdict": "ready",
    "assessment": "comment",
-   "status": "attention",
+   "status": "waiting",
    "attention_since": "2026-11-08T17:53:00Z",
-   "waiting_on": "you: merge (Sonos + Sendspin libs)",
+   "waiting_on": "merged",
    "size": "S",
    "code": 12,
    "add": 6,
@@ -19392,7 +19392,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "merged",
    "suggested_fix": null,
    "lab": {
     "head": "72127c7dd",
@@ -19462,7 +19462,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "4433a75aa",
@@ -20069,7 +20069,7 @@
    "stacked": false,
    "tldr": "Some HLS radio stations stop after a short time, like MausRadio and SWR3 from ARD Sounds. Sonos reports `ERROR_BUFFERING`, sometimes after less than a minute. Their CDN can hold a segment for about 9 seconds and then answer with HTTP 503 or 504. The 5 second head start (#7139) doesn't cover this, and ffmpeg skips a segment after an error, so that audio is lost. - The input starts as many segments behind live as 23 se",
    "summary": "",
-   "whats_new": "New since 11-03.",
+   "whats_new": "kieranhogg (BBC Sounds provider) asked for a way to read the stall/offset value so the Sounds live-rewind clock maths can adjust once this lands. Not a blocker.",
    "blockers": [
     "Bot-MArley requested changes"
    ],
@@ -20085,7 +20085,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "commented",
    "suggested_fix": null,
    "lab": {
     "head": "cfad04936",
@@ -20610,7 +20610,7 @@
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "ryanmac8: rebase (conflict in test_ai.py)",
+   "waiting_on": "ryanmac8: reply per conversation, resolve, rebase (OzGav asked)",
    "size": "L",
    "code": 887,
    "add": 998,
@@ -20627,7 +20627,7 @@
    "stacked": false,
    "tldr": "Follow-up to #6901, doing the cleanup that was [agreed in review](https://github.com/music-assistant/server/pull/6901#discussion_r4441663134): the Playlist Metadata provider keeps its own job queue, throttle deques and engine pause tracking, while the shared helpers now cover all three. Nothing is rewritten, the behaviour stays the same. - **The hourly limit is a `Throttler` per kind.** The covers and the description",
    "summary": "",
-   "whats_new": "Bot-MArley's 06:17Z recheck: the requested points are fixed; only the conflict with dev in test_ai.py is left.",
+   "whats_new": "OzGav asked ryanmac8 to answer and resolve each conversation and fix the test_ai.py conflict.",
    "blockers": [
     "Merge conflict in tests/providers/playlist_metadata/test_ai.py",
     "Your CHANGES_REQUESTED review still stands",
@@ -20647,7 +20647,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "commented",
    "suggested_fix": null,
    "lab": {
     "head": "4192ba371",
@@ -20956,17 +20956,17 @@
   {
    "repo": "server",
    "number": 7458,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-09T07:30:25Z",
    "url": "https://github.com/music-assistant/server/pull/7458",
    "title": "Revert \"Default MusicCast players to MP3 output\"",
    "author": "fmunkes",
    "draft": false,
    "verdict": "ready",
    "assessment": "approve",
-   "status": "attention",
+   "status": "waiting",
    "attention_since": "2026-11-09T06:17:18Z",
-   "waiting_on": "you: approve the revert (MusicCast back to FLAC)",
+   "waiting_on": "merged",
    "size": "S",
    "code": 6,
    "add": 0,
@@ -20981,7 +20981,7 @@
    "stacked": false,
    "tldr": "Reverts #7440, which I auto-approved: it switched existing MusicCast installs from FLAC to MP3. Maintainers agreed to keep lossless as the default and document the start-up delay instead; MP3 stays selectable per player.",
    "summary": "",
-   "whats_new": "New since 07:00.",
+   "whats_new": "Merged 07:30Z: MusicCast is back to FLAC by default.",
    "blockers": [
     "Needs a second maintainer approval (fmunkes is the author); Bot-MArley asks for a real MusicCast confirmation, which a straight revert to the old default hardly needs"
    ],
@@ -21002,7 +21002,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "merged",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -21061,7 +21061,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "8c00787e6",
@@ -21126,7 +21126,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -21159,7 +21159,7 @@
    "ci": "not checked (draft)",
    "ci_fail": false,
    "merge_state": "not checked (draft)",
-   "head_sha": "c2ad1726e",
+   "head_sha": "f076cf3a8",
    "core_touched": false,
    "providers_touched": [
     "filesystem_cloud",
@@ -21186,7 +21186,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
