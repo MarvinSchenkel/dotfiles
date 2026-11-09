@@ -20489,11 +20489,11 @@
    "title": "Play the live Apple Music radio stations",
    "author": "jordiboehme",
    "draft": false,
-   "verdict": "ready",
+   "verdict": "almost",
    "assessment": "comment",
-   "status": "attention",
+   "status": "waiting",
    "attention_since": "2026-11-06T07:02:00Z",
-   "waiting_on": "you: review + merge (XL, provider-only)",
+   "waiting_on": "jordiboehme: your size-review asks",
    "size": "XL",
    "code": 1202,
    "add": 2523,
@@ -20510,10 +20510,17 @@
    "summary": "Fable size review 11-09: ~1,200 prod lines could be ~400-450. Biggest cuts: drop live_decrypt.py (inner ffmpeg per key with -decryption_key on the mov demuxer, via get_ffmpeg_stream), drop live_monitor.py and the event bookkeeping, reuse helpers/hls.py HLSMediaPlaylistParser and parse_m3u, share the license call with streaming.py, ProviderStreamLimitError instead of the refused-license memory, drop mirror failover and resume position, mutagen for ID3. Open question: is renew-after needed given hourly key rotation fetches a fresh license.",
    "whats_new": "Bot-MArley's 06:16Z recheck: earlier points fixed (call_later timers and direct queue signal gone), nothing open. Lab Apple Music run green (asked by you).",
    "blockers": [
-    "XL new feature in apple_music: your review and merge"
+    "Your size review (11-09): drop live_decrypt/live_monitor, reuse hls/license helpers, ~1/3 of the code"
    ],
    "findings": [],
-   "unaddressed_comments": [],
+   "unaddressed_comments": [
+    {
+     "author": "MarvinSchenkel",
+     "at": "2026-11-09",
+     "url": "https://github.com/music-assistant/server/pull/7377#issuecomment-6740309648",
+     "summary": "size review: 8 reduction asks"
+    }
+   ],
    "prompt": "",
    "backport": null,
    "auto_approved": null,
