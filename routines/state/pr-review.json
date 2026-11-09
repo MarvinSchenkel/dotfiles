@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-09T10:00:00+01:00",
- "dev": "8099492ef",
- "run_note": "Quiet hour, dev unchanged. I asked Bot-MArley to recheck #7324 after dependabot's 08:43Z rebase.",
+ "last_run": "2026-11-09T11:00:00+01:00",
+ "dev": "bf9237d54",
+ "run_note": "#7393 (disliked genres) merged while your chip on it was still open, and marcelveldt's draft #7452 merged too. I merged dependabot's models#460. kieranhogg is happy with #7407's offset answer.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -16244,7 +16244,7 @@
    "stacked": false,
    "tldr": "Major PyAV bump: drops Python 3.11, removes CodecContext.hwaccel, changes rational attribute types. Pytest fails on all shards, so something in MA uses a changed API.",
    "summary": "",
-   "whats_new": "Dependabot rebased at 08:46Z; recheck next run if Bot-MArley has not reviewed it.",
+   "whats_new": "Bot-MArley's 09:10Z recheck: pytest still fails on the PyAV 18/19 mismatch in the CI base image.",
    "blockers": [
     "CI base image ships PyAV 18.1.0; rebuild it with 19.0.2",
     "aiosendspin on PyAV 19 needs a real Sendspin player test"
@@ -16252,8 +16252,8 @@
    "findings": [],
    "unaddressed_comments": [],
    "marley": {
-    "verdict": "none",
-    "reviewed_head": false,
+    "verdict": "changes",
+    "reviewed_head": true,
     "open_threads": 0,
     "review_url": "https://github.com/music-assistant/server/pull/7324#issuecomment-6733625130",
     "note": "Still needs the PyAV 19 base image and a Sendspin test.",
@@ -19064,8 +19064,8 @@
   {
    "repo": "server",
    "number": 7452,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-09T09:37:54Z",
    "url": "https://github.com/music-assistant/server/pull/7452",
    "title": "Player split: create player settings when a player registers",
    "author": "marcelveldt",
@@ -19074,7 +19074,7 @@
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "marcelveldt (draft)",
+   "waiting_on": "merged",
    "size": "M",
    "code": 97,
    "add": 351,
@@ -19109,7 +19109,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "merged",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -20069,7 +20069,7 @@
    "stacked": false,
    "tldr": "Some HLS radio stations stop after a short time, like MausRadio and SWR3 from ARD Sounds. Sonos reports `ERROR_BUFFERING`, sometimes after less than a minute. Their CDN can hold a segment for about 9 seconds and then answer with HTTP 503 or 504. The 5 second head start (#7139) doesn't cover this, and ffmpeg skips a segment after an error, so that audio is lost. - The input starts as many segments behind live as 23 se",
    "summary": "",
-   "whats_new": "kieranhogg (BBC Sounds provider) asked for a way to read the stall/offset value so the Sounds live-rewind clock maths can adjust once this lands. Not a blocker.",
+   "whats_new": "jordiboehme answered kieranhogg: HLS radio now starts about 23 s behind live (whole segments, at least 3) and the real start offset is already stored; kieranhogg is happy. Still waits on your core approve.",
    "blockers": [
     "Bot-MArley requested changes"
    ],
@@ -20085,7 +20085,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "commented",
    "suggested_fix": null,
    "lab": {
     "head": "cfad04936",
@@ -20229,17 +20229,17 @@
   {
    "repo": "server",
    "number": 7393,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-09T09:08:20Z",
    "url": "https://github.com/music-assistant/server/pull/7393",
    "title": "Keep disliked genres out of radio, mixes and autoplay",
    "author": "apophisnow",
    "draft": false,
    "verdict": "ready",
    "assessment": "approve",
-   "status": "attention",
+   "status": "waiting",
    "attention_since": "2026-11-05T22:05:56Z",
-   "waiting_on": "you: approve (core)",
+   "waiting_on": "merged",
    "size": "M",
    "code": 118,
    "add": 261,
@@ -20252,7 +20252,7 @@
    "stacked": false,
    "tldr": "Disliking a genre now keeps it out of the music picked for you: dynamic playlists and radio stations, and every Autoplay mode. These already leave out the tracks, albums and artists you disliked, and now leave out the tracks in a genre you disliked as well. Albums, playlists and tracks you queue yourself are not filtered. - A track is in the genres it is linked to, as in the genre's track listing. A track without gen",
    "summary": "",
-   "whats_new": "New since 11-03.",
+   "whats_new": "Merged 09:08Z, while your chip on reusing the existing dislike state was still running.",
    "blockers": [
     "Core change, so you approve"
    ],
@@ -20268,7 +20268,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "merged",
    "suggested_fix": null,
    "lab": {
     "head": "8002b86e2",
@@ -21198,6 +21198,66 @@
     "recheck_head": null
    },
    "del": 3
+  },
+  {
+   "state": "merged",
+   "closed_at": "2026-11-09T10:00:00Z",
+   "stacked": false,
+   "related_prs": [],
+   "unaddressed_comments": [],
+   "prompt": "",
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "auto_approved": {
+    "at": "2026-11-09 11:02 CET",
+    "note": "Dependabot action bump, CI green; merged directly (already mergeable)."
+   },
+   "add": 1,
+   "del": 1,
+   "attention_since": null,
+   "findings": [],
+   "suggested_fix": null,
+   "backport": null,
+   "copilot": null,
+   "copilot_reviewed_head": false,
+   "copilot_note": "",
+   "summary": "",
+   "whats_new": "Opened 09:11Z.",
+   "core_touched": false,
+   "providers_touched": [],
+   "ci_fail": false,
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "blockers": [],
+   "gpt_sol": "not run (release PR)",
+   "assessment": "approve",
+   "verdict": "ready",
+   "repo": "models",
+   "number": 460,
+   "url": "https://github.com/music-assistant/models/pull/460",
+   "title": "Build(deps): Bump peter-evans/create-pull-request from 8.1.1",
+   "author": "app/dependabot",
+   "draft": false,
+   "status": "waiting",
+   "waiting_on": "merged",
+   "size": "S",
+   "code": 2,
+   "ci": "green",
+   "merge_state": "",
+   "head_sha": "",
+   "tldr": "Dependabot action bump in release.yml, CI green; merged by the routine.",
+   "changed_now": "auto-approved",
+   "marley": {
+    "verdict": "none",
+    "reviewed_head": false,
+    "open_threads": 0,
+    "review_url": "",
+    "note": "",
+    "recheck_head": null
+   },
+   "lab": null
   }
  ]
 }
