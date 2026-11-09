@@ -110,6 +110,8 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 760px; table-l
 .chip .t { font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
 .chip .m { grid-column: 2; display: flex; flex-wrap: wrap; gap: 3px 6px; font-size: 11px; color: var(--muted-foreground); }
 .chip.late { border-color: var(--destructive); background: color-mix(in srgb, var(--destructive) 12%, var(--card)); }
+.chip[data-d="1"] { opacity: .45; }
+.chip[data-d="1"]:hover { opacity: .85; }
 .c-ready { --c: var(--success); } .c-almost { --c: var(--warning); } .c-not_ready { --c: var(--destructive); } .c-auto { --c: var(--info); }
 .tag { font: 500 10px var(--font-mono); padding: 0 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: .03em; color: var(--tc, var(--muted-foreground)); background: color-mix(in srgb, var(--tc, var(--muted-foreground)) 14%, transparent); white-space: nowrap; }
 .tag.size { --tc: var(--foreground); }
