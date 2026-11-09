@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-09T14:00:00+01:00",
- "dev": "f9bc450f7",
- "run_note": "#7081 (party skip votes) merged; you closed #7115 and #7116. marcelveldt's #7451 (pause-to-stop timeout) is out of draft and Bot-MArley clean, lab queue+streams green. Simanias asked you and marcelveldt for an opinion on #7224, and took #7369 out of draft. dmoo500 pushed models#459 after your review.",
+ "last_run": "2026-11-09T15:00:00+01:00",
+ "dev": "e87ebdcc0",
+ "run_note": "I auto-approved #7464 (Raumfeld tests). maximmaxim345's #7223 is out of draft, Bot-MArley clean and lab Sendspin green, waiting on your approve with frontend#3051. Simanias moved the #7224 fix into create_didl_metadata as you asked (OzGav LGTM). dmoo500 fixed models#459 per your review. #7411 and your #7461 merged.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -281,8 +281,8 @@
   {
    "repo": "server",
    "number": 6762,
-   "state": "open",
-   "closed_at": null,
+   "state": "closed",
+   "closed_at": "2026-11-09T13:48:19Z",
    "auto_approved": null,
    "stacked": false,
    "related_prs": [],
@@ -343,8 +343,8 @@
     "summary": "Asks what maintenance burden you expect, offers to take codeownership, and notes MA has no way to ship third-party providers outside this repo."
    },
    "reporter_reply": null,
-   "waiting_on": "stellar-aria",
-   "changed_now": ""
+   "waiting_on": "closed",
+   "changed_now": "closed"
   },
   {
    "repo": "server",
@@ -4297,7 +4297,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "merged",
-   "changed_now": "merged",
+   "changed_now": "",
    "gpt_sol": "1 critical (same lock race), 1 problem (last item with repeat off reports skipped and drops votes)",
    "support": null,
    "fix_thread": "t3-thread://v1/mcp:c1bbcffb-2367-4774-b433-5cc5bef133c2",
@@ -4483,7 +4483,7 @@
     }
    ],
    "waiting_on": "closed",
-   "changed_now": "closed"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -4535,7 +4535,7 @@
     }
    ],
    "waiting_on": "closed",
-   "changed_now": "closed"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -10383,15 +10383,15 @@
    "number": 7224,
    "state": "open",
    "closed_at": null,
-   "title": "Raumfeld: start a flow at least 8 s before the end of its first track",
+   "title": "Give a DIDL player the whole track's duration for a flow stream",
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7224",
    "draft": false,
    "verdict": "almost",
    "assessment": "comment",
-   "status": "attention",
+   "status": "waiting",
    "attention_since": "2026-10-27T05:49:00Z",
-   "waiting_on": "you/marcelveldt: Simanias asked for your opinion (12:48Z)",
+   "waiting_on": "Bot-MArley review on the new head (13:50Z); then you",
    "gpt_sol": "clean",
    "size": "S",
    "code": 99,
@@ -10400,17 +10400,19 @@
    "ci": "green",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev 86be33066",
-   "head_sha": "73c7529cc",
-   "core_touched": false,
+   "head_sha": "eff6434d5",
+   "core_touched": true,
    "providers_touched": [
     "raumfeld"
    ],
    "stacked": false,
    "tldr": "Almost: the near-end restart works today, but its guard against an overriding Next/Previous reads core's private mass._tracked_timers and the \"queue_play_index_<queue>\" id string, so a core rename silently brings back the Copilot CRITICAL it fixes. Simpler: play_media already runs in the task holding the queue's re-entrant lock, so it can await play_index inline and drop the task, guard, cancel hook and faked PLAYING (patch attached, the 13 restart tests need rewriting). 279 tests pass, provider-only.",
    "summary": "Re-review of the 4 commits since 7aac457c0. e6e26c342 reads the speed from the item's extra_attributes. 73a86b538 skips a correction that rounds to 0, which would otherwise trigger the resume-position restore. ca3539098 runs the restart as its own task under get_group_and_player_lock(queue_id, strict=True) and skips it when a queue_play_index timer or a live task exists. 8224a23ac ignores a done task and the originating task. Checked against origin/dev core. next/previous are handle_play_action (they take the same lock), move current_index right away and call_later(1, play_index, task_id=queue_play_index_<q>). play_index cancels that timer at entry. call_later pops the timer before creating the task under the same id. get_player_lock is re-entrant per task. So: a Next ahead of the restart leaves a timer and the restart skips. A Next whose timer already fired leaves a live task waiting on the lock and the restart skips. A Next behind the restart runs after it. A stop, seek, play or pause hits _changes_playback and cancels the restart. I found no path that leaves the room silent for good. The failure cases are a ResourceBusyError after the 120 s strict wait (unhandled, unlike _play_next) and a cancel while the restart is already inside play_index (pause does not take the queue lock, so it aborts the play halfway). Both are narrow, and a poll corrects the faked PLAYING state. The design cost is the coupling: no other provider touches mass._tracked_timers (only profiler and diagnostics), and the guard encodes how core's next/previous schedule work. The inline alternative works because play_index, players.play_media, _handle_play_media, the sync group and the provider's play_media are all awaited in one task. The re-entrant lock lets a nested play_index run, Next/Previous/seek wait behind it like behind any play, and the provider's own optimistic PLAYING at the end of the inner play_media satisfies both wait_for_player_update calls. The precondition is that play_media is reached from the task holding the queue lock. Every core path meets it, and _play_next holds the same lock for its own queue. Copilot's latest review (8224a23ac) has no open issues, and there are no unresolved threads. Cross-PR: conflicts with #7216 in 4 player.py hunks (adjacent inserts) and the test file. After resolving, the early return in play_media sits before #7216's announcement-state reset, which is harmless.",
-   "whats_new": "Simanias asked you and marcelveldt for an opinion on the solution (OzGav wanted the fix in core).",
+   "whats_new": "Simanias did your 13:39Z ask: create_didl_metadata gives a flow stream the whole track duration (by the /flow/ url), tests in test_upnp_didl.py, Raumfeld wrapper gone. OzGav: LGTM for DIDL players; non-DIDL players (Samsung WAM, Chromecast, HA, Squeezelite, Roku) still get the short stream_duration in flow mode.",
    "blockers": [
-    "Simanias asked for your opinion on the layering (OzGav: fix stream_duration in core instead)"
+    "No Bot-MArley review on the head yet",
+    "Core change (helpers DIDL), lab gate after review",
+    "OzGav: wider non-DIDL stream_duration problem remains (follow-up)"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -10440,7 +10442,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-27 07:40 CET",
-   "changed_now": "commented",
+   "changed_now": "pushed",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -10465,12 +10467,12 @@
    "title": "Hide source-only Sendspin devices from the player menu by default",
    "author": "maximmaxim345",
    "url": "https://github.com/music-assistant/server/pull/7223",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "maximmaxim345 (draft)",
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
+   "status": "attention",
+   "attention_since": "2026-11-09T13:14:35Z",
+   "waiting_on": "you: approve (Sendspin) together with frontend#3051",
    "gpt_sol": "not run",
    "size": "S",
    "code": 0,
@@ -10487,9 +10489,10 @@
    "stacked": false,
    "tldr": "Draft, not reviewed yet.",
    "summary": "",
-   "whats_new": "Opened 09:13Z.",
+   "whats_new": "maximmaxim345 took it out of draft. Bot-MArley: nothing to change; pairing/settings access depends on frontend#3051. Lab Sendspin green.",
    "blockers": [
-    "Draft."
+    "Sendspin excluded: you approve",
+    "Lands together with frontend#3051"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -10504,10 +10507,29 @@
    "reporter_reply": null,
    "support": null,
    "fix_thread": null,
-   "related_prs": [],
+   "related_prs": [
+    "frontend#3051"
+   ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": ""
+   "changed_now": "ready for review",
+   "lab": {
+    "head": "59d46a660",
+    "areas": [
+     "sendspin"
+    ],
+    "result": "green",
+    "run_id": "20261109-140101-f006",
+    "note": ""
+   },
+   "marley": {
+    "verdict": "approved",
+    "reviewed_head": true,
+    "open_threads": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7223#pullrequestreview-5826182972",
+    "note": "Nothing to change.",
+    "recheck_head": null
+   }
   },
   {
    "repo": "server",
@@ -17840,13 +17862,13 @@
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "realroywalker: Bot-MArley's new review (3 threads)",
+   "waiting_on": "realroywalker: your 13:58Z design (Deezer only sets explicit metadata; core user setting)",
    "size": "L",
    "code": 380,
    "add": 784,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev 86be33066 in music_assistant/providers/deezer/provider.py, music_assistant/providers/deezer/streaming.py, music_assistant/providers/deezer/strings.json, music_assistant/translations/en.json",
+   "merge_state": "CONFLICT with origin/dev e87ebdcc0",
    "head_sha": "f28c8224e",
    "core_touched": false,
    "providers_touched": [
@@ -17855,10 +17877,11 @@
    "stacked": false,
    "tldr": "Adds an explicit content filter to the Deezer provider (hide everywhere or only from recommendations), with a playback guard.",
    "summary": "",
-   "whats_new": "Bot-MArley's 16:11Z recheck found the earlier points fixed, then its full review on f28c8224e asked for more: explicit audiobooks from the GW path aren't flagged, and that real parsing path needs a test (3 open threads).",
+   "whats_new": "You agreed with jdaberkow: Deezer should only set the explicit flag on media items; a core per-user setting (admin-only) decides whether explicit content plays.",
    "blockers": [
-    "3 open Bot-MArley threads (audiobook explicit flag on the GW path, tests on real parsing)",
-    "Provider vs core question (OzGav)"
+    "Your 13:58Z design comment: move the filter to core",
+    "Merge conflict with dev",
+    "3 open Bot-MArley threads"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -17883,7 +17906,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "commented",
    "suggested_fix": null,
    "del": 28,
    "lab": null
@@ -19046,7 +19069,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "reviewed",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -19162,7 +19185,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "ready for review",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "0488646ac",
@@ -19954,17 +19977,17 @@
   {
    "repo": "server",
    "number": 7411,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-09T13:18:22Z",
    "url": "https://github.com/music-assistant/server/pull/7411",
    "title": "Bump CodSpeedHQ/action from 5.6.0 to 5.6.3",
    "author": "dependabot[bot]",
    "draft": false,
    "verdict": "ready",
    "assessment": "comment",
-   "status": "attention",
+   "status": "waiting",
    "attention_since": null,
-   "waiting_on": "you: merge (approved by workflow + Bot-MArley since 11-06, no auto-merge)",
+   "waiting_on": "merged",
    "size": "S",
    "code": 2,
    "add": 1,
@@ -19993,7 +20016,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "merged",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -20520,7 +20543,7 @@
    "stacked": false,
    "tldr": "Apple Music Club, Apple Music 1 and the other live stations don't show up in Music Assistant. Search skips them and there's no way to play them. If you pay for Apple Music, that's a gap: you can play every song but not the radio. TuneIn offers these stations too, but with its own promo at the start and its own tracking. This adds them to the Apple Music provider. No core changes. It follows the same pattern as playin",
    "summary": "Fable size review 11-09: ~1,200 prod lines could be ~400-450. Biggest cuts: drop live_decrypt.py (inner ffmpeg per key with -decryption_key on the mov demuxer, via get_ffmpeg_stream), drop live_monitor.py and the event bookkeeping, reuse helpers/hls.py HLSMediaPlaylistParser and parse_m3u, share the license call with streaming.py, ProviderStreamLimitError instead of the refused-license memory, drop mirror failover and resume position, mutagen for ID3. Open question: is renew-after needed given hourly key rotation fetches a fresh license.",
-   "whats_new": "Bot-MArley's 06:16Z recheck: earlier points fixed (call_later timers and direct queue signal gone), nothing open. Lab Apple Music run green (asked by you).",
+   "whats_new": "jordiboehme: 'On it, expect the changes soon' (13:47Z).",
    "blockers": [
     "Your size review (11-09): drop live_decrypt/live_monitor, reuse hls/license helpers, ~1/3 of the code"
    ],
@@ -20786,7 +20809,7 @@
    "ci": "not checked (draft)",
    "ci_fail": false,
    "merge_state": "merge-tree clean on origin/dev f9bc450f7",
-   "head_sha": "02b01a6c5",
+   "head_sha": "03e357358",
    "core_touched": false,
    "providers_touched": [
     "raumfeld"
@@ -20794,7 +20817,7 @@
    "stacked": false,
    "tldr": "Raumfeld players now fill in the software version of their speaker in the player's device info, which was left empty. The frontend does not display that field yet; it is available through the API and in Home Assistant's diagnostics. - Every Raumfeld speaker lists a `RaumfeldDevice` with the host, at the same address as the speaker's renderer. The host model now keeps those by address (`raumfeld_device_location`). - T",
    "summary": "",
-   "whats_new": "Simanias took it out of draft at 12:49Z; Raumfeld-only. Bot-MArley has not reviewed this head yet.",
+   "whats_new": "Simanias pushed 13:51Z; Bot-MArley review pending.",
    "blockers": [
     "No Bot-MArley review on the head yet"
    ],
@@ -20810,7 +20833,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "ready for review",
+   "changed_now": "pushed",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -20922,7 +20945,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "commented",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -20977,7 +21000,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "reviewed",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -21128,11 +21151,11 @@
    "title": "Add dated listening history entries",
    "author": "dmoo500",
    "draft": false,
-   "verdict": "almost",
+   "verdict": "ready",
    "assessment": "approve",
-   "status": "waiting",
+   "status": "attention",
    "attention_since": "2026-11-09T06:14:00Z",
-   "waiting_on": "you: re-review dmoo500's 12:59Z push",
+   "waiting_on": "you: re-review (your changes-requested is on the old commit)",
    "size": "S",
    "code": 35,
    "add": 33,
@@ -21145,10 +21168,9 @@
    "stacked": false,
    "tldr": "Models half of dmoo500's item-specific listening history (server draft #7457): adds dated listening history entries.",
    "summary": "",
-   "whats_new": "You requested changes at 12:33Z (@dataclass on the subclass drops ItemMapping's URI-based __hash__/__eq__); dmoo500 pushed 085c0d18e at 12:59Z.",
+   "whats_new": "Bot-MArley: PlayHistoryItem now uses eq=False, keeping ItemMapping's URI-based equality and hash as you asked, with tests. Nothing else to change.",
    "blockers": [
-    "Your CHANGES_REQUESTED review; new push to check",
-    "CI pending"
+    "Your CHANGES_REQUESTED review is on the previous commit"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -21164,7 +21186,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "pushed",
+   "changed_now": "reviewed",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -21300,8 +21322,8 @@
   {
    "repo": "server",
    "number": 7461,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-09T13:04:49Z",
    "url": "https://github.com/music-assistant/server/pull/7461",
    "title": "Fix Sendspin group going silent after a leader switch",
    "author": "MarvinSchenkel",
@@ -21310,7 +21332,7 @@
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "you (draft)",
+   "waiting_on": "merged",
    "size": "S",
    "code": 12,
    "add": 76,
@@ -21342,7 +21364,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "merged",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -21364,11 +21386,11 @@
    "title": "Raumfeld: test connecting to the host, registering rooms and the setup flow",
    "author": "Simanias",
    "draft": false,
-   "verdict": "almost",
-   "assessment": "comment",
+   "verdict": "ready",
+   "assessment": "approve",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "Bot-MArley review (out of draft 12:49Z)",
+   "waiting_on": "merge queue (auto-approved)",
    "size": "S",
    "code": 0,
    "add": 335,
@@ -21384,8 +21406,73 @@
    "tldr": "Tests only: Raumfeld host connection and room registration.",
    "summary": "",
    "whats_new": "Opened 12:55Z.",
+   "blockers": [],
+   "findings": [],
+   "unaddressed_comments": [],
+   "prompt": "",
+   "backport": null,
+   "auto_approved": {
+    "at": "2026-11-09 15:02 CET",
+    "note": "Tests only (raumfeld), Bot-MArley green; auto-merge on (merge queue)."
+   },
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": "auto-approved",
+   "suggested_fix": null,
+   "lab": {
+    "head": "6c99e3d54",
+    "areas": [],
+    "result": "skipped",
+    "run_id": "",
+    "note": "tests only"
+   },
+   "marley": {
+    "verdict": "approved",
+    "reviewed_head": true,
+    "open_threads": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7464#pullrequestreview-5826774893",
+    "note": "",
+    "recheck_head": null
+   },
+   "del": 2
+  },
+  {
+   "repo": "server",
+   "number": 7467,
+   "state": "open",
+   "closed_at": null,
+   "url": "https://github.com/music-assistant/server/pull/7467",
+   "title": "Report the Sendspin playback position from when the audio is heard",
+   "author": "ivbeck",
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "approve",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "Bot-MArley first review (opened 13:54Z)",
+   "size": "M",
+   "code": 200,
+   "add": 388,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev f9bc450f7",
+   "head_sha": "cc7435932",
+   "core_touched": false,
+   "providers_touched": [
+    "sendspin"
+   ],
+   "stacked": false,
+   "tldr": "Sendspin: report the playback position from when the audio is actually heard (timeline anchor rebase, resume extrapolation).",
+   "summary": "",
+   "whats_new": "Opened 13:54Z.",
    "blockers": [
-    "No Bot-MArley review on the head yet"
+    "No Bot-MArley review yet",
+    "Sendspin excluded: you approve"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -21401,13 +21488,7 @@
    "reviewed_at": null,
    "changed_now": "new",
    "suggested_fix": null,
-   "lab": {
-    "head": "6c99e3d54",
-    "areas": [],
-    "result": "skipped",
-    "run_id": "",
-    "note": "tests only"
-   },
+   "lab": null,
    "marley": {
     "verdict": "none",
     "reviewed_head": false,
@@ -21416,7 +21497,123 @@
     "note": "",
     "recheck_head": null
    },
-   "del": 2
+   "del": 18
+  },
+  {
+   "repo": "server",
+   "number": 7466,
+   "state": "open",
+   "closed_at": null,
+   "url": "https://github.com/music-assistant/server/pull/7466",
+   "title": "Fix the first Music Quiz round stuttering at the start",
+   "author": "marcelveldt",
+   "draft": true,
+   "verdict": null,
+   "assessment": "comment",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "marcelveldt (draft)",
+   "size": "S",
+   "code": 12,
+   "add": 76,
+   "ci": "not checked (draft)",
+   "ci_fail": false,
+   "merge_state": "not checked (draft)",
+   "head_sha": "c2ad1726e",
+   "core_touched": false,
+   "providers_touched": [
+    "filesystem_cloud",
+    "webdav"
+   ],
+   "stacked": false,
+   "tldr": "Draft by marcelveldt.",
+   "summary": "",
+   "whats_new": "New since 11-03.",
+   "blockers": [
+    "Draft."
+   ],
+   "findings": [],
+   "unaddressed_comments": [],
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": "new",
+   "suggested_fix": null,
+   "lab": null,
+   "marley": {
+    "verdict": "none",
+    "reviewed_head": false,
+    "open_threads": 0,
+    "review_url": "",
+    "note": "",
+    "recheck_head": null
+   },
+   "del": 3
+  },
+  {
+   "repo": "server",
+   "number": 7465,
+   "state": "open",
+   "closed_at": null,
+   "url": "https://github.com/music-assistant/server/pull/7465",
+   "title": "Player split: scenario harness for the player lifecycle",
+   "author": "marcelveldt",
+   "draft": true,
+   "verdict": null,
+   "assessment": "comment",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "marcelveldt (draft)",
+   "size": "S",
+   "code": 12,
+   "add": 76,
+   "ci": "not checked (draft)",
+   "ci_fail": false,
+   "merge_state": "not checked (draft)",
+   "head_sha": "c2ad1726e",
+   "core_touched": false,
+   "providers_touched": [
+    "filesystem_cloud",
+    "webdav"
+   ],
+   "stacked": false,
+   "tldr": "Draft by marcelveldt.",
+   "summary": "",
+   "whats_new": "New since 11-03.",
+   "blockers": [
+    "Draft."
+   ],
+   "findings": [],
+   "unaddressed_comments": [],
+   "prompt": "",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [],
+   "reviewed_now": false,
+   "reviewed_at": null,
+   "changed_now": "new",
+   "suggested_fix": null,
+   "lab": null,
+   "marley": {
+    "verdict": "none",
+    "reviewed_head": false,
+    "open_threads": 0,
+    "review_url": "",
+    "note": "",
+    "recheck_head": null
+   },
+   "del": 3
   }
  ]
 }
