@@ -167,6 +167,10 @@ You are allowed to auto-approve a PR in the server repository and merge it if:
 These important providers are excluded from auto approval: Sonos, AirPlay, Spotify, Sendspin,
 Squeezelite.
 
+Never auto-approve a PR that changes a default for existing installs: a default config value, codec, mode
+or behaviour users get without opting in. Card it for Marvin instead. #7440 switched existing MusicCast
+installs from FLAC to MP3 and was reverted in #7458.
+
 When you auto-approve the PR:
 
 - Approve it with a message that thanks the original author by tagging their GitHub handle with a fun
