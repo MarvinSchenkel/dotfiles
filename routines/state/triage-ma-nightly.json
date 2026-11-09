@@ -1,23 +1,23 @@
 {
   "thread_id": "mcp:dba76884-e5e6-48aa-aa88-914e09fa4301",
   "scheduled_task_id": "scheduled-task:command:mcp:ece76a14-da84-4b32-9dc2-e104d78297bd:schedule-task:triage-ma-nightly-setup-2026-10-21",
-  "last_run_end": "2026-11-08T05:00:17+01:00",
-  "last_run_summary": "Run 2026-11-08: busy healthy day; 11-07 nightly not installed (reboot_required still open); unavailable YTM track logs 3 skip warnings per preload pass; Supervisor + Core restarts recovered.",
+  "last_run_end": "2026-11-09T05:00:17+01:00",
+  "last_run_summary": "Run 2026-11-09: MA healthy; WiiM Keuken Wi-Fi unstable 17:34-22:33 (16 Cast drops, 3 unavailable spells); add-on 2 nightlies behind, host up 51 days with reboot_required open.",
   "known": {
     "wiim:native-join-stops-leader": {
       "title": "WiiM native join re-GET rewinds Mancave",
       "severity": "low",
       "first_seen": "2026-10-08",
-      "seen": 15,
-      "last_seen": "2026-11-08",
+      "seen": 16,
+      "last_seen": "2026-11-09",
       "fix": "server#7157 in 2026102303: resumed 5/5 first-join restarts on 10-23"
     },
     "airplay:appletv-mrp-companion-reconnect": {
       "title": "Apple TV MRP + Companion reconnect loop",
       "severity": "medium",
       "first_seen": "2026-10-20",
-      "seen": 19,
-      "last_seen": "2026-11-08"
+      "seen": 20,
+      "last_seen": "2026-11-09"
     },
     "remote_access.gateway._bridge_websocket:ConnectionRefusedError@shutdown": {
       "title": "Shutdown noise: remote access bridges to unloaded Sendspin",
@@ -30,15 +30,15 @@
       "title": "Sendspin non-compliant client warnings",
       "severity": "low",
       "first_seen": "2026-10-08",
-      "seen": 19,
-      "last_seen": "2026-11-08"
+      "seen": 20,
+      "last_seen": "2026-11-09"
     },
     "remote_access:libjuice-turn-403": {
       "title": "libjuice TURN CreatePermission 403 and send failures",
       "severity": "low",
       "first_seen": "2026-10-21",
-      "seen": 16,
-      "last_seen": "2026-11-08"
+      "seen": 17,
+      "last_seen": "2026-11-09"
     },
     "helpers.images:dlna-un_known-404": {
       "title": "DLNA un_known artwork 404 at startup",
@@ -73,10 +73,10 @@
     },
     "pychromecast:socket-connect-retry": {
       "first_seen": "2026-10-20",
-      "seen": 17,
+      "seen": 18,
       "title": "Overnight Cast socket drops (Amp, Living Room TV, Kantoor)",
       "severity": "low",
-      "last_seen": "2026-11-08"
+      "last_seen": "2026-11-09"
     },
     "remote_access:signaling-client-not-found": {
       "first_seen": "2026-10-22",
@@ -108,8 +108,8 @@
     },
     "wiim.sdk:mini-http-upnp-timeout": {
       "first_seen": "2026-10-23",
-      "seen": 12,
-      "last_seen": "2026-11-08",
+      "seen": 13,
+      "last_seen": "2026-11-09",
       "title": "WiiM Mini unreachable for ~10 s",
       "severity": "low"
     },
@@ -143,8 +143,8 @@
     },
     "asyncio.shield:abandoned-pyatv-connect(control_player._pyatv_connect)": {
       "first_seen": "2026-10-26",
-      "seen": 2,
-      "last_seen": "2026-11-07",
+      "seen": 3,
+      "last_seen": "2026-11-09",
       "title": "Abandoned Apple TV connects log ERROR tracebacks on Python 3.14",
       "severity": "low"
     },
@@ -192,8 +192,8 @@
     },
     "remote_access:signaling-pong-timeout": {
       "first_seen": "2026-10-29",
-      "seen": 3,
-      "last_seen": "2026-11-05",
+      "seen": 4,
+      "last_seen": "2026-11-09",
       "title": "Signaling websocket missed a PONG",
       "severity": "low"
     },
@@ -213,11 +213,11 @@
     },
     "addon:nightly-auto-update-stalled": {
       "first_seen": "2026-11-01",
-      "seen": 6,
-      "last_seen": "2026-11-08",
+      "seen": 7,
+      "last_seen": "2026-11-09",
       "title": "Nightly add-on not auto-updating",
       "severity": "low",
-      "status": "11-07 nightly not installed; reboot_required still open; supervisor restarted 11-07 14:15 (not a host reboot)"
+      "status": "1107 + 1108 not installed; host uptime 51 days, reboot_required open"
     },
     "sonos:error-no-content-unprompted": {
       "first_seen": "2026-11-02",
@@ -250,10 +250,10 @@
     "addon_info_over_ssh": "works (2026-11-03): sudo docker exec hassio_cli ha apps info d5369777_music_assistant_nightly --raw-json"
   },
   "health": {
-    "rss_mb": 1790.3,
-    "rss_anon_mb": 1107.9,
-    "uptime_seconds": 159675,
-    "event_loop_lag_ms": 0.8,
+    "rss_mb": 1504.6,
+    "rss_anon_mb": 985.8,
+    "uptime_seconds": 246074,
+    "event_loop_lag_ms": 2.2,
     "version": "2.11.0.dev2026110604"
   }
 }
