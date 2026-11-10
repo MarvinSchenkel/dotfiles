@@ -146,6 +146,16 @@ Marvin's last comment. His own PRs get none, unless a reporter reply below sets 
 
 Set `author_replied` when the author of a PR has replied to any of Marvin's questions or comments on it.
 
+Every run, check every open PR, drafts included, for a human comment that waits on Marvin: it mentions
+him, replies in a thread he is in, is the author answering him, or asks the reviewers something nobody
+answered. Only comments after Marvin's last comment or review count, and his `@Bot-MArley` pings don't.
+`~/.claude-teamB/routine-reports/prr-tools/asks.py` lists the candidates in `data/asks.json`. Read them and
+judge: a maintainer asking the author, or a status update nobody has to answer, doesn't count. Set
+`needs_reply: {at, who, url, summary}` with a one-line summary of what they want from Marvin, set `status`
+to `attention` and `attention_since` to the first such comment. Clear `needs_reply` once Marvin has
+commented or reviewed after it. The report colours these cards orange, never dims them, even as drafts,
+and the digest lists them first on every run.
+
 ## Reporter replies on my PRs
 
 For every open PR authored by MarvinSchenkel, drafts included, find the support issues it links to in the
@@ -158,18 +168,11 @@ the run summary. Track this per PR in `support`.
 
 ## Auto approval
 
-You are allowed to auto-approve a PR in the server repository and merge it if:
+You are not allowed to auto approve any PRs in the server repository. Maintainers have the ability to merge PRs by asking Bot MArley after he has approved the PR. 
 
-- The PR is ready to merge: Bot-MArley approved the current head and none of its threads is open.
-- The PR is S, M or L.
-- It does not touch any core code, meaning the diff is scoped to `providers/*` and the related tests only.
-
-These important providers are excluded from auto approval: Sonos, AirPlay, Spotify, Sendspin,
-Squeezelite.
-
-Never auto-approve a PR that changes a default for existing installs: a default config value, codec, mode
-or behaviour users get without opting in. Card it for Marvin instead. #7440 switched existing MusicCast
-installs from FLAC to MP3 and was reverted in #7458.
+Auto approval for other repositories: only dependabot or bump PRs that are safe to merge. Our own packages,
+for example music-assistant-models, can be auto-merged. Bot pin bumps in the server repo are approved and
+merged by the repo's own workflow: card them as ready and waiting.
 
 When you auto-approve the PR:
 
@@ -184,10 +187,6 @@ When you auto-approve the PR:
 - Record `auto_approved: {at, note}` on the entry.
 
 Marvin cannot approve his own PRs, so never auto-approve them.
-
-Auto approval for other repositories: only dependabot or bump PRs that are safe to merge. Our own packages,
-for example music-assistant-models, can be auto-merged. Bot pin bumps in the server repo are approved and
-merged by the repo's own workflow: card them as ready and waiting.
 
 ## Report
 
@@ -347,6 +346,7 @@ A reply that changes the state writes it back and commits it the same way, with 
       "backport": { "rec": true, "why": "" },
       "auto_approved": { "at": "2026-10-21 07:20 CEST", "note": "" },
       "author_replied": { "at": "", "url": "", "summary": "" },
+      "needs_reply": { "at": "", "who": "", "url": "", "summary": "" },
       "reporter_reply": { "issue": "support#6731", "author": "", "at": "", "url": "", "summary": "" },
       "support": [ { "issue": "support#6731", "my_last_comment_at": "", "test_asked_at": "" } ],
       "fix_thread": "link to the launched thread",
@@ -357,7 +357,7 @@ A reply that changes the state writes it back and commits it the same way, with 
 }
 ```
 
-`posted`, `pushed`, `author_replied`, `reporter_reply`, `support` and `fix_thread` are null or absent until
+`posted`, `pushed`, `author_replied`, `needs_reply`, `reporter_reply`, `support` and `fix_thread` are null or absent until
 they apply. Set `reviewed_now` only on PRs reviewed in the current run and clear it on the rest.
 `waiting_on` is a short string for the digest column. Entries with `state` merged or closed
 and `closed_at` more than 30 days old are dropped at the start of a run.

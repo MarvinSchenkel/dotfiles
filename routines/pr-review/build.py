@@ -29,10 +29,10 @@ TZ_NAMES = {"CEST": 2, "CET": 1, "UTC": 0}
 
 THEME = """
 :root { --foreground: #18201d; --muted-foreground: #5b6863; --border: #d9e0dc; --card: #ffffff; --card-foreground: #18201d;
-  --background: #f4f6f5; --accent: #eaefec; --destructive: #b03c2a; --warning: #a66a12; --success: #23784a; --info: #2c5e8c;
+  --background: #f4f6f5; --accent: #eaefec; --destructive: #b03c2a; --warning: #a66a12; --success: #23784a; --info: #2c5e8c; --ask: #c2410c;
   --radius: 6px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif; --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace; }
 @media (prefers-color-scheme: dark) { :root { --foreground: #e4eae7; --muted-foreground: #95a39d; --border: #2c3632; --card: #1a211e;
-  --card-foreground: #e4eae7; --background: #121715; --accent: #222b27; --destructive: #ec7e6b; --warning: #e2a64a; --success: #5cc48a; --info: #7fb0de; } }
+  --card-foreground: #e4eae7; --background: #121715; --accent: #222b27; --destructive: #ec7e6b; --warning: #e2a64a; --success: #5cc48a; --info: #7fb0de; --ask: #fb923c; } }
 """
 
 PAGE = """
@@ -62,6 +62,8 @@ td.s b { display: inline-block; margin: 1px 0; white-space: nowrap; }
 tr.g th { padding-top: 10px; color: var(--foreground); text-transform: none; letter-spacing: 0; font-size: 12px; border-bottom-color: var(--c); }
 tr.l td { background: color-mix(in srgb, var(--destructive) 13%, transparent); }
 tr.l td:first-child { box-shadow: inset 3px 0 var(--destructive); }
+tr.ask td { background: color-mix(in srgb, #f97316 15%, transparent); }
+tr.ask td:first-child { box-shadow: inset 3px 0 #f97316; }
 td.n { font-family: var(--font-mono); font-size: 12px; }
 b { font: 600 10px var(--font-mono); padding: 0 5px; border-radius: 3px; text-transform: uppercase; color: var(--c, var(--muted-foreground)); background: color-mix(in srgb, var(--c, var(--muted-foreground)) 14%, transparent); }
 .r { --c: var(--success); } .a { --c: var(--warning); } .x { --c: var(--destructive); } .i { --c: var(--info); }
@@ -110,6 +112,7 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 760px; table-l
 .chip .t { font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
 .chip .m { grid-column: 2; display: flex; flex-wrap: wrap; gap: 3px 6px; font-size: 11px; color: var(--muted-foreground); }
 .chip.late { border-color: var(--destructive); background: color-mix(in srgb, var(--destructive) 12%, var(--card)); }
+.chip.ask { --c: var(--ask); border-color: var(--ask); background: color-mix(in srgb, var(--ask) 14%, var(--card)); }
 .chip[data-d="1"] { opacity: .45; }
 .chip[data-d="1"]:hover { opacity: .85; }
 .c-ready { --c: var(--success); } .c-almost { --c: var(--warning); } .c-not_ready { --c: var(--destructive); } .c-auto { --c: var(--info); }
@@ -117,6 +120,7 @@ table.matrix { border-collapse: collapse; width: 100%; min-width: 760px; table-l
 .tag.size { --tc: var(--foreground); }
 .tag.ok { --tc: var(--success); } .tag.warn { --tc: var(--warning); } .tag.bad { --tc: var(--destructive); } .tag.info { --tc: var(--info); }
 .tag.late { color: var(--card); background: var(--destructive); }
+.tag.ask { color: var(--card); background: var(--ask); }
 dialog.pr { width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--border); border-top: 3px solid var(--c); border-radius: var(--radius); background: var(--card); color: var(--card-foreground); overflow: auto; }
 dialog.pr::backdrop { background: rgb(0 0 0 / .45); }
 .rh { position: sticky; top: 0; z-index: 1; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; background: var(--card); border-bottom: 1px solid var(--border); }
@@ -126,7 +130,7 @@ dialog.pr::backdrop { background: rgb(0 0 0 / .45); }
 .next { border-radius: var(--radius); padding: 10px 14px; border-left: 4px solid var(--nc); background: color-mix(in srgb, var(--nc) 10%, transparent); display: flex; flex-direction: column; gap: 6px; }
 .next .nt { font-size: 15px; font-weight: 600; color: var(--foreground); }
 .next ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
-.t-ok { --nc: var(--success); } .t-warn { --nc: var(--warning); } .t-bad { --nc: var(--destructive); } .t-info { --nc: var(--info); } .t-muted { --nc: var(--muted-foreground); }
+.t-ok { --nc: var(--success); } .t-warn { --nc: var(--warning); } .t-bad { --nc: var(--destructive); } .t-info { --nc: var(--info); } .t-muted { --nc: var(--muted-foreground); } .t-ask { --nc: var(--ask); }
 .cmds { display: flex; flex-wrap: wrap; gap: 6px; }
 .cmd { font: 500 12px var(--font-mono); padding: 3px 9px; border-radius: var(--radius); border: 1px solid color-mix(in srgb, var(--nc) 50%, var(--border)); background: var(--card); color: var(--foreground); cursor: pointer; }
 .cmd:hover { border-color: var(--nc); }
@@ -262,10 +266,10 @@ def _page(state: dict, now: datetime) -> str:
     cells: dict = {(r, c): [] for r, _, _ in ROWS for c, _, _ in COLS}
     for p in prs:
         col = _col(p, now)
-        row = "attention" if col == "auto" else (p.get("status") if p.get("status") in ("attention", "waiting") else "attention")
+        row = "attention" if col == "auto" or _asks_you(p) else (p.get("status") if p.get("status") in ("attention", "waiting") else "attention")
         cells[(row, col)].append(p)
     for items in cells.values():
-        items.sort(key=lambda p: (bool(p.get("draft")), not p.get("reviewed_now"), -int(p["number"])))
+        items.sort(key=lambda p: (not _asks_you(p), bool(p.get("draft")), not p.get("reviewed_now"), -int(p["number"])))
     ordered = [p for r, _, _ in ROWS for c, _, _ in COLS for p in cells[(r, c)]]
 
     repos = sorted({p.get("repo") or "server" for p in prs if p.get("state", "open") == "open"}, key=lambda r: (r != "server", r))
@@ -283,7 +287,7 @@ def _page(state: dict, now: datetime) -> str:
     controls = (
         '<div class="controls"><input id="q" type="search" placeholder="Filter by PR number, repo, title, author or provider" '
         'aria-label="Filter PRs"><label><input type="checkbox" id="hd"> Hide drafts</label>'
-        '<span class="legend">Red cards have waited on you for a week or more. Size counts changed lines of code, '
+        '<span class="legend">Orange cards have a question or reply waiting on you, drafts included. Red cards have waited on you for a week or more. Size counts changed lines of code, '
         "without tests, icons, translations and lockfiles.</span></div>"
     )
     thead = "".join(f'<th><span class="dot" style="--c:var(--{v})"></span>{escape(label)}</th>' for _, label, v in COLS)
@@ -324,8 +328,11 @@ def _digest(state: dict, now: datetime, title_len: int) -> str:
     late = sum(1 for p in open_prs if (_wait_days(p, now) or 0) >= 7)
     if late:
         tallies += f'<span style="--c:var(--destructive)">{late} over the 1 week SLA</span>'
-    changed = [p for p in open_prs if p.get("changed_now") or p.get("reviewed_now")]
-    changed.sort(key=lambda p: (p.get("status") != "attention", -(_wait_days(p, now) or 0), -int(p["number"])))
+    asks = sum(1 for p in open_prs if _asks_you(p))
+    if asks:
+        tallies += f'<span style="--c:#f97316">{asks} waiting on your reply</span>'
+    changed = [p for p in open_prs if p.get("changed_now") or p.get("reviewed_now") or _asks_you(p)]
+    changed.sort(key=lambda p: (not _asks_you(p), p.get("status") != "attention", -(_wait_days(p, now) or 0), -int(p["number"])))
     if changed:
         rows = "".join(_digest_row(p, now, title_len) for p in changed)
         table = (
@@ -372,10 +379,11 @@ def _digest_row(p: dict, now: datetime, title_len: int) -> str:
     if change:
         state += f' <b class="i">{escape(_cut(str(change), 20))}</b>'
     mv, mv_cls = _marley_short(p)
-    waiting = p.get("waiting_on") or ("you" if p.get("status") == "attention" else "author")
+    ask = _asks_you(p)
+    waiting = f'you: reply to {ask.get("who", "them")}' if ask else (p.get("waiting_on") or ("you" if p.get("status") == "attention" else "author"))
     if age is not None:
         waiting += f" {age}d"
-    late = ' class="l"' if age is not None and age >= 7 else ""
+    late = ' class="ask"' if ask else (' class="l"' if age is not None and age >= 7 else "")
     return (
         f'<tr{late}><td class="n"><a href="{escape(p.get("url", ""))}">'
         f'{escape(_label(p))}</a></td><td class="t">{escape(_cut(p.get("title", ""), title_len), quote=False)} '
@@ -428,9 +436,12 @@ def _chip(p: dict, now: datetime) -> str:
         if x
     )
     meta = f"<span>{escape(p.get('author', ''))}</span>" + (f"<span>{fs}</span>" if fs else "") + "".join(_tags(p, now))
+    ask = _asks_you(p)
+    tone = " ask" if ask else (" late" if late else "")
+    dim = 1 if p.get("draft") and p.get("status") != "attention" and not ask else 0
     return (
-        f'<a class="chip c-{col}{" late" if late else ""}" href="#{_anchor(p)}" data-q="{escape(_q(p))}" '
-        f'data-d="{1 if p.get("draft") and p.get("status") != "attention" else 0}"><span class="n">{escape(_label(p))}</span>'
+        f'<a class="chip c-{col}{tone}" href="#{_anchor(p)}" data-q="{escape(_q(p))}" '
+        f'data-d="{dim}"><span class="n">{escape(_label(p))}</span>'
         f'<span class="t">{escape(p.get("title", ""), quote=False)}</span><span class="m">{meta}</span></a>'
     )
 
@@ -439,6 +450,9 @@ def _tags(p: dict, now: datetime) -> list:
     """Badges shown on a card and on its review header."""
     col = _col(p, now)
     tags = [f'<span class="tag size">{escape(str(p.get("size", "?")))}</span>']
+    ask = _asks_you(p)
+    if ask:
+        tags.append(f'<span class="tag ask" title="{escape(ask.get("who", ""))}: {escape(ask.get("summary", ""))}">asks you</span>')
     if p.get("draft"):
         tags.append('<span class="tag">draft</span>')
     if col == "auto":
@@ -509,6 +523,11 @@ def _next_step(p: dict, now: datetime) -> str:
         aa = p.get("auto_approved") or {}
         what = f'Auto-approved {aa.get("at", "")[:10]}, now {p.get("state")}' if aa else f'{p.get("state", "").capitalize()}'
         tone, title, bullets = "info", what, []
+    elif _asks_you(p):
+        ask = _asks_you(p)
+        tone, title = "ask", f'Reply to {ask.get("who", "them")}'
+        link = f' ([comment]({ask["url"]}))' if ask.get("url") else ""
+        bullets = [f'{ask.get("summary", "")}{link}'] + bullets
     elif p.get("status") != "attention":
         tone, title = "muted", f'Waiting on {p.get("waiting_on") or "the author"}'
     elif isinstance(rr, dict) and mine:
@@ -722,6 +741,12 @@ def _diff(patch: str) -> str:
         else:
             lines.append(text)
     return "<pre>" + "\n".join(lines) + "</pre>"
+
+
+def _asks_you(p: dict) -> dict:
+    """The comment waiting on Marvin's reply on an open PR, or an empty dict."""
+    ask = p.get("needs_reply")
+    return ask if isinstance(ask, dict) and ask and p.get("state", "open") == "open" else {}
 
 
 def _col(p: dict, now: datetime) -> str:
