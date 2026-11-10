@@ -430,7 +430,7 @@ def _chip(p: dict, now: datetime) -> str:
     meta = f"<span>{escape(p.get('author', ''))}</span>" + (f"<span>{fs}</span>" if fs else "") + "".join(_tags(p, now))
     return (
         f'<a class="chip c-{col}{" late" if late else ""}" href="#{_anchor(p)}" data-q="{escape(_q(p))}" '
-        f'data-d="{1 if p.get("draft") else 0}"><span class="n">{escape(_label(p))}</span>'
+        f'data-d="{1 if p.get("draft") and p.get("status") != "attention" else 0}"><span class="n">{escape(_label(p))}</span>'
         f'<span class="t">{escape(p.get("title", ""), quote=False)}</span><span class="m">{meta}</span></a>'
     )
 
