@@ -3505,7 +3505,8 @@
     "recommendation": "Option 1. Everything these routes serve is MA data (library art through MA's image handling, the provider's own static icons, MA-specific applet zips), so it belongs in the provider. Building it into the library adds API for a single consumer. The GET/HEAD limit and the refused built-in paths already deal with most of illright's 'unrestrained freedom' concern. Left to do: the branch conflicts with main in tests/cli_test.py, and the PR description still says handlers get every HTTP method.",
     "draft_reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@lawrence-jeff @illright Let's go with `extra_routes` as it is now. Everything these routes serve is MA data (library art, the provider's icons, the applet zips), so I'd keep that in the provider rather than build applets/icons/cover art into aioslimproto for one consumer. Since your last commit it only takes GET and HEAD, and the built-in paths are refused ([cli.py#L184](https://github.com/music-assistant/aioslimproto/blob/5fbd08fcf/aioslimproto/cli.py#L184), [cli.py#L233](https://github.com/music-assistant/aioslimproto/blob/5fbd08fcf/aioslimproto/cli.py#L233)). That's tight enough for me. If applet serving turns out to be useful outside MA we can move it into the library later.\n\nTwo things before I merge:\n- rebase on `main`, `tests/cli_test.py` conflicts\n- update the description, it still says the handlers get every HTTP method\n\nAgree on keeping HA extras out of the provider PR.",
     "posted": null
-   }
+   },
+   "fix_thread": "mcp:753182f5-ca70-4df3-babb-fa2877cfd4e2"
   },
   {
    "repo": "server",
