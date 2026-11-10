@@ -13,7 +13,7 @@
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1630",
   "scheduled-task:command:mcp:19480278-8978-4d05-bd73-b0a1765bbed1:schedule-task:issue-triage-setup-2026-10-21-1730"
  ],
- "last_run": "2026-11-10 10:30 CET",
+ "last_run": "2026-11-10 11:30 CET",
  "columns": [
   [
    "info",
@@ -105,7 +105,7 @@
    "diff": "diff --git a/aioaudiobookshelf/schema/audio.py b/aioaudiobookshelf/schema/audio.py\nindex 28ade35..16fa8af 100644\n--- a/aioaudiobookshelf/schema/audio.py\n+++ b/aioaudiobookshelf/schema/audio.py\n@@ -44,7 +44,8 @@ class AudioTrack(_BaseModel):\n class AudioFile(_BaseModel):\n     \"\"\"Audiofile.\"\"\"\n \n-    index: int\n+    # null for podcast episodes abs scanned in before its v2.21.0\n+    index: int | None = None\n     ino: str\n     metadata: FileMetadata\n     added_at: Annotated[int, Alias(\"addedAt\")]\ndiff --git a/tests/test_podcasts.py b/tests/test_podcasts.py\nnew file mode 100644\nindex 0000000..dff6ea6\n--- /dev/null\n+++ b/tests/test_podcasts.py\n@@ -0,0 +1,100 @@\n+\"\"\"Tests for decoding podcast payloads.\"\"\"\n+\n+import json\n+from typing import Any\n+\n+from aioaudiobookshelf.schema.library import LibraryItemExpandedPodcast\n+\n+_FILE_METADATA = {\n+    \"filename\": \"episode1.mp3\",\n+    \"ext\": \".mp3\",\n+    \"path\": \"/podcasts/show1/episode1.mp3\",\n+    \"relPath\": \"episode1.mp3\",\n+    \"size\": 1000,\n+    \"mtimeMs\": 1700000000000,\n+    \"ctimeMs\": 1700000000000,\n+    \"birthtimeMs\": 0,\n+}\n+\n+\n+def _episode() -> dict[str, Any]:\n+    \"\"\"Build an episode as abs sends it for a file scanned in before abs v2.21.0.\"\"\"\n+    audio_file = {\n+        \"index\": None,\n+        \"ino\": \"2\",\n+        \"metadata\": _FILE_METADATA,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"manuallyVerified\": False,\n+        \"exclude\": False,\n+        \"error\": None,\n+        \"format\": \"MP2/3 (MPEG audio layer 2/3)\",\n+        \"duration\": 60.0,\n+        \"bitRate\": 128000,\n+        \"codec\": \"mp3\",\n+        \"channels\": 2,\n+        \"channelLayout\": \"stereo\",\n+        \"mimeType\": \"audio/mpeg\",\n+    }\n+    return {\n+        \"libraryItemId\": \"item1\",\n+        \"podcastId\": \"podcast1\",\n+        \"id\": \"episode1\",\n+        \"index\": None,\n+        \"title\": \"Episode 1\",\n+        \"chapters\": [],\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"audioFile\": audio_file,\n+        \"audioTrack\": {\n+            \"index\": None,\n+            \"startOffset\": 0,\n+            \"duration\": 60.0,\n+            \"title\": \"episode1.mp3\",\n+            \"contentUrl\": \"/api/items/item1/file/2\",\n+            \"mimeType\": \"audio/mpeg\",\n+            \"metadata\": _FILE_METADATA,\n+        },\n+        \"duration\": 60.0,\n+        \"size\": 1000,\n+    }\n+\n+\n+def _podcast_item(episode: dict[str, Any]) -> bytes:\n+    item = {\n+        \"id\": \"item1\",\n+        \"ino\": \"1\",\n+        \"libraryId\": \"library1\",\n+        \"folderId\": \"folder1\",\n+        \"path\": \"/podcasts/show1\",\n+        \"relPath\": \"show1\",\n+        \"isFile\": False,\n+        \"addedAt\": 1700000000000,\n+        \"updatedAt\": 1700000000000,\n+        \"isMissing\": False,\n+        \"isInvalid\": False,\n+        \"mediaType\": \"podcast\",\n+        \"libraryFiles\": [],\n+        \"size\": 1000,\n+        \"media\": {\n+            \"id\": \"podcast1\",\n+            \"libraryItemId\": \"item1\",\n+            \"autoDownloadEpisodes\": False,\n+            \"maxEpisodesToKeep\": 0,\n+            \"maxNewEpisodesToDownload\": 3,\n+            \"tags\": [],\n+            \"size\": 1000,\n+            \"metadata\": {\"title\": \"Show 1\", \"genres\": [], \"explicit\": False},\n+            \"episodes\": [episode],\n+        },\n+    }\n+    return json.dumps(item).encode()\n+\n+\n+def test_an_episode_scanned_before_abs_2_21_has_no_audio_file_index() -> None:\n+    \"\"\"Abs never backfilled the null index of older scans, see support#6842.\"\"\"\n+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(_episode()))\n+\n+    audio_file = item.media.episodes[0].audio_file\n+    assert audio_file is not None\n+    assert audio_file.index is None\n",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-26T22:53:17Z",
@@ -197,7 +197,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-11-03T22:45:38Z",
@@ -269,7 +269,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Tommatheussen",
      "at": "2026-11-04T15:10:44Z",
@@ -359,7 +359,7 @@
    "action": "amodig confirms WAV works where FLAC fails, asks (1) is WAV the recommended workaround for HEOS, (2) do you have a HEOS/Denon contact. janoj: still short stutters on b7 (also MP3 via Jellyfin). OzGav said it'll be closed soon. Your call: answer + keep open or close.",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "janoj",
      "at": "2026-10-25T12:02:51Z",
@@ -444,7 +444,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "bdeprez",
      "at": "2026-10-13T20:17:14Z",
@@ -520,7 +520,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "jetpacktuxedo",
      "at": "2026-11-06T17:48:18Z",
@@ -606,7 +606,7 @@
    "summary": "2.10.x HA add-on, SMB Local files source with content type audiobooks, 23 books. Every nightly sync reports the same 682 chapter files of multi-file books as changed and re-parses them, though nothing on the share changed. The reporter traced it in code and would rather not attach diagnostics.",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-30T13:14:51Z",
@@ -683,7 +683,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "kiwipaulrob",
      "at": "2026-11-04T18:25:34Z",
@@ -764,7 +764,7 @@
    "action": "",
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-20T11:17:32Z",
@@ -848,7 +848,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "S-Termi",
      "at": "2026-11-10T02:13:55Z",
@@ -922,7 +922,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "cedricmoers",
      "at": "2026-11-08T17:41:59Z",
@@ -988,7 +988,7 @@
    "ask": "input",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Geweldich",
      "at": "2026-09-30T11:09:20Z",
@@ -1116,7 +1116,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "pcc0x",
      "at": "2026-11-10T00:30:43Z",
@@ -1169,7 +1169,7 @@
    },
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "marcelveldt",
      "at": "2026-08-26T21:48:58Z",
@@ -1220,7 +1220,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "skylerwshaw",
      "at": "2026-10-28T03:46:59Z",
@@ -1287,7 +1287,7 @@
    "ask": "merge",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T12:45:57Z",
@@ -1382,7 +1382,7 @@
    "ask": null,
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "cateim",
      "at": "2026-11-06T19:48:32Z",
@@ -1477,7 +1477,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "suporte640",
      "at": "2026-10-19T00:58:04Z",
@@ -1540,7 +1540,7 @@
    "ask": null,
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "GoatsAndMonkeys",
      "at": "2026-10-31T12:08:07Z",
@@ -1599,7 +1599,7 @@
    "action": "meggsico (Soloist, DEBUG): Soloist starts and MA connects, but 'debian | Music Assistant' never shows in the Spotify Android device list, so no first login. Asks whether Soloist reuses the provider's auth or how to pair when invisible. Soloist is Marcel's; your answer or hand off.",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "meggsico",
      "at": "2026-10-23T17:51:30Z",
@@ -1662,7 +1662,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Vivi92821",
      "at": "2026-10-21T14:34:40Z",
@@ -1724,7 +1724,7 @@
    "action": "Confirmed root cause: Tidal's CDN drops TLS on a DASH segment, ffmpeg's dashdec skips it (~4 s) without retry and exits 0. Design with jozefKruszynski: Tidal fetches DASH segments itself with retry (feed ffmpeg), or at least log fragment failures as WARNING. Side call: backport #6833 (log level needs a restart on 2.10.x)?",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "ChangoMunk",
      "at": "2026-11-04T18:36:55Z",
@@ -1788,7 +1788,7 @@
    "action": "",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "mnestrud",
      "at": "2026-10-29T20:57:21Z",
@@ -1846,7 +1846,7 @@
    "ask": "design",
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-10-16T21:30:55Z",
@@ -1926,7 +1926,7 @@
     "done": true
    },
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "cooljimy84",
      "at": "2026-10-28T13:01:48Z",
@@ -1999,7 +1999,7 @@
     "11-05 07:30 run: bluerush2072-stack confirms on 2.10.9 with 2x Sonos Amp Multi (4 zones, one IP per amp): play_media to zone 2-4 starts zone 1 (UPnP GetTransportInfo: port 1400 PLAYING, the zone's 1700 STOPPED). Sonos app, AirPlay and HA's soco address zones correctly."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "bluerush2072-stack",
      "at": "2026-11-04T21:20:42Z",
@@ -2065,7 +2065,7 @@
     "10-26 07:30 run: Simanias opened draft server#7180 (reproduced with a 2-speaker room); culmat's server#7183 closed. Waiting on test/merge."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-24T12:46:43Z",
@@ -2134,7 +2134,7 @@
     "10-23 14:50: curl ran 1260 s clean against DR. Moved to Reproduced, cannot fix (pending repro) with an input ask."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "BlochHansen",
      "at": "2026-10-23T11:43:27Z",
@@ -2187,7 +2187,7 @@
     "10-26 07:30 run: tagged discussion. Feature idea with a concrete proposal; design call for you."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-25T13:20:55Z",
@@ -2241,7 +2241,7 @@
     "10-27 16:30 run: GoatsAndMonkeys opened server#7247: the sync now writes synced genre names into the item's stored metadata.genres, so the genre scan cleanup keeps them. Picks 'trust the provider sync' for the design call; decide in review. Draft answer dropped."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "theomega",
      "at": "2026-10-25T14:02:42Z",
@@ -2307,7 +2307,7 @@
     "10-28 07:30 run: GoatsAndMonkeys opened draft server#7256 (generic: clear the provider's cache after a reconfigure, not YTM-only). Also linked from #6706. Draft answer dropped."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "philippecottier",
      "at": "2026-10-25T09:18:35Z",
@@ -2391,7 +2391,7 @@
     "11-03 07:30 run: robsonke fixed a missed refresh before playback and merged server#7343 (docs io#1189). Labelled Fix to be Confirmed; cherry-pick conflicts on stable, so milestone 2.11.0."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "robsonke",
      "at": "2026-11-02T18:41:33Z",
@@ -2471,7 +2471,7 @@
     "11-02 07:30 run: cateim retested a88e3cc on the AudioCast AMP: elapsed within ±0.6 s after 5 s and 20 s pauses (stock -12.6/-10.7 s); 40 s pause unchanged (+3.6/+3.7 s, goes through the 30 s queue stop). Waiting on GoatsAndMonkeys to reopen server#7273."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "cateim",
      "at": "2026-10-30T18:00:46Z",
@@ -2531,7 +2531,7 @@
     "10-26 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-10-24T11:51:31Z",
@@ -2603,7 +2603,7 @@
     "11-03 07:30 run: GoatsAndMonkeys explained the root: #5408 closes the Cast profile-3 flow 8 s after the last byte, #6782 (2.11.0b5) refuses the receiver's reconnect, so it errors, loads 'next' and the queue restarts earlier; not NP5-only, stop/restart approach dropped. dentedbread thanked, now runs the NP5 over DLNA (occasional 1-2 s skips, filed as #6970). OzGav told them to use stable if frustrated; dentedbread called that patronising and pointed out edg2s hit it on 2.10.9 stable."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-11-02T22:23:06Z",
@@ -2657,7 +2657,7 @@
     "10-27 17:30 run: Verbose log analysed: receiver app keeps playing per its own logs while the amp is silent; nothing MA can see. Your call: hand to maximmaxim345."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "tueboesen",
      "at": "2026-10-27T16:00:51Z",
@@ -2713,7 +2713,7 @@
     "10-26 09:30 run: vertex0 sent solo/solo/grouped diagnostics; the real complaint is the ESP32 dropping out when grouped. Not auto-posting a follow-up: the next step is a judgement call between two tests."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "vertex0",
      "at": "2026-10-26T08:13:47Z",
@@ -2779,7 +2779,7 @@
     "11-02 07:30 run: GoatsAndMonkeys posted a test ask (10-31) for branch fix-6865-subgroup-member-drop: frees the native follower first after a leader switch so the Sonos member stays in the sync group. No PR yet; the design it picks gets reviewed when the PR opens. Off your list until the reporter tests."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "GoatsAndMonkeys",
      "at": "2026-10-31T12:08:11Z",
@@ -2838,7 +2838,7 @@
     "10-28 13:30 run: GoatsAndMonkeys opened server#7271 for this; your pick between the options moves to the PR review. Draft answer dropped."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "riskywhat",
      "at": "2026-10-24T13:40:54Z",
@@ -2916,7 +2916,7 @@
     "11-02 07:30 run: GoatsAndMonkeys posted a test ask (10-31) for branch fix-6863-bluesound-ipv6: brackets IPv6 for pyblu and keeps a known player on its IPv4 address when it re-announces IPv6-only. No PR yet; the design it picks gets reviewed when the PR opens. Off your list until the reporter tests."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "GoatsAndMonkeys",
      "at": "2026-10-31T12:08:09Z",
@@ -2968,7 +2968,7 @@
     "10-26 11:30 run: new issue from Simanias with a precise repro and server-side proof. Follow-up to your frontend#3031."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Simanias",
      "at": "2026-10-26T09:40:39Z",
@@ -3030,7 +3030,7 @@
     "11-02 07:30 run: GoatsAndMonkeys posted a test ask (10-31) for branch fix-6896-member-start-keeps-group: a failed start on a member of a playing group leaves the group alone instead of stopping the member. No PR yet; the design it picks gets reviewed when the PR opens. Off your list until the reporter tests."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "GoatsAndMonkeys",
      "at": "2026-10-31T12:08:13Z",
@@ -3094,7 +3094,7 @@
     "11-02 12:30 run: edg2s (2.10.9, Nest Audio over Cast, flow FLAC): speaker re-requests the same flow URL mid-stream twice (~3.5 min and ~2.8 min after start), each restarts the current track, then buffering and stop. Unverified guess: the 3.5 min FLAC ≈ 24 MiB matches the Android Cast cutoff from #6748, so the Nest Audio may not be covered by the per-model HTTP profile (#7245, in 2.10.9). 2.10.9 helpers.http_profile_entry (#7245): only model 'Google Home Speaker' (and Android TV receivers, groups) default to HTTP profile 2; a Nest Audio gets profile 3. A cheap test: edg2s sets the Nest Audio's HTTP profile to 2 and replays."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "edg2s",
      "at": "2026-11-02T11:13:47Z",
@@ -3150,7 +3150,7 @@
     "10-27 07:30 run: new issue (Opus subagent triage)."
    ],
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "adamlonsdale",
      "at": "2026-10-26T17:12:16Z",
@@ -3216,7 +3216,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "david-cd",
      "at": "2026-10-27T23:51:22Z",
@@ -3281,7 +3281,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "keesvw",
      "at": "2026-11-06T20:39:16Z",
@@ -3355,7 +3355,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "mattford63",
      "at": "2026-11-02T12:10:19Z",
@@ -3418,7 +3418,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "bryanbrews",
      "at": "2026-10-29T22:57:45Z",
@@ -3471,7 +3471,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "MarvinSchenkel",
      "at": "2026-10-29T07:47:02Z",
@@ -3527,7 +3527,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "mattford63",
      "at": "2026-11-01T00:46:17Z",
@@ -3586,7 +3586,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "luucasiser",
      "at": "2026-11-01T13:17:08Z",
@@ -3637,7 +3637,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "iVolt1",
      "at": "2026-10-30T13:18:34Z",
@@ -3690,7 +3690,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Rob801801",
      "at": "2026-10-31T20:18:42Z",
@@ -3742,7 +3742,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "ViviBeri",
      "at": "2026-11-10T06:35:31Z",
@@ -3798,7 +3798,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Janos-Suto",
      "at": "2026-11-03T12:51:38Z",
@@ -3854,7 +3854,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-11-07T13:05:05Z",
@@ -3919,7 +3919,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "ChrisRawstone",
      "at": "2026-11-08T12:33:16Z",
@@ -3991,7 +3991,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "oneufus",
      "at": "2026-11-06T13:19:31Z",
@@ -4043,7 +4043,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "whitty",
      "at": "2026-11-01T10:39:51Z",
@@ -4096,7 +4096,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "whitty",
      "at": "2026-11-01T11:16:24Z",
@@ -4149,7 +4149,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "markxroberts",
      "at": "2026-10-31T14:11:48Z",
@@ -4213,7 +4213,7 @@
    ],
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "sjbeeny",
      "at": "2026-11-02T08:36:37Z",
@@ -4275,7 +4275,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-11-02T13:00:41Z",
@@ -4330,7 +4330,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "CDrummond",
      "at": "2026-11-03T05:59:42Z",
@@ -4383,7 +4383,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "fuglphoenix",
      "at": "2026-11-03T05:35:35Z",
@@ -4443,7 +4443,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "ChrisColotti",
      "at": "2026-11-04T21:39:59Z",
@@ -4501,7 +4501,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-11-02T21:17:26Z",
@@ -4561,7 +4561,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "smartmatic",
      "at": "2026-11-05T08:08:50Z",
@@ -4617,7 +4617,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-11-03T13:34:52Z",
@@ -4687,7 +4687,7 @@
    ],
    "milestone": "2.10.10",
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Boisti13",
      "at": "2026-11-03T19:39:55Z",
@@ -4754,7 +4754,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "nicksmart69",
      "at": "2026-11-03T17:42:37Z",
@@ -4816,7 +4816,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "PascalLaine1961",
      "at": "2026-11-04T09:57:50Z",
@@ -4868,7 +4868,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "marklam",
      "at": "2026-11-04T11:59:02Z",
@@ -4921,7 +4921,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Kunalb963",
      "at": "2026-11-06T21:01:32Z",
@@ -4981,7 +4981,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "El-Mar-K",
      "at": "2026-11-07T15:54:36Z",
@@ -5040,7 +5040,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-11-10T02:29:19Z",
@@ -5109,7 +5109,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "metzger100",
      "at": "2026-11-07T14:05:25Z",
@@ -5162,7 +5162,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Solobob01",
      "at": "2026-11-05T20:51:50Z",
@@ -5214,7 +5214,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "shadow38",
      "at": "2026-11-05T20:10:35Z",
@@ -5271,7 +5271,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "NaturalDevCR",
      "at": "2026-11-05T19:28:49Z",
@@ -5337,7 +5337,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Tobster77",
      "at": "2026-11-05T18:14:02Z",
@@ -5396,7 +5396,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "dentedbread",
      "at": "2026-11-06T18:32:25Z",
@@ -5457,7 +5457,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "rmaher001",
      "at": "2026-11-09T05:52:04Z",
@@ -5508,7 +5508,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "brunoamui",
      "at": "2026-11-08T21:32:38Z",
@@ -5560,7 +5560,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-11-08T19:54:52Z",
@@ -5612,7 +5612,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "JMishler",
      "at": "2026-11-08T16:22:22Z",
@@ -5670,7 +5670,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "ivbeck",
      "at": "2026-11-08T16:06:38Z",
@@ -5737,7 +5737,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-11-10T01:29:08Z",
@@ -5818,7 +5818,7 @@
    ],
    "milestone": "2.10.10",
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-11-09T11:50:42Z",
@@ -5894,7 +5894,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "jaymunro",
      "at": "2026-11-08T02:34:13Z",
@@ -5962,7 +5962,7 @@
    ],
    "milestone": "2.10.10",
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "oepoemoepoe",
      "at": "2026-11-07T23:49:44Z",
@@ -6045,7 +6045,7 @@
    ],
    "milestone": "2.11.0",
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "HarvsG",
      "at": "2026-11-07T18:49:15Z",
@@ -6136,7 +6136,7 @@
    ],
    "milestone": "2.10.10",
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Bobettemcnugget",
      "at": "2026-11-07T18:15:49Z",
@@ -6206,7 +6206,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Cr4zzyC4t",
      "at": "2026-11-09T15:39:10Z",
@@ -6259,7 +6259,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "remon1496",
      "at": "2026-11-07T10:42:15Z",
@@ -6311,7 +6311,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Paul-Vdp",
      "at": "2026-11-07T13:11:21Z",
@@ -6363,7 +6363,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Trekky12",
      "at": "2026-11-07T09:24:36Z",
@@ -6415,7 +6415,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "randybell",
      "at": "2026-11-07T01:55:12Z",
@@ -6467,7 +6467,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "glintin50",
      "at": "2026-11-06T22:07:31Z",
@@ -6519,7 +6519,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Trekky12",
      "at": "2026-11-06T21:33:46Z",
@@ -6547,16 +6547,16 @@
    "col": "pr",
    "area": "server controllers/player_queues/playback_tracker.py:734,763; music/controller.py:1300",
    "since": "2026-11-09 07:30",
-   "last": "schildbach 2026-11-10 09:30",
+   "last": "schildbach 2026-11-10 09:40",
    "gh": {
     "login": "schildbach",
     "team": false,
-    "at": "2026-11-10T09:30:01Z",
+    "at": "2026-11-10T09:40:51Z",
     "pr_open": false,
     "pr_draft": false
    },
    "summary": "schildbach, 2.11.0b8 Docker: ~4 s tracks (Coldplay 'G') stay in Never/Rarely played and never show in Recently played. Also says the diagnostics download button doesn't work.",
-   "action": "Old core rule: plays under 5 s are dropped, so very short tracks never count. OzGav is asking for logs; the drafted reply explains it needs none. Small playback-tracker fix, threshold is your call. Side bug: diagnostics download button doesn't react on their 2.11.0b8.",
+   "action": "Old core rule: plays under 5 s are dropped, so very short tracks never count. OzGav is asking for logs; the drafted reply explains it needs none. Small playback-tracker fix, threshold is your call. Download-button side bug split out to desktop-app#250.",
    "ask": "input",
    "badges": [],
    "reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\nThanks, no diagnostics needed for this one. Music Assistant ignores any track that played for less than 5 seconds (this is there to filter out skips), so a 4 second track never gets recorded as played. That's why it stays in Never / Rarely played and never shows up in Recently played.",
@@ -6568,26 +6568,27 @@
    "waiting_on": null,
    "notes": [
     "11-09 07:30 run: new issue (Opus subagent triage).",
-    "11-10 10:30 run: OzGav asked twice for logs; reporter: the diagnostics download button doesn't react (separate bug), attached a 4 s silent test file as a repro. The 5 s floor explains it without logs, so the drafted reply (no diagnostics needed) now also answers OzGav's ask."
+    "11-10 10:30 run: OzGav asked twice for logs; reporter: the diagnostics download button doesn't react (separate bug), attached a 4 s silent test file as a repro. The 5 s floor explains it without logs, so the drafted reply (no diagnostics needed) now also answers OzGav's ask.",
+    "11-10 11:30 run: reporter split the download-button problem into music-assistant/desktop-app#250 (so it's the desktop app, not the web frontend)."
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "schildbach",
-     "at": "2026-11-10T09:30:01Z",
+     "at": "2026-11-10T09:40:51Z",
      "team": false,
-     "url": "https://github.com/music-assistant/support/issues/7012#issuecomment-6763841531"
+     "url": "https://github.com/music-assistant/support/issues/7012#issuecomment-6764052696"
     },
     "reporter_new": true,
-    "team_new": true,
+    "team_new": false,
     "closed": false,
     "pr": [],
     "test_ask": null,
     "after_test_ask_reporter": false,
     "labels": [
      "triage",
-     "waiting-for-user"
+     "needs-attention"
     ]
    }
   },
@@ -6634,7 +6635,7 @@
    ],
    "milestone": "2.10.7",
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "racedo",
      "at": "2026-11-08T19:00:13Z",
@@ -6723,7 +6724,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "romany",
      "at": "2026-11-09T16:00:35Z",
@@ -6774,7 +6775,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "velisiska",
      "at": "2026-11-10T00:23:39Z",
@@ -6826,7 +6827,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "velisiska",
      "at": "2026-11-09T21:18:45Z",
@@ -6884,7 +6885,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "Aleksandar896",
      "at": "2026-11-09T18:27:59Z",
@@ -6938,7 +6939,7 @@
    ],
    "milestone": null,
    "sync": {
-    "at": "2026-11-10T09:30:10Z",
+    "at": "2026-11-10T10:30:17Z",
     "last_human": {
      "login": "OzGav",
      "at": "2026-11-09T22:34:17Z",
@@ -6956,6 +6957,37 @@
      "HEOS"
     ]
    }
+  },
+  {
+   "n": 191548,
+   "repo": "home-assistant/core",
+   "discussion": false,
+   "title": "HA core: add <Prefix>Service / <Prefix>ServiceArgument action enums to music_assistant (bronze quality-scale tracking issue)",
+   "col": "pr",
+   "area": "home-assistant/core homeassistant/components/music_assistant (services/actions)",
+   "since": "2026-11-10 11:30",
+   "last": "home-assistant bot 2026-11-10 08:49",
+   "gh": {
+    "login": "epenet",
+    "team": false,
+    "at": "2026-11-09T10:31:52Z",
+    "pr_open": false,
+    "pr_draft": false
+   },
+   "summary": "epenet's tracking issue (part of #191543): bronze integrations that register actions but lack Service/ServiceArgument enums; one PR per integration. music_assistant is the first unchecked box; code owners @music-assistant and @arturpragacz pinged.",
+   "action": "HA core chore for the MA integration: add MusicAssistantService / ServiceArgument enums for its actions (one small PR, guidelines in core#191543). Nobody has claimed it yet. Take it ourselves or leave it to epenet/arturpragacz?",
+   "ask": "input",
+   "badges": [],
+   "prs": [],
+   "diff": "",
+   "waiting_on": null,
+   "reply": "",
+   "fix": "",
+   "checked": "No MA PR on core yet (searched). Tracking issue only; not a user bug.",
+   "plan": "Small refactor PR on home-assistant/core if we take it.",
+   "notes": [
+    "11-10 11:30 run: new HA core item (tracking issue, music_assistant box unchecked)."
+   ]
   }
  ],
  "design": [
@@ -7298,6 +7330,7 @@
   7046,
   7047,
   7048,
-  7049
+  7049,
+  191548
  ]
 }
