@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-10T11:00:00+01:00",
+ "last_run": "2026-11-10T12:00:00+01:00",
  "dev": "414729e21",
- "run_note": "Quiet hour. marcelveldt merged #7491 (Music Quiz queue restore) and I merged the models ruff bump (models#465). Your queue is unchanged: the top five replies have drafts ready to post from their cards.",
+ "run_note": "Quiet hour. You answered jozefKruszynski on #5753 yourself and he is picking it up, so that card left your queue. aioslimproto#581 is with its chip; the other four drafted replies are still waiting in their cards.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -1021,42 +1021,29 @@
    "copilot_note": "Copilot reviewed 265e73d10 at 19:19Z with 3 open findings (2 new inline, 1 carried over). Neither new thread has an author reply yet.",
    "suggested_fix": null,
    "prompt": "On music-assistant/server PR #5753 (jozefKruszynski, custom genre images, head 265e73d10), two small Copilot findings remain. 1) The dev merge left API_SCHEMA_VERSION at dev's 86, so the new music/genres image commands ship without a bump: suggest bumping to 87 in music_assistant/constants.py, and frontend#2539 should gate on schema_version >= 87. 2) In MediaControllerBase.set_item_image (music_assistant/controllers/music/media/base.py ~line 528), base64.b64decode raises plain ValueError for non-ASCII strings, which the binascii.Error catch misses; catch ValueError instead and drop the binascii import. Also draft a reply to Jozef's 10-08 question on the WebRTC chunking (Copilot r4156289723): accept a separate frontend + gateway PR pair and ask for a follow-up issue link. Draft all replies in Marvin's short style with the [!NOTE] prefix and do not post without Marvin's approval.",
-   "whats_new": "Back in draft at 20:12Z on new head 1e068f09f (author is reworking it). Not reviewed while it is a draft; the card below is from 265e73d10.",
+   "whats_new": "You replied 10:50Z (WebRTC chunking in a separate PR); jozefKruszynski is on it.",
    "backport": {
     "rec": false,
     "why": "New feature with an API schema bump; it belongs in the next minor, not stable."
    },
-   "status": "attention",
-   "attention_since": "2026-10-08T07:51:58Z",
+   "status": "waiting",
+   "attention_since": null,
    "reviewed_now": false,
    "reviewed_at": "2026-10-10 21:40 CEST",
    "auto_approved": null,
-   "author_replied": null,
-   "reporter_reply": null,
-   "waiting_on": "you: reply to jozefKruszynski",
-   "changed_now": "",
-   "needs_reply": {
-    "at": "2026-10-08T07:51:58Z",
-    "who": "jozefKruszynski",
-    "url": "https://github.com/music-assistant/server/pull/5753#issuecomment-6055345716",
-    "summary": "jozefKruszynski asks if the WebRTC chunking issue goes in this pair of PRs or a separate pair"
+   "author_replied": {
+    "at": "2026-11-10T10:51:59Z",
+    "url": "https://github.com/music-assistant/server/pull/5753",
+    "summary": "On it, got sidetracked with homelab work"
    },
-   "action": "reply",
-   "effort": 10,
-   "preread": {
-    "at": "2026-11-10T09:02:10Z",
-    "head": "1e068f09f",
-    "question": "Should the client-to-server WebRTC chunking that remote uploads over about 190 KB need be built in this genre image PR pair (server#5753 + frontend#2539), or in a separate frontend + gateway pair?",
-    "options": [
-     "Separate PR pair: frontend WebRTC transport chunks outgoing messages, gateway reassembles them. This pair ships as is, with the known remote limit",
-     "Fold the chunking into this pair, so genre uploads work over remote access from day one",
-     "Avoid transport work: downscale in the browser or add an HTTP upload route (the remote HTTP proxy does not forward request bodies today, so that route still needs gateway work)",
-     "Lower the upload limit to about 190 KB until chunking lands"
-    ],
-    "recommendation": "Use a separate pair. This is a transport bug and not specific to genre images: the DSP impulse response upload hits the same 256 KiB cap. Mixing it into a feature PR that is already conflicting and stuck as a draft would slow both down. The client only needs to chunk messages that already fail today, so an older gateway sees no change.",
-    "draft_reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@jozefKruszynski separate pair, like you suggested. It's a transport limitation and not specific to genre images. The DSP impulse response upload hits the same cap, so it should be fixed once in the WebRTC transport. The gateway already chunks server to client ([`_send_chunked`](https://github.com/music-assistant/server/blob/1e068f09f/music_assistant/controllers/webserver/remote_access/gateway.py#L684)). The new part is the reverse direction: the frontend splits oversized outgoing messages and [`_ma_api_to_local`](https://github.com/music-assistant/server/blob/1e068f09f/music_assistant/controllers/webserver/remote_access/gateway.py#L835) reassembles them before forwarding to the local websocket. If the client only chunks above the channel's max message size, an older server sees no difference, because those messages fail today anyway.\n\nI'd skip an HTTP upload route. The remote HTTP proxy doesn't forward request bodies, so that needs gateway work too.\n\nFor this pair: it conflicts with dev and the schema has moved past 87 in the meantime, so it needs a rebase and the next schema number. You can resolve the Copilot chunking thread with a link to the follow-up. Happy to review the chunking pair when it's up.",
-    "posted": null
-   }
+   "reporter_reply": null,
+   "waiting_on": "jozefKruszynski: rebase and next schema number (draft)",
+   "changed_now": "author replied",
+   "needs_reply": null,
+   "action": null,
+   "effort": null,
+   "preread": null,
+   "rank_reason": null
   },
   {
    "repo": "server",
@@ -23005,7 +22992,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
@@ -23282,7 +23269,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 11:00 CET",
-   "changed_now": "auto-approved",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
