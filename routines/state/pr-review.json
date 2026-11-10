@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-10T12:00:00+01:00",
- "dev": "414729e21",
- "run_note": "Quiet hour. You answered jozefKruszynski on #5753 yourself and he is picking it up, so that card left your queue. aioslimproto#581 is with its chip; the other four drafted replies are still waiting in their cards.",
+ "last_run": "2026-11-10T13:00:00+01:00",
+ "dev": "c55cf95ca",
+ "run_note": "#7377 (Apple Music live radio) and aioslimproto#581 merged. jordiboehme opened a Rotation playlists stack: #7499 (ordered fill mode, core) then #7500 (XL beta plugin) then #7501 (MCP tools). #7500 needs your product call first: Bot-MArley asks whether a second rule-based playlist plugin next to smart_playlist is wanted, before the author fixes 8 findings.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -1038,7 +1038,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "jozefKruszynski: rebase and next schema number (draft)",
-   "changed_now": "author replied",
+   "changed_now": "",
    "needs_reply": null,
    "action": null,
    "effort": null,
@@ -3399,8 +3399,8 @@
   {
    "repo": "aioslimproto",
    "number": 581,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-10T11:06:20Z",
    "title": "Let an application add its own routes to the CLI web server",
    "author": "lawrence-jeff",
    "url": "https://github.com/music-assistant/aioslimproto/pull/581",
@@ -3463,7 +3463,7 @@
    },
    "reporter_reply": null,
    "waiting_on": "you: reply to lawrence-jeff",
-   "changed_now": "",
+   "changed_now": "merged",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -3472,12 +3472,7 @@
     "note": "Requested changes: none. It looks good; what's left is a maintainer decision on whether this generic route hook is the approach the team wants, since the author is waiting on that.",
     "recheck_head": null
    },
-   "needs_reply": {
-    "at": "2026-10-27T18:20:15Z",
-    "who": "lawrence-jeff",
-    "url": "https://github.com/music-assistant/aioslimproto/pull/581#issuecomment-6450155083",
-    "summary": "lawrence-jeff asks for the next step; the squeezelite provider work waits on this plumbing"
-   },
+   "needs_reply": null,
    "action": "reply",
    "effort": 20,
    "preread": {
@@ -20785,8 +20780,8 @@
   {
    "repo": "server",
    "number": 7377,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-10T11:21:52Z",
    "url": "https://github.com/music-assistant/server/pull/7377",
    "title": "Play the live Apple Music radio stations",
    "author": "jordiboehme",
@@ -20837,7 +20832,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "",
+   "changed_now": "merged",
    "suggested_fix": null,
    "lab": {
     "head": "9ecb73d24",
@@ -20857,12 +20852,7 @@
     "recheck_head": null
    },
    "del": 73,
-   "needs_reply": {
-    "at": "2026-11-09T21:43:03Z",
-    "who": "jordiboehme",
-    "url": "https://github.com/music-assistant/server/pull/7377#issuecomment-6752239528",
-    "summary": "jordiboehme says all your size-review points are done (live_decrypt.py gone, one ffmpeg per key)"
-   },
+   "needs_reply": null,
    "action": "rereview",
    "effort": 30,
    "rank_reason": "jordiboehme did all 8 size points; confirm and approve (XL)"
@@ -23281,6 +23271,364 @@
     "recheck_head": null
    },
    "del": 1
+  },
+  {
+   "repo": "server",
+   "number": 7499,
+   "state": "open",
+   "closed_at": null,
+   "title": "Keep the order of a dynamic source that plays in order",
+   "author": "jordiboehme",
+   "url": "https://github.com/music-assistant/server/pull/7499",
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "request_changes",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "jordiboehme: 1 Bot-MArley PROBLEM",
+   "gpt_sol": "clean",
+   "size": "M",
+   "code": 84,
+   "add": 330,
+   "del": 14,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev c55cf95ca",
+   "head_sha": "e3d565f31",
+   "core_touched": true,
+   "providers_touched": [],
+   "stacked": false,
+   "tldr": "Adds keeps_batch_order to Provider (default False) and an ORDERED fill mode, so a queue whose only source hands out tracks in play order (an audiobook's parts) isn't mixed by the managed pool or force-shuffled. Existing providers keep today's behaviour. Base of the Rotation playlists stack.",
+   "summary": "",
+   "whats_new": "Opened 10:56Z. Lab queue green.",
+   "blockers": [
+    "1 Bot-MArley PROBLEM"
+   ],
+   "findings": [
+    {
+     "model": "Bot-MArley",
+     "severity": "PROBLEM",
+     "file": "music_assistant/controllers/player_queues/queue_loader.py",
+     "line": 904,
+     "title": "adds_tracks_literally computed before the default enqueue option is resolved",
+     "detail": "With the track default set to ADD, or no option from the client, an added track still becomes a pooled source and turns shuffle back on.",
+     "fix": "Recompute it next to already_dynamic in the `if option is None` block.",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7224",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on 5d4668dd7 (dev merge only).",
+   "suggested_fix": null,
+   "prompt": "Fix music-assistant/server PR #7224 (head 8224a23ac) on top of refs/remotes/pr/7224: replace the deferred restart task, its skip guard on mass._tracked_timers and the faked PLAYING with an inline `await self.mass.player_queues.play_index(queue_id, queue_item_id, seek_position=position)` from play_media (the queue playback lock is re-entrant per task). Apply the validated inline patch from the review, rewrite the restart tests and run pytest tests/providers/raumfeld.",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "#7500 and #7501 stack on it"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-11-10 13:05 CET",
+   "changed_now": "new",
+   "marley": {
+    "verdict": "changes",
+    "reviewed_head": true,
+    "open_threads": 1,
+    "review_url": "https://github.com/music-assistant/server/pull/7499#pullrequestreview-5841364061",
+    "note": "1 PROBLEM",
+    "recheck_head": null
+   },
+   "lab": {
+    "head": "e3d565f31",
+    "areas": [
+     "queue"
+    ],
+    "result": "green",
+    "run_id": "20261110-120057-b90a",
+    "note": "queue green (6 checks). models/provider.py change gets the nightly."
+   },
+   "needs_reply": null,
+   "action": null,
+   "effort": null,
+   "rank_reason": null,
+   "preread": null,
+   "snooze": null
+  },
+  {
+   "repo": "server",
+   "number": 7500,
+   "state": "open",
+   "closed_at": null,
+   "title": "Add Rotation playlists",
+   "author": "jordiboehme",
+   "url": "https://github.com/music-assistant/server/pull/7500",
+   "draft": false,
+   "verdict": "not_ready",
+   "assessment": "request_changes",
+   "status": "attention",
+   "attention_since": "2026-11-10T10:58:33Z",
+   "waiting_on": "you: is a second rule-based playlist plugin wanted next to smart_playlist? jordiboehme: 8 findings",
+   "gpt_sol": "clean",
+   "size": "XL",
+   "code": 4274,
+   "add": 8757,
+   "del": 14,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev c55cf95ca",
+   "head_sha": "5ef5c6939",
+   "core_touched": true,
+   "providers_touched": [
+    "rotation_playlist"
+   ],
+   "stacked": true,
+   "tldr": "New beta plugin: Rotation playlists, step-based dynamic playlists (source, filter, sort, limit, expand, flatten) played in endless rounds, with rotations/* API commands. Built for 'a different audiobook every evening, parts in order'. 4.3k lines including #7499. Bot-MArley: 8 PROBLEMs, and two questions for maintainers: does rotations/* need an API_SCHEMA_VERSION bump, and is a second rule-based playlist plugin wanted next to smart_playlist?",
+   "summary": "",
+   "whats_new": "Opened 10:58Z with #7499 and #7501.",
+   "blockers": [
+    "Your call: a second rule-based playlist plugin next to smart_playlist, and whether rotations/* needs a schema bump",
+    "8 Bot-MArley PROBLEMs"
+   ],
+   "findings": [
+    {
+     "model": "Bot-MArley",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/rotation_playlist/rounds.py",
+     "line": 348,
+     "title": "Same track queued twice in one batch",
+     "detail": "Two units sharing a track (e.g. credited to two library artists) both hand it out.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "Bot-MArley",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/rotation_playlist/fields.py",
+     "line": 335,
+     "title": "Mapping reference URIs in the wrong shape",
+     "detail": "artist://<provider>/<id> instead of <provider>://artist/<id>; use create_uri.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "Bot-MArley",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/rotation_playlist/fields.py",
+     "line": 485,
+     "title": "Date-only between/before/after compare against midnight",
+     "detail": "between 2024-01-01 and 2024-01-31 drops Jan 31.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "Bot-MArley",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/rotation_playlist/engine.py",
+     "line": 265,
+     "title": "Provider filter result depends on its position",
+     "detail": "SQL push-down needs an in-library mapping, in memory any mapping matches.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "Bot-MArley",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/rotation_playlist/engine.py",
+     "line": 517,
+     "title": "scope=\"providers\" ignored when expanding artists",
+     "detail": "Silently returns library tracks only.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "Bot-MArley",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/rotation_playlist/explain.py",
+     "line": 57,
+     "title": "explain ignores group depth",
+     "detail": "\"Only the first 2 tracks\" after an expand reads as global, engine applies it per album.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "Bot-MArley",
+     "severity": "PROBLEM",
+     "file": "tests/providers/rotation_playlist/test_provider.py",
+     "line": 0,
+     "title": "No test pins required_scope of rotations/*",
+     "detail": "Moving a write command to read scope would let guests delete Rotations unnoticed.",
+     "fix": "",
+     "posted": null
+    },
+    {
+     "model": "Bot-MArley",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/rotation_playlist",
+     "line": 0,
+     "title": "Data-changing paths untested",
+     "detail": "update() over an existing library playlist, MEDIA_ITEM_DELETED/UPDATED handlers, unload(is_removed=True).",
+     "fix": "",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7224",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on 5d4668dd7 (dev merge only).",
+   "suggested_fix": null,
+   "prompt": "Fix music-assistant/server PR #7224 (head 8224a23ac) on top of refs/remotes/pr/7224: replace the deferred restart task, its skip guard on mass._tracked_timers and the faked PLAYING with an inline `await self.mass.player_queues.play_index(queue_id, queue_item_id, seek_position=position)` from play_media (the queue playback lock is re-entrant per task). Apply the validated inline patch from the review, rewrite the restart tests and run pytest tests/providers/raumfeld.",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "#7499 base (included)",
+    "#7501 stacks on it"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-11-10 13:05 CET",
+   "changed_now": "new",
+   "marley": {
+    "verdict": "changes",
+    "reviewed_head": true,
+    "open_threads": 8,
+    "review_url": "https://github.com/music-assistant/server/pull/7500#pullrequestreview-5841364619",
+    "note": "8 PROBLEMs plus 2 maintainer questions",
+    "recheck_head": null
+   },
+   "lab": {
+    "head": "69ed11530",
+    "areas": [
+     "players",
+     "squeezelite",
+     "dlna"
+    ],
+    "result": "green",
+    "run_id": "20261110-090139-fe2c",
+    "note": "players green; squeezelite+dlna green (20261110-090723-bd71). Chromecast bench device not run."
+   },
+   "needs_reply": null,
+   "action": "decide",
+   "effort": 30,
+   "rank_reason": "Product call before jordiboehme fixes 8 findings: a second rule-based playlist plugin next to smart_playlist?",
+   "preread": null,
+   "snooze": null
+  },
+  {
+   "repo": "server",
+   "number": 7501,
+   "state": "open",
+   "closed_at": null,
+   "title": "Add MCP tools for Rotation playlists",
+   "author": "jordiboehme",
+   "url": "https://github.com/music-assistant/server/pull/7501",
+   "draft": false,
+   "verdict": "not_ready",
+   "assessment": "request_changes",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "#7500 decision; jordiboehme: 1 Bot-MArley PROBLEM",
+   "gpt_sol": "clean",
+   "size": "XL",
+   "code": 4557,
+   "add": 9212,
+   "del": 39,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev c55cf95ca",
+   "head_sha": "8172b07c5",
+   "core_touched": true,
+   "providers_touched": [
+    "mcp_server",
+    "rotation_playlist"
+   ],
+   "stacked": true,
+   "tldr": "MCP tools for Rotation playlists (describe steps, recipes, preview, explain, create, update) on top of #7500, plus registry support for object parameters and schema overrides. Bot-MArley: the tools and instructions are advertised even when the beta plugin is off.",
+   "summary": "",
+   "whats_new": "Opened 11:00Z.",
+   "blockers": [
+    "Waits on the #7500 decision",
+    "1 Bot-MArley PROBLEM"
+   ],
+   "findings": [
+    {
+     "model": "Bot-MArley",
+     "severity": "PROBLEM",
+     "file": "music_assistant/providers/mcp_server/transport.py",
+     "line": 163,
+     "title": "Rotation tools advertised when the plugin is off",
+     "detail": "Four tools carry the full steps schema, so every MCP conversation pays that context.",
+     "fix": "List them and add the instructions only when rotation_playlist is loaded.",
+     "posted": null
+    }
+   ],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7224",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on 5d4668dd7 (dev merge only).",
+   "suggested_fix": null,
+   "prompt": "Fix music-assistant/server PR #7224 (head 8224a23ac) on top of refs/remotes/pr/7224: replace the deferred restart task, its skip guard on mass._tracked_timers and the faked PLAYING with an inline `await self.mass.player_queues.play_index(queue_id, queue_item_id, seek_position=position)` from play_media (the queue playback lock is re-entrant per task). Apply the validated inline patch from the review, rewrite the restart tests and run pytest tests/providers/raumfeld.",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "#7500 base (included)"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-11-10 13:05 CET",
+   "changed_now": "new",
+   "marley": {
+    "verdict": "changes",
+    "reviewed_head": true,
+    "open_threads": 1,
+    "review_url": "https://github.com/music-assistant/server/pull/7501#pullrequestreview-5841364730",
+    "note": "1 PROBLEM",
+    "recheck_head": null
+   },
+   "lab": {
+    "head": "69ed11530",
+    "areas": [
+     "players",
+     "squeezelite",
+     "dlna"
+    ],
+    "result": "green",
+    "run_id": "20261110-090139-fe2c",
+    "note": "players green; squeezelite+dlna green (20261110-090723-bd71). Chromecast bench device not run."
+   },
+   "needs_reply": null,
+   "action": null,
+   "effort": null,
+   "rank_reason": null,
+   "preread": null,
+   "snooze": null
   }
  ],
  "preread_budget": {
