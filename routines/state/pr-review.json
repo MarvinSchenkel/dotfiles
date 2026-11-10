@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-10T09:00:00+01:00",
- "dev": "6f6deddf3",
- "run_note": "Busy night. New and ready for you: #7494 (same-type player takeover, migration), #7490 (grey out dropped podcasts) and #7482 (one resume rule, OzGav deferred to you), all lab green, plus models#464 (player split fields), #7432 (strings) and #7480 (workflow bump). #7377 is reworked per your size review and Bot-MArley approved it. #7422 changes a default for existing installs and needs your migration call. #7496 and models#459 merged; client#345 and aiosonos#199 merged as safe bumps. New this run: 16 PRs where someone waits on your reply are flagged orange, drafts included.",
+ "last_run": "2026-11-10T10:00:00+01:00",
+ "dev": "fccdd13ca",
+ "run_note": "#7040, #7224 and #7404 merged. Simanias opened #7498, the #7224 follow-up for the other players: lab green, Bot-MArley only asks for a hardware test. #7479 is clean and ready for your approval next to #7480. aioslimproto#596 now waits on lawrence-jeff (you picked option B). First five pre-reads are in, with drafted replies you can edit and post from the card: #5753, aioslimproto#581, #7076, #7124 and #7172.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -883,7 +883,9 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: frontend companion",
-   "changed_now": ""
+   "changed_now": "",
+   "action": "decide",
+   "effort": 10
   },
   {
    "repo": "server",
@@ -1038,6 +1040,22 @@
     "who": "jozefKruszynski",
     "url": "https://github.com/music-assistant/server/pull/5753#issuecomment-6055345716",
     "summary": "jozefKruszynski asks if the WebRTC chunking issue goes in this pair of PRs or a separate pair"
+   },
+   "action": "reply",
+   "effort": 10,
+   "preread": {
+    "at": "2026-11-10T09:02:10Z",
+    "head": "1e068f09f",
+    "question": "Should the client-to-server WebRTC chunking that remote uploads over about 190 KB need be built in this genre image PR pair (server#5753 + frontend#2539), or in a separate frontend + gateway pair?",
+    "options": [
+     "Separate PR pair: frontend WebRTC transport chunks outgoing messages, gateway reassembles them. This pair ships as is, with the known remote limit",
+     "Fold the chunking into this pair, so genre uploads work over remote access from day one",
+     "Avoid transport work: downscale in the browser or add an HTTP upload route (the remote HTTP proxy does not forward request bodies today, so that route still needs gateway work)",
+     "Lower the upload limit to about 190 KB until chunking lands"
+    ],
+    "recommendation": "Use a separate pair. This is a transport bug and not specific to genre images: the DSP impulse response upload hits the same 256 KiB cap. Mixing it into a feature PR that is already conflicting and stuck as a draft would slow both down. The client only needs to chunk messages that already fail today, so an older gateway sees no change.",
+    "draft_reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@jozefKruszynski separate pair, like you suggested. It's a transport limitation and not specific to genre images. The DSP impulse response upload hits the same cap, so it should be fixed once in the WebRTC transport. The gateway already chunks server to client ([`_send_chunked`](https://github.com/music-assistant/server/blob/1e068f09f/music_assistant/controllers/webserver/remote_access/gateway.py#L684)). The new part is the reverse direction: the frontend splits oversized outgoing messages and [`_ma_api_to_local`](https://github.com/music-assistant/server/blob/1e068f09f/music_assistant/controllers/webserver/remote_access/gateway.py#L835) reassembles them before forwarding to the local websocket. If the client only chunks above the channel's max message size, an older server sees no difference, because those messages fail today anyway.\n\nI'd skip an HTTP upload route. The remote HTTP proxy doesn't forward request bodies, so that needs gateway work too.\n\nFor this pair: it conflicts with dev and the schema has moved past 87 in the meantime, so it needs a rebase and the next schema number. You can resolve the Copilot chunking thread with a link to the follow-up. Happy to review the chunking pair when it's up.",
+    "posted": null
    }
   },
   {
@@ -1455,7 +1473,9 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you",
-   "changed_now": ""
+   "changed_now": "",
+   "action": "decide",
+   "effort": 30
   },
   {
    "repo": "client",
@@ -2097,7 +2117,9 @@
     }
    ],
    "waiting_on": "you",
-   "changed_now": ""
+   "changed_now": "",
+   "action": "decide",
+   "effort": 10
   },
   {
    "repo": "server",
@@ -2278,7 +2300,7 @@
    "ci": "red",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "CONFLICT with origin/dev 6f6deddf3 in tests/providers/squeezelite/test_player.py",
+   "merge_state": "CONFLICT with origin/dev fccdd13ca in tests/providers/squeezelite/test_player.py",
    "head_sha": "e4c4dcdb9",
    "tldr": "thelad-dev fixed both Copilot CRITICALs: volume_set errors are now wrapped to PlayerCommandFailed like handle_player_command, and the config reads moved under the VOLUME lock with a race test. Copilot now has 0 inline findings. Side effect: every VOLUME_SET player now waits on its VOLUME lock during register/reconnect while the global register lock is held, even with no pin. Copilot's Previously missed item (no apply on unavailable to available) is real for Chromecast. One small commit plus a reply.",
    "summary": "Delta e2882279a..306c090ad, one commit, controller.py and the pin test file. (1) _apply_native_volume_pin now catches non-MusicAssistantError from player.volume_set and raises PlayerCommandFailed, same pattern as handle_player_command in players/helpers.py. Register and register_or_update keep their MusicAssistantError catch, so device errors no longer abort registration. This resolves our previous blocker and Copilot r4280705863 without touching providers. (2) The CONF_VOLUME_CONTROL and CONF_NATIVE_VOLUME reads moved inside the per-player VOLUME lock, which resolves r4280705925. save_player_config writes storage before calling on_player_config_change, so the recheck sees the new values. get_player_lock is per-task reentrant, so no self-deadlock, and the pin only takes the member lock, so no group/member inversion. The new asyncio test does catch the old ordering: after sleep(0) the old code had already read the pin before blocking. (3) New issue from (2): the early return now happens inside the lock, so every VOLUME_SET player takes its VOLUME lock on each register/register_or_update. Both calls run under the global _register_lock. If a volume command is stuck on that player (likely on a reconnect after a drop), registration of every player waits up to PLAYER_LOCK_TIMEOUT (30s), even though the pin is not configured. GPT Sol flagged the same thing as PROBLEM. Fix: cheap pre-check before the lock, recheck inside (patch below). (4) Pin before set_config: author kept it and replied on the resolved thread r4254688831. Fine. Copilot 06:20Z on 306c090ad: 0 open inline findings, both old threads resolved in its overview (the GitHub threads are still unresolved). Previously missed (1) [CRITICAL]: no pin apply on unavailable to available. Checked: chromecast/player.py sets _attr_available = False at init and flips it in the connection-status handler via update_state, never re-registering. So for Cast the pin is skipped at register and never applied at startup, only on config save while online. Cast into an AVR is a typical setup for this feature, so this is worth fixing in the PR: in signal_player_state_update, when 'available' changed to True on an initialized player, schedule _apply_native_volume_pin as a task that logs errors. The Universal Player item from the last review was not repeated. Our depends_on_value_not = PLAYER_CONTROL_NATIVE suggestion is still unposted. Local tests could not run: the shared .venv has stale models (SortField.FAVORITE_TIMESTAMP missing). CI green. Marvin has not commented on this PR.",
@@ -2337,7 +2359,9 @@
     "who": "thelad-dev",
     "url": "https://github.com/music-assistant/server/pull/6944#issuecomment-6721582192",
     "summary": "thelad-dev answered your test ask: tested on squeezelite 2.0 on a Pi with a Denon AVR"
-   }
+   },
+   "action": "decide",
+   "effort": 15
   },
   {
    "repo": "server",
@@ -2362,7 +2386,7 @@
    "providers_touched": [
     "dlna_receiver"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "e77b4d756",
    "tldr": "Out of draft again since 08:52Z and OzGav is re-requested. All 58 review threads are resolved, and the three OzGav points from September (owner_player_id rename, conftest.py removed, deferred import removed) are done in the code. Scope is clean: only the new provider, its tests and en.json keys. Two real bugs remain against the current AudioSource session model. The plugin never calls deselect_source, so a second cast on the same renderer reuses the first cast's cached stream details (with the codec ffmpeg detected), and a DLNA Stop leaves the player showing the DLNA source. Also, any stream teardown during Pause is treated as Stop.",
    "summary": "New plugin provider synced from ma-provider-dlna-receiver v1.2.8. It runs one aiohttp UPnP server per MA player (ports from 8298 upward, on one detected IPv4) and one SSDP advertiser per renderer, each with its own UDP 1900 socket (SO_REUSEPORT). Playback goes through play_media with an AUDIO_SOURCE uri, and get_audio_stream proxies the sender's URL. Files touched: only music_assistant/providers/dlna_receiver/*, tests/providers/dlna_receiver/* and 9 new keys in translations/en.json. No core changes. Conventions are mostly fine: get_config_entries is an instance method on dev's model, the registry uses the event bus, tasks go through mass.create_task, and narrow excepts are used. The VERSION file matches other synced providers (yandex_*, kion_music, msx_bridge). The docs URL in the manifest returns 404 until music-assistant.io#626 merges. Unload cancels the metadata task, unsubscribes the player events, sends byebye, closes both UDP transports, stops the aiohttp runner, cancels GENA tasks and leaves mass.http_session open. GPT Sol and I found no leak. Security of the unauthenticated endpoint is reasonable for DLNA: SetAVTransportURI and GENA callbacks are validated against loopback, link-local, multicast and reserved addresses on every redirect hop, redirects are capped at 5, GENA is capped at 32 subs per service with a 1800 s TIMEOUT clamp, and SOAP/DIDL parsing rejects DOCTYPE/ENTITY and anything over 64 KiB. Anyone on the LAN can still play to and set the volume of every exposed player. That is inherent to DLNA and the plugin is opt-in. The remaining issues are about the newer AudioSource session contract. Sessions survive cmd_stop and keep session.streamdetails on re-select (_start_audio_source_session with preserve_details). ffmpeg writes the detected codec into that AudioFormat in place, so the next cast on the same renderer is launched with the old -acodec. Other receivers (airplay_receiver, spotify_connect, ariacast, sendspin_source) call deselect_source with the session's playback_session_id when their session ends. This plugin does not. on_source_unselected also sets STOPPED and clears elapsed on every stream teardown, but dev documents that a paused source's stream can be torn down while the source stays selected.",
@@ -2426,7 +2450,10 @@
     "who": "trudenboy",
     "url": "https://github.com/music-assistant/server/pull/3611#issuecomment-6506187467",
     "summary": "trudenboy: v1.3.0 synced, CI green, all seven review threads addressed; asks for your re-review"
-   }
+   },
+   "action": "rereview",
+   "effort": 45,
+   "rank_reason": "trudenboy asks for a re-review of the XL DLNA receiver (11d)"
   },
   {
    "repo": "server",
@@ -2625,7 +2652,7 @@
    "providers_touched": [
     "web_kiosk"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "baeaaf66b",
    "tldr": "v1.1.0 drops ENQUEUE and plays core's flow stream, which removes the provider's own successor logic and with it the seek-to-end bug (Copilot r4302797493 resolved, page clamp verified, server seeks now safe via flow). Copilot is clean on the head. New: Repeat One leaves the page clock stuck at the end. The 9 older PROBLEMs and the maintainer question remain. Not ready.",
    "summary": "Delta b852cf2f7..257e3ae8b (v1.1.0, +894/-1285): the kiosk drops PlayerFeature.ENQUEUE, so core serves queue media as one /flow/ stream. Removed: the /flow/ to /single/ rewrite, enqueue_next_media, start_enqueued_media, QueueWalk, playback_reached_end and the short-end detection; a browser 'ended' now just reports IDLE. play_media checks resolve_stream_url to set serves_flow. refresh_stream rebuilds the flow at the queue's item and position via cmd_seek with resume_position(). New PlaybackClaim replaces transport_mark/still_plays/take_over_output (GPT Sol found no ownership or pause bug in it). _publish_flow_item sends title, duration and a stream-clock start (queue elapsed minus stream elapsed x speed; GPT Sol confirmed the formula) when the queue's item changes inside the flow. Closing a page that got the current play message rebuilds the flow for the remaining pages. web.js caps seekToSong at floor(dur) - end_margin from the welcome message, clamps its clock to the song duration, and reports position every 2 s. Effect on old findings: fixed or gone are the seek-to-end CRITICAL, the /flow/ rewrite limitation (crossfade and overlays now apply), one-item Repeat All, paused successor resume_pos, radio jumping to the next item, end report during the snapshot seek, and the short complete file stopping the queue. The failed-playback teardown is downgraded to SUGGESTION since there are no enqueue tasks now. The other 9 PROBLEMs are untouched. New PROBLEM: Repeat One (and one-item Repeat All) never sends a new media message, so the page clock and lyrics stay at the end.",
@@ -2685,7 +2712,10 @@
     "who": "trudenboy",
     "url": "https://github.com/music-assistant/server/pull/6948#issuecomment-6517113931",
     "summary": "trudenboy answered your open points (sendspin_bridge editing another provider's player) and tested on a Lenovo tablet"
-   }
+   },
+   "action": "rereview",
+   "effort": 45,
+   "rank_reason": "trudenboy answered your open points on the XL kiosk provider (17d)"
   },
   {
    "repo": "server",
@@ -3460,6 +3490,21 @@
     "who": "lawrence-jeff",
     "url": "https://github.com/music-assistant/aioslimproto/pull/581#issuecomment-6450155083",
     "summary": "lawrence-jeff asks for the next step; the squeezelite provider work waits on this plumbing"
+   },
+   "action": "reply",
+   "effort": 20,
+   "preread": {
+    "at": "2026-11-10T09:02:10Z",
+    "head": "5fbd08fcf",
+    "question": "Should aioslimproto take the generic `extra_routes` hook from #581, or do what illright suggested (#issuecomment-6542291978) and build applet, icon-manifest and cover-art serving into `SlimServer`, with an `add_route()` method for whatever is left?",
+    "options": [
+     "Accept the generic `extra_routes` hook as it is at 5fbd08fcf (GET/HEAD only, built-in paths refused). lawrence-jeff rebases and fixes the stale description, then merge.",
+     "Go with illright's proposal: `applets=`, `icons=` and `cover_art_handler=` built into aioslimproto, plus `cli.add_route()` for the root redirect and the catch-all.",
+     "A hybrid: keep the hook but rename it to a `cli.add_route()` method that raises after start(). Only the API shape changes, not the scope."
+    ],
+    "recommendation": "Option 1. Everything these routes serve is MA data (library art through MA's image handling, the provider's own static icons, MA-specific applet zips), so it belongs in the provider. Building it into the library adds API for a single consumer. The GET/HEAD limit and the refused built-in paths already deal with most of illright's 'unrestrained freedom' concern. Left to do: the branch conflicts with main in tests/cli_test.py, and the PR description still says handlers get every HTTP method.",
+    "draft_reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@lawrence-jeff @illright Let's go with `extra_routes` as it is now. Everything these routes serve is MA data (library art, the provider's icons, the applet zips), so I'd keep that in the provider rather than build applets/icons/cover art into aioslimproto for one consumer. Since your last commit it only takes GET and HEAD, and the built-in paths are refused ([cli.py#L184](https://github.com/music-assistant/aioslimproto/blob/5fbd08fcf/aioslimproto/cli.py#L184), [cli.py#L233](https://github.com/music-assistant/aioslimproto/blob/5fbd08fcf/aioslimproto/cli.py#L233)). That's tight enough for me. If applet serving turns out to be useful outside MA we can move it into the library later.\n\nTwo things before I merge:\n- rebase on `main`, `tests/cli_test.py` conflicts\n- update the description, it still says the handlers get every HTTP method\n\nAgree on keeping HA extras out of the provider PR.",
+    "posted": null
    }
   },
   {
@@ -4159,7 +4204,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: reply to ashtonian",
-   "changed_now": "drafted",
+   "changed_now": "",
    "marley": {
     "verdict": "changes",
     "reviewed_head": true,
@@ -4173,6 +4218,22 @@
     "who": "ashtonian",
     "url": "https://github.com/music-assistant/server/pull/7076#issuecomment-6244803164",
     "summary": "ashtonian asks whether to land OIDC on the current LoginProvider and migrate when the auth-provider framework lands (draft)"
+   },
+   "action": "reply",
+   "effort": 20,
+   "preread": {
+    "at": "2026-11-10T09:02:10Z",
+    "head": "6b5beb793",
+    "question": "Should OIDC land now on the current in-core LoginProvider and move later, or wait for the auth-provider framework (backlog#185) and ship as the `oidc` provider from backlog#189?",
+    "options": [
+     "Land it on LoginProvider once the open findings are fixed, and migrate it when #185 lands",
+     "Land a slimmer core sign-in on LoginProvider now (Bot-MArley's split), with bootstrap, role sync and back-channel logout as follow-ups",
+     "Align with the framework: no OIDC on LoginProvider; pull the generic auth fixes out as small PRs now and reuse the protocol client in #189 once #185 is in",
+     "Close it and wait for #185 without taking anything from it"
+    ],
+    "recommendation": "Option 3. Landing it now creates a public setup (webserver OIDC settings, the MASS_OIDC_CONFIG_FILE format, and the oidc_sessions and oidc_logouts tables in auth.db) that we would have to migrate later, and it ships behaviour the plan decided against: role sync at every sign-in instead of at creation only, back-channel logout in v1. The cost is that #185 has no assignee and no timeline, so check with Marcel that it is still the route before posting.",
+    "draft_reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@ashtonian sorry for the slow answer.\n\nWe'd rather align with the framework than land this on `LoginProvider` and migrate it later. If it lands here, users get OIDC settings on the webserver, a `MASS_OIDC_CONFIG_FILE` format and two new tables in auth.db, and we'd have to carry all of that over to the `oidc` auth provider later. In the plan, OIDC lives in `providers/oidc/` with its own setup flow and presets (music-assistant/backlog#189), built on music-assistant/backlog#185.\n\nSome of the extras also go against what the [technical plan](https://github.com/music-assistant/backlog/blob/main/docs/plans/sign-in-identity-providers.md) decided: group-to-role mapping applies at account creation only, and back-channel logout comes later along with session re-validation. Deployment-managed admin bootstrap isn't in the plan at all. Happy to discuss those, but on the backlog issues, not in this PR.\n\nThese can go in now as small separate PRs:\n- the websocket re-validation after registering ([websocket_client.py#L504-L516](https://github.com/music-assistant/server/blob/6b5beb793/music_assistant/controllers/webserver/websocket_client.py#L504-L516)). That race also affects manual revocation. Please include Copilot's last finding there (unsubscribe when re-auth fails).\n- the HTTPS downgrade check ([redirect_validation.py#L63-L75](https://github.com/music-assistant/server/blob/6b5beb793/music_assistant/helpers/redirect_validation.py#L63-L75)), since it changes builtin and HA sign-in too\n- the last-admin guards on disabling and deleting users\n\nYour protocol client in [oidc.py](https://github.com/music-assistant/server/blob/6b5beb793/music_assistant/controllers/webserver/helpers/oidc.py) (discovery, JWKS rotation, ID token checks) and its tests should carry over to #189 with few changes. When you get there, create the user and the link on the normal connection instead of a second one ([auth.py#L2742](https://github.com/music-assistant/server/blob/6b5beb793/music_assistant/controllers/webserver/auth.py#L2742)), so auth.db can stay in exclusive locking mode. If you want to take #189 once #185 is in, say so on the issue.\n\nI'm leaving this as a draft for reference until the split PRs are up.",
+    "posted": null
    }
   },
   {
@@ -4739,7 +4800,7 @@
    "providers_touched": [
     "musicbrainz"
    ],
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "3ac44a43d",
    "tldr": "get_url_data now deletes the 30-day settled entry when a lookup finds the URL unknown or ambiguous. Keys match the set call and cache.get honours BYPASS_CACHE, so a refresh really re-asks and clears it. The declined CRITICAL needs three rare conditions at once, and the harm is a duplicate rather than a wrong merge. Ready. Copilot recommends approval on the head. Core touched, so it's your approve.",
    "summary": "Delta 80c73af04..3ac44a43d adds an else branch in MusicBrainzAPIClient.get_url_data that calls mass.cache.delete(settled_key, provider=self.domain) whenever the lookup does not resolve to exactly one entity. The key and provider are the same as in the set call. delete() with category None matches any category, and set uses the default 0, so the entry is removed. cache.get_with_freshness returns a miss under BYPASS_CACHE for non-persistent entries, so a bypassing refresh skips the settled entry, re-queries and now drops it. That closes r4337198057. Concurrent lookups for one URL are last-writer-wins, and both writers reflect MusicBrainz at their own time, so no harmful race. A 400/401/404 response (None) also drops the settled entry, which is right for 404 and harmless otherwise because the 1-day cache re-asks. The new test drives the real set/delete sequence with BYPASS_CACHE. On the declined r4337197972: the recovered MBID is only applied at insert, after _get_library_item_by_match has run its external-id pass without it. A duplicate therefore needs a same-provider name clash, a MusicBrainz URL link, and a third library artist carrying that MBID under a name that normalises differently (localised names, P!nk/Pink). OzGav's premise that library artists carry the MusicBrainz name is not quite right: names come from the first provider. Even so the combination is rare, and the outcome (a duplicate with the same MBID, mergeable by hand) is better than the pre-PR behaviour, which merged the item into the wrong same-name artist. Decline accepted. A cheap follow-up would look up the recovered MBID before inserting.",
@@ -4811,6 +4872,21 @@
     "who": "OzGav",
     "url": "https://github.com/music-assistant/server/pull/7124#discussion_r4348256815",
     "summary": "OzGav replied in your thread: the pattern comes from the MusicBrainz provider, so he thought it was fine"
+   },
+   "action": "reply",
+   "effort": 10,
+   "preread": {
+    "at": "2026-11-10T09:02:10Z",
+    "head": "3ac44a43d",
+    "question": "Should the Apple Music storefront special case in `_artist_url` stay in the generic artists controller because the MusicBrainz provider does the same thing, or move into a shared helper as @OzGav suggested?",
+    "options": [
+     "Accept OzGav's helper: add `canonical_mapping_url(mapping, media_type)` to `helpers/uri.py`, use it in the artists controller in place of `_artist_url`, and use it in the MusicBrainz provider's `_reverse_lookup_urls`",
+     "Move the URL building into the MusicBrainz provider (for example `get_mbids_by_mapping(mapping, media_type)`), so the controller only passes a mapping",
+     "Accept it as is, since the controller already uses the MusicBrainz provider elsewhere on dev"
+    ],
+    "recommendation": "Take OzGav's helper. `helpers/uri.py` already holds the per-provider URL rules (`canonical_provider_url`, `apple_storefront_from_url`), so the change is small, removes the duplicate in the MusicBrainz provider and takes the `apple_music` branch out of the controller. Moving it into the provider would cause more churn, because the controller still needs the URL for its log hints.",
+    "draft_reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@OzGav yes, go for the helper. The MusicBrainz provider knowing how MB stores Apple URLs is fine, that's its job. The artists controller just shouldn't branch on `apple_music`.\n\nPut `canonical_mapping_url` in `helpers/uri.py` next to [`canonical_provider_url`](https://github.com/music-assistant/server/blob/3ac44a43d/music_assistant/helpers/uri.py#L147), replace [`_artist_url`](https://github.com/music-assistant/server/blob/3ac44a43d/music_assistant/controllers/music/media/artists.py#L2395) with it and use it in [`_reverse_lookup_urls`](https://github.com/music-assistant/server/blob/3ac44a43d/music_assistant/providers/musicbrainz/provider.py#L1185) too. `apple_storefront_from_url` already returns None for non-Apple hosts, so no domain check is needed, same as your snippet.\n\nThe backport label is already off, so that leaves nothing else from Bot-MArley. Ask it for a recheck after you push.",
+    "posted": null
    }
   },
   {
@@ -5202,8 +5278,8 @@
   {
    "repo": "server",
    "number": 7040,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-10T08:04:00Z",
    "title": "Fix Spotify Connect position counting the pause after a resume",
    "author": "maximmaxim345",
    "url": "https://github.com/music-assistant/server/pull/7040",
@@ -5247,9 +5323,9 @@
    "support": null,
    "fix_thread": "mcp:26ac42c1-481e-400f-859d-45fef7cfacf7",
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:10 CET",
-   "changed_now": "ready for review",
+   "changed_now": "merged",
    "lab": {
     "head": "5b424ccb4",
     "areas": [],
@@ -5264,7 +5340,8 @@
     "review_url": "",
     "note": "No review yet; first review is automatic now it is out of draft.",
     "recheck_head": null
-   }
+   },
+   "needs_reply": null
   },
   {
    "repo": "server",
@@ -5369,7 +5446,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged"
+   "changed_now": ""
   },
   {
    "repo": "server",
@@ -6039,7 +6116,7 @@
    "del": 26,
    "ci": "green on 688ad6345",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "541a5dd92",
    "core_touched": true,
    "providers_touched": [
@@ -6096,7 +6173,9 @@
     "result": "red",
     "run_id": "20261109-161129-0410",
     "note": "queue snap-1 advances failed twice (plus rerun). Same as 10-29: dev passes it (20261110-074108 green), the branch predates #7250. models/player.py change gets the nightly."
-   }
+   },
+   "action": "review",
+   "effort": 30
   },
   {
    "repo": "server",
@@ -8734,7 +8813,9 @@
     "review_url": "https://github.com/music-assistant/models/pull/447#pullrequestreview-5638097041",
     "note": "Requested changes: none. Next up is a maintainer's review and merge; the server change can switch to these models once a release is published.",
     "recheck_head": null
-   }
+   },
+   "action": "decide",
+   "effort": 20
   },
   {
    "repo": "server",
@@ -9421,7 +9502,9 @@
     "who": "Simanias",
     "url": "https://github.com/music-assistant/server/pull/7180#issuecomment-6742406055",
     "summary": "Simanias asks you and marcelveldt for comments on the PR (draft)"
-   }
+   },
+   "action": "reply",
+   "effort": 30
   },
   {
    "repo": "server",
@@ -9550,7 +9633,7 @@
    "del": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "4b02b3493",
    "core_touched": false,
    "providers_touched": [
@@ -9610,6 +9693,22 @@
     "who": "dmoo500",
     "url": "https://github.com/music-assistant/server/pull/7172#issuecomment-6493638266",
     "summary": "dmoo500 asks whether the current provider and artwork host allowlists are acceptable or should be a shared source"
+   },
+   "action": "reply",
+   "effort": 20,
+   "preread": {
+    "at": "2026-11-10T09:02:10Z",
+    "head": "4b02b3493",
+    "question": "Should the share plugin keep its own provider and artwork host tables in links.py (also used to compact URLs in the link format), or move to a shared source, given OzGav's point that a plugin shouldn't carry per-service knowledge?",
+    "options": [
+     "Accept links.py as is: plugin-local base URLs, host allowlists and one-letter artwork host codes, copied again in frontend#3040 and the landing page",
+     "Validate provider links with core's existing share_url_provider() in helpers/uri.py, put full https URLs in the payload (drop PROVIDER_BASE_URLS, PROVIDER_LINK_HOSTS and the compaction), and keep a plain artwork host allowlist in the plugin without codes",
+     "Block on jetersen's core share API in #7173 (draft, untouched since 10-24) and build the plugin's link handling on top of it",
+     "Drop provider links and artwork from the payload entirely and leave service links to the landing page"
+    ],
+    "recommendation": "Option 2. Core already maps public share URLs to provider domains in helpers/uri.py (it's used for MusicBrainz linking and parse_uri), so the plugin stops owning provider URL formats. The link format isn't released yet, so dropping the compact refs and host codes costs nothing now, and the frontend and landing page then only check URLs instead of rebuilding them. #7173 is a stale draft with its own bigger per-provider table, so it shouldn't block this.",
+    "draft_reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@dmoo500 An HTTPS allowlist for untrusted share data is fine. What I don't want is the plugin owning provider URL formats. Core already has that: `share_url_provider()` in [helpers/uri.py](https://github.com/music-assistant/server/blob/4b02b3493/music_assistant/helpers/uri.py#L123-L144) maps a public share URL to its provider domain.\n\nThe link format isn't released yet, so I'd change it now:\n- Put full provider URLs in the payload and validate them with an https scheme check plus `share_url_provider(url) == domain`. That removes `PROVIDER_BASE_URLS` and `PROVIDER_LINK_HOSTS` from [links.py](https://github.com/music-assistant/server/blob/4b02b3493/music_assistant/providers/share_provider/links.py#L11-L26). If a host is missing, add it in `helpers/uri.py` so everything else picks it up too.\n- Artwork: core has no list for that, so a plain host suffix allowlist in the plugin is ok. Please drop the one-letter host codes though. They save a few bytes on a single image, but they turn into a wire format that frontend#3040 and the landing page have to copy.\n- With full URLs, the frontend and landing page only need to validate, not rebuild URLs.\n\nIf full URLs push big playlists over the 48 KiB cap, drop the per-track links from the playlist stubs. The resolver doesn't use them.",
+    "posted": null
    }
   },
   {
@@ -10320,7 +10419,9 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-10-29 07:00 CET",
-   "changed_now": ""
+   "changed_now": "",
+   "action": "decide",
+   "effort": 15
   },
   {
    "repo": "server",
@@ -10454,8 +10555,8 @@
   {
    "repo": "server",
    "number": 7224,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-10T08:13:54Z",
    "title": "Give a DIDL player the whole track's duration for a flow stream",
    "author": "Simanias",
    "url": "https://github.com/music-assistant/server/pull/7224",
@@ -10514,7 +10615,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-27 07:40 CET",
-   "changed_now": "",
+   "changed_now": "merged",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -10532,12 +10633,7 @@
     "run_id": "20261109-150144-644d",
     "note": ""
    },
-   "needs_reply": {
-    "at": "2026-11-09T14:27:18Z",
-    "who": "Simanias",
-    "url": "https://github.com/music-assistant/server/pull/7224#issuecomment-6742509111",
-    "summary": "Simanias did your create_didl_metadata suggestion and asks how to handle the wrong stream_duration on non-DIDL players"
-   }
+   "needs_reply": null
   },
   {
    "repo": "server",
@@ -10592,7 +10688,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged",
+   "changed_now": "",
    "lab": {
     "head": "59d46a660",
     "areas": [
@@ -11009,7 +11105,9 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-27 07:40 CET",
-   "changed_now": ""
+   "changed_now": "",
+   "action": "decide",
+   "effort": 20
   },
   {
    "repo": "server",
@@ -11466,7 +11564,7 @@
    "del": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev 6f6deddf3 in music_assistant/controllers/player_queues/controller.py, music_assistant/controllers/players/controller.py, tests/controllers/player_queues/test_transfer_queue.py",
+   "merge_state": "CONFLICT with origin/dev fccdd13ca in music_assistant/controllers/player_queues/controller.py, music_assistant/controllers/players/controller.py, tests/controllers/player_queues/test_transfer_queue.py",
    "head_sha": "6442a5071",
    "core_touched": true,
    "providers_touched": [],
@@ -11533,7 +11631,9 @@
     "who": "mnestrud",
     "url": "https://github.com/music-assistant/server/pull/7235#issuecomment-6455563371",
     "summary": "mnestrud needs your call on the decisions here: transfers are serialized, a small UX change"
-   }
+   },
+   "action": "decide",
+   "effort": 30
   },
   {
    "repo": "aiosonos",
@@ -12254,7 +12354,9 @@
     "who": "GoatsAndMonkeys",
     "url": "https://github.com/music-assistant/server/pull/7247#issuecomment-6448258430",
     "summary": "GoatsAndMonkeys asks whether a sync should also remove online genres (like MusicBrainz) or track where each genre came from (draft)"
-   }
+   },
+   "action": "reply",
+   "effort": 10
   },
   {
    "repo": "server",
@@ -16119,7 +16221,9 @@
     "who": "dmoo500",
     "url": "https://github.com/music-assistant/client/pull/334#issuecomment-6722447312",
     "summary": "dmoo500 started a Discord discussion with a mockup of personal listening counts and asks for your input"
-   }
+   },
+   "action": "reply",
+   "effort": 15
   },
   {
    "state": "merged",
@@ -16326,7 +16430,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "closed",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 2
   },
@@ -16383,7 +16487,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 2
   },
@@ -17187,7 +17291,7 @@
    "add": 4010,
    "ci": "pending",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev 6f6deddf3 in music_assistant/providers/airplay/manifest.json",
+   "merge_state": "CONFLICT with origin/dev fccdd13ca in music_assistant/providers/airplay/manifest.json",
    "head_sha": "18dc49c5b",
    "core_touched": false,
    "providers_touched": [
@@ -17246,7 +17350,7 @@
    "add": 229,
    "ci": "not checked (draft)",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "aec0481a4",
    "core_touched": true,
    "providers_touched": [],
@@ -17286,9 +17390,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "ready for review",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 8,
    "lab": {
@@ -17984,7 +18088,7 @@
    "add": 784,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev 6f6deddf3 in music_assistant/providers/deezer/provider.py, music_assistant/providers/deezer/streaming.py, music_assistant/providers/deezer/strings.json, music_assistant/translations/en.json",
+   "merge_state": "CONFLICT with origin/dev fccdd13ca in music_assistant/providers/deezer/provider.py, music_assistant/providers/deezer/streaming.py, music_assistant/providers/deezer/strings.json, music_assistant/translations/en.json",
    "head_sha": "f28c8224e",
    "core_touched": false,
    "providers_touched": [
@@ -18972,7 +19076,7 @@
    "add": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "core_touched": true,
    "providers_touched": [
     "spotify"
@@ -19196,7 +19300,9 @@
     "note": "er joins). Its changes are identical to the merged change on `dev`, which was already reviewed and approved there, and it needs no schema bump. No issues found. It's ready for a maintainer to merge once checks are green.",
     "recheck_head": null
    },
-   "del": 16
+   "del": 16,
+   "action": "merge",
+   "effort": 5
   },
   {
    "repo": "server",
@@ -19301,7 +19407,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "0488646ac",
@@ -19725,7 +19831,7 @@
    "add": 4,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "108177028",
    "core_touched": true,
    "providers_touched": [],
@@ -19747,9 +19853,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "pushed",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "108177028",
@@ -19899,7 +20005,7 @@
    "add": 211,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "9b4ebfdcf",
    "core_touched": true,
    "providers_touched": [],
@@ -19952,9 +20058,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "pushed",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "9b4ebfdcf",
@@ -19974,7 +20080,9 @@
     "note": "Stored-default migration decision plus 2 earlier threads.",
     "recheck_head": null
    },
-   "del": 41
+   "del": 41,
+   "action": "decide",
+   "effort": 20
   },
   {
    "repo": "server",
@@ -19995,7 +20103,7 @@
    "add": 379,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev 6f6deddf3 in music_assistant/controllers/player_queues/constants.py, music_assistant/controllers/player_queues/helpers.py",
+   "merge_state": "CONFLICT with origin/dev fccdd13ca in music_assistant/controllers/player_queues/constants.py, music_assistant/controllers/player_queues/helpers.py",
    "head_sha": "ede6679e8",
    "core_touched": true,
    "providers_touched": [],
@@ -20273,7 +20381,7 @@
    "add": 264,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "cfad04936",
    "core_touched": true,
    "providers_touched": [],
@@ -20320,8 +20428,8 @@
   {
    "repo": "server",
    "number": 7404,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-10T08:11:08Z",
    "url": "https://github.com/music-assistant/server/pull/7404",
    "title": "Fix missing search_name indexes on upgraded libraries",
    "author": "CasperNaudts",
@@ -20359,7 +20467,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "merged",
    "suggested_fix": null,
    "lab": {
     "head": "22244414a",
@@ -20378,7 +20486,8 @@
     "note": "",
     "recheck_head": null
    },
-   "del": 1
+   "del": 1,
+   "needs_reply": null
   },
   {
    "repo": "server",
@@ -20583,7 +20692,7 @@
    "add": 146,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "16d5cca17",
    "core_touched": true,
    "providers_touched": [],
@@ -20704,7 +20813,7 @@
    "add": 1412,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "5e8bce9f1",
    "core_touched": false,
    "providers_touched": [
@@ -20738,9 +20847,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "author replied",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "9ecb73d24",
@@ -20765,7 +20874,10 @@
     "who": "jordiboehme",
     "url": "https://github.com/music-assistant/server/pull/7377#issuecomment-6752239528",
     "summary": "jordiboehme says all your size-review points are done (live_decrypt.py gone, one ffmpeg per key)"
-   }
+   },
+   "action": "rereview",
+   "effort": 30,
+   "rank_reason": "jordiboehme did all 8 size points; confirm and approve (XL)"
   },
   {
    "repo": "server",
@@ -20786,7 +20898,7 @@
    "add": 483,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "88833449a",
    "core_touched": true,
    "providers_touched": [
@@ -20852,7 +20964,7 @@
    "add": 998,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "ebfc4a97e",
    "core_touched": true,
    "providers_touched": [
@@ -20900,9 +21012,9 @@
    "related_prs": [
     "#6901 follow-up"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "pushed",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "ebfc4a97e",
@@ -20940,7 +21052,7 @@
    "add": 598,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev 6f6deddf3 in music_assistant/providers/sendspin/manifest.json",
+   "merge_state": "CONFLICT with origin/dev fccdd13ca in music_assistant/providers/sendspin/manifest.json",
    "head_sha": "a310c2a12",
    "core_touched": false,
    "providers_touched": [
@@ -20986,7 +21098,9 @@
     "note": "oked at before, and I found nothing new to request. Still open before this can move: the question on the `local_pairing` setting, which needs a maintainer's answer, and a confirmation of a test on a real Sendspin player.",
     "recheck_head": null
    },
-   "del": 85
+   "del": 85,
+   "action": "decide",
+   "effort": 15
   },
   {
    "repo": "server",
@@ -21169,9 +21283,9 @@
    "draft": false,
    "verdict": "almost",
    "assessment": "approve",
-   "status": "attention",
-   "attention_since": "2026-11-09T18:13:13Z",
-   "waiting_on": "you: reply to lawrence-jeff",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "lawrence-jeff: implement option B",
    "size": "S",
    "code": 45,
    "add": 200,
@@ -21184,9 +21298,9 @@
    "stacked": false,
    "tldr": "### Description **The problem.** A host that implements seek by starting a new stream sees the player report that stream from position 0. The status `time` and the `time ?` query then show the position inside the new stream, so after a seek the progress bar and elapsed time are off by the seek point. Between the seek request and the new stream starting, the old position is shown, so the bar jumps back to the old posi",
    "summary": "",
-   "whats_new": "You requested changes after the LMS comparison: elapsed_offset on the stream metadata is the right model (matches LMS startOffset); see your review for the rest.",
+   "whats_new": "You picked option B (08:22Z).",
    "blockers": [
-    "lawrence-jeff tested your alternative: set_pending_position still needed for the seek gap"
+    "Author: rework to option B"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -21204,7 +21318,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "author replied",
+   "changed_now": "reviewed",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -21216,12 +21330,7 @@
     "recheck_head": null
    },
    "del": 2,
-   "needs_reply": {
-    "at": "2026-11-09T22:31:17Z",
-    "who": "lawrence-jeff",
-    "url": "https://github.com/music-assistant/aioslimproto/pull/596#issuecomment-6753228451",
-    "summary": "lawrence-jeff tested your alternative: elapsed_offset alone fixes most, set_pending_position is still needed for the 25 to 184 ms seek gap"
-   }
+   "needs_reply": null
   },
   {
    "repo": "server",
@@ -21304,7 +21413,7 @@
    "add": 14,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "d1c7199bd",
    "core_touched": true,
    "providers_touched": [],
@@ -21329,9 +21438,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:10 CET",
-   "changed_now": "reviewed",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "d1c7199bd",
@@ -21350,7 +21459,9 @@
     "note": "Recheck at d1c7199: tests fixed; thread still open.",
     "recheck_head": "d1c7199bd"
    },
-   "del": 12
+   "del": 12,
+   "action": "approve",
+   "effort": 5
   },
   {
    "repo": "models",
@@ -21396,7 +21507,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -21670,7 +21781,7 @@
    "add": 388,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "cc7435932",
    "core_touched": false,
    "providers_touched": [
@@ -21695,7 +21806,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "reviewed",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "cc7435932",
@@ -21761,7 +21872,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "7f6282f2e",
@@ -21915,7 +22026,7 @@
    "add": 457,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "2108dca44",
    "core_touched": true,
    "providers_touched": [],
@@ -22042,7 +22153,7 @@
    "add": 24,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "343725b02",
    "core_touched": false,
    "providers_touched": [],
@@ -22061,9 +22172,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "CI fixed",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -22122,9 +22233,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "auto-approved",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -22178,9 +22289,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "auto-approved",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -22234,9 +22345,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "auto-approved",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -22268,7 +22379,7 @@
    "add": 488,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "35ea58f86",
    "core_touched": true,
    "providers_touched": [],
@@ -22292,9 +22403,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "35ea58f86",
@@ -22334,7 +22445,7 @@
    "add": 530,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "4fb1bd308",
    "core_touched": true,
    "providers_touched": [
@@ -22362,9 +22473,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "4fb1bd308",
@@ -22404,7 +22515,7 @@
    "add": 447,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "b2ba9a16b",
    "core_touched": true,
    "providers_touched": [],
@@ -22430,9 +22541,9 @@
    "related_prs": [
     "#7483 stacked on it"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "b2ba9a16b",
@@ -22457,7 +22568,10 @@
     "who": "OzGav",
     "url": "https://github.com/music-assistant/server/pull/7482#issuecomment-6757143761",
     "summary": "OzGav sees no issues and leaves the review to you"
-   }
+   },
+   "action": "review",
+   "effort": 20,
+   "rank_reason": "OzGav left the core review to you; lab green"
   },
   {
    "repo": "server",
@@ -22478,7 +22592,7 @@
    "add": 149,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "dbbd192ac",
    "core_touched": false,
    "providers_touched": [
@@ -22507,9 +22621,9 @@
    "related_prs": [
     "#7482 base"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -22560,9 +22674,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -22594,7 +22708,7 @@
    "add": 177,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "a1c081e21",
    "core_touched": false,
    "providers_touched": [
@@ -22638,9 +22752,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "a1c081e21",
@@ -22680,7 +22794,7 @@
    "add": 4057,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "943abe841",
    "core_touched": false,
    "providers_touched": [
@@ -22725,9 +22839,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -22759,7 +22873,7 @@
    "add": 1,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "4496bca9d",
    "core_touched": false,
    "providers_touched": [],
@@ -22778,9 +22892,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:10 CET",
-   "changed_now": "reviewed",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -22791,7 +22905,9 @@
     "note": "",
     "recheck_head": "4496bca9d"
    },
-   "del": 1
+   "del": 1,
+   "action": "approve",
+   "effort": 5
   },
   {
    "repo": "server",
@@ -22802,22 +22918,22 @@
    "title": "Bump docker/login-action from 4.7.0 to 4.8.0",
    "author": "dependabot[bot]",
    "draft": false,
-   "verdict": "almost",
+   "verdict": "ready",
    "assessment": "approve",
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "Bot-MArley review (asked 08:55Z)",
+   "status": "attention",
+   "attention_since": "2026-11-09T17:52:37Z",
+   "waiting_on": "you: approve (workflow action bump)",
    "size": "S",
    "code": 8,
    "add": 4,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "merge_state": "merge-tree clean on origin/dev fccdd13ca",
    "head_sha": "d0bfee48e",
    "core_touched": false,
    "providers_touched": [],
    "stacked": false,
-   "tldr": "GitHub Actions bump in workflows only. CI green.",
+   "tldr": "Bumps docker/login-action 4.7.0 to 4.8.0 in build-base-image.yml and release.yml, SHA pins kept. Bot-MArley: minor release (OIDC token lifetime default, dependency bumps), nothing to change.",
    "summary": "",
    "whats_new": null,
    "blockers": [],
@@ -22832,19 +22948,21 @@
    "fix_thread": null,
    "related_prs": [],
    "reviewed_now": true,
-   "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "reviewed_at": "2026-11-10 10:05 CET",
+   "changed_now": "reviewed",
    "suggested_fix": null,
    "lab": null,
    "marley": {
-    "verdict": "none",
-    "reviewed_head": false,
+    "verdict": "approved",
+    "reviewed_head": true,
     "open_threads": 0,
-    "review_url": "",
-    "note": "",
+    "review_url": "https://github.com/music-assistant/server/pull/7479#pullrequestreview-5838593456",
+    "note": "No issues.",
     "recheck_head": "d0bfee48e"
    },
-   "del": 4
+   "del": 4,
+   "action": "approve",
+   "effort": 5
   },
   {
    "repo": "server",
@@ -22884,9 +23002,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": null,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
@@ -22930,9 +23048,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": null,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
@@ -22976,9 +23094,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": null,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
@@ -23022,13 +23140,107 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": null,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
    "del": 6
+  },
+  {
+   "repo": "server",
+   "number": 7498,
+   "state": "open",
+   "closed_at": null,
+   "title": "Give every player the whole track's duration for a flow stream",
+   "author": "Simanias",
+   "url": "https://github.com/music-assistant/server/pull/7498",
+   "draft": false,
+   "verdict": "almost",
+   "assessment": "comment",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "Simanias: real-hardware test (Bot-MArley ask)",
+   "gpt_sol": "clean",
+   "size": "M",
+   "code": 53,
+   "add": 121,
+   "del": 13,
+   "ci": "green",
+   "ci_fail": false,
+   "merge_state": "merge-tree clean on origin/dev 6f6deddf3",
+   "head_sha": "69ed11530",
+   "core_touched": true,
+   "providers_touched": [
+    "chromecast",
+    "hass_players",
+    "roku_media_assistant",
+    "samsung_wam",
+    "squeezelite",
+    "_demo_player_provider"
+   ],
+   "stacked": false,
+   "tldr": "Follow-up to #7224: one shared served_duration(media, stream_url) helper gives every player (Chromecast, HA, Squeezelite, Roku, Samsung WAM, DIDL) the whole track's duration for a flow stream instead of the seconds left after a seek.",
+   "summary": "Bot-MArley first asked to fix stream_duration in player_media_from_queue_item() so new providers can't miss the helper; on the head it accepted that the flow decision is only made per protocol player in resolve_stream_url(), so core can't set it.",
+   "whats_new": "Opened 08:51Z. Bot-MArley asked to set the value in core; Simanias explained the flow decision is per protocol player and Bot-MArley accepted it on the head. A real-hardware test is still asked. Lab players and squeezelite+dlna green.",
+   "blockers": [
+    "Bot-MArley asks for a real-hardware test"
+   ],
+   "findings": [],
+   "unaddressed_comments": [],
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7224",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on 5d4668dd7 (dev merge only).",
+   "suggested_fix": null,
+   "prompt": "Fix music-assistant/server PR #7224 (head 8224a23ac) on top of refs/remotes/pr/7224: replace the deferred restart task, its skip guard on mass._tracked_timers and the faked PLAYING with an inline `await self.mass.player_queues.play_index(queue_id, queue_item_id, seek_position=position)` from play_media (the queue playback lock is re-entrant per task). Apply the validated inline patch from the review, rewrite the restart tests and run pytest tests/providers/raumfeld.",
+   "backport": null,
+   "auto_approved": null,
+   "author_replied": null,
+   "reporter_reply": null,
+   "support": null,
+   "fix_thread": null,
+   "related_prs": [
+    "#7224 merged base"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-11-10 10:05 CET",
+   "changed_now": "new",
+   "marley": {
+    "verdict": "changes",
+    "reviewed_head": true,
+    "open_threads": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7498#pullrequestreview-5839104251",
+    "note": "Design point accepted on the head; real-hardware test asked.",
+    "recheck_head": null
+   },
+   "lab": {
+    "head": "69ed11530",
+    "areas": [
+     "players",
+     "squeezelite",
+     "dlna"
+    ],
+    "result": "green",
+    "run_id": "20261110-090139-fe2c",
+    "note": "players green; squeezelite+dlna green (20261110-090723-bd71). Chromecast bench device not run."
+   },
+   "needs_reply": null,
+   "action": null,
+   "effort": null,
+   "rank_reason": null,
+   "preread": null,
+   "snooze": null
   }
- ]
+ ],
+ "preread_budget": {
+  "date": "2026-11-10",
+  "used": 5
+ }
 }
