@@ -9,7 +9,13 @@
       "20261110-063108-8839"
     ]
   },
-  "known_red": [],
+  "known_red": [
+    {
+      "test": "test_next_drops_previous[airplay-1]",
+      "since": "2026-10-30",
+      "note": "libraop warm skip: FLUSH then back-dated START drops the first 1.8 s of the new track, next heard ~4.3 s; upstream philippe44/libraop#60 (fix on fork MarvinSchenkel/libraop branch fix/restart-above-flushed-timestamp, PRs closed upstream); lab also needs airplay-cli to carry it and the shairport 0.2 s buffer line"
+    }
+  ],
   "last_flakes": [
     "gate/test_players.py::test_players  reruns 15  passed-on-rerun 3  roles slim-1",
     "gate/test_player_kind.py::test_player_airplay  reruns 13  passed-on-rerun 1  roles airplay-1",
