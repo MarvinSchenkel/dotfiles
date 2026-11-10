@@ -1,10 +1,12 @@
 """Render the pr-review report from the routine's state file.
 
-Usage: python3 build.py <state.json> [--full <out.html>] [--digest <out.html>]
+Usage: python3 build.py <state.json> [--full <out.html>] [--digest <out.html>] [--queue]
 
---full writes the complete report for a browser, --digest the compact page for html_render.
+--full writes the complete report for a browser, --digest the compact page for html_render,
+--queue prints the Up next order as JSON.
 """
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -26,6 +28,25 @@ ROWS = [
     ("waiting", "Waiting for user", "Author or reporter has to act"),
 ]
 TZ_NAMES = {"CEST": 2, "CET": 1, "UTC": 0}
+ME = "MarvinSchenkel"
+# Queue score weights: base per action, plus waiting days, minus a third of the effort in minutes.
+PRIORITY = {
+    "action": {"reply": 40, "merge": 45, "rereview": 35, "approve": 30, "decide": 30, "review": 20},
+    "per_wait_day": 2,
+    "wait_cap": 40,
+    "needs_reply": 15,
+    "backport": 10,
+    "effort_div": 3,
+    "batch_per_pr": 8,
+}
+APPROVE_MIN = {"S": 5, "M": 10, "L": 20, "XL": 40}
+ACTION_COLOR = {"reply": "ask", "merge": "success", "approve": "success", "decide": "warning", "review": "info", "rereview": "info"}
+QUICK_LAB = (None, "green", "skipped", "nightly", "dev-red")
+CUTS = ((30, "30 min"), (60, "1 hour"))
+BATCH_MIN = 30
+UP_NEXT_DIGEST = 5
+REPLY_ROWS = 14
+REPLY_WRAP = 96
 
 THEME = """
 :root { --foreground: #18201d; --muted-foreground: #5b6863; --border: #d9e0dc; --card: #ffffff; --card-foreground: #18201d;
@@ -66,7 +87,7 @@ tr.ask td { background: color-mix(in srgb, #f97316 15%, transparent); }
 tr.ask td:first-child { box-shadow: inset 3px 0 #f97316; }
 td.n { font-family: var(--font-mono); font-size: 12px; }
 b { font: 600 10px var(--font-mono); padding: 0 5px; border-radius: 3px; text-transform: uppercase; color: var(--c, var(--muted-foreground)); background: color-mix(in srgb, var(--c, var(--muted-foreground)) 14%, transparent); }
-.r { --c: var(--success); } .a { --c: var(--warning); } .x { --c: var(--destructive); } .i { --c: var(--info); }
+.r { --c: var(--success); } .a { --c: var(--warning); } .x { --c: var(--destructive); } .i { --c: var(--info); } .o { --c: #f97316; }
 .ok { color: var(--success); } .wn { color: var(--warning); } .bd { color: var(--destructive); }
 ul { margin: 0; padding-left: 18px; }
 .ft { font-size: 12px; border-top: 1px solid var(--border); padding-top: 8px; }
@@ -181,10 +202,41 @@ ul.plain { margin: 0; padding-left: 18px; display: flex; flex-direction: column;
 .dh { color: var(--info); } .df { color: var(--muted-foreground); font-weight: 600; }
 .btn { font: 500 11.5px var(--font-sans); padding: 3px 9px; border-radius: var(--radius); border: 1px solid var(--border); background: transparent; color: var(--foreground); cursor: pointer; }
 .btn:hover { border-color: var(--info); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.tabs button { font: 600 13px var(--font-sans); padding: 6px 14px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; color: var(--muted-foreground); cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--foreground); border-bottom-color: var(--info); }
+.panel { display: flex; flex-direction: column; gap: 16px; }
+ol.queue { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.qr { display: grid; grid-template-columns: 2.2em 1fr; gap: 2px 8px; padding: 8px 10px; border: 1px solid var(--border); border-left: 3px solid var(--c); border-radius: var(--radius); background: var(--card); }
+.qr.ask { border-color: var(--ask); background: color-mix(in srgb, var(--ask) 14%, var(--card)); }
+.qr.done { opacity: .45; }
+.qr .rk { font: 600 15px var(--font-mono); color: var(--muted-foreground); grid-row: span 3; }
+.qr .l1 { display: flex; flex-wrap: wrap; gap: 3px 8px; align-items: baseline; }
+.qr .l1 > a { color: var(--foreground); text-decoration: none; font-weight: 600; flex: 1 1 260px; overflow-wrap: anywhere; }
+.qr .l1 > a:hover { color: var(--info); }
+.qr .ef { font: 12px var(--font-mono); color: var(--muted-foreground); }
+.qr .why { font-size: 12.5px; color: var(--muted-foreground); }
+.qr .members { margin: 2px 0 0; padding-left: 18px; font-size: 13px; }
+.qr .cmds { --nc: var(--c); }
+.cut { display: flex; align-items: center; gap: 8px; font: 600 11px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); }
+.cut::before, .cut::after { content: ""; flex: 1; border-top: 1px dashed var(--border); }
+.snz > summary { cursor: pointer; font-size: 13px; color: var(--muted-foreground); }
+.snz ul { margin-top: 6px; }
+.pre { border: 1px solid var(--border); border-left: 3px solid var(--ask); border-radius: var(--radius); padding: 8px 11px; display: flex; flex-direction: column; gap: 6px; }
+.pre .q { font-weight: 600; }
+.pre ol { margin: 0; padding-left: 20px; }
+.reply-text { white-space: pre-wrap; font: 12.5px/1.5 var(--font-mono); margin: 0; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); overflow-wrap: anywhere; }
+textarea.reply-text { display: block; width: 100%; resize: vertical; background: transparent; color: inherit; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12.5px; color: var(--muted-foreground); }
+.perr { color: var(--destructive); }
 [hidden] { display: none !important; }
 """
 
 JS = """
+// report_server.py fills both placeholders when it serves the page.
+const TOKEN = "__ACTION_TOKEN__";
+let POSTED = {};
+try { POSTED = __PR_REVIEW_POSTED__; } catch (e) {}
 const q = document.getElementById("q"), hd = document.getElementById("hd");
 function filt() {
   const s = q.value.trim().toLowerCase().replace(/^#/, "");
@@ -194,13 +246,82 @@ function filt() {
 }
 q.addEventListener("input", filt);
 hd.addEventListener("change", filt);
+function tab(name) {
+  document.querySelectorAll("[data-panel]").forEach(p => { p.hidden = p.dataset.panel !== name; });
+  document.querySelectorAll("button[data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
+  try { localStorage.setItem("pr-review-tab", name); } catch (e) {}
+}
+let saved = null;
+try { saved = localStorage.getItem("pr-review-tab"); } catch (e) {}
+if (saved === "matrix") tab("matrix");
+// Edits are kept per draft hash, so a redrafted reply starts from the new draft.
+function key(b) { return "pr-review-edit:" + b.dataset.repo + "#" + b.dataset.n + ":" + b.dataset.hash; }
+function save(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+function box(el) { return el.closest(".pre").querySelector("textarea"); }
+function mark(t) { t.closest(".pre").querySelector(".edited").hidden = t.readOnly || t.value === t.defaultValue; }
+function restore(b) {
+  const t = box(b);
+  let v = null;
+  try { v = localStorage.getItem(key(b)); } catch (e) {}
+  if (v !== null) t.value = v;
+  mark(t);
+}
+function revert(r) {
+  const t = box(r), b = r.closest(".pre").querySelector("button[data-post]");
+  t.value = t.defaultValue;
+  if (b) save(key(b), null);
+  mark(t);
+}
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (!t.matches("textarea.reply-text")) return;
+  const b = t.closest(".pre").querySelector("button[data-post]");
+  if (b) save(key(b), t.value === t.defaultValue ? null : t.value);
+  mark(t);
+});
+function posted(b, url, body) {
+  const t = box(b);
+  if (body) t.value = body;
+  t.readOnly = true; mark(t);
+  const a = document.createElement("a");
+  a.className = "btn"; a.href = url; a.rel = "noopener"; a.target = "_blank"; a.textContent = "Posted";
+  b.replaceWith(a);
+  const k = b.dataset.repo + "#" + b.dataset.n;
+  document.querySelectorAll(".qr[data-k]").forEach(r => { if (r.dataset.k === k) r.classList.add("done"); });
+}
+async function post(b) {
+  const err = b.parentElement.querySelector(".perr");
+  err.textContent = ""; b.disabled = true; b.textContent = "Posting";
+  try {
+    const sent = box(b).value;
+    const r = await fetch("/api/pr-review/post", {
+      method: "POST",
+      headers: {"Content-Type": "application/json", "X-Action-Token": TOKEN},
+      body: JSON.stringify({repo: b.dataset.repo, n: Number(b.dataset.n), hash: b.dataset.hash, body: sent}),
+    });
+    const j = await r.json().catch(() => ({error: "HTTP " + r.status}));
+    if (j.ok) { save(key(b), null); posted(b, j.url, sent); return; }
+    err.textContent = j.error || "HTTP " + r.status;
+  } catch (e) { err.textContent = "The report server did not answer: " + e.message; }
+  b.disabled = false; b.textContent = "Post";
+}
+document.querySelectorAll("button[data-post]").forEach(b => {
+  const p = POSTED[b.dataset.repo + "#" + b.dataset.n];
+  if (p && p.hash === b.dataset.hash) posted(b, p.url, p.body); else restore(b);
+});
 document.addEventListener("click", e => {
-  const a = e.target.closest("a.chip");
+  const tb = e.target.closest("button[data-tab]");
+  if (tb) { tab(tb.dataset.tab); return; }
+  const a = e.target.closest('a[href^="#pr-"]');
   if (a) {
     const d = document.getElementById(a.getAttribute("href").slice(1));
     if (d) { e.preventDefault(); d.showModal(); d.scrollTop = 0; }
     return;
   }
+  const rv = e.target.closest("a[data-revert]");
+  if (rv) { e.preventDefault(); revert(rv); return; }
+  const pb = e.target.closest("button[data-post]");
+  if (pb) { post(pb); return; }
   if (e.target.closest("[data-close]") || e.target.matches("dialog.pr")) {
     e.target.closest("dialog").close();
     return;
@@ -220,11 +341,14 @@ document.addEventListener("click", e => {
   const pick = () => {
     const box = el.closest("details");
     if (box) box.open = true;
-    const r = document.createRange(); r.selectNodeContents(el);
-    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    if (el.select) { el.focus(); el.select(); } else {
+      const r = document.createRange(); r.selectNodeContents(el);
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    }
     b.textContent = "Selected, press copy";
   };
-  if (navigator.clipboard) navigator.clipboard.writeText(el.textContent).then(done, pick); else pick();
+  const text = el.tagName === "TEXTAREA" ? el.value : el.textContent;
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, pick); else pick();
 });
 """
 
@@ -234,9 +358,10 @@ def main() -> None:
     ap.add_argument("state")
     ap.add_argument("--full", metavar="OUT")
     ap.add_argument("--digest", metavar="OUT")
+    ap.add_argument("--queue", action="store_true", help="print the Up next order as JSON")
     args = ap.parse_args()
-    if not (args.full or args.digest):
-        ap.error("pass --full, --digest or both")
+    if not (args.full or args.digest or args.queue):
+        ap.error("pass --full, --digest, --queue or a mix")
     with open(args.state) as f:
         state = json.load(f)
     now = datetime.now(timezone.utc)
@@ -249,6 +374,12 @@ def main() -> None:
             if len(html) <= DIGEST_LIMIT:
                 break
         _write(args.digest, html, DIGEST_LIMIT, "digest")
+    if args.queue:
+        rows = _queue(state, now)[0]
+        print(json.dumps([
+            {"rank": rank, "repo": _repo(p), "number": p["number"], "action": _action(p), "effort": _effort(p)}
+            for rank, members in enumerate(rows, 1) for p in members
+        ], indent=1))
 
 
 def _write(path: str, html: str, limit: int, what: str) -> None:
@@ -307,10 +438,67 @@ def _page(state: dict, now: datetime) -> str:
         f'<tbody>{"".join(rows)}</tbody></table></div>'
     )
     reviews = "".join(_detail(p, now) for p in ordered)
+    rows, snoozed = _queue(state, now)
+    tabs = (
+        '<div class="tabs" role="tablist"><button type="button" role="tab" data-tab="queue" aria-selected="true">'
+        f'Up next ({len(rows)})</button><button type="button" role="tab" data-tab="matrix" aria-selected="false">Matrix</button></div>'
+    )
     return (
         '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         f"<title>PR backlog</title><style>{THEME}{CSS}{PAGE}</style></head><body><div class=\"wrap\">"
-        f"{head}{note}{controls}{matrix}</div>{reviews}<script>{JS}</script></body></html>"
+        f'{head}{note}{tabs}<div class="panel" data-panel="queue">{_up_next(rows, snoozed, now)}</div>'
+        f'<div class="panel" data-panel="matrix" hidden>{controls}{matrix}</div></div>{reviews}<script>{JS}</script></body></html>'
+    )
+
+
+def _up_next(rows: list, snoozed: list, now: datetime) -> str:
+    """The Up next tab: queue rows in priority order with effort cut lines, then the snoozed cards."""
+    items, total = [], 0
+    for rank, members in enumerate(rows, 1):
+        before = total
+        total += sum(_effort(p) for p in members)
+        items.append(_queue_row(rank, members, now))
+        items += [f'<li class="cut">{label}</li>' for limit, label in CUTS if before < limit <= total]
+    queue = f'<ol class="queue">{"".join(items)}</ol>' if items else '<p class="empty">Nothing waits on you.</p>'
+    hint = f'<p class="hint">{len(rows)} items, about {total} min. Top down; snooze what can wait.</p>'
+    if not snoozed:
+        return hint + queue
+    lis = "".join(
+        f'<li><a href="#{_anchor(p)}">{escape(_label(p))}</a> {escape(p.get("title", ""), quote=False)}, until '
+        f'{escape("new activity" if p["snooze"].get("until") == "activity" else str(p["snooze"].get("until")))}'
+        f'{": " + _md(p["snooze"]["reason"]) if p["snooze"].get("reason") else ""}</li>'
+        for p in snoozed
+    )
+    return f'{hint}{queue}<details class="snz"><summary>Snoozed ({len(snoozed)})</summary><ul class="plain">{lis}</ul></details>'
+
+
+def _queue_row(rank: int, members: list, now: datetime) -> str:
+    """One Up next row: a single PR, or a batch of quick approvals."""
+    if len(members) > 1:
+        effort = sum(_effort(p) for p in members)
+        lis = "".join(
+            f'<li><a href="#{_anchor(p)}">{escape(_label(p))}</a> {escape(p.get("title", ""), quote=False)} '
+            f'<span class="hint">{escape(p.get("author", ""))}, {escape(_rank_reason(p, now))}</span></li>'
+            for p in members
+        )
+        cmd = "approve " + " ".join(_reply_label(p) for p in members)
+        return (
+            f'<li class="qr" style="--c:var(--success)"><span class="rk">{rank}</span><div class="l1">'
+            f'<span class="pill">approve</span><span class="ef">~{effort} min</span><span>{len(members)} quick approvals</span></div>'
+            f'<ul class="members">{lis}</ul><div class="cmds">{_cmd(cmd)}</div></li>'
+        )
+    p = members[0]
+    action, rl = _action(p), _reply_label(p)
+    cmds = [f"approve {rl}"] if action == "approve" and p.get("author") != ME else []
+    if p.get("prompt"):
+        cmds.append(f"chip {rl}")
+    cmds += [f"snooze {rl} 3d", f"later {rl}"]
+    return (
+        f'<li class="qr{" ask" if _asks_you(p) else ""}" data-k="{escape(_repo(p))}#{p["number"]}" style="--c:var(--{ACTION_COLOR[action]})">'
+        f'<span class="rk">{rank}</span><div class="l1"><span class="pill">{action}</span><span class="ef">~{_effort(p)} min</span>'
+        f'<a href="#{_anchor(p)}"><span class="n">{escape(_label(p))}</span> {escape(p.get("title", ""), quote=False)}</a>'
+        f'<span class="hint">{escape(p.get("author", ""))}</span>{"".join(_tags(p, now))}</div>'
+        f'<div class="why">{escape(_rank_reason(p, now))}</div><div class="cmds">{"".join(_cmd(c) for c in cmds)}</div></li>'
     )
 
 
@@ -358,15 +546,39 @@ def _digest(state: dict, now: datetime, title_len: int) -> str:
         f'{escape(str(state.get("dev", "")))}</code>, {len(open_prs)} open PRs, {len(changed)} changed</div></div>'
     )
     note = f'<p class="note">{_md(state.get("run_note"))}</p>' if state.get("run_note") else ""
+    up_next = _digest_queue(_queue(state, now)[0][:UP_NEXT_DIGEST], now, title_len)
     footer = (
         f'<div class="ft">Full matrix with every review in the side panel, or <code>open {FULL_REPORT}</code>. Replies: <code>post &lt;pr&gt; f&lt;n&gt;</code>, '
         "<code>fix &lt;pr&gt;</code>, <code>approve &lt;pr&gt;</code>, <code>chip &lt;pr&gt;</code>, <code>prompt &lt;pr&gt;</code>, "
-        "<code>show &lt;pr&gt;</code>, <code>review &lt;pr&gt;</code>, <code>skip &lt;pr&gt;</code>, <code>render</code>; "
+        "<code>show &lt;pr&gt;</code>, <code>review &lt;pr&gt;</code>, <code>snooze &lt;pr&gt; [3d]</code>, <code>later &lt;pr&gt;</code>, "
+        "<code>skip &lt;pr&gt;</code>, <code>render</code>; "
         "&lt;pr&gt; is 7045 or models#438.</div>"
     )
     return (
         f'<!doctype html><html lang="en"><head><meta charset="utf-8"><style>{DIGEST_CSS}</style></head><body><div class="w">'
-        f'{head}<div class="tl">{tallies}</div>{note}{table}{short_html}{footer}</div></body></html>'
+        f'{head}<div class="tl">{tallies}</div>{note}{up_next}{table}{short_html}{footer}</div></body></html>'
+    )
+
+
+def _digest_queue(rows: list, now: datetime, title_len: int) -> str:
+    """The digest's Up next table: rank, PR, action, minutes and why."""
+    if not rows:
+        return ""
+    out = []
+    for rank, members in enumerate(rows, 1):
+        p = members[0]
+        links = " ".join(f'<a href="{escape(m.get("url", ""))}">{escape(_label(m))}</a>' for m in members)
+        action = _action(p)
+        cls = "o" if ACTION_COLOR[action] == "ask" else {"success": "r", "warning": "a"}.get(ACTION_COLOR[action], "i")
+        why = f"{len(members)} quick approvals" if len(members) > 1 else _rank_reason(p, now)
+        out.append(
+            f'<tr{" class=ask" if _asks_you(p) and len(members) == 1 else ""}><td class="n">{rank}</td><td class="n">{links}</td>'
+            f'<td><b class="{cls}">{action}</b></td><td>~{sum(_effort(m) for m in members)}</td>'
+            f'<td class="t">{escape(_cut(why, title_len + 10), quote=False)}</td></tr>'
+        )
+    return (
+        '<div class="sc"><table><thead><tr><th>#</th><th>Up next</th><th>Action</th><th>Min</th><th>Why</th></tr></thead>'
+        f'<tbody>{"".join(out)}</tbody></table></div>'
     )
 
 
@@ -416,6 +628,114 @@ def _cut(s: str, n: int) -> str:
 def _matrix_prs(state: dict, now: datetime) -> list:
     """PRs that belong in the matrix: open ones plus auto-approvals from the last week."""
     return [p for p in state.get("prs", []) if p.get("state", "open") == "open" or _recent_auto(p, now)]
+
+
+def _queue(state: dict, now: datetime) -> tuple:
+    """Up next rows in priority order, each a list of PRs (more than one for the quick-approval batch), plus the snoozed PRs."""
+    cards = [p for p in state.get("prs", []) if p.get("state", "open") == "open" and (p.get("status") == "attention" or _asks_you(p))]
+    snoozed = [p for p in cards if _snoozed(p, now)]
+    live = sorted(
+        (p for p in cards if not _snoozed(p, now)),
+        key=lambda p: (-_priority(p, now), -(_queue_wait(p, now) or 0), _key(p)),
+    )
+    quick, minutes = [], 0
+    for p in live:
+        if _quick(p) and (not quick or minutes + _effort(p) <= BATCH_MIN):
+            quick.append(p)
+            minutes += _effort(p)
+    if len(quick) < 2:
+        return [[p] for p in live], snoozed
+    # The batch unblocks several authors at once, so it ranks above its best member.
+    rows = [(_priority(p, now), [p]) for p in live if not any(p is x for x in quick)]
+    rows.append((_priority(quick[0], now) + PRIORITY["batch_per_pr"] * (len(quick) - 1), quick))
+    rows.sort(key=lambda r: -r[0])
+    return [members for _, members in rows], snoozed
+
+
+def _priority(p: dict, now: datetime) -> float:
+    """Queue score, higher goes first; weights live in PRIORITY."""
+    w = PRIORITY
+    score = w["action"][_action(p)] + min(w["per_wait_day"] * (_queue_wait(p, now) or 0), w["wait_cap"]) - _effort(p) / w["effort_div"]
+    if _asks_you(p):
+        score += w["needs_reply"]
+    if (p.get("backport") or {}).get("rec") is True:
+        score += w["backport"]
+    return score
+
+
+def _action(p: dict) -> str:
+    """What Marvin does next on the PR: the routine's call, else a guess from the state."""
+    if p.get("action") in PRIORITY["action"]:
+        return p["action"]
+    if _asks_you(p):
+        return "reply"
+    waiting = str(p.get("waiting_on") or "").lower()
+    if "re-review" in waiting:
+        return "rereview"
+    if p.get("verdict") == "ready" and not p.get("draft"):
+        # Marvin can't approve his own PRs; once someone else does, merging is his move.
+        if re.match(r"you: (queue (the )?)?merge\b", waiting) or p.get("author") == ME:
+            return "merge"
+        return "review" if p.get("size") in ("L", "XL") else "approve"
+    return "decide"
+
+
+def _effort(p: dict) -> int:
+    """Minutes the next action takes: the routine's estimate, else a guess from action and size."""
+    if isinstance(p.get("effort"), int):
+        return p["effort"]
+    action, size = _action(p), p.get("size")
+    if action == "reply":
+        return 10
+    if action == "decide":
+        return 30 if size in ("L", "XL") else 15
+    base = APPROVE_MIN.get(size, 10)
+    return base * 2 if action == "review" else base
+
+
+def _rank_reason(p: dict, now: datetime) -> str:
+    """One line on why the card sits where it does."""
+    if p.get("rank_reason"):
+        return str(p["rank_reason"])
+    days = _queue_wait(p, now) or 0
+    ask = _asks_you(p)
+    if ask:
+        return f'{ask.get("who", "someone")} waiting {days}d on your reply'
+    parts = [_action(p)]
+    lab = (p.get("lab") or {}).get("result")
+    if lab:
+        parts.append(f"lab {lab}")
+    if days:
+        parts.append(f"{days}d on you")
+    return ", ".join(parts + [f"{_effort(p)} min"])
+
+
+def _queue_wait(p: dict, now: datetime):
+    """Days the card has waited on Marvin, from attention_since or else the comment waiting on him."""
+    days = _wait_days(p, now)
+    if days is None and _asks_you(p):
+        at = _ts(_asks_you(p).get("at"))
+        days = None if at is None else max(0, (now - at).days)
+    return days
+
+
+def _quick(p: dict) -> bool:
+    """Whether the PR fits the quick-approval batch: small, ready, lab not red and not Marvin's own."""
+    return (
+        _action(p) == "approve" and p.get("verdict") == "ready" and p.get("size") in ("S", "M")
+        and (p.get("lab") or {}).get("result") in QUICK_LAB and p.get("author") != ME
+    )
+
+
+def _snoozed(p: dict, now: datetime) -> bool:
+    """Whether the card is snoozed out of the queue right now."""
+    s = p.get("snooze")
+    if not isinstance(s, dict):
+        return False
+    if s.get("until") == "activity":
+        return True
+    until = _ts(s.get("until"))
+    return until is not None and now < until
 
 
 def _chip(p: dict, now: datetime) -> str:
@@ -496,7 +816,7 @@ def _detail(p: dict, now: datetime) -> str:
     if p.get("draft"):
         meta.append("draft")
     meta.append(f'reviewed {escape(str(p.get("reviewed_at") or "never"))} on <code>{escape(sha)}</code>')
-    parts = [f'<div class="by">{"".join(f"<span>{m}</span>" for m in meta)}</div>', _next_step(p, now), _signals(p)]
+    parts = [f'<div class="by">{"".join(f"<span>{m}</span>" for m in meta)}</div>', _next_step(p, now), _preread(p), _signals(p)]
     if p.get("tldr"):
         parts.append(f'<p class="tldr">{_md(p["tldr"])}</p>')
     parts.append(_findings(p))
@@ -554,8 +874,50 @@ def _next_step(p: dict, now: datetime) -> str:
     shown, extra = bullets[:3], len(bullets) - 3
     items = "".join(f"<li>{_md(b)}</li>" for b in shown) + (f'<li class="hint">{extra} more under details</li>' if extra > 0 else "")
     ul = f"<ul>{items}</ul>" if items else ""
-    chips = "".join(f'<button class="cmd" type="button" data-cmd="{escape(c)}" title="Copy reply">{escape(c)}</button>' for c in cmds)
+    chips = "".join(_cmd(c) for c in cmds)
     return f'<div class="next t-{tone}"><div class="nt">{escape(title)}</div>{ul}{f"<div class=cmds>{chips}</div>" if chips else ""}</div>'
+
+
+def _cmd(c: str) -> str:
+    """A reply command as a copy chip."""
+    return f'<button class="cmd" type="button" data-cmd="{escape(c)}" title="Copy reply">{escape(c)}</button>'
+
+
+def _preread(p: dict) -> str:
+    """The pre-read for a reply or decide card: question, options, recommendation and the draft reply to post."""
+    pr = p.get("preread")
+    if not isinstance(pr, dict) or not pr.get("draft_reply"):
+        return ""
+    draft = pr["draft_reply"]
+    parts = ["<h3>Pre-read</h3>"]
+    if pr.get("question"):
+        parts.append(f'<p class="q">{_md(pr["question"])}</p>')
+    if pr.get("options"):
+        parts.append("<ol>" + "".join(f"<li>{_md(o)}</li>" for o in pr["options"]) + "</ol>")
+    if pr.get("recommendation"):
+        parts.append(f'<p class="box reply"><b>Recommendation:</b> {_md(pr["recommendation"])}</p>')
+    done = pr.get("posted") if isinstance(pr.get("posted"), dict) else None
+    if done:
+        parts.append(
+            f'<pre class="reply-text">{escape(done.get("body") or draft, quote=False)}</pre><div class="row"><a class="btn" href="{escape(str(done.get("url", "")))}" '
+            f'target="_blank" rel="noopener">Posted</a><span>{escape(_fmt(done.get("at")))}</span></div>'
+        )
+        return f'<section class="pre">{"".join(parts)}</section>'
+    rid = f"rr-{_anchor(p)}"
+    digest = hashlib.sha256(draft.encode("utf-8")).hexdigest()[:16]
+    parts.append(
+        # The parser drops the newline right after <textarea>, so a draft's own leading newline survives.
+        f'<textarea class="reply-text" id="{rid}" rows="{_reply_rows(draft)}" aria-label="Draft reply">\n{escape(draft, quote=False)}</textarea>'
+        f'<div class="row"><button class="btn" type="button" data-copy="{rid}">Copy</button><button class="btn" type="button" data-post '
+        f'data-repo="{escape(_repo(p))}" data-n="{p["number"]}" data-hash="{digest}">Post</button><span class="edited" hidden>'
+        '<span class="tag warn">Edited</span> <a href="#" data-revert>Revert</a></span><span class="perr"></span></div>'
+    )
+    return f'<section class="pre">{"".join(parts)}</section>'
+
+
+def _reply_rows(text: str) -> int:
+    """Textarea height that fits the draft, capped at REPLY_ROWS."""
+    return min(REPLY_ROWS, sum(len(line) // REPLY_WRAP + 1 for line in text.split("\n")))
 
 
 def _signals(p: dict) -> str:
@@ -720,7 +1082,8 @@ def _md(s) -> str:
                 continue
             h = escape(seg, quote=False)
             h = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", h)
-            h = re.sub(r"(https?://[^\s<)\]]+[^\s<)\].,;:])", r'<a href="\1">\1</a>', h)
+            # Quotes end a URL: the text was escaped without quote=True, so one would break out of href.
+            h = re.sub(r"(https?://[^\s<)\]\"']+[^\s<)\].,;:\"'])", r'<a href="\1">\1</a>', h)
             out.append(h.replace("\n", "<br>"))
     return "".join(out)
 
@@ -805,6 +1168,11 @@ def _key(p: dict) -> str:
 def _anchor(p: dict) -> str:
     """Element id of the PR's review block."""
     return f"pr-{_key(p)}"
+
+
+def _repo(p: dict) -> str:
+    """Short repo name of the PR."""
+    return p.get("repo") or "server"
 
 
 def _label(p: dict) -> str:

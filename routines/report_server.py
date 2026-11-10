@@ -1,9 +1,9 @@
-"""Serve the routine reports on localhost and post issue-triage draft replies from the board.
+"""Serve the routine reports on localhost and post draft replies from the issue-triage and pr-review pages.
 
 Replaces `python3 -m http.server` in the local.routine-reports LaunchAgent. GET serves the report pages
-with the action token and the posted state filled in. POST /api/issue-triage/post posts a card's draft
-reply, or the edited text sent with it, with `gh` after checking that the board is current and nobody
-commented since the draft, and appends the post to a log the issue-triage routine folds back into its state.
+with the action token and the posted state filled in. POST /api/issue-triage/post and /api/pr-review/post
+post a card's draft reply, or the edited text sent with it, with `gh` after checking that the page is
+current and nobody commented since the draft, and append the post to a log the routine folds back into its state.
 
 Runs on the system /usr/bin/python3 (3.9), stdlib only.
 """
@@ -13,6 +13,7 @@ import hmac
 import json
 import mimetypes
 import os
+import re
 import secrets
 import shutil
 import subprocess
@@ -22,7 +23,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Optional, Tuple
 from urllib.parse import unquote, urlsplit
 
-POST_PATH = "/api/issue-triage/post"
+TRIAGE_POST = "/api/issue-triage/post"
+PRR_POST = "/api/pr-review/post"
+PRR_PAGE = "pr-review.html"
+PRR_OWNER = "music-assistant"
+PRR_BOTS = {"Bot-MArley", "Copilot"}
 SUPPORT = "music-assistant/support"
 GH_TIMEOUT = 60
 MAX_BODY = 300_000
@@ -46,6 +51,16 @@ DISCUSSION_QUERY = """query($owner: String!, $name: String!, $n: Int!) {
     }
   }
 }"""
+PR_QUERY = """query($owner: String!, $name: String!, $n: Int!) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $n) {
+      state headRefOid
+      comments(last: 20) { nodes { author { __typename login } at: createdAt body } }
+      reviews(last: 20) { nodes { author { __typename login } at: submittedAt } }
+      reviewThreads(last: 100) { nodes { comments(last: 5) { nodes { author { __typename login } at: createdAt } } } }
+    }
+  }
+}"""
 ADD_COMMENT = """mutation($id: ID!, $body: String!) {
   addDiscussionComment(input: {discussionId: $id, body: $body}) { comment { url } }
 }"""
@@ -60,17 +75,20 @@ class Refused(Exception):
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Serve the routine reports and the issue-triage Post button.")
+    ap = argparse.ArgumentParser(description="Serve the routine reports and their Post buttons.")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--bind", default="127.0.0.1")
     ap.add_argument("--dir", default="~/.claude-teamB/routine-reports")
     ap.add_argument("--state", default="~/git/dotfiles/routines/state/issue-triage.json")
     ap.add_argument("--log", default="~/.claude-teamB/routine-state/issue-triage-actions.jsonl")
+    ap.add_argument("--prr-state", default="~/git/dotfiles/routines/state/pr-review.json")
+    ap.add_argument("--prr-log", default="~/.claude-teamB/routine-state/pr-review-actions.jsonl")
     ap.add_argument("--dry-run", action="store_true", help="check everything but skip the GitHub write")
     args = ap.parse_args()
-    for key in ("dir", "state", "log"):
+    for key in ("dir", "state", "log", "prr_state", "prr_log"):
         setattr(args, key, os.path.realpath(os.path.expanduser(getattr(args, key))))
-    os.makedirs(os.path.dirname(args.log), exist_ok=True)
+    for log in (args.log, args.prr_log):
+        os.makedirs(os.path.dirname(log), exist_ok=True)
     Handler.cfg = args
     Handler.origins = {f"http://127.0.0.1:{args.port}", f"http://localhost:{args.port}"}
     server = ThreadingHTTPServer((args.bind, args.port), Handler)
@@ -80,7 +98,7 @@ def main() -> None:
 
 
 class Handler(BaseHTTPRequestHandler):
-    """Static report pages plus the post endpoint."""
+    """Static report pages plus the post endpoints."""
 
     cfg: argparse.Namespace
     origins: set
@@ -94,13 +112,16 @@ class Handler(BaseHTTPRequestHandler):
             data = f.read()
         ctype = mimetypes.guess_type(path)[0] or "application/octet-stream"
         if path.endswith(".html"):
-            posted = json.dumps(_posted(self.cfg.log)).replace("<", "\\u003c")
-            data = data.replace(b"__ACTION_TOKEN__", TOKEN.encode()).replace(b"__POSTED__", posted.encode())
+            prr = os.path.basename(path) == PRR_PAGE
+            placeholder = b"__PR_REVIEW_POSTED__" if prr else b"__POSTED__"
+            posted = json.dumps(_posted(self.cfg.prr_log if prr else self.cfg.log)).replace("<", "\\u003c")
+            data = data.replace(b"__ACTION_TOKEN__", TOKEN.encode()).replace(placeholder, posted.encode())
             ctype = "text/html; charset=utf-8"
         self._send(200, data, ctype)
 
     def do_POST(self) -> None:
-        if urlsplit(self.path).path != POST_PATH:
+        poster = {TRIAGE_POST: _post, PRR_POST: _post_pr}.get(urlsplit(self.path).path)
+        if not poster:
             self._json(404, {"ok": False, "error": "Unknown endpoint"})
             return
         if self.headers.get("Origin") not in self.origins or not hmac.compare_digest(
@@ -114,7 +135,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             req = self._request()
             with POST_LOCK:
-                url = _post(self.cfg, *req)
+                url = poster(self.cfg, *req)
         except Refused as e:
             self._json(e.status, {"ok": False, "error": str(e)})
             return
@@ -173,15 +194,7 @@ def _post(cfg: argparse.Namespace, repo: str, n: int, digest: str, text: Optiona
         )
     if not card:
         raise Refused(404, f"No card for {repo}#{n}")
-    reply = card.get("reply") or ""
-    if not reply.strip():
-        raise Refused(409, f"{repo}#{n} has no draft reply")
-    if hashlib.sha256(reply.encode("utf-8")).hexdigest()[:16] != digest:
-        raise Refused(409, "The board is out of date, reload it")
-    if any(e.get("repo") == repo and e.get("n") == n and e.get("hash") == digest for e in _log_entries(cfg.log)):
-        raise Refused(409, "This draft was already posted")
-    edited = text is not None and text.rstrip() != reply.rstrip()
-    text = text if edited else reply
+    text, edited = _checked_text(cfg.log, repo, n, card.get("reply") or "", digest, text)
     discussion = bool(card.get("discussion"))
     node_id = _guard(repo, n, discussion, (card.get("gh") or {}).get("at"))
     if cfg.dry_run:
@@ -192,15 +205,50 @@ def _post(cfg: argparse.Namespace, repo: str, n: int, digest: str, text: Optiona
     else:
         out = _gh(["issue", "comment", str(n), "-R", repo, "--body-file", "-"], text)
         url = next((line for line in reversed(out.split()) if line.startswith("https://")), "")
-    entry = {
-        "at": _now(), "action": "post", "repo": repo, "n": n, "discussion": discussion, "hash": digest, "url": url,
-        "edited": edited,
-    }
+    entry = {"at": _now(), "action": "post", "repo": repo, "n": n, "discussion": discussion, "hash": digest, "url": url}
+    _log_post(cfg.log, entry, text, edited)
+    return url
+
+
+def _post_pr(cfg: argparse.Namespace, repo: str, n: int, digest: str, text: Optional[str]) -> str:
+    """Check the PR card and thread, post the edited text or else the pre-read draft, log it and return the comment URL."""
+    with open(cfg.prr_state) as f:
+        card = next((p for p in json.load(f)["prs"] if (p.get("repo") or "server") == repo and p.get("number") == n), None)
+    if not card or card.get("state", "open") != "open":
+        raise Refused(404, f"No open PR card for {repo}#{n}")
+    pre = card.get("preread") or {}
+    text, edited = _checked_text(cfg.prr_log, repo, n, pre.get("draft_reply") or "", digest, text)
+    if not text.lstrip().startswith(NOTE_HEADER):
+        raise Refused(400, "Keep the [!NOTE] header at the top")
+    _pr_guard(repo, n, pre.get("at"), pre.get("head") or "")
+    if cfg.dry_run:
+        url = f"dry-run://{repo}#{n}"
+    else:
+        out = _gh(["pr", "comment", str(n), "-R", f"{PRR_OWNER}/{repo}", "--body-file", "-"], text)
+        url = next((line for line in reversed(out.split()) if line.startswith("https://")), "")
+    _log_post(cfg.prr_log, {"at": _now(), "action": "post", "repo": repo, "n": n, "hash": digest, "url": url}, text, edited)
+    return url
+
+
+def _checked_text(log: str, repo: str, n: int, reply: str, digest: str, text: Optional[str]) -> Tuple[str, bool]:
+    """Check the draft against the page's hash and the log; return the text to post and whether it was edited."""
+    if not reply.strip():
+        raise Refused(409, f"{repo}#{n} has no draft reply")
+    if hashlib.sha256(reply.encode("utf-8")).hexdigest()[:16] != digest:
+        raise Refused(409, "The page is out of date, reload it")
+    if any(e.get("repo") == repo and e.get("n") == n and e.get("hash") == digest for e in _log_entries(log)):
+        raise Refused(409, "This draft was already posted")
+    edited = text is not None and text.rstrip() != reply.rstrip()
+    return (text if edited else reply), edited
+
+
+def _log_post(log: str, entry: dict, text: str, edited: bool) -> None:
+    """Append a post to the action log, with the body when it was edited."""
+    entry["edited"] = edited
     if edited:
         entry["body"] = text
-    with open(cfg.log, "a") as f:
+    with open(log, "a") as f:
         f.write(json.dumps(entry) + "\n")
-    return url
 
 
 def _guard(repo: str, n: int, discussion: bool, drafted_at: Optional[str]) -> str:
@@ -223,6 +271,41 @@ def _guard(repo: str, n: int, discussion: bool, drafted_at: Optional[str]) -> st
         who = (last.get("author") or {}).get("login") or "ghost"
         raise Refused(409, f"New comment from {who} at {last['createdAt']} since the draft. Ask in the thread.")
     return node.get("id", "")
+
+
+def _pr_guard(repo: str, n: int, drafted_at: Optional[str], head: str) -> None:
+    """Refuse when the PR is closed or merged, has a new head, or a person commented or reviewed after the draft."""
+    query = ["api", "graphql", "-f", f"query={PR_QUERY}", "-f", f"owner={PRR_OWNER}", "-f", f"name={repo}", "-F", f"n={n}"]
+    pr = json.loads(_gh(query))["data"]["repository"]["pullRequest"]
+    if not pr:
+        raise Refused(404, f"{repo}#{n} was not found on GitHub")
+    if pr["state"] != "OPEN":
+        raise Refused(409, f"{repo}#{n} is {pr['state'].lower()}")
+    if not head or not pr["headRefOid"].startswith(head):
+        raise Refused(409, f"{repo}#{n} has new commits since the draft. Check the PR first.")
+    try:
+        drafted = _ts(drafted_at) if drafted_at else None
+    except ValueError:
+        raise Refused(409, "The pre-read has no valid timestamp, wait for the next run")
+    events = pr["comments"]["nodes"] + pr["reviews"]["nodes"]
+    events += [c for t in pr["reviewThreads"]["nodes"] for c in t["comments"]["nodes"]]
+    # Pending reviews have no submittedAt. Marvin's own comments count: they may already answer the ask.
+    people = [e for e in events if e.get("at") and not _is_bot(e.get("author") or {}) and not _bot_ping(e)]
+    last = max(people, key=lambda e: e["at"], default=None)
+    if last and (not drafted or _ts(last["at"]) > drafted):
+        who = (last.get("author") or {}).get("login") or "ghost"
+        raise Refused(409, f"New activity from {who} at {last['at']} since the draft. Check the PR first.")
+
+
+def _bot_ping(event: dict) -> bool:
+    """Whether a comment is only an @Bot-MArley recheck, review or merge request, which the routine posts as Marvin."""
+    return bool(re.fullmatch(r"\s*@Bot-MArley\s+(recheck|review|merge)\s*", event.get("body") or ""))
+
+
+def _is_bot(author: dict) -> bool:
+    """Whether a GitHub author is a bot or one of the review bots."""
+    login = author.get("login") or ""
+    return author.get("__typename") == "Bot" or login in PRR_BOTS or login.endswith("[bot]")
 
 
 def _gh(args: list, stdin: Optional[str] = None) -> str:
