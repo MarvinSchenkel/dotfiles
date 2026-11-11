@@ -202,8 +202,8 @@ cards that need Marvin; the attention page does that.
 
 Ids: a full GHSA id or its first block after `GHSA-`, such as `abcd`; `cs-<n>` or `#<n>` for alerts.
 After any reply that changes a card, write the state, rebuild the board and refresh the side panel. The
-last step of every handled reply is the attention build with `--source security-inbox`; paste its output
-in the answer.
+last step of every handled reply is the attention build with `--source security-inbox`; after a forwarded command add `--handled`, which clears its "sent" marker on the attention page.
+Paste its output in the answer.
 
 The attention thread forwards Marvin's commands for this inbox here as plain messages, so this thread
 stays the only writer of its state. Handle a forwarded command like any reply below. A forwarded command

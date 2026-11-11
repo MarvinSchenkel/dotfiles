@@ -387,8 +387,8 @@ that repo.
 After a reply that changes the state, write and commit the state file with the message
 `issue-triage: <verb> <n>`. After `edit` and after every forwarded command, rebuild the board and refresh
 the side panel, so the Post button carries the new draft; otherwise the next run shows the change. Then run
-the attention build as the last step of every handled reply and answer with one confirmation line, the link
-to what was posted and the build's output.
+the attention build as the last step of every handled reply (after a forwarded command add `--handled`, which clears its "sent" marker on the attention page) and answer with one
+confirmation line, the link to what was posted and the build's output.
 
 ## State file shape
 

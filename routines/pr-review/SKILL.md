@@ -419,7 +419,7 @@ page shows. One reply can hold several commands, for example `post 7045 f1 f3, a
 A reply that changes the state writes it back and commits it the same way, with the message
 `pr-review: reply <YYYY-MM-DD HH:MM>`. Never push. Every handled reply, forwarded or not, ends by
 rebuilding this routine's page, then running the attention build as in the chat summary, and pasting
-its last line into the answer.
+its last line into the answer. After a forwarded command add `--handled`, which clears its "sent" marker on the attention page.
 
 ## State file shape
 

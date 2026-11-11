@@ -59,7 +59,7 @@ DECIDE_ACTIONS = frozenset({
     "ack_coordinator", "decide_fix", "review_fix", "merge_fix", "backport_decision", "review_backport",
 })
 CHORE_STEPS = frozenset({"set_ranges", "cve", "credit", "publish"})  # advisory publish chores
-TITLE_KINDS = frozenset({"release", "lab", "log"})  # no GitHub-style id, so the title is the sentence
+TITLE_KINDS = frozenset({"release", "lab", "log", "alert"})  # no GitHub-style id, so the title is the sentence
 ACTION_TEXT = {
     "review": "Review {id}", "rereview": "Re-review {id}", "approve": "Approve {id}", "merge": "Merge {id}",
     "flip": "Mark {id} ready for review", "decide": "Decide on {id}", "reply": "Reply on {id}",
@@ -123,7 +123,7 @@ class Ask:
     """One thing a routine wants from Marvin, normalized by a collector."""
 
     id: str  # canonical id
-    kind: str  # pr | issue | discussion | advisory | lab | log | release
+    kind: str  # pr | issue | discussion | advisory | alert | lab | log | release
     src: str  # source name
     title: str
     url: str
@@ -176,7 +176,10 @@ class Row:
 
 
 def rank(asks: list[Ask], now: datetime) -> list[Row]:
-    """Every row that passed the gate, in final order, with state, reason and cut set."""
+    """Every row that passed the gate, in final order, with state, reason and cut set.
+
+    `now` is aware and in Marvin's local time zone, since snooze and due dates are local dates.
+    """
     asks = [replace(ask, action=_checked_action(ask)) for ask in asks]
     on = {ask.id for ask in asks if gate(ask, now)}
     open_ids = {ask.id for ask in asks if ask.open}
@@ -244,7 +247,7 @@ def tier(cluster: list[Ask], now: datetime) -> tuple[Tier, str]:
         return Tier.ACT, "ssvc"
     if _deadline_near(cluster, now):
         return Tier.ACT, "due"
-    if any(ask.regression_stable and ask.impact_high for ask in cluster):
+    if any(ask.regression_stable for ask in cluster):
         return Tier.ACT, "regression"
     if act.action == "investigate":
         return Tier.ACT, "lab_red"
@@ -310,7 +313,7 @@ def reason(row: Row, now: datetime) -> str:
         case "due":
             return f"due {row.due:%m-%d}"
         case "regression":
-            return "stable regression, high impact"
+            return "confirmed regression on stable"
         case "lab_red":
             return "dev regression in the lab"
         case "quick_answer":
@@ -369,7 +372,7 @@ def _pr_turn(ask: Ask) -> bool:
         return ask.flagged and not answered
     if pr.draft:
         return pr.question_for_me
-    return not _newer(pr.my_said_at, pr.author_last_at)
+    return pr.question_for_me or not _newer(pr.my_said_at, pr.author_last_at)
 
 
 def _ready_to_merge(pr: PRFacts) -> bool:
@@ -477,8 +480,7 @@ def _quick_answer(ask: Ask) -> bool:
 
 def _state(row: Row, open_ids: set[str], now: datetime) -> str:
     """Display state of a fresh work item row."""
-    snooze = row.members[0].snooze
-    if snooze and now.date() < snooze["until"]:
+    if any(ask.snooze and now.date() < ask.snooze["until"] for ask in row.members):
         return "snoozed"
     if any(b in open_ids for b in row.blocked_by):
         return "blocked"
@@ -512,10 +514,11 @@ def _approval_batch(rows: list[Row]) -> list[Row]:
 
 
 def _small_approval(row: Row) -> bool:
-    """Live Land approval of size S or M on someone else's PR without high impact."""
+    """Live single-item Land approval of size S or M on someone else's PR without high impact."""
     act = row.members[0]
     return (
         row.state == "live"
+        and len(row.members) == 1
         and row.tier is Tier.LAND
         and act.action == "approve"
         and act.size in ("S", "M")
@@ -525,8 +528,8 @@ def _small_approval(row: Row) -> bool:
 
 
 def _chore_batch(row: Row) -> str | None:
-    """Batch id of a live Keep warm chore row."""
-    if row.state != "live" or row.tier is not Tier.KEEP_WARM or row.rule == "batch":
+    """Batch id of a live Keep warm chore row of one item; a batch keeps only one ask per row."""
+    if row.state != "live" or row.tier is not Tier.KEEP_WARM or row.rule == "batch" or len(row.members) > 1:
         return None
     action = row.members[0].action
     if action in CHORE_STEPS:

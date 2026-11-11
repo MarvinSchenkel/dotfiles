@@ -119,6 +119,10 @@ def test_teammate_comment_on_an_uncarded_contributor_pr_is_not_the_author_acting
     assert not rank.gate(pull(pr=pr), NOW)
 
 
+def test_question_on_an_uncarded_pr_is_my_turn_after_my_comment() -> None:
+    assert rank.gate(pull(pr=facts(my_said_at=ago(1), author_last_at=ago(2), question_for_me=True)), NOW)
+
+
 def test_flagged_card_is_my_turn_whatever_the_events_say() -> None:
     pr = facts(draft=True, my_said_at=ago(3), author_last_at=ago(4))
     assert rank.gate(pull(pr=pr, flagged=True, checked_at=ago(1)), NOW)
@@ -324,6 +328,14 @@ def test_approval_batch_never_exceeds_30_minutes() -> None:
     assert len(rows) == 3
 
 
+def test_row_with_a_linked_item_stays_out_of_the_batch() -> None:
+    asks = [pull(f"music-assistant/server#9010{n}", "approve", size="S") for n in range(3)]
+    asks[0] = pull(asks[0].id, "approve", size="S", links=[link(ISSUE, "fixes")])
+    rows = rows_by_id([*asks, issue(waiting_on="reporter")])
+    assert [m.id for m in rows[asks[0].id].members] == [asks[0].id, ISSUE]
+    assert len(rows["batch:approve"].members) == 2
+
+
 def test_publish_chores_batch_per_release_state() -> None:
     asks = [
         advisory("GHSA-test-0003", "publish", ssvc_outcome=rank.IMMEDIATE),
@@ -360,6 +372,12 @@ def test_cut_line_counts_only_live_rows() -> None:
     assert [(row.state, row.cut) for row in rows] == [
         ("blocked", False), ("live", False), ("live", False), ("live", True)
     ]
+
+
+def test_snooze_on_any_member_holds_the_row() -> None:
+    snooze = {"until": TODAY + timedelta(days=3), "reason": ""}
+    [row] = rank.rank([issue(waiting_on="reporter", snooze=snooze), pull(links=[link(ISSUE, "fixes")])], NOW)
+    assert (row.id, row.state) == (PR, "snoozed")
 
 
 def test_snoozed_row_folds_only_when_the_gate_passes() -> None:

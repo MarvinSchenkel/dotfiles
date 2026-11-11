@@ -1,10 +1,11 @@
 """Build the attention page: sync GitHub, collect every routine's asks, rank them and render the page.
 
-Usage: python3 build.py [--no-sync] [--source NAME] [--state-dir DIR] [--cache FILE] [--out FILE]
+Usage: python3 build.py [--no-sync] [--source NAME [--handled]] [--state-dir DIR] [--cache FILE] [--out FILE]
                         [--queue SOURCE] [--rows]
 
 Prints the rows that entered Act or Unblock since the previous build, then one summary line.
-`--queue pr-review` prints the live PR rows as JSON and writes nothing. `--rows` prints every row as
+`--handled` records that the source's routine handled the commands forwarded to it so far.
+`--queue pr-review` prints the live rows pr-review owns as JSON and writes nothing. `--rows` prints every row as
 one JSON line and writes nothing.
 """
 import argparse
@@ -23,9 +24,10 @@ from rank import Ask, Row, Tier, short_id
 OUT = Path("~/.claude-teamB/routine-reports/attention.html").expanduser()
 TOP_TIERS = (Tier.ACT, Tier.UNBLOCK)
 SECTIONS = ("Today", "Later", "Blocked", "Snoozed", "Parked")
-CADENCE_H = {"pr-review": 2, "issue-triage": 2, "security-inbox": 5 * 24, "lab-deep": 26, "triage-ma-nightly": 26}
+# Date-only stamps (security-inbox, lab-deep) count from local midnight, hence the slack past their cadence.
+CADENCE_H = {"pr-review": 2, "issue-triage": 2, "security-inbox": 6 * 24, "lab-deep": 36, "triage-ma-nightly": 26}
 OFFICE_SOURCES = frozenset({"pr-review", "issue-triage"})  # their cadence holds on weekdays in office hours only
-OFFICE_HOURS = (7, 18)
+OFFICE_HOURS = (9, 18)  # before 09:00 the first runs of the day are still due
 POST_ENDPOINTS = frozenset({"issue-triage", "pr-review"})  # sources whose drafts report_server.py can post
 DRAFT_ROWS = 12
 DETAIL_NAMES = {"pr-review": "matrix", "issue-triage": "board", "security-inbox": "inbox"}
@@ -45,34 +47,47 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--no-sync", action="store_true", help="use the GitHub cache as it is")
     p.add_argument("--source", choices=(*collect.SOURCES, "attention"), help="routine that triggered the build")
+    p.add_argument("--handled", action="store_true", help="the source handled the commands forwarded to it")
     p.add_argument("--state-dir", type=Path, default=gh_sync.STATE_DIR)
     p.add_argument("--cache", type=Path, default=gh_sync.CACHE)
     p.add_argument("--out", type=Path, default=OUT)
     p.add_argument("--queue", choices=("pr-review",), help="print the live PR rows as JSON and write nothing")
     p.add_argument("--rows", action="store_true", help="print every row as one JSON line and write nothing")
     args = p.parse_args()
-    now = datetime.now(UTC)
+    if args.handled and not args.source:
+        p.error("--handled needs --source")
+    now = datetime.now(collect.LOCAL)
+    handled = _handled(collect.read_json(_build_file(args.out)))
     if args.queue:
-        print(json.dumps(queue(_rank(args.state_dir, args.cache, now)), indent=1))
+        print(json.dumps(queue(_rank(args.state_dir, args.cache, now, handled), args.queue), indent=1))
         return
     if args.rows:
-        for line in row_lines(_rank(args.state_dir, args.cache, now)):
+        for line in row_lines(_rank(args.state_dir, args.cache, now, handled)):
             print(json.dumps(line))
         return
     stale = not args.no_sync and not gh_sync.sync(args.state_dir, args.cache)
-    for line in build(args.state_dir, args.cache, args.out, now, stale):
+    for line in build(args.state_dir, args.cache, args.out, now, stale, args.source if args.handled else None):
         print(line)
 
 
-def build(state_dir: Path, cache_path: Path, out: Path, now: datetime, stale: bool) -> list[str]:
-    """Write the page and its build file; returns the stdout lines."""
-    rows = _rank(state_dir, cache_path, now)
-    build_file = out.with_name(f"{out.stem}.build.json")
-    previous = collect.read_json(build_file).get("top")
-    build_id = f"{now:%Y%m%dT%H%M%SZ}"
+def build(
+    state_dir: Path, cache_path: Path, out: Path, now: datetime, stale: bool, handled_by: str | None = None
+) -> list[str]:
+    """Write the page and its build file; returns the stdout lines.
+
+    `handled_by` is the source whose routine just handled its forwarded commands, so their markers clear.
+    """
+    build_file = _build_file(out)
+    previous = collect.read_json(build_file)
+    handled = _handled(previous) | ({handled_by: now} if handled_by else {})
+    rows = _rank(state_dir, cache_path, now, handled)
+    build_id = f"{now.astimezone(UTC):%Y%m%dT%H%M%SZ}"
     collect.write_atomic(out, render(rows, page_meta(rows, state_dir, cache_path, now, build_id, stale)))
-    collect.write_atomic(build_file, json.dumps({"id": build_id, "top": top_ids(rows)}) + "\n")
-    return summary(rows, previous, out.name)
+    data = {"id": build_id, "top": top_ids(rows)}
+    if handled:
+        data["handled"] = {src: at.astimezone(UTC).isoformat() for src, at in handled.items()}
+    collect.write_atomic(build_file, json.dumps(data) + "\n")
+    return summary(rows, previous.get("top"), out.name)
 
 
 def summary(rows: list[Row], previous_top: list[str] | None, page: str) -> list[str]:
@@ -93,15 +108,15 @@ def top_ids(rows: list[Row]) -> list[str]:
     return [row.id for row in rows if _top(row)]
 
 
-def queue(rows: list[Row]) -> list[dict]:
-    """Live rows whose act-on ask is a PR, best first; a batch row gives one entry per PR member."""
+def queue(rows: list[Row], source: str) -> list[dict]:
+    """Live PR rows whose act-on ask comes from the source, best first; a batch gives one entry per member."""
     out = []
     for row in rows:
         if row.state != "live":
             continue
         batch = row.rule == "batch"
         for ask in row.members if batch else row.members[:1]:
-            if ask.kind != "pr":
+            if ask.src != source or ask.kind != "pr":
                 continue
             repo, number = ask.id.split("#")
             out.append({
@@ -122,7 +137,7 @@ def row_lines(rows: list[Row]) -> list[dict]:
             "tier": row.tier.label, "action": row.action, "reason": row.reason, "effort": row.effort,
             "title": act.title, "url": act.url, "who_waits": row.who_waits,
             "last_activity": last and last.isoformat(), "blocked_by": [short_id(id) for id in row.blocked_by],
-            "members": [short_id(ask.id) for ask in row.members],
+            "members": [{"id": short_id(ask.id), "source": ask.src} for ask in row.members],
         })
     return out
 
@@ -239,14 +254,14 @@ class _Page:
             ("See also", row.see_also),
         ) if ids]
         parts += [_draft(ask) for ask in row.members if _postable(ask)]
-        parts.append(_commands(row.members[0], short_id(row.id), row.state))
+        parts.append(_commands(row.members, short_id(row.id), row.state))
         return "".join(parts)
 
     def _batch_body(self, row: Row) -> str:
         """Detail of a batch: every member with its own link, draft and commands."""
         members = "".join(
             f'<li class="member">{_item(ask, rank.effort_of(ask))}{_draft(ask) if _postable(ask) else ""}'
-            f"{_commands(ask, short_id(ask.id), row.state)}</li>"
+            f"{_commands([ask], short_id(ask.id), row.state)}</li>"
             for ask in row.members
         )
         return f'<ol class="members">{members}</ol>'
@@ -261,10 +276,20 @@ class _Page:
         return f'<p class="refs"><span class="lbl">{label}</span> {" ".join(links)}</p>'
 
 
-def _rank(state_dir: Path, cache_path: Path, now: datetime) -> list[Row]:
+def _rank(state_dir: Path, cache_path: Path, now: datetime, handled: dict[str, datetime]) -> list[Row]:
     """Ranked rows from the states, the cache and attention.json."""
     attention = collect.load_attention(state_dir / "attention.json")
-    return rank.rank(collect.collect(state_dir, collect.read_json(cache_path), attention, now), now)
+    return rank.rank(collect.collect(state_dir, collect.read_json(cache_path), attention, now, handled), now)
+
+
+def _build_file(out: Path) -> Path:
+    """Build file next to the page."""
+    return out.with_name(f"{out.stem}.build.json")
+
+
+def _handled(build_data: dict) -> dict[str, datetime]:
+    """When each source last handled its forwarded commands, from the build file."""
+    return {src: datetime.fromisoformat(at) for src, at in build_data.get("handled", {}).items()}
 
 
 def _top(row: Row) -> bool:
@@ -367,13 +392,14 @@ def _draft(ask: Ask) -> str:
     )
 
 
-def _commands(ask: Ask, ref: str, state: str) -> str:
-    """Copy chips for the commands that fit the ask, addressed by its short id."""
-    routine = ACTION_COMMANDS.get((ask.src, ask.action)) or SOURCE_COMMANDS.get(ask.src, ())
+def _commands(asks: list[Ask], ref: str, state: str) -> str:
+    """Copy chips: each ask's routine commands by its short id, then the attention thread's own by `ref`."""
+    routine = [cmd.format(r=short_id(ask.id)) for ask in asks
+               for cmd in ACTION_COMMANDS.get((ask.src, ask.action)) or SOURCE_COMMANDS.get(ask.src, ())]
     own = {"snoozed": ("unsnooze {r}",), "blocked": ("unblock {r}",)}.get(state, ("snooze {r} 3d", "later {r}"))
     chips = "".join(
         f'<button class="cmd" type="button" data-cmd="{escape(c)}" title="Copy for the attention thread">{escape(c)}</button>'
-        for c in (cmd.format(r=ref) for cmd in (*routine, *own))
+        for c in (*routine, *(cmd.format(r=ref) for cmd in own))
     )
     return f'<div class="cmds">{chips}</div>'
 
@@ -582,14 +608,14 @@ document.addEventListener("click", e => {
 const OPEN = "attention-open";
 (JSON.parse(store(session, OPEN) || "[]")).forEach(id => { const d = document.getElementById(id); if (d) d.open = true; });
 if (location.hash.startsWith("#r-")) show(location.hash.slice(1));
-const BUILD = document.querySelector("main").dataset.build;
 const BUILD_URL = location.pathname.replace(/\\.html$/, ".build.json");
+// The first id polled after load is the baseline: the page's own id can trail a build that finished just after it.
+let BUILD = null;
 setInterval(async () => {
   if ([...document.querySelectorAll(".draft textarea")].some(dirty)) return;
-  try {
-    const r = await fetch(BUILD_URL, {cache: "no-store"});
-    if ((await r.json()).id === BUILD) return;
-  } catch (e) { return; }
+  let id;
+  try { id = (await (await fetch(BUILD_URL, {cache: "no-store"})).json()).id; } catch (e) { return; }
+  if (BUILD === null || id === BUILD) { BUILD = id; return; }
   store(session, OPEN, JSON.stringify([...document.querySelectorAll("details[open]")].map(d => d.id).filter(Boolean)));
   location.reload();
 }, 60000);

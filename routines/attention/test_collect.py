@@ -1,5 +1,5 @@
 import json
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -188,6 +188,23 @@ def test_publish_stage_advisory_is_one_publish_chore() -> None:
     assert (ask.action, ask.effort, ask.ssvc_outcome) == ("publish", 10, None)
 
 
+def test_backport_step_is_due_by_the_planned_stable_cut() -> None:
+    releases = [{"label": "beta", "next_cut": {"channel": "beta", "version": "2.11.0b9", "planned_date": "2026-11-13"}},
+                {"label": "stable", "next_cut": {"channel": "stable", "version": "2.10.10", "planned_date": "2026-11-20"}}]
+    backport = advisory(remaining_steps=[{"step": "backport_decision", "owner": "marvin"}])
+    fix = advisory(id="GHSA-test-0002", remaining_steps=[{"step": "review_fix", "owner": "marvin"}])
+    asks = collect.security_asks({"releases": releases, "advisories": [backport, fix]}, {}, carded=set())
+    assert [a.due for a in asks] == [date(2026, 11, 20), None]
+
+
+def test_code_scanning_cards_that_wait_on_marvin_are_decide_asks() -> None:
+    cards = [{"id": "cs-1", "column": "unsure", "title": "Unsure about it"}, {"id": "cs-2", "column": "new", "title": "t"}]
+    [ask] = collect.security_asks({"code_scanning": cards}, {}, carded=set())
+    assert (ask.id, ask.kind, ask.action, ask.url) == ("cs-1", "alert", "decide",
+                                                       "http://127.0.0.1:8765/security-inbox.html#card-cs-1")
+    assert rank.rank([ask], NOW)[0].action == "Unsure about it"
+
+
 def test_uncarded_fix_pr_becomes_a_pr_ask() -> None:
     state = {"advisories": [advisory(fix_prs=[{"repo": "music-assistant/server", "number": 90003}])]}
     asks = collect.security_asks(state, {"prs": {FIX: pr_facts()}}, carded=set())
@@ -225,15 +242,28 @@ def test_github_issue_mention_counts_only_after_his_reply() -> None:
 
 def test_mentioned_pr_is_a_reply_unless_his_review_is_requested() -> None:
     mention = {"id": FIX, "is_pr": True, "title": "t", "url": "u", "author": "alice"}
-    cache = {"prs": {PR: pr_facts(), FIX: pr_facts()}, "review_requested": [PR],
+    cache = {"prs": {PR: pr_facts(), FIX: pr_facts(mention_after_mine=True)}, "review_requested": [PR],
              "mentions": [mention, mention | {"id": PR}]}
     assert [(a.id, a.action) for a in collect.github_asks(cache, carded=set())] == [(PR, "review"), (FIX, "reply")]
 
 
+def test_mentioned_pr_without_a_mention_past_his_reply_is_off() -> None:
+    cache = {"prs": {FIX: pr_facts()}, "mentions": [{"id": FIX, "is_pr": True, "title": "t", "url": "u", "author": "a"}]}
+    assert collect.github_asks(cache, carded=set()) == []
+
+
 def test_pr_review_skip_map_keeps_a_mentioned_pr_out(tmp_path: Path) -> None:
     (tmp_path / "pr-review.json").write_text('{"prs": [], "skip": {"server#90003": "stale draft"}}')
-    cache = {"prs": {FIX: pr_facts()}, "mentions": [{"id": FIX, "is_pr": True, "title": "t", "url": "u", "author": "a"}]}
+    cache = {"prs": {FIX: pr_facts(mention_after_mine=True)},
+             "mentions": [{"id": FIX, "is_pr": True, "title": "t", "url": "u", "author": "a"}]}
     assert collect.collect(tmp_path, cache, {}, NOW) == []
+
+
+def test_pr_review_skip_map_keeps_an_advisory_fix_pr_out(tmp_path: Path) -> None:
+    (tmp_path / "pr-review.json").write_text('{"prs": [], "skip": {"server#90003": "stale draft"}}')
+    security = {"advisories": [advisory(fix_prs=[{"repo": "server", "number": 90003}])]}
+    (tmp_path / "security-inbox.json").write_text(json.dumps(security))
+    assert [a.id for a in collect.collect(tmp_path, {"prs": {FIX: pr_facts()}}, {}, NOW)] == [ADV]
 
 
 def test_release_merge_waits_on_picks_and_unpicked_security_fixes() -> None:
@@ -265,12 +295,19 @@ def test_overrides_by_id() -> None:
         "blocked_by": {ask.id: [PR]},
         "pending": {ask.id: {"cmd": "post 90001", "at": "2026-11-11T09:00:00Z"}},
     }
-    runs = {"issue-triage": datetime(2026, 11, 11, 8, 0, tzinfo=UTC)}
-    [out] = collect.apply_overrides([ask], attention, runs)
+    handled = {"issue-triage": datetime(2026, 11, 11, 8, 0, tzinfo=UTC)}
+    [out] = collect.apply_overrides([ask], attention, handled, NOW)
     assert out.snooze == {"until": date(2026, 11, 14), "reason": "busy"}
     assert (out.due, out.blocked_by, out.pending) == (date(2026, 11, 20), [PR], "post 90001")
-    runs["issue-triage"] = datetime(2026, 11, 11, 9, 30, tzinfo=UTC)
-    assert collect.apply_overrides([ask], attention, runs)[0].pending is None
+
+
+def test_pending_command_clears_once_handled_or_after_a_day() -> None:
+    ask = collect.issue_ask(issue_card())
+    attention = {"pending": {ask.id: {"cmd": "post 90001", "at": "2026-11-11T09:00:00Z"}}}
+    assert collect.apply_overrides([ask], attention, {}, NOW)[0].pending == "post 90001"
+    handled = {"issue-triage": datetime(2026, 11, 11, 9, 30, tzinfo=UTC)}
+    assert collect.apply_overrides([ask], attention, handled, NOW)[0].pending is None
+    assert collect.apply_overrides([ask], attention, {}, NOW + timedelta(days=1))[0].pending is None
 
 
 @pytest.mark.parametrize(("state", "expected"), [
@@ -301,3 +338,17 @@ def test_build_writes_page_and_build_file(tmp_path: Path) -> None:
     build.build(tmp_path, tmp_path / "cache.json", out, NOW, stale=True)
     assert "Investigate t1 on dev" in out.read_text()
     assert collect.read_json(tmp_path / "attention.build.json") == {"id": "20261111T100000Z", "top": ["lab:t1"]}
+
+
+def test_handled_build_records_the_source_and_keeps_the_others(tmp_path: Path) -> None:
+    (tmp_path / "attention.json").write_text(json.dumps({"pending": {
+        "lab:t1": {"cmd": "known t1", "at": "2026-11-11T09:00:00Z"}}}))
+    (tmp_path / "lab-deep.json").write_text('{"reds": [{"test": "t1", "read": "server"}]}')
+    out = tmp_path / "attention.html"
+    (tmp_path / "attention.build.json").write_text('{"id": "x", "top": [], "handled": {"pr-review": "2026-11-10T08:00:00+00:00"}}')
+    build.build(tmp_path, tmp_path / "cache.json", out, NOW, stale=False)
+    assert "sent: known t1" in out.read_text()
+    build.build(tmp_path, tmp_path / "cache.json", out, NOW, stale=False, handled_by="lab-deep")
+    assert "sent: known t1" not in out.read_text()
+    assert collect.read_json(tmp_path / "attention.build.json")["handled"] == {
+        "pr-review": "2026-11-10T08:00:00+00:00", "lab-deep": "2026-11-11T10:00:00+00:00"}

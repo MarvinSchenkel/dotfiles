@@ -25,12 +25,18 @@ python3 ~/git/dotfiles/routines/attention/build.py --rows
 
 - `id` is the short id Marvin types: `server#7498`, `support#6731`, the second block of an advisory
   id, `lab:<test>`, `log:<fingerprint>`, `release:2.10.10`, `batch:approve`. `full_id` is the canonical
-  id that `attention.json` keys on. The owner, the routine whose thread handles the row, is `source`;
-  `github` and `release` rows belong to `pr-review`.
+  id that `attention.json` keys on. `members` lists the items on the row as `{"id": <short id>,
+  "source": <source>}`, act-on item first; a row can merge several (an advisory and its fix PR, a PR and
+  the issue it resolves).
+- Resolve what Marvin types against row ids and member ids. A member id names that member; a row id names
+  the row's first member.
+- The owner of a command, the routine whose thread handles it, is the `source` of the member it names.
+  `github` and `release` have no routine: on them only the commands below and a chip work.
 - A bare number matches every row with a member id ending in `#<number>`. One match: use it. More than
   one (support and server numbers overlap): popup with one option per match, naming its short id and
   title. No match: see "Forwarded commands".
-- A batch row stands for its members. A command on a batch row applies to each member id.
+- A batch row stands for its members. A command on a batch row applies to each member and goes to each
+  member's own source.
 
 ## Commands handled here
 
@@ -67,8 +73,10 @@ Every other command goes to the owner's thread, unchanged:
 2. `t3_thread_send` with `threadId` that id, `mode: "queue"` and the command text as Marvin typed it.
    When a popup resolved a bare number, put the chosen short id in place of the number. Never use
    another mode: `queue` lands after a run in progress and never interrupts it.
-3. Set `pending[id] = {"cmd": <text sent>, "at": <now, UTC ISO>}` for each row the command names.
-4. Answer in one line: "Sent to <owner>: <text>". No build; the routine rebuilds after it handled it.
+3. Set `pending[id] = {"cmd": <text sent>, "at": <now, UTC ISO>}` for each member the command names,
+   keyed on the member's canonical id.
+4. Answer in one line: "Sent to <owner>: <text>". No build; once the routine handled it, it runs the build
+   with `--source <owner> --handled`, which clears the "sent" marker of that owner's rows.
 
 Several commands in one message: split them, group per owner and send one message per owner.
 
@@ -82,7 +90,10 @@ Command words per routine, from their "Replies" sections:
 | lab-deep | `investigate`, `known` |
 | triage-ma-nightly | `fix`, `mute` |
 
-The row decides the owner; the table only checks the word. When it does not fit, do not guess:
+The named member decides the owner; the table only checks the word. When it does not fit, do not guess:
+
+- The member is a `github` or `release` item: send nothing and answer in one line, "<short id> has no
+  routine; snooze, due, block or a chip work here".
 
 - The command names no row and no number: when its word belongs to one routine only (`render`,
   `release`, `known`), send it there. Otherwise a popup with one option per routine that has the word.
@@ -98,7 +109,7 @@ When Marvin asks for a chip, a fix, a repro or a look at a row:
 - When the owner has its own launch command, forward that command: `chip <pr>` (pr-review), `fix`,
   `repro` or `discuss` (issue-triage), `fix` (security-inbox, triage-ma-nightly), `investigate`
   (lab-deep). The routine's launch carries its card context.
-- `github` and `release` rows have no card, so launch here: `t3_thread_launch` with
+- A `github` or `release` member has no card, so launch here: `t3_thread_launch` with
   `workspaceStrategy` `{"type":"root"}`, `modelSelection`
   `{"instanceId":"claudeAgent","model":"claude-opus-5-5"}` and title "Fix: <short title>". The message
   tells the thread to work inside `/Users/marvin/git/music-assistant/<repo>`, create a Claude worktree
@@ -120,13 +131,13 @@ The scheduler posts it Monday 09:05; `sweep` runs it now.
    - **Keep**: nothing changes.
    - **Fix later**: forward the owner's clearing command, post nothing. pr-review `later <pr>`,
      issue-triage `done <n> fix later`, lab-deep `known <test>`, triage-ma-nightly `mute <id>`. Leave
-     the option out for other owners.
+     the option out for every other owner, so for security-inbox, `github` and `release` rows.
    - **Help wanted**: only on issues and discussions. The preview holds the exact comment.
    - **Close**: only on issues, discussions and PRs. The preview holds the exact comment.
 
    Recommend close when the reporter or author went silent after an ask from Marvin; help wanted when
-   the issue is valid, small in impact and a community fix is likely; fix later when it matters and
-   Marvin will fix it himself; keep when someone is likely to come back.
+   the issue is valid, small in impact and a community fix is likely; fix later, where offered, when it
+   matters and Marvin will fix it himself; keep when someone is likely to come back.
 3. A comment starts with `> [!NOTE]` and `> This comment was written by Claude on Marvin's behalf`,
    then one to three short sentences in Marvin's voice. His click approves the outcome and the text
    together; post exactly the previewed text.
@@ -158,8 +169,7 @@ The scheduler posts it Monday 09:05; `sweep` runs it now.
 - Read and write the file only with `collect.load_attention` and `collect.save_attention`. A missing
   file is `{}`.
 - Every write also prunes: `snooze` entries whose `until` is today or earlier, and `pending` entries
-  whose row is gone or whose `at` is not newer than the owner's last run (`collect.last_run` of its
-  state from `collect.load_states(gh_sync.STATE_DIR)`). The page stops showing those anyway.
+  whose row is gone or whose `at` is more than 24 hours ago. The page stops showing those anyway.
 - No git commit. The file is ignored.
 
 ## First run

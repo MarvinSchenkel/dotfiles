@@ -22,29 +22,32 @@ REPORTS = "http://127.0.0.1:8765"
 LOCAL = ZoneInfo("Europe/Amsterdam")
 TZ_ABBR = {"CET": 1, "CEST": 2, "UTC": 0}
 SOURCES = ("pr-review", "issue-triage", "security-inbox", "lab-deep", "triage-ma-nightly")
-# Derived rows have no routine; commands on them go to the pr-review thread.
-OWNER = {"github": "pr-review", "release": "pr-review"}
 ISSUE_ACTIONS = {"reply-test": "reply", "reply-info": "reply", "reply-answer": "reply"}
 ASKS_REPORTER = frozenset({"reply-info", "reply-test"})  # issue asks where Marvin asks the reporter something
 PUBLISH_STEPS = rank.CHORE_STEPS | {"reply"}
 BACKPORT_STEPS = frozenset({"backport_decision", "review_backport"})
+PENDING_TTL = timedelta(hours=24)  # a forwarded command nobody handled stops showing after this
 LOCAL_STAMP = re.compile(r"(\d{4}-\d\d-\d\d \d\d:\d\d) ([A-Z]+)")
 
 
-def collect(state_dir: Path, cache: dict, attention: dict, now: datetime) -> list[Ask]:
-    """Every ask of every source, with snoozes, due dates, blockers and pending commands applied."""
+def collect(
+    state_dir: Path, cache: dict, attention: dict, now: datetime, handled: dict[str, datetime] | None = None
+) -> list[Ask]:
+    """Every ask of every source, with snoozes, due dates, blockers and pending commands applied.
+
+    `handled` maps a source to when its routine last handled a forwarded command.
+    """
     states = load_states(state_dir)
     backport = (cache.get("release") or {}).get("backport_pr")
     carded = _card_ids(states) | {backport}
     skipped = {f"{ORG}/{ref}" for ref in states["pr-review"].get("skip") or {}}
     asks = pr_review_asks(states["pr-review"], cache) + issue_asks(states["issue-triage"])
     asks += issue_pr_asks(states["issue-triage"], cache, carded | skipped)
-    asks += security_asks(states["security-inbox"], cache, carded)
+    asks += security_asks(states["security-inbox"], cache, carded | skipped)
     asks += lab_asks(states["lab-deep"]) + nightly_asks(states["triage-ma-nightly"])
     asks += release_asks(cache, states["security-inbox"])
     asks += github_asks(cache, carded | skipped)
-    runs = {source: last_run(state) for source, state in states.items()}
-    return apply_overrides(_first_per_id(asks), attention, runs)
+    return apply_overrides(_first_per_id(asks), attention, handled or {}, now)
 
 
 def load_states(state_dir: Path) -> dict[str, dict]:
@@ -89,11 +92,11 @@ def last_run(state: dict) -> datetime | None:
     return _time(raw)
 
 
-def apply_overrides(asks: list[Ask], attention: dict, runs: dict[str, datetime | None]) -> list[Ask]:
+def apply_overrides(asks: list[Ask], attention: dict, handled: dict[str, datetime], now: datetime) -> list[Ask]:
     """Asks with the attention.json snooze, due, blocked_by and pending entries applied by id.
 
-    A manual due date only moves a due date earlier. A pending command shows only while it is newer
-    than the last run of the routine that owns the ask.
+    A manual due date only moves a due date earlier. A pending command shows while it is younger than
+    PENDING_TTL and newer than the last handled command of the routine that owns the ask.
     """
     out = []
     for ask in asks:
@@ -106,7 +109,8 @@ def apply_overrides(asks: list[Ask], attention: dict, runs: dict[str, datetime |
         if blockers := attention.get("blocked_by", {}).get(ask.id):
             changes["blocked_by"] = list(dict.fromkeys(ask.blocked_by + blockers))
         pending = attention.get("pending", {}).get(ask.id)
-        if pending and _after(_time(pending["at"]), runs.get(OWNER.get(ask.src, ask.src))):
+        sent = _time(pending["at"]) if pending else None
+        if sent and now - sent < PENDING_TTL and _after(sent, handled.get(ask.src)):
             changes["pending"] = pending["cmd"]
         out.append(replace(ask, **changes) if changes else ask)
     return out
@@ -209,10 +213,12 @@ def issue_pr_asks(state: dict, cache: dict, covered: set[str]) -> list[Ask]:
 
 
 def security_asks(state: dict, cache: dict, carded: set[str]) -> list[Ask]:
-    """Advisory asks, plus a PR ask for each cached fix PR that no review card covers."""
+    """Advisory and code scanning asks, plus a PR ask for each cached fix PR that no review card covers."""
     advisories = {adv["id"]: adv for adv in state.get("advisories", [])}
     release = cache.get("release") or {}
-    asks = [ask for adv in advisories.values() if (ask := advisory_ask(adv, advisories, release))]
+    cut = _stable_cut(state)
+    asks = [ask for adv in advisories.values() if (ask := advisory_ask(adv, advisories, release, cut))]
+    asks += [alert_ask(c) for c in state.get("code_scanning", []) if _waits_on_marvin(c)]
     fix_ids = [_fix_id(p) for adv in advisories.values() for p in adv.get("fix_prs") or []]
     for id in dict.fromkeys(fix_ids):
         if id not in carded and id in cache.get("prs", {}):
@@ -220,11 +226,12 @@ def security_asks(state: dict, cache: dict, carded: set[str]) -> list[Ask]:
     return asks
 
 
-def advisory_ask(adv: dict, advisories: dict[str, dict], release: dict) -> Ask | None:
+def advisory_ask(adv: dict, advisories: dict[str, dict], release: dict, cut: date | None = None) -> Ask | None:
     """Ask for one advisory; None once its remaining steps are done.
 
     An unassessed advisory (no `remaining_steps`) asks Marvin to decide the fix. A duplicate is never
     his turn itself; it takes the canonical advisory's next step so its deadlines get the same lead time.
+    `cut` is the planned date of the next stable release, a due date while a backport step is left.
     """
     canonical = adv.get("duplicate_of")
     steps = adv.get("remaining_steps")
@@ -245,10 +252,16 @@ def advisory_ask(adv: dict, advisories: dict[str, dict], release: dict) -> Ask |
         effort=(sum(s.get("effort") or 0 for s in steps) or None) if chore else step.get("effort"),
         detail_url=f"{REPORTS}/security-inbox.html#card-{adv['id']}",
         who_waits=blocked.get("who"), waiting_since=_day(blocked.get("since")),
-        step_owner=None if canonical else step.get("owner"), due=_advisory_due(adv),
+        step_owner=None if canonical else step.get("owner"), due=_advisory_due(adv, cut),
         ssvc_outcome=None if chore else _ssvc(adv, advisories),
         ships_in=_ships_in("publish" if chore else step["step"], adv, release), links=links,
     )
+
+
+def alert_ask(card: dict) -> Ask:
+    """Ask to decide on a code scanning card that waits on Marvin."""
+    return Ask(id=card["id"], kind="alert", src="security-inbox", title=card.get("title", ""),
+               url=f"{REPORTS}/security-inbox.html#card-{card['id']}", action="decide")
 
 
 def lab_asks(state: dict) -> list[Ask]:
@@ -311,7 +324,8 @@ def github_asks(cache: dict, carded: set[str]) -> list[Ask]:
     pr_ids = requested + [m["id"] for m in mentions if m["is_pr"]]
     asks = []
     for id in dict.fromkeys(pr_ids):
-        if id in carded or id not in prs:
+        # Like an issue, a PR he is only mentioned on is his turn after a mention past his reply.
+        if id in carded or id not in prs or (id not in requested and not prs[id].get("mention_after_mine")):
             continue
         ask = pr_ask(id, prs[id], src="github")
         asks.append(ask if id in requested else replace(ask, action="reply"))
@@ -410,11 +424,25 @@ def _board_anchor(repo: str, n: int) -> str:
     return "c-" + re.sub(r"[^a-z0-9]+", "-", f"{ref}#{n}".lower()).strip("-")
 
 
-def _advisory_due(adv: dict) -> date | None:
-    """Earliest deadline; an ack deadline stops counting once the ack went out."""
+def _advisory_due(adv: dict, cut: date | None) -> date | None:
+    """Earliest deadline, or the stable cut while a backport step is left; a sent ack stops its deadline."""
     dates = [date.fromisoformat(d["date"]) for d in adv.get("deadlines") or []
              if not (d["kind"] == "ack" and adv.get("ack_sent_at"))]
+    if cut and {s["step"] for s in adv.get("remaining_steps") or []} & BACKPORT_STEPS:
+        dates.append(cut)
     return min(dates, default=None)
+
+
+def _stable_cut(state: dict) -> date | None:
+    """Planned date of the next stable release."""
+    cuts = [r["next_cut"] for r in state.get("releases", []) if r.get("next_cut")]
+    planned = next((c["planned_date"] for c in cuts if c["channel"] == "stable"), None)
+    return date.fromisoformat(planned) if planned else None
+
+
+def _waits_on_marvin(card: dict) -> bool:
+    """A code scanning card in Unsure or marked for Marvin."""
+    return card.get("column") == "unsure" or "needs_attention" in (card.get("badges") or [])
 
 
 def _ssvc(adv: dict, advisories: dict[str, dict]) -> str | None:

@@ -110,4 +110,4 @@ trailing note in parentheses is ignored when matching, and "on <set>" (such as "
 limits the entry to that set's group (`music_spotify`). Keep `known_red` current when Marvin
 replies `known <test>`; drop an entry once the test passes two days in a row and say so in the chat message.
 A `known <test>` reply also drops the test from `reds`, commits and ends with the attention build of
-step 8.
+step 8; after a forwarded command add `--handled`, which clears its "sent" marker on the attention page.
