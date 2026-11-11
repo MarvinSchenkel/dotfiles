@@ -65,6 +65,10 @@ PR_FIELDS = f"""
 SEARCH_FIELDS = f"""__typename
   ... on Issue{{number title url updatedAt author{{login}} repository{{nameWithOwner}}}}
   ... on PullRequest{{number title url updatedAt author{{login}} repository{{nameWithOwner}}}}"""
+ISSUE_FIELDS = f"""
+  author{{{ACTOR}}} createdAt body
+  comments(last:{TIMELINE}){{nodes{{author{{{ACTOR}}} createdAt body}}}}
+"""
 BACKPORT_FIELDS = "... on PullRequest{number title headRefName commits(first:250){nodes{commit{message}}}}"
 
 
@@ -110,10 +114,6 @@ def pr_facts(node: dict) -> dict:
     default = (node["repository"].get("defaultBranchRef") or {}).get("name")
     commit = node["commits"]["nodes"][0]["commit"] if node["commits"]["nodes"] else {}
     rollup = (commit.get("statusCheckRollup") or {}).get("state")
-    events = _events(node, commit)
-    mine = [e for e in events if e["login"] == ME]
-    others = [e for e in events if e["login"] != ME]
-    my_last = mine[-1] if mine else None
     return {
         "state": node["state"], "draft": node["isDraft"], "author": _login(node.get("author")),
         "title": node["title"], "url": node["url"], "head": node["headRefOid"],
@@ -126,10 +126,7 @@ def pr_facts(node: dict) -> dict:
         "reviews": {_login(r["author"]): {"state": r["state"], "commit": (r.get("commit") or {}).get("oid"),
                                           "at": r["submittedAt"]}
                     for r in node["latestReviews"]["nodes"] if r.get("author")},
-        "my_last": {"at": my_last["at"], "kind": my_last["kind"]} if my_last else None,
-        "other_last": {k: others[-1][k] for k in ("login", "at", "kind")} if others else None,
-        "mention_after_mine": any(e["kind"] in ("comment", "review") and MENTION.search(e["body"])
-                                  and (not my_last or e["at"] > my_last["at"]) for e in others),
+        **_turn(_events(node, commit)),
         "additions": node["additions"], "deletions": node["deletions"],
         "labels": [lb["name"] for lb in node["labels"]["nodes"]],
         "links": pr_links(node, repo, default),
@@ -170,6 +167,13 @@ def search_entry(node: dict) -> dict:
             "url": node["url"], "author": _login(node.get("author")), "updated_at": node["updatedAt"]}
 
 
+def issue_turn(node: dict) -> dict:
+    """my_last, other_last and mention_after_mine of an issue node of the ISSUE_FIELDS shape."""
+    events = [_event(node.get("author"), node["createdAt"], "comment", node.get("body"))]
+    events += [_event(c.get("author"), c["createdAt"], "comment", c.get("body")) for c in node["comments"]["nodes"]]
+    return _turn(sorted((e for e in events if e), key=lambda e: e["at"]))
+
+
 def release_facts(backport: dict | None, merged: list[dict], stable_messages: list[str]) -> dict | None:
     """Open backport PR, the PRs it picked, and labelled merges that are on neither it nor stable."""
     if backport is None:
@@ -183,25 +187,27 @@ def release_facts(backport: dict | None, merged: list[dict], stable_messages: li
 
 
 def _fetch(state_dir: Path) -> dict:
-    """Run the whole pass: searches and release head first, then PR batches and the missing picks."""
+    """Run the whole pass: searches and release head first, then PR and mentioned issue batches and the missing picks."""
     states = [_read_json(state_dir / f"{name}.json") for name in ("pr-review", "issue-triage", "security-inbox")]
     first = _graphql(_first_query())
     searches = {k: [n for n in first[k]["nodes"] if n] for k in SEARCHES}
     backports = [n for n in first["backport"]["nodes"] if n and n["headRefName"].startswith("backport/")]
     backport = min(backports, key=lambda n: n["number"]) if backports else None
     released_at = first["server"]["latestRelease"]["publishedAt"]
+    issues = [_node_id(n) for n in searches["mentions"] if n["__typename"] == "Issue"]
     ids = list(dict.fromkeys(state_targets(*states) + [_node_id(n) for k in SEARCHES for n in searches[k]
                                                         if n["__typename"] == "PullRequest"]))
     batches = [ids[i:i + BATCH] for i in range(0, len(ids), BATCH)]
     with ThreadPoolExecutor(WORKERS) as pool:
         missing_job = pool.submit(_graphql, _missing_query(released_at)) if backport else None
-        results = list(pool.map(_fetch_prs, batches))
+        issue_jobs = [pool.submit(_fetch_issues, issues[i:i + BATCH]) for i in range(0, len(issues), BATCH)]
+        results = list(pool.map(_fetch_prs, batches)) + [job.result() for job in issue_jobs]
         missing_data = missing_job.result() if missing_job else None
-    prs: dict[str, dict] = {}
+    fetched: dict[str, dict] = {}
     cost = first["rateLimit"]["cost"] + (missing_data["rateLimit"]["cost"] if missing_data else 0)
     remaining = first["rateLimit"]["remaining"]
     for part, rate in results:
-        prs.update(part)
+        fetched.update(part)
         cost += rate["cost"]
         remaining = min(remaining, rate["remaining"])
     release = None
@@ -212,9 +218,11 @@ def _fetch(state_dir: Path) -> dict:
     return {
         "fetched_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "rate": {"cost": cost, "remaining": remaining},
-        "prs": prs,
+        "prs": {i: fetched[i] for i in ids if i in fetched},
         "review_requested": [_node_id(n) for n in searches["review_requested"]],
-        "mentions": [search_entry(n) for n in searches["mentions"]],
+        # Issue mentions carry the turn facts a PR has, PR mentions find theirs under "prs".
+        "mentions": [search_entry(n) | (fetched.get(_node_id(n), {}) if n["__typename"] == "Issue" else {})
+                     for n in searches["mentions"]],
         "release": release,
     }
 
@@ -234,6 +242,24 @@ def _fetch_prs(batch: list[str]) -> tuple[dict, dict]:
             print(f"gh_sync: skipped {pid}, not found or not readable", file=sys.stderr)
         else:
             out[pid] = pr_facts(node)
+    return out, data["rateLimit"]
+
+
+def _fetch_issues(batch: list[str]) -> tuple[dict, dict]:
+    """Turn facts of one batch of mentioned issues; an issue GitHub will not return is skipped."""
+    parts = []
+    for i, iid in enumerate(batch):
+        repo, n = iid.split("#")
+        owner, name = repo.split("/")
+        parts.append(f'i{i}: repository(owner:"{owner}", name:"{name}"){{ issue(number:{n}){{{ISSUE_FIELDS}}} }}')
+    data = _graphql("{ rateLimit{cost remaining}\n" + "\n".join(parts) + "}", partial=True)
+    out = {}
+    for i, iid in enumerate(batch):
+        node = (data.get(f"i{i}") or {}).get("issue")
+        if node is None:
+            print(f"gh_sync: skipped {iid}, not found or not readable", file=sys.stderr)
+        else:
+            out[iid] = issue_turn(node)
     return out, data["rateLimit"]
 
 
@@ -272,6 +298,19 @@ def _events(node: dict, commit: dict) -> list[dict]:
     if commit:
         events.append(_event(_commit_actor(commit, node.get("author")), commit["committedDate"], "push"))
     return sorted((e for e in events if e), key=lambda e: e["at"])
+
+
+def _turn(events: list[dict]) -> dict:
+    """Marvin's newest event, the newest other human event and whether a later one mentions him."""
+    mine = [e for e in events if e["login"] == ME]
+    others = [e for e in events if e["login"] != ME]
+    my_last = mine[-1] if mine else None
+    return {
+        "my_last": {"at": my_last["at"], "kind": my_last["kind"]} if my_last else None,
+        "other_last": {k: others[-1][k] for k in ("login", "at", "kind")} if others else None,
+        "mention_after_mine": any(e["kind"] in ("comment", "review") and MENTION.search(e["body"])
+                                  and (not my_last or e["at"] > my_last["at"]) for e in others),
+    }
 
 
 def _event(actor: dict | None, at: str, kind: str, body: str | None = None) -> dict | None:

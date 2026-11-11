@@ -52,12 +52,13 @@ ISSUE_KINDS = frozenset({"issue", "discussion"})
 MERGE_RELS = frozenset({"fixes", "advisory_fix", "duplicate_of"})
 SEE_ALSO_RELS = frozenset({"related", "follow_up"})
 ANSWERS = frozenset({"reply", "post", "input", "design", "decide"})  # Unblock when quick and someone waits
-LAND_ACTIONS = frozenset({"approve", "merge", "flip", "pick"})
+LAND_ACTIONS = frozenset({"approve", "merge", "flip"})
 DECIDE_ACTIONS = frozenset({
     "review", "rereview", "decide", "design", "input", "reply",
     "ack_coordinator", "decide_fix", "review_fix", "merge_fix", "backport_decision", "review_backport",
 })
 CHORE_STEPS = frozenset({"set_ranges", "cve", "credit", "publish"})  # advisory publish chores
+TITLE_KINDS = frozenset({"release", "lab", "log"})  # no GitHub-style id, so the title is the sentence
 ACTION_TEXT = {
     "review": "Review {id}", "rereview": "Re-review {id}", "approve": "Approve {id}", "merge": "Merge {id}",
     "flip": "Mark {id} ready for review", "decide": "Decide on {id}", "reply": "Reply on {id}",
@@ -215,7 +216,9 @@ def collapse(asks: list[Ask], on: set[str]) -> list[list[Ask]]:
     parent = {ask.id: ask.id for ask in asks}
     for ask in asks:
         for link in ask.links:
-            if link["rel"] in MERGE_RELS and link["id"] in parent:
+            if link["rel"] in MERGE_RELS:
+                # A target without an ask (a merged fix PR) still joins the asks that link to it.
+                parent.setdefault(link["id"], link["id"])
                 parent[_root(parent, ask.id)] = _root(parent, link["id"])
     groups: dict[str, list[Ask]] = {}
     for ask in asks:
@@ -242,6 +245,8 @@ def tier(cluster: list[Ask], now: datetime) -> tuple[Tier, str]:
         return Tier.ACT, "lab_red"
     if _quick_answer(act):
         return Tier.UNBLOCK, "quick_answer"
+    if act.action == "pick":
+        return Tier.KEEP_WARM, "pick"  # done in bulk before a release
     if act.action in LAND_ACTIONS:
         return Tier.LAND, act.action
     if act.action in DECIDE_ACTIONS and not act.low_impact:
@@ -417,6 +422,8 @@ def _unique(ids: Iterable[str]) -> list[str]:
 def _sentence(cluster: list[Ask]) -> str:
     """Action sentence of a work item."""
     act = cluster[0]
+    if act.kind in TITLE_KINDS:
+        return act.title
     template = (act.who_waits and WHO_TEXT.get(act.action)) or ACTION_TEXT[act.action]
     text = template.format(id=short_id(act.id), who=act.who_waits)
     resolves = [short_id(ask.id) for ask in cluster[1:] if ask.kind != "pr"]

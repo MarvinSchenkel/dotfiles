@@ -234,6 +234,7 @@ def sync_card(card: dict, node: dict, ctx: dict) -> dict:
     card["sync"] = {
         "at": _iso(ctx["now"]),
         "last_human": {k: last[k] for k in ("login", "at", "team", "url")},
+        "last_speaker": last_speaker(node),
         "reporter_new": any(not h["team"] for h in fresh),
         "team_new": any(h["team"] for h in fresh),
         "closed": False,
@@ -253,6 +254,15 @@ def sync_card(card: dict, node: dict, ctx: dict) -> dict:
         "opened_since": opened_since,
         "test_ask": test_entry,
     }
+
+
+def last_speaker(node: dict) -> dict:
+    """Author of the newest comment on an issue or discussion node, bots included; the issue author when nobody commented."""
+    comments = [cm for cm in _comments(node) if _login(cm.get("author"))]
+    if not comments:
+        return {"login": _login(node.get("author")) or "ghost", "at": node["createdAt"], "bot": False}
+    newest = max(comments, key=lambda cm: cm["createdAt"])
+    return {"login": _login(newest["author"]), "at": newest["createdAt"], "bot": _is_bot(newest["author"])}
 
 
 def impact(node: dict, repo: str, codeowners: set[str], now: datetime) -> dict:

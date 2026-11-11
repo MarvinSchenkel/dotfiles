@@ -46,7 +46,8 @@ posts from the Post button (folded in like a `reply <n>`), the newest human comm
 teammate, PR state, test asks (`test asked` badge), closed issues (moved to `gone`, their `design` and
 `followups` rows pruned), milestones, the release table and `sync.impact` (`affected`: the reporter, body
 thumbs, me-too commenters and authors of duplicates and linked issues; `idle_days` since a non-team human
-spoke; the reporter's `channel` and `version`). It never sets or clears `ask`. A teammate is a
+spoke; the reporter's `channel` and `version`) and `sync.last_speaker` (`login`, `at`, `bot`: the newest
+comment by anyone, bots included, so a held info ask shows that the bot spoke last). It never sets or clears `ask`. A teammate is a
 comment author with authorAssociation MEMBER, OWNER or COLLABORATOR, or a `codeowners` login in a provider
 manifest on server `origin/dev`; the issue's own author never counts as a teammate on that issue.
 

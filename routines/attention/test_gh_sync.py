@@ -109,6 +109,19 @@ def test_push_goes_to_the_committer_and_bot_commits_are_no_push() -> None:
     assert gh_sync.pr_facts(picked)["other_last"] is None
 
 
+def test_issue_turn_counts_the_body_and_skips_bots() -> None:
+    node = {"author": _user("bob"), "createdAt": "2026-11-01T00:00:00Z", "body": f"@{ME} this breaks", "comments": {"nodes": [
+        _comment(ME, "2026-11-02T00:00:00Z", "which version?"),
+        _comment("bob", "2026-11-03T00:00:00Z", f"2.10.9, @{ME}"),
+        _comment("musicassistant-bot", "2026-11-04T00:00:00Z", f"@{ME} stale", typename="Bot"),
+    ]}}
+    assert gh_sync.issue_turn(node) == {
+        "my_last": {"at": "2026-11-02T00:00:00Z", "kind": "comment"},
+        "other_last": {"login": "bob", "at": "2026-11-03T00:00:00Z", "kind": "comment"},
+        "mention_after_mine": True,
+    }
+
+
 def test_state_targets() -> None:
     pr_review = {"prs": [{"repo": "server", "number": 1, "state": "open"}, {"repo": "server", "number": 2, "state": "merged"}]}
     triage = {"cards": [{"sync": {"pr": [{"repo": "example/models", "n": 3, "state": "OPEN"},

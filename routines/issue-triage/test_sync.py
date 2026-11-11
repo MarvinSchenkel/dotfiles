@@ -68,6 +68,15 @@ def test_bots_and_team_are_excluded() -> None:
     assert impact["idle_days"] == 41
 
 
+def test_last_speaker_counts_bots_and_falls_back_to_the_author() -> None:
+    comments = [_comment("MarvinSchenkel", "Can you share a log?", "2026-11-09T00:00:00Z"),
+                _comment("github-actions", "Reminder", "2026-11-10T00:00:00Z", typename="Bot"),
+                _comment("bob", "Same here", "2026-11-08T00:00:00Z")]
+    assert sync.last_speaker(_node(comments)) == {"login": "github-actions", "at": "2026-11-10T00:00:00Z", "bot": True}
+    assert sync.last_speaker(_node(comments[:1])) == {"login": "MarvinSchenkel", "at": "2026-11-09T00:00:00Z", "bot": False}
+    assert sync.last_speaker(_node()) == {"login": "alice", "at": "2026-10-01T00:00:00Z", "bot": False}
+
+
 def test_version_channels() -> None:
     form = "### Music Assistant version\n\n{}\n"
     assert sync._version(form.format("2.11.0b5")) == ("beta", "2.11.0b5")

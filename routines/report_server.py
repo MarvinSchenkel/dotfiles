@@ -26,6 +26,8 @@ from urllib.parse import unquote, urlsplit
 TRIAGE_POST = "/api/issue-triage/post"
 PRR_POST = "/api/pr-review/post"
 PRR_PAGE = "pr-review.html"
+# Posted-state placeholders per page; any other page gets the issue-triage one.
+PLACEHOLDERS = {PRR_PAGE: ("__PR_REVIEW_POSTED__",), "attention.html": ("__POSTED__", "__PR_REVIEW_POSTED__")}
 PRR_OWNER = "music-assistant"
 PRR_BOTS = {"Bot-MArley", "Copilot"}
 SUPPORT = "music-assistant/support"
@@ -112,10 +114,11 @@ class Handler(BaseHTTPRequestHandler):
             data = f.read()
         ctype = mimetypes.guess_type(path)[0] or "application/octet-stream"
         if path.endswith(".html"):
-            prr = os.path.basename(path) == PRR_PAGE
-            placeholder = b"__PR_REVIEW_POSTED__" if prr else b"__POSTED__"
-            posted = json.dumps(_posted(self.cfg.prr_log if prr else self.cfg.log)).replace("<", "\\u003c")
-            data = data.replace(b"__ACTION_TOKEN__", TOKEN.encode()).replace(placeholder, posted.encode())
+            logs = {"__POSTED__": self.cfg.log, "__PR_REVIEW_POSTED__": self.cfg.prr_log}
+            data = data.replace(b"__ACTION_TOKEN__", TOKEN.encode())
+            for placeholder in PLACEHOLDERS.get(os.path.basename(path), ("__POSTED__",)):
+                posted = json.dumps(_posted(logs[placeholder])).replace("<", "\\u003c")
+                data = data.replace(placeholder.encode(), posted.encode())
             ctype = "text/html; charset=utf-8"
         self._send(200, data, ctype)
 

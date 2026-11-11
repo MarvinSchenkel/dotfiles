@@ -138,6 +138,18 @@ def test_issue_with_contributor_draft_keeps_the_issue_row() -> None:
     assert [m.id for m in row.members] == [ISSUE, PR]
 
 
+def test_asks_linked_to_the_same_merged_pr_are_one_row() -> None:
+    merged = "music-assistant/server#90030"
+    asks = [
+        advisory(links=[link(merged, "advisory_fix")]),
+        advisory("GHSA-test-0002", links=[link(merged, "advisory_fix")]),
+        issue(links=[link("music-assistant/server#90032", "fixes")]),
+        issue("music-assistant/support#90031", links=[link("music-assistant/server#90032", "fixes")]),
+    ]
+    rows = rank.rank(asks, NOW)
+    assert sorted(len(row.members) for row in rows) == [2, 2]
+
+
 def test_related_link_shows_as_see_also_without_merging() -> None:
     rows = rows_by_id([issue(), pull(links=[link(ISSUE, "related")])])
     assert rows[PR].see_also == [ISSUE]
@@ -207,6 +219,22 @@ def test_release_merge_sits_below_the_security_picks() -> None:
                      effort=5, blocked_by=[ADV])
     rows = [row.id for row in rank.rank([merge, advisory(action="review_backport")], NOW)]
     assert rows.index(ADV) < rows.index("release:2.10.99")
+
+
+def test_picks_are_keep_warm_and_the_release_merge_lands_after_them() -> None:
+    def release(id: str, action: str, **kw: object) -> rank.Ask:
+        return rank.Ask(id=id, kind="release", src="release", title=f"{action} it", url="u", action=action, **kw)
+
+    rows = rows_by_id([release("release:2.10.99", "merge", blocked_by=["release:2.10.99/picks"]),
+                       release("release:2.10.99/picks", "pick")])
+    picks, merge = rows["release:2.10.99/picks"], rows["release:2.10.99"]
+    assert (picks.tier, picks.state, picks.action) == (Tier.KEEP_WARM, "live", "pick it")
+    assert (merge.tier, merge.state, merge.action) == (Tier.LAND, "blocked", "merge it")
+
+
+def test_lab_and_log_rows_read_their_title() -> None:
+    lab = rank.Ask(id="lab:t1", kind="lab", src="lab-deep", title="Investigate t1 on dev", url="u", action="investigate")
+    assert rank.rank([lab], NOW)[0].action == "Investigate t1 on dev"
 
 
 def test_blocked_by_cycle_drops_an_edge_with_a_warning() -> None:
