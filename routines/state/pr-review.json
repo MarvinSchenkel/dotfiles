@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-11T10:00:00+01:00",
+ "last_run": "2026-11-11T11:00:00+01:00",
  "dev": "a5f48fef8",
- "run_note": "You merged #7490 (grey out dropped podcasts and stations) and #6268 (setup code copy) went in; the #7490 chip now looks at the daily recheck task as a follow-up on dev. OzGav explained the workflow change on #7527 (the dependency check crashed on a removed provider), so it is yours to approve. #7353 is now Spotify-only after #7482 and waits on fmunkes.",
+ "run_note": "You approved #7527 (Remove Auracast, auto-merge on) and aioslimproto#591 merged. #7235 is rebased with strict dropped and Bot-MArley is clean, so only your call on the serialised transfer turn is left. I auto-approved lucamartinetti's MPD reconnect fix #7522. OzGav moved #7494 back to draft after your Discord comment.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -883,7 +883,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "Bot-MArley recheck on d93bc7069; frontend#2710 must land first",
-   "changed_now": "merged",
+   "changed_now": "",
    "action": null,
    "effort": null,
    "marley": {
@@ -11631,7 +11631,7 @@
    "assessment": "request_changes",
    "status": "attention",
    "attention_since": "2026-10-27T22:52:50Z",
-   "waiting_on": "you: reply to mnestrud",
+   "waiting_on": "you: approve with the 120 s serialised turn, or not",
    "gpt_sol": "1 problem (deadlock against cmd_set_members powering on a member with auto-play)",
    "size": "L",
    "code": 400,
@@ -11640,17 +11640,15 @@
    "ci": "green",
    "ci_fail": false,
    "merge_state": "CONFLICT with origin/dev a5f48fef8 in music_assistant/controllers/player_queues/controller.py, music_assistant/controllers/players/README.md, music_assistant/controllers/players/controller.py, tests/controllers/player_queues/test_transfer_queue.py",
-   "head_sha": "6442a5071",
+   "head_sha": "f5aee77cc",
    "core_touched": true,
    "providers_touched": [],
    "stacked": false,
    "tldr": "The lock race is real and the PR closes it for plain transfers, and all tests pass. But Copilot's open CRITICAL r4395432985 is real: I reproduced a transfer and a leadership handover each holding a lock the other waits for, until the 120 s strict timeout fails the transfer. The global turn plus the in-turn bypass is the fourth deadlock design in three commits; a two-phase transfer (source chain, then target chain, never both) would drop most of the 163 lines.",
    "summary": "transfer_queue now runs under get_playback_locks(source, target, strict=True). That covers the #6779 race where play_index/resume/stop on either queue interleaved with a transfer. _transfer_ad_hoc_leadership holds both leaders through transfer, regroup and resume. The new primitive adds a process-wide turn lock, a bypass for tasks that already hold a playback lock, a retry loop when ownership changed during the wait, and an early-release callable. Earlier CRITICALs r4389512413, r4389512498, r4392794816 and r4392794907 are fixed on 6442a5071. The bypass reopens the inversion the turn exists to prevent: a transfer that planned [a, c] while a was standalone holds a and waits for c, while a cmd_ungroup(c) that got c first hands leadership to a (now a member after a concurrent join), skips the turn and waits for a. With scaled timeouts the repro ends with both waiting the full strict timeout and the transfer raising ResourceBusyError. In production that is 120 s, with every other transfer queued behind the turn. The turn also leaves out other nested two-chain acquirers such as stream_feeder._stop_paused_slot_holder, which runs inside a play action. Each review round has found a new interleaving, so the design itself is fragile rather than any one line. Holding one chain at a time (source phase, then target phase, each through the existing handle_play_action) gives the same protection against play actions without hold-and-wait across chains, so no turn, bypass, replan loop or release callable is needed.",
-   "whats_new": "Out of draft at 13:11Z; mnestrud tagged you about the README paragraph. Reviewed for the first time.",
+   "whats_new": "Rebased onto dev with strict dropped and the docstring trimmed (f5aee77cc); Bot-MArley recheck clean (09:48Z).",
    "blockers": [
-    "Merge conflict with dev in player_queues/controller.py and players/controller.py (after #6802/#6809 merged)",
-    "Lab red until rerun on an updated branch (failures look like a stale base, not proven)",
-    "Bot-MArley: maintainer call on the turn lock serialising all transfers (an unrelated one can wait up to 120 s)"
+    "Your call: accept serialised transfers (up to 120 s wait behind a stuck player)"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -11682,14 +11680,14 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-28 15:00 CET",
-   "changed_now": "",
+   "changed_now": "pushed",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
     "open_threads": 0,
     "review_url": "https://github.com/music-assistant/server/pull/7235#pullrequestreview-5675899284",
-    "note": "Requested changes: none. One decision is left for a maintainer: the turn lock serialises all queue transfers, so an unrelated transfer can wait up to 120 s behind one stuck on a busy player. The author has asked @MarvinSchenkel to decide. Next up: Copilot on t",
-    "recheck_head": null
+    "note": "Recheck on f5aee77c: all fixed.",
+    "recheck_head": "f5aee77cc"
    },
    "lab": {
     "head": "6442a5071",
@@ -11708,7 +11706,7 @@
     "summary": "mnestrud needs your call on the decisions here: transfers are serialized, a small UX change"
    },
    "action": "decide",
-   "effort": 30,
+   "effort": 10,
    "preread": {
     "at": "2026-11-11T06:03:12Z",
     "head": "6442a5071",
@@ -11722,7 +11720,8 @@
     "recommendation": "Accept the turn lock and ask for a rebase plus dropping `strict`. Two reviews found no code bug, transfers are rare, and the worst case is a ResourceBusyError rather than a hang. The two-phase design would swap that for a lost queue when the target stays busy, and it would mean a fifth rewrite here and a rework of #7251, which is stacked on this PR.",
     "draft_reply": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@mnestrud thanks for the clear write-up. I'm fine with serialising transfers. They're rare, a normal one is done in a few seconds, and the 120 s wait only happens behind a player that's already stuck. Same goes for the three-actions-on-one-group case Copilot flagged: it ends in a ResourceBusyError and doesn't hang, so I'm accepting it as a known limit and will add `override-critical`.\n\nBefore I approve:\n- Please rebase on dev. It conflicts in both controllers and in test_transfer_queue.py. Dev added the two `_check_player_permission` calls at the top of `transfer_queue`. Keep those before the `async with` so a denied call fails right away and doesn't wait for the turn first. Dev also wrapped the hand-over in `_transfer_ad_hoc_leadership` in `with system_auth_context():`, and that can go inside your `get_playback_locks` block.\n- Please drop the `strict` param on [`get_playback_locks`](https://github.com/music-assistant/server/blob/6442a5071/music_assistant/controllers/players/controller.py#L313). Every caller passes `strict=True`, including Sonos in #7251, and the docstring already says a non-strict nested call isn't safe. Making it always strict means there's one less path to reason about.\n\nThe README paragraph is fine as is.",
     "posted": null
-   }
+   },
+   "rank_reason": "rebased, strict dropped, Bot-MArley recheck clean; your call on the turn lock"
   },
   {
    "repo": "aiosonos",
@@ -17551,8 +17550,8 @@
   {
    "repo": "aioslimproto",
    "number": 591,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-11T09:48:57Z",
    "url": "https://github.com/music-assistant/aioslimproto/pull/591",
    "title": "Adjust built package for PEP compliance with typing and license metadata",
    "author": "illright",
@@ -17596,12 +17595,13 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "merged",
    "suggested_fix": null,
    "del": 3,
    "action": "approve",
    "effort": 5,
-   "rank_reason": "illright dropped the backend switch you objected to; Bot-MArley clean"
+   "rank_reason": "illright dropped the backend switch you objected to; Bot-MArley clean",
+   "needs_reply": null
   },
   {
    "repo": "aioslimproto",
@@ -19186,9 +19186,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-11 10:05 CET",
-   "changed_now": "pushed",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "64a349232",
@@ -22471,12 +22471,12 @@
    "url": "https://github.com/music-assistant/server/pull/7494",
    "title": "Stop a player from taking over another device of the same type",
    "author": "OzGav",
-   "draft": false,
+   "draft": true,
    "verdict": "ready",
    "assessment": "approve",
-   "status": "attention",
-   "attention_since": "2026-11-10T02:24:11Z",
-   "waiting_on": "you: approve (core, migration)",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "OzGav (draft): see if deleting the device/provider resolves it",
    "size": "M",
    "code": 188,
    "add": 488,
@@ -22489,7 +22489,7 @@
    "stacked": false,
    "tldr": "A native player can no longer link another player of its own provider type or replace a Universal Player that holds one. An idempotent config migration releases the wrongly linked outputs (support#6998). Bot-MArley: tolerant of missing and malformed values, well tested.",
    "summary": "Copilot flagged a mixed stored list like [\"cast_tv\", {}] raising TypeError mid-repair; Bot-MArley reviewed after and called the migration tolerant of malformed values.",
-   "whats_new": "Opened 02:24Z; Bot-MArley clean 03:10Z. Lab players green.",
+   "whats_new": "You said on Discord and here not to solve the rare same-IP case; OzGav moved it to draft.",
    "blockers": [
     "Core plus config migration: needs your approval"
    ],
@@ -22508,7 +22508,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "",
+   "changed_now": "drafted",
    "suggested_fix": null,
    "lab": {
     "head": "35ea58f86",
@@ -22527,7 +22527,11 @@
     "note": "No changes; waiting for a maintainer.",
     "recheck_head": null
    },
-   "del": 2
+   "del": 2,
+   "action": null,
+   "effort": null,
+   "rank_reason": null,
+   "needs_reply": null
   },
   {
    "repo": "server",
@@ -22578,7 +22582,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "4fb1bd308",
@@ -24475,46 +24479,77 @@
    "url": "https://github.com/music-assistant/server/pull/7522",
    "title": "Reconnect the MPD player when its connection drops silently",
    "author": "lucamartinetti",
-   "draft": true,
-   "verdict": null,
-   "assessment": null,
+   "draft": false,
+   "verdict": "ready",
+   "assessment": "approve",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "lucamartinetti (draft)",
+   "waiting_on": "merge queue (auto-merge on)",
    "size": "M",
-   "code": 52,
-   "add": 149,
-   "ci": null,
+   "code": 218,
+   "add": 549,
+   "ci": "green",
    "ci_fail": false,
-   "merge_state": null,
-   "head_sha": "2622998ce",
+   "merge_state": "merge-tree clean on origin/dev a5f48fef8",
+   "head_sha": "c8ede4838",
    "core_touched": false,
-   "providers_touched": [],
+   "providers_touched": [
+    "mpd"
+   ],
    "stacked": false,
-   "tldr": "The MPD player could stay \"available\" forever after its connection died. `MPDPlayer` opens two MPD sessions: one for commands, one for the blocking `idle()` loop. Reconnects were only armed from `_connect()` failures and from `MPDError` inside `_idle_loop()`. A command hitting a dead socket only rai",
+   "tldr": "The MPD player could stay available forever after its connection died. It now reconnects only on real connection loss (connection or socket errors, timeouts), a plain MPD command error fails just that command, and the status poll, commands and connects are time-limited. Bot-MArley approved.",
    "summary": "",
-   "whats_new": null,
+   "whats_new": "Out of draft 09:57Z; Bot-MArley approved. Auto-approved, auto-merge on.",
    "blockers": [],
    "findings": [],
    "unaddressed_comments": [],
-   "prompt": "",
-   "backport": null,
-   "auto_approved": null,
+   "prompt": "Fix music-assistant/server PR #7224 (head 8224a23ac) on top of refs/remotes/pr/7224: replace the deferred restart task, its skip guard on mass._tracked_timers and the faked PLAYING with an inline `await self.mass.player_queues.play_index(queue_id, queue_item_id, seek_position=position)` from play_media (the queue playback lock is re-entrant per task). Apply the validated inline patch from the review, rewrite the restart tests and run pytest tests/providers/raumfeld.",
+   "backport": {
+    "rec": false,
+    "why": "No backport label; MPD reconnect rework."
+   },
+   "auto_approved": {
+    "at": "2026-11-11 11:05 CET",
+    "note": "Bot-MArley approved (provider-only mpd, M); approved and auto-merge on (merge queue)."
+   },
    "author_replied": null,
    "reporter_reply": null,
    "support": null,
    "fix_thread": null,
-   "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "",
+   "related_prs": [
+    "#7401 closed (Auracast serialx)",
+    "home-assistant-addon#50 closed"
+   ],
+   "reviewed_now": true,
+   "reviewed_at": "2026-11-11 11:05 CET",
+   "changed_now": "auto-approved",
    "suggested_fix": null,
    "lab": null,
-   "marley": null,
-   "del": 11,
+   "marley": {
+    "verdict": "approved",
+    "reviewed_head": true,
+    "open_threads": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7522#pullrequestreview-5856933551",
+    "note": "",
+    "recheck_head": null
+   },
+   "del": 59,
    "needs_reply": null,
    "preread": null,
-   "snooze": null
+   "snooze": null,
+   "gpt_sol": "clean",
+   "copilot": {
+    "green": true,
+    "comments": 0,
+    "findings": 0,
+    "review_url": "https://github.com/music-assistant/server/pull/7224",
+    "titles": []
+   },
+   "copilot_reviewed_head": true,
+   "copilot_note": "Approval recommended on 5d4668dd7 (dev merge only).",
+   "action": null,
+   "effort": null,
+   "rank_reason": null
   },
   {
    "repo": "server",
@@ -24576,9 +24611,9 @@
    "draft": false,
    "verdict": "ready",
    "assessment": "approve",
-   "status": "attention",
-   "attention_since": "2026-11-11T08:01:02Z",
-   "waiting_on": "you: approve (OzGav answered your workflow question)",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "merge queue (you approved, auto-merge on)",
    "gpt_sol": "clean",
    "size": "S",
    "code": 1409,
@@ -24622,7 +24657,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-11-11 09:05 CET",
-   "changed_now": "author replied",
+   "changed_now": "approved",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -24632,15 +24667,10 @@
     "recheck_head": null
    },
    "lab": null,
-   "needs_reply": {
-    "at": "2026-11-11T08:01:02Z",
-    "who": "OzGav",
-    "url": "https://github.com/music-assistant/server/pull/7527",
-    "summary": "The dependency check crashed on a removed provider (no \"after\" manifest); the workflow change makes it handle that, like it already handles new providers"
-   },
-   "action": "approve",
-   "effort": 5,
-   "rank_reason": "OzGav answered your question; Bot-MArley approved",
+   "needs_reply": null,
+   "action": null,
+   "effort": null,
+   "rank_reason": null,
    "preread": null,
    "snooze": null
   },
@@ -24664,7 +24694,7 @@
    "ci": null,
    "ci_fail": false,
    "merge_state": null,
-   "head_sha": "d9045d5d8",
+   "head_sha": "d7a730181",
    "core_touched": false,
    "providers_touched": [],
    "stacked": false,
