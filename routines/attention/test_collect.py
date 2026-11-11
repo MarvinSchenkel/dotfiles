@@ -21,6 +21,8 @@ def pr_facts(**over: object) -> dict:
         "unresolved_threads": 0, "review_requests": [], "reviews": {},
         "my_last": {"at": "2026-11-05T00:00:00Z", "kind": "review"},
         "other_last": {"login": "alice", "at": "2026-11-06T00:00:00Z", "kind": "push"},
+        "my_said": {"at": "2026-11-05T00:00:00Z", "kind": "review"},
+        "author_last": {"at": "2026-11-06T00:00:00Z", "kind": "push"},
         "mention_after_mine": False, "additions": 1, "deletions": 1, "labels": [], "links": [],
     }
     return base | over

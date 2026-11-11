@@ -24,7 +24,8 @@ def facts(**kw: object) -> rank.PRFacts:
     base = {
         "author": "alice", "draft": False, "review_decision": None, "merge_state": "CLEAN",
         "ci": "green", "unresolved_threads": 0, "marley_approved_head": False,
-        "my_last_at": None, "other_last_at": ago(1), "question_for_me": False,
+        "my_last_at": None, "other_last_at": ago(1), "my_said_at": None, "author_last_at": ago(1),
+        "question_for_me": False,
     }
     return rank.PRFacts(**(base | kw))
 
@@ -104,8 +105,18 @@ def test_deferred_advisory_without_deadline_is_off() -> None:
 
 
 def test_other_pr_is_off_after_my_review_until_the_author_acts() -> None:
-    assert not rank.gate(pull(pr=facts(my_last_at=ago(1), other_last_at=ago(2))), NOW)
-    assert rank.gate(pull(pr=facts(my_last_at=ago(2), other_last_at=ago(1))), NOW)
+    assert not rank.gate(pull(pr=facts(my_said_at=ago(1), author_last_at=ago(2))), NOW)
+    assert rank.gate(pull(pr=facts(my_said_at=ago(2), author_last_at=ago(1))), NOW)
+
+
+def test_my_push_to_a_contributor_pr_is_no_answer() -> None:
+    pr = facts(my_last_at=ago(1), other_last_at=ago(2), my_said_at=ago(3), author_last_at=ago(2))
+    assert rank.gate(pull(pr=pr), NOW)
+
+
+def test_teammate_comment_on_a_contributor_pr_is_not_the_author_acting() -> None:
+    pr = facts(my_last_at=ago(2), other_last_at=ago(1), my_said_at=ago(2), author_last_at=ago(3))
+    assert not rank.gate(pull(pr=pr), NOW)
 
 
 def test_own_draft_is_off_until_ready_to_flip() -> None:

@@ -108,7 +108,9 @@ class PRFacts:
     marley_approved_head: bool  # Bot-MArley's review approves the current head commit
     my_last_at: datetime | None  # Marvin's newest comment, review, push or ready event
     other_last_at: datetime | None  # the same for any other human
-    question_for_me: bool  # a human @-mentioned Marvin after my_last_at
+    my_said_at: datetime | None  # Marvin's newest comment or review
+    author_last_at: datetime | None  # the PR author's newest comment, review, push or ready event
+    question_for_me: bool  # a human @-mentioned Marvin after my_said_at
 
     @property
     def own(self) -> bool:
@@ -348,7 +350,7 @@ def _pr_turn(pr: PRFacts) -> bool:
         return _ready_to_merge(pr) or _ready_to_flip(pr) or _newer(pr.other_last_at, pr.my_last_at)
     if pr.draft:
         return pr.question_for_me
-    return not _newer(pr.my_last_at, pr.other_last_at)
+    return not _newer(pr.my_said_at, pr.author_last_at)
 
 
 def _ready_to_merge(pr: PRFacts) -> bool:

@@ -31,6 +31,9 @@ SEARCHES = {"review_requested": f"review-requested:{ME}", "mentions": f"mentions
 CI = {"SUCCESS": "green", "FAILURE": "red", "ERROR": "red", "PENDING": "pending", "EXPECTED": "pending"}
 
 MENTION = re.compile(rf"@{ME}\b", re.I)
+# A comment that only commands the review bot is no answer from anyone.
+BOT_COMMAND = re.compile(r"@Bot-MArley\b[^\n]*", re.I)
+SAID = ("comment", "review")
 PR_URL = re.compile(r"github\.com/([\w.-]+/[\w.-]+)/pull/(\d+)")
 GH_URL = re.compile(r"github\.com/([\w.-]+)/([\w.-]+)/(?:issues|pull|discussions)/(\d+)")
 FULL_REF = re.compile(r"(?<![\w/.-])([\w.-]+/[\w.-]+)#(\d+)\b")
@@ -126,7 +129,7 @@ def pr_facts(node: dict) -> dict:
         "reviews": {_login(r["author"]): {"state": r["state"], "commit": (r.get("commit") or {}).get("oid"),
                                           "at": r["submittedAt"]}
                     for r in node["latestReviews"]["nodes"] if r.get("author")},
-        **_turn(_events(node, commit)),
+        **_pr_turn(_events(node, commit), _login(node.get("author"))),
         "additions": node["additions"], "deletions": node["deletions"],
         "labels": [lb["name"] for lb in node["labels"]["nodes"]],
         "links": pr_links(node, repo, default),
@@ -300,23 +303,42 @@ def _events(node: dict, commit: dict) -> list[dict]:
     return sorted((e for e in events if e), key=lambda e: e["at"])
 
 
-def _turn(events: list[dict]) -> dict:
-    """Marvin's newest event, the newest other human event and whether a later one mentions him."""
-    mine = [e for e in events if e["login"] == ME]
-    others = [e for e in events if e["login"] != ME]
-    my_last = mine[-1] if mine else None
-    return {
-        "my_last": {"at": my_last["at"], "kind": my_last["kind"]} if my_last else None,
-        "other_last": {k: others[-1][k] for k in ("login", "at", "kind")} if others else None,
-        "mention_after_mine": any(e["kind"] in ("comment", "review") and MENTION.search(e["body"])
-                                  and (not my_last or e["at"] > my_last["at"]) for e in others),
+def _pr_turn(events: list[dict], author: str | None) -> dict:
+    """The turn facts plus Marvin's newest comment or review and the PR author's newest event."""
+    return _turn(events) | {
+        "my_said": _brief(_newest(events, ME, SAID)),
+        "author_last": _brief(_newest(events, author)),
     }
 
 
+def _turn(events: list[dict]) -> dict:
+    """Marvin's newest event, the newest other human event and whether one after his last word mentions him."""
+    my_last = _newest(events, ME)
+    my_said = _newest(events, ME, SAID)
+    others = [e for e in events if e["login"] != ME]
+    return {
+        "my_last": _brief(my_last),
+        "other_last": {k: others[-1][k] for k in ("login", "at", "kind")} if others else None,
+        "mention_after_mine": any(e["kind"] in SAID and MENTION.search(e["body"])
+                                  and (not my_said or e["at"] > my_said["at"]) for e in others),
+    }
+
+
+def _newest(events: list[dict], login: str | None, kinds: tuple[str, ...] | None = None) -> dict | None:
+    """Newest event by login, optionally of these kinds."""
+    found = [e for e in events if e["login"] == login and (kinds is None or e["kind"] in kinds)]
+    return found[-1] if found else None
+
+
+def _brief(event: dict | None) -> dict | None:
+    """The {at, kind} of an event."""
+    return {"at": event["at"], "kind": event["kind"]} if event else None
+
+
 def _event(actor: dict | None, at: str, kind: str, body: str | None = None) -> dict | None:
-    """One event, or None for a bot or a deleted account."""
+    """One event, or None for a bot, a deleted account or a comment that only commands the review bot."""
     login = _login(actor)
-    if not login or _is_bot(actor):
+    if not login or _is_bot(actor) or (kind == "comment" and BOT_COMMAND.fullmatch((body or "").strip())):
         return None
     return {"login": login, "at": at, "kind": kind, "body": body or ""}
 

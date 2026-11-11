@@ -315,14 +315,16 @@ def _card_ids(states: dict[str, dict]) -> set[str]:
 
 def _pr_facts(facts: dict, needs: dict) -> PRFacts:
     """rank.PRFacts from a cache entry and the card's needs_reply."""
-    my_last = _time((facts.get("my_last") or {}).get("at"))
+    my_said = _time((facts.get("my_said") or {}).get("at"))
     marley = facts.get("reviews", {}).get("Bot-MArley") or {}
     return PRFacts(
         author=facts["author"], draft=facts["draft"], review_decision=facts.get("review_decision"),
         merge_state=facts.get("merge_state"), ci=facts["ci"], unresolved_threads=facts["unresolved_threads"],
         marley_approved_head=marley.get("state") == "APPROVED" and marley.get("commit") == facts.get("head"),
-        my_last_at=my_last, other_last_at=_time((facts.get("other_last") or {}).get("at")),
-        question_for_me=facts.get("mention_after_mine", False) or _after(_time(needs.get("at")), my_last),
+        my_last_at=_time((facts.get("my_last") or {}).get("at")),
+        other_last_at=_time((facts.get("other_last") or {}).get("at")),
+        my_said_at=my_said, author_last_at=_time((facts.get("author_last") or {}).get("at")),
+        question_for_me=facts.get("mention_after_mine", False) or _after(_time(needs.get("at")), my_said),
     )
 
 

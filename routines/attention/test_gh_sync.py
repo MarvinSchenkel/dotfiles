@@ -96,6 +96,36 @@ def test_mention_before_my_reply_does_not_count() -> None:
     assert facts["mention_after_mine"] is False
 
 
+@pytest.mark.parametrize("login", [ME, "bob"])
+def test_bot_marley_command_is_no_event(login: str) -> None:
+    node = _node(timelineItems={"nodes": [
+        _comment(ME, "2026-11-03T00:00:00Z", "looks good"),
+        _comment(login, "2026-11-04T00:00:00Z", "  @Bot-MArley recheck \n"),
+        _comment("bob", "2026-11-05T00:00:00Z", "@Bot-MArley review\nthe new push fixes the threads"),
+    ]})
+    facts = gh_sync.pr_facts(node)
+    assert facts["my_last"] == facts["my_said"] == {"at": "2026-11-03T00:00:00Z", "kind": "comment"}
+    assert facts["other_last"]["at"] == "2026-11-05T00:00:00Z"
+
+
+def test_my_said_skips_my_push_and_author_last_skips_teammates() -> None:
+    node = _node(
+        timelineItems={"nodes": [
+            _comment("alice", "2026-11-03T00:00:00Z"),
+            {"__typename": "PullRequestReview", "author": _user(ME), "state": "CHANGES_REQUESTED",
+             "submittedAt": "2026-11-04T00:00:00Z", "body": ""},
+            _comment("bob", "2026-11-06T00:00:00Z"),
+        ]},
+        commits={"nodes": [{"commit": {"committedDate": "2026-11-05T00:00:00Z", "statusCheckRollup": None,
+                                       "author": {"name": ME, "user": {"login": ME}},
+                                       "committer": {"name": ME, "user": {"login": ME}}}}]})
+    facts = gh_sync.pr_facts(node)
+    assert facts["my_last"] == {"at": "2026-11-05T00:00:00Z", "kind": "push"}
+    assert facts["my_said"] == {"at": "2026-11-04T00:00:00Z", "kind": "review"}
+    assert facts["author_last"] == {"at": "2026-11-03T00:00:00Z", "kind": "comment"}
+    assert facts["other_last"]["login"] == "bob"
+
+
 def test_push_goes_to_the_committer_and_bot_commits_are_no_push() -> None:
     rebased = _node(commits={"nodes": [{"commit": {
         "committedDate": "2026-11-09T00:00:00Z", "statusCheckRollup": None,
