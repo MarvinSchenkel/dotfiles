@@ -13,9 +13,9 @@
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1600",
   "scheduled-task:command:mcp:07252f9b-6837-4579-a795-10d1b3f2e813:schedule-task:pr-review-setup-2026-10-21-1700"
  ],
- "last_run": "2026-11-11T07:00:00+01:00",
- "dev": "cd60f03fd",
- "run_note": "Busy night: six merged (four player split steps, the onboarding fix, #7506 and models#464), I merged client#346 and put #7217 (Roku queue fixes) on auto-merge after Bot-MArley approved it. New for you: marcelveldt's #7514 (audio pipes on tmpfs) needs a second maintainer, #7512 (Deezer hi-res) needs the dependencies-reviewed label, OzGav did your ask on #7124, and aioslimproto#591 dropped the uv_build switch. dmoo500 removed playlist sharing from #7172.",
+ "last_run": "2026-11-11T08:00:00+01:00",
+ "dev": "b8d023305",
+ "run_note": "Merged: #7217 (Roku), #7459 (m4a albumartists), #7488 (DR LYD) and a player split step; #7401 and the add-on serial PR were closed. #7172 is back with you: Bot-MArley's recheck is clean and dmoo500 will fold jetersen's sharing models into it. #7512 picked up a Copilot CRITICAL on MP3 bitrates, so it waits on jdaberkow before the dependency label.",
  "skip": {
   "server#6184": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
   "server#5161": "stale draft proposed to Marvin as a close candidate on 2026-10-05; stays out until he keeps it",
@@ -832,7 +832,7 @@
     "spotify",
     "audible"
    ],
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "19596a7f3",
    "tldr": "Adds an optional copy_text to setup-flow steps so a client can copy the Tidal device code, the Spotify callback URL or the Audible login URL. 17 lines, core setup_flow model plus three providers. Copilot: Needs a closer look, because the frontend companion has to land with it.",
    "summary": "Small and correct. copy_text is passed through _build_step for both FORM and EXTERNAL steps, and the three providers hand it the values users already copy by hand. Copilot's CRITICALs are mostly stale now. The models pin is satisfied on dev (models 1.1.214 has copy_text), and frontend#2710 now renders the button on FORM steps too (it has a 'copies a form step's copy text' test). So the Spotify/Audible FORM concern is gone. Still open: no server test asserts copy_text on an emitted step. A two-line test patch is below and passes on dev. Copilot's API_SCHEMA_VERSION bump request is a maintainer call: the field is optional, so old clients ignore it and the frontend only checks truthiness. Dev convention says bump on model changes, so bumping to 85 is the safe choice. The models docstring says '[EXTERNAL]' while the field is also used on FORM steps (models-repo nit). #6368 duplicates the same plumbing, so this one should land first. The title is long; something like 'Add a copy button for setup codes and links' would read better in release notes.",
@@ -883,7 +883,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "you: merge after frontend#2710 lands (schema 107)",
-   "changed_now": "reviewed",
+   "changed_now": "",
    "action": "merge",
    "effort": 5,
    "marley": {
@@ -1469,7 +1469,7 @@
    "author_replied": null,
    "reporter_reply": null,
    "waiting_on": "marcelveldt: direction (OzGav waits on him)",
-   "changed_now": "author replied",
+   "changed_now": "",
    "action": null,
    "effort": null,
    "needs_reply": null,
@@ -2303,7 +2303,7 @@
    "ci": "red",
    "core_touched": true,
    "providers_touched": [],
-   "merge_state": "CONFLICT with origin/dev cd60f03fd in tests/providers/squeezelite/test_player.py",
+   "merge_state": "CONFLICT with origin/dev b8d023305 in tests/providers/squeezelite/test_player.py",
    "head_sha": "e4c4dcdb9",
    "tldr": "thelad-dev fixed both Copilot CRITICALs: volume_set errors are now wrapped to PlayerCommandFailed like handle_player_command, and the config reads moved under the VOLUME lock with a race test. Copilot now has 0 inline findings. Side effect: every VOLUME_SET player now waits on its VOLUME lock during register/reconnect while the global register lock is held, even with no pin. Copilot's Previously missed item (no apply on unavailable to available) is real for Chromecast. One small commit plus a reply.",
    "summary": "Delta e2882279a..306c090ad, one commit, controller.py and the pin test file. (1) _apply_native_volume_pin now catches non-MusicAssistantError from player.volume_set and raises PlayerCommandFailed, same pattern as handle_player_command in players/helpers.py. Register and register_or_update keep their MusicAssistantError catch, so device errors no longer abort registration. This resolves our previous blocker and Copilot r4280705863 without touching providers. (2) The CONF_VOLUME_CONTROL and CONF_NATIVE_VOLUME reads moved inside the per-player VOLUME lock, which resolves r4280705925. save_player_config writes storage before calling on_player_config_change, so the recheck sees the new values. get_player_lock is per-task reentrant, so no self-deadlock, and the pin only takes the member lock, so no group/member inversion. The new asyncio test does catch the old ordering: after sleep(0) the old code had already read the pin before blocking. (3) New issue from (2): the early return now happens inside the lock, so every VOLUME_SET player takes its VOLUME lock on each register/register_or_update. Both calls run under the global _register_lock. If a volume command is stuck on that player (likely on a reconnect after a drop), registration of every player waits up to PLAYER_LOCK_TIMEOUT (30s), even though the pin is not configured. GPT Sol flagged the same thing as PROBLEM. Fix: cheap pre-check before the lock, recheck inside (patch below). (4) Pin before set_config: author kept it and replied on the resolved thread r4254688831. Fine. Copilot 06:20Z on 306c090ad: 0 open inline findings, both old threads resolved in its overview (the GitHub threads are still unresolved). Previously missed (1) [CRITICAL]: no pin apply on unavailable to available. Checked: chromecast/player.py sets _attr_available = False at init and flips it in the connection-status handler via update_state, never re-registering. So for Cast the pin is skipped at register and never applied at startup, only on config save while online. Cast into an AVR is a typical setup for this feature, so this is worth fixing in the PR: in signal_player_state_update, when 'available' changed to True on an initialized player, schedule _apply_native_volume_pin as a task that logs errors. The Universal Player item from the last review was not repeated. Our depends_on_value_not = PLAYER_CONTROL_NATIVE suggestion is still unposted. Local tests could not run: the shared .venv has stale models (SortField.FAVORITE_TIMESTAMP missing). CI green. Marvin has not commented on this PR.",
@@ -2403,7 +2403,7 @@
    "providers_touched": [
     "dlna_receiver"
    ],
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "CONFLICT with origin/dev b8d023305 in music_assistant/translations/en.json",
    "head_sha": "e77b4d756",
    "tldr": "Out of draft again since 08:52Z and OzGav is re-requested. All 58 review threads are resolved, and the three OzGav points from September (owner_player_id rename, conftest.py removed, deferred import removed) are done in the code. Scope is clean: only the new provider, its tests and en.json keys. Two real bugs remain against the current AudioSource session model. The plugin never calls deselect_source, so a second cast on the same renderer reuses the first cast's cached stream details (with the codec ffmpeg detected), and a DLNA Stop leaves the player showing the DLNA source. Also, any stream teardown during Pause is treated as Stop.",
    "summary": "New plugin provider synced from ma-provider-dlna-receiver v1.2.8. It runs one aiohttp UPnP server per MA player (ports from 8298 upward, on one detected IPv4) and one SSDP advertiser per renderer, each with its own UDP 1900 socket (SO_REUSEPORT). Playback goes through play_media with an AUDIO_SOURCE uri, and get_audio_stream proxies the sender's URL. Files touched: only music_assistant/providers/dlna_receiver/*, tests/providers/dlna_receiver/* and 9 new keys in translations/en.json. No core changes. Conventions are mostly fine: get_config_entries is an instance method on dev's model, the registry uses the event bus, tasks go through mass.create_task, and narrow excepts are used. The VERSION file matches other synced providers (yandex_*, kion_music, msx_bridge). The docs URL in the manifest returns 404 until music-assistant.io#626 merges. Unload cancels the metadata task, unsubscribes the player events, sends byebye, closes both UDP transports, stops the aiohttp runner, cancels GENA tasks and leaves mass.http_session open. GPT Sol and I found no leak. Security of the unauthenticated endpoint is reasonable for DLNA: SetAVTransportURI and GENA callbacks are validated against loopback, link-local, multicast and reserved addresses on every redirect hop, redirects are capped at 5, GENA is capped at 32 subs per service with a 1800 s TIMEOUT clamp, and SOAP/DIDL parsing rejects DOCTYPE/ENTITY and anything over 64 KiB. Anyone on the LAN can still play to and set the volume of every exposed player. That is inherent to DLNA and the plugin is opt-in. The remaining issues are about the newer AudioSource session contract. Sessions survive cmd_stop and keep session.streamdetails on re-select (_start_audio_source_session with preserve_details). ffmpeg writes the detected codec into that AudioFormat in place, so the next cast on the same renderer is launched with the old -acodec. Other receivers (airplay_receiver, spotify_connect, ariacast, sendspin_source) call deselect_source with the session's playback_session_id when their session ends. This plugin does not. on_source_unselected also sets STOPPED and clears elapsed on every stream teardown, but dev documents that a paused source's stream can be torn down while the source stays selected.",
@@ -4813,7 +4813,7 @@
    "providers_touched": [
     "musicbrainz"
    ],
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "8f918e658",
    "tldr": "get_url_data now deletes the 30-day settled entry when a lookup finds the URL unknown or ambiguous. Keys match the set call and cache.get honours BYPASS_CACHE, so a refresh really re-asks and clears it. The declined CRITICAL needs three rare conditions at once, and the harm is a duplicate rather than a wrong merge. Ready. Copilot recommends approval on the head. Core touched, so it's your approve.",
    "summary": "Delta 80c73af04..3ac44a43d adds an else branch in MusicBrainzAPIClient.get_url_data that calls mass.cache.delete(settled_key, provider=self.domain) whenever the lookup does not resolve to exactly one entity. The key and provider are the same as in the set call. delete() with category None matches any category, and set uses the default 0, so the entry is removed. cache.get_with_freshness returns a miss under BYPASS_CACHE for non-persistent entries, so a bypassing refresh skips the settled entry, re-queries and now drops it. That closes r4337198057. Concurrent lookups for one URL are last-writer-wins, and both writers reflect MusicBrainz at their own time, so no harmful race. A 400/401/404 response (None) also drops the settled entry, which is right for 404 and harmless otherwise because the 1-day cache re-asks. The new test drives the real set/delete sequence with BYPASS_CACHE. On the declined r4337197972: the recovered MBID is only applied at insert, after _get_library_item_by_match has run its external-id pass without it. A duplicate therefore needs a same-provider name clash, a MusicBrainz URL link, and a third library artist carrying that MBID under a name that normalises differently (localised names, P!nk/Pink). OzGav's premise that library artists carry the MusicBrainz name is not quite right: names come from the first provider. Even so the combination is rare, and the outcome (a duplicate with the same MBID, mergeable by hand) is better than the pre-PR behaviour, which merged the item into the wrong same-name artist. Decline accepted. A cheap follow-up would look up the recovered MBID before inserting.",
@@ -4845,7 +4845,7 @@
    },
    "prompt": "",
    "whats_new": "OzGav added canonical_mapping_url in helpers/uri.py as you asked (01:07Z); Bot-MArley recheck clean.",
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-11 07:15 CET",
    "auto_approved": null,
    "stacked": false,
@@ -4862,7 +4862,7 @@
    "reporter_reply": null,
    "waiting_on": "you: approve (OzGav moved the URL logic into canonical_mapping_url)",
    "gpt_sol": "not reviewed",
-   "changed_now": "author replied",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -6129,7 +6129,7 @@
    "del": 26,
    "ci": "green on 688ad6345",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "541a5dd92",
    "core_touched": true,
    "providers_touched": [
@@ -8780,7 +8780,7 @@
    "assessment": "comment",
    "status": "waiting",
    "attention_since": null,
-   "waiting_on": "dmoo500 + jetersen: combine into one PR? (you asked 15:46Z)",
+   "waiting_on": "jetersen: adapt mobile to the plugin API? (dmoo500 asked)",
    "gpt_sol": "not run",
    "size": "M",
    "code": 30,
@@ -8795,7 +8795,7 @@
    "stacked": false,
    "tldr": "ItemShareInfo/ItemShareLink for jetersen's draft server#7173 (music/share_item). It competes with dmoo500's draft server#7172 (provider-independent share links). Decide which design the project wants before merging models changes.",
    "summary": "",
-   "whats_new": "You suggested closing jetersen's PRs and folding what is needed into dmoo500's server PR (15:46Z).",
+   "whats_new": "dmoo500 agrees to consolidate into server#7172 and asked jetersen to adapt the mobile integration to the plugin API.",
    "blockers": [
     "Two competing sharing designs (#7173 + models#447 vs #7172): your call"
    ],
@@ -8818,7 +8818,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-10-26 07:00 CET",
-   "changed_now": "",
+   "changed_now": "author replied",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -9650,11 +9650,11 @@
    "author": "dmoo500",
    "url": "https://github.com/music-assistant/server/pull/7172",
    "draft": false,
-   "verdict": "almost",
+   "verdict": "ready",
    "assessment": "request_changes",
-   "status": "waiting",
-   "attention_since": null,
-   "waiting_on": "Bot-MArley recheck on a972c8c0b (asked 07:10); dmoo500 dropped playlist sharing",
+   "status": "attention",
+   "attention_since": "2026-11-11T06:09:49Z",
+   "waiting_on": "you: re-review (tracks, albums, artists only; Bot-MArley recheck clean)",
    "gpt_sol": "1 critical, 3 problems",
    "size": "XL",
    "code": 1306,
@@ -9662,7 +9662,7 @@
    "del": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "a972c8c0b",
    "core_touched": false,
    "providers_touched": [
@@ -9671,11 +9671,10 @@
    "stacked": false,
    "tldr": "The rework does what OzGav asked. Resolve, preview and import all go through core matching, and the direct Deezer/iTunes/YTM calls are gone.\nOur problems (3) and (4) are fixed. Problem (2) is only partly fixed: preview is paged and capped at 2 concurrent tracks, but limit has no upper bound and guests can call it.\nProblem (1) still stands. share.music-assistant.io does not resolve and the landing page still lives in dmoo500/music-assistant-share.\nMaintainers still have to choose between this plugin and jetersen's core share API (#7173 + models#447).\nTests: 151 pass, on the PR head and when merged with origin/dev. Core is barely touched: one private helper in helpers/compare.py is renamed to public.",
    "summary": "Since 8d940da2a the plugin was split into payload.py, links.py and resolver.py. Track resolution now does an external-ID lookup via controller.get_item_by_external_id, gated by compare_track_evidence >= LIKELY plus ISRC corroboration, and falls back to tracks.enrich_provider_mappings. Album and artist resolution use core search with compare_album/compare_artist, and ambiguous results stay unresolved. Import sends M3U with SAME_RECORDING, which maps to the same LIKELY threshold, so preview and import agree. Status of our earlier problems: (1) NOT fixed. The default domain has no DNS record and the landing page is still in a personal repo. (2) PARTIAL. There is offset/limit paging (default 50), a semaphore of 2 and dedupe of identical tracks, but no maximum limit and no cap on payload size when decoding. Each track can still trigger up to 3 external-ID lookups times P providers plus P searches. That fan-out now goes through MA's own providers, which is the accepted pattern. (3) FIXED. Deezer and iTunes calls are removed, so only the user's own configured providers are queried. (4) FIXED. Core evidence matching is used, ISRC hits need the title and credited artists to agree, and version mismatches are rejected. The remaining gap is the explicit flag, which dmoo500 declined to carry. OzGav's points: own matcher, fixed (core). Hard-coded service URLs, mostly fixed: links now come only from ProviderMapping.url, but host tables are kept to compact and validate refs, and an artwork CDN allowlist remains (his call). Direct Deezer/iTunes, fixed. M3U with share:// paths, kept as agreed, with a plugin-side delimiter guard that works around generate_m3u not escaping '||'. Security: all four commands are authenticated (generate/resolve/preview need LIBRARY_READ, which guests have; import needs LIBRARY_WRITE). The old public HTTP/CORS resolve route is gone. There is no server-side state and no token, and the payload sits in the URL fragment, so there is nothing to guess or enumerate. Resolution respects per-user music-source visibility, through core filtering plus an explicit visible provider set. There is no rate limiting, so a guest can call preview with a huge limit. Outside the plugin: helpers/compare.py (rename _track_artist_credits_match to compare_track_artist_credits, no other callers on dev), translations/en.json (generated from strings.json) and a new test in tests/providers/builtin/test_import_matching.py. All 39 review threads are resolved. The PR merges cleanly onto origin/dev, which is 67 commits ahead of the merge base. The checklist ticks a docs PR, but none exists.",
-   "whats_new": "dmoo500 agreed (18:23Z): playlist sharing is removed, tracks, albums and artists only. New head 22:35Z.",
+   "whats_new": "Bot-MArley recheck 06:09Z: ytmusic album ids, resolver provider URLs first, beta stage and docs link all fixed. dmoo500 agreed to fold jetersen's sharing models into this PR (models#447).",
    "blockers": [
-    "Per-service host tables in links.py: your call (Bot-MArley)",
-    "Design: this plugin vs jetersen's core share API (#7173 + models#447); frontend#3040 targets this one",
-    "share.music-assistant.io still does not resolve; landing page still in dmoo500's repo"
+    "XL new provider: your re-review",
+    "Landing page moves to app.music-assistant.io/share (portal work)"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -9701,15 +9700,15 @@
    "support": null,
    "fix_thread": "mcp:2692e43d-5e49-4123-981f-72df5f5ca355",
    "related_prs": [],
-   "reviewed_now": false,
-   "reviewed_at": "2026-10-28 07:30 CET",
-   "changed_now": "pushed",
+   "reviewed_now": true,
+   "reviewed_at": "2026-11-11 08:05 CET",
+   "changed_now": "reviewed",
    "marley": {
-    "verdict": "changes",
-    "reviewed_head": false,
+    "verdict": "approved",
+    "reviewed_head": true,
     "open_threads": 0,
-    "review_url": "https://github.com/music-assistant/server/pull/7172#issuecomment-6491684240",
-    "note": "Recheck: tests, wrappers and the ISRC check fixed; only the per-service host tables in links.py need a maintainer's call.",
+    "review_url": "https://github.com/music-assistant/server/pull/7172",
+    "note": "Recheck on a972c8c0b: all fixed.",
     "recheck_head": "a972c8c0b"
    },
    "lab": {
@@ -9722,8 +9721,8 @@
     "note": ""
    },
    "needs_reply": null,
-   "action": null,
-   "effort": null,
+   "action": "review",
+   "effort": 30,
    "preread": {
     "at": "2026-11-10T09:02:10Z",
     "head": "4b02b3493",
@@ -9743,7 +9742,7 @@
      "body": "> [!NOTE]\n> This comment was written by Claude on Marvin's behalf\n\n@dmoo500 An HTTPS allowlist for untrusted share data is fine. What I don't want is the plugin owning provider URL formats. Core already has that: `share_url_provider()` in [helpers/uri.py](https://github.com/music-assistant/server/blob/4b02b3493/music_assistant/helpers/uri.py#L123-L144) maps a public share URL to its provider domain.\n\nThe link format isn't released yet, so I'd change it now:\n- Put full provider URLs in the payload and validate them with an https scheme check plus `share_url_provider(url) == domain`. That removes `PROVIDER_BASE_URLS` and `PROVIDER_LINK_HOSTS` from [links.py](https://github.com/music-assistant/server/blob/4b02b3493/music_assistant/providers/share_provider/links.py#L11-L26). One gap I know of: it returns None for YouTube Music album and playlist URLs (`playlist?list=`, `browse/`), so teach `uri.py` those shapes rather than special casing them in the plugin.\n- Artwork: core has no list for that, so a plain host suffix allowlist in the plugin is ok. Please drop the one-letter host codes though. They save a few bytes on a single image, but they turn into a wire format that frontend#3040 and the landing page have to copy.\n- With full URLs, the frontend and landing page only need to validate, not rebuild URLs.\n\nFor size, deflate the JSON before base64url instead of shortening fields by hand. Raw deflate (`zlib.compressobj(9, zlib.DEFLATED, -15)`) on the server and `DecompressionStream(\"deflate-raw\")` in the browser, both built in, so no new dependency in the frontend or the landing page. It gets roughly 4.5x, and once compressed, full URLs cost about the same as the compact refs, so readable URLs are free. Put a one-character version prefix in front of the payload so we can change the format later without guessing.\n\nOn hosting: we'll serve the landing page from the existing portal at `https://app.music-assistant.io/share/`, so links become `https://app.music-assistant.io/share/#<payload>`. No separate repo or `share.music-assistant.io` then. Please set `DEFAULT_SHARE_BASE_URL` in [\\_\\_init\\_\\_.py](https://github.com/music-assistant/server/blob/4b02b3493/music_assistant/providers/share_provider/__init__.py#L68) to `https://app.music-assistant.io/share` without a trailing slash (the code adds `/#`). The `share_base_url` setting can stay for local work on the page. The page itself moves into the portal, so let's sort that out once the format above has settled.\n\nOne bigger question before you spend more time on it: should this PR support playlists at all? Even deflated, a link carries maybe 20 to 50 tracks before Discord or Telegram cut it off, and people with large playlists will always run into that limit. I'd rather ship tracks, albums and artists now and solve playlist sharing properly in a follow-up, for example by sharing the provider's playlist URL, than ship something that breaks for the playlists people actually want to share. What do you think? @OzGav any opinion here?"
     }
    },
-   "rank_reason": null
+   "rank_reason": "dmoo500 did your format asks and dropped playlists; Bot-MArley recheck clean"
   },
   {
    "repo": "models",
@@ -9874,8 +9873,8 @@
   {
    "repo": "server",
    "number": 7217,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-11T06:07:37Z",
    "title": "Fix Roku Media Assistant player queue stalls and end-of-stream detection",
    "author": "kees",
    "url": "https://github.com/music-assistant/server/pull/7217",
@@ -9934,7 +9933,7 @@
    "related_prs": [
     "#6458 is an older draft with the same title by communitywireless"
    ],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-11 07:15 CET",
    "changed_now": "auto-approved",
    "marley": {
@@ -9944,7 +9943,8 @@
     "review_url": "https://github.com/music-assistant/server/pull/7217#pullrequestreview-5853071439",
     "note": "",
     "recheck_head": null
-   }
+   },
+   "needs_reply": null
   },
   {
    "repo": "server",
@@ -11638,7 +11638,7 @@
    "del": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev cd60f03fd in music_assistant/controllers/player_queues/controller.py, music_assistant/controllers/players/controller.py, tests/controllers/player_queues/test_transfer_queue.py",
+   "merge_state": "CONFLICT with origin/dev b8d023305 in music_assistant/controllers/player_queues/controller.py, music_assistant/controllers/players/controller.py, tests/controllers/player_queues/test_transfer_queue.py",
    "head_sha": "6442a5071",
    "core_touched": true,
    "providers_touched": [],
@@ -17373,7 +17373,7 @@
    "add": 4010,
    "ci": "pending",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev cd60f03fd in music_assistant/providers/airplay/manifest.json",
+   "merge_state": "CONFLICT with origin/dev b8d023305 in music_assistant/providers/airplay/manifest.json",
    "head_sha": "18dc49c5b",
    "core_touched": false,
    "providers_touched": [
@@ -17432,7 +17432,7 @@
    "add": 229,
    "ci": "not checked (draft)",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "aec0481a4",
    "core_touched": true,
    "providers_touched": [],
@@ -17595,7 +17595,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "pushed",
+   "changed_now": "",
    "suggested_fix": null,
    "del": 3,
    "action": "approve",
@@ -18173,7 +18173,7 @@
    "add": 784,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev cd60f03fd in music_assistant/providers/deezer/provider.py, music_assistant/providers/deezer/streaming.py, music_assistant/providers/deezer/strings.json, music_assistant/translations/en.json",
+   "merge_state": "CONFLICT with origin/dev b8d023305 in music_assistant/providers/deezer/provider.py, music_assistant/providers/deezer/streaming.py, music_assistant/providers/deezer/strings.json, music_assistant/translations/en.json",
    "head_sha": "f28c8224e",
    "core_touched": false,
    "providers_touched": [
@@ -19161,7 +19161,7 @@
    "add": 0,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "core_touched": true,
    "providers_touched": [
     "spotify"
@@ -19377,7 +19377,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "pushed",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -20097,7 +20097,7 @@
    "add": 211,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev cd60f03fd in music_assistant/constants.py",
+   "merge_state": "CONFLICT with origin/dev b8d023305 in music_assistant/constants.py",
    "head_sha": "9b4ebfdcf",
    "core_touched": true,
    "providers_touched": [],
@@ -20195,7 +20195,7 @@
    "add": 379,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev cd60f03fd in music_assistant/controllers/player_queues/constants.py, music_assistant/controllers/player_queues/helpers.py",
+   "merge_state": "CONFLICT with origin/dev b8d023305 in music_assistant/controllers/player_queues/constants.py, music_assistant/controllers/player_queues/helpers.py",
    "head_sha": "ede6679e8",
    "core_touched": true,
    "providers_touched": [],
@@ -20473,7 +20473,7 @@
    "add": 264,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "cfad04936",
    "core_touched": true,
    "providers_touched": [],
@@ -20584,8 +20584,8 @@
   {
    "repo": "server",
    "number": 7401,
-   "state": "open",
-   "closed_at": null,
+   "state": "closed",
+   "closed_at": "2026-11-11T06:47:49Z",
    "url": "https://github.com/music-assistant/server/pull/7401",
    "title": "Auracast: move serial port handling to serialx",
    "author": "Yagoor",
@@ -20625,7 +20625,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "closed",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -20636,7 +20636,8 @@
     "note": "",
     "recheck_head": null
    },
-   "del": 115
+   "del": 115,
+   "needs_reply": null
   },
   {
    "repo": "server",
@@ -20784,7 +20785,7 @@
    "add": 146,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "16d5cca17",
    "core_touched": true,
    "providers_touched": [],
@@ -20985,7 +20986,7 @@
    "add": 483,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "88833449a",
    "core_touched": true,
    "providers_touched": [
@@ -21051,7 +21052,7 @@
    "add": 998,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "ebfc4a97e",
    "core_touched": true,
    "providers_touched": [
@@ -21139,7 +21140,7 @@
    "add": 598,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "CONFLICT with origin/dev cd60f03fd in music_assistant/providers/sendspin/manifest.json",
+   "merge_state": "CONFLICT with origin/dev b8d023305 in music_assistant/providers/sendspin/manifest.json",
    "head_sha": "a310c2a12",
    "core_touched": false,
    "providers_touched": [
@@ -21307,8 +21308,8 @@
   {
    "repo": "home-assistant-addon",
    "number": 50,
-   "state": "open",
-   "closed_at": null,
+   "state": "closed",
+   "closed_at": "2026-11-11T06:46:38Z",
    "url": "https://github.com/music-assistant/home-assistant-addon/pull/50",
    "title": "addons: map serial devices into the add-on container",
    "author": "Yagoor",
@@ -21346,7 +21347,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "",
+   "changed_now": "closed",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -21357,7 +21358,8 @@
     "note": "",
     "recheck_head": "8051c696d"
    },
-   "del": 1
+   "del": 1,
+   "needs_reply": null
   },
   {
    "repo": "aioslimproto",
@@ -21484,8 +21486,8 @@
   {
    "repo": "server",
    "number": 7459,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-11T06:35:40Z",
    "url": "https://github.com/music-assistant/server/pull/7459",
    "title": "Handle m4a albumartists tag",
    "author": "NasaGeek",
@@ -21527,7 +21529,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:10 CET",
-   "changed_now": "",
+   "changed_now": "merged",
    "suggested_fix": null,
    "lab": {
     "head": "d1c7199bd",
@@ -21548,7 +21550,8 @@
    },
    "del": 12,
    "action": "approve",
-   "effort": 5
+   "effort": 5,
+   "needs_reply": null
   },
   {
    "repo": "models",
@@ -21868,7 +21871,7 @@
    "add": 388,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "a29fab30f",
    "core_touched": false,
    "providers_touched": [
@@ -21894,7 +21897,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": null,
-   "changed_now": "pushed",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "c3ae6a29a",
@@ -22118,7 +22121,7 @@
    "add": 457,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "2108dca44",
    "core_touched": true,
    "providers_touched": [],
@@ -22475,7 +22478,7 @@
    "add": 488,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "35ea58f86",
    "core_touched": true,
    "providers_touched": [],
@@ -22541,7 +22544,7 @@
    "add": 530,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "4fb1bd308",
    "core_touched": true,
    "providers_touched": [
@@ -22611,7 +22614,7 @@
    "add": 447,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "b2ba9a16b",
    "core_touched": true,
    "providers_touched": [],
@@ -22688,7 +22691,7 @@
    "add": 149,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "dbbd192ac",
    "core_touched": false,
    "providers_touched": [
@@ -22772,7 +22775,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -22804,7 +22807,7 @@
    "add": 177,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "a1c081e21",
    "core_touched": false,
    "providers_touched": [
@@ -22874,8 +22877,8 @@
   {
    "repo": "server",
    "number": 7488,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-11T06:56:49Z",
    "url": "https://github.com/music-assistant/server/pull/7488",
    "title": "Add DR LYD provider",
    "author": "mikkelke",
@@ -22937,7 +22940,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "pushed",
+   "changed_now": "merged",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -22948,7 +22951,8 @@
     "note": "",
     "recheck_head": "41a670a49"
    },
-   "del": 0
+   "del": 0,
+   "needs_reply": null
   },
   {
    "repo": "server",
@@ -23268,7 +23272,7 @@
    "del": 13,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "69ed11530",
    "core_touched": true,
    "providers_touched": [
@@ -23419,7 +23423,7 @@
    "del": 14,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "74579cf6d",
    "core_touched": true,
    "providers_touched": [],
@@ -23501,7 +23505,7 @@
    "del": 14,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "e709473c2",
    "core_touched": true,
    "providers_touched": [
@@ -23544,7 +23548,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 17:05 CET",
-   "changed_now": "pushed",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -23597,7 +23601,7 @@
    "del": 39,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "43109dc6e",
    "core_touched": true,
    "providers_touched": [
@@ -23636,7 +23640,7 @@
    ],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 13:05 CET",
-   "changed_now": "pushed",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -23684,7 +23688,7 @@
    "del": 3,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "c9e78a350",
    "core_touched": false,
    "providers_touched": [
@@ -23845,7 +23849,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
@@ -23894,7 +23898,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
@@ -23948,7 +23952,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 17:05 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": {
     "head": "4bc24a7e7",
@@ -23991,7 +23995,7 @@
    "add": 246,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "be6da178a",
    "core_touched": true,
    "providers_touched": [
@@ -24084,7 +24088,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
@@ -24133,7 +24137,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "merged",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
@@ -24185,7 +24189,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 11:00 CET",
-   "changed_now": "auto-approved",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": {
@@ -24219,7 +24223,7 @@
    "del": 18,
    "ci": "green",
    "ci_fail": false,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "4937deb8c",
    "core_touched": true,
    "providers_touched": [
@@ -24256,9 +24260,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-11 07:15 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -24292,11 +24296,11 @@
    "author": "jdaberkow",
    "url": "https://github.com/music-assistant/server/pull/7512",
    "draft": false,
-   "verdict": "ready",
+   "verdict": "almost",
    "assessment": "approve",
-   "status": "attention",
-   "attention_since": "2026-11-10T19:41:01Z",
-   "waiting_on": "you: review the deezer-python-gql bump, add dependencies-reviewed",
+   "status": "waiting",
+   "attention_since": null,
+   "waiting_on": "jdaberkow: Copilot CRITICAL (MP3 bitrate); then you: dependencies-reviewed",
    "gpt_sol": "clean",
    "size": "M",
    "code": 113,
@@ -24304,7 +24308,7 @@
    "del": 31,
    "ci": "Dependency Security Review waits for the dependencies-reviewed label",
    "ci_fail": true,
-   "merge_state": "merge-tree clean on origin/dev cd60f03fd",
+   "merge_state": "merge-tree clean on origin/dev b8d023305",
    "head_sha": "8b4894c7b",
    "core_touched": false,
    "providers_touched": [
@@ -24313,9 +24317,10 @@
    "stacked": false,
    "tldr": "Lossless Deezer accounts request the 24-bit FLAC file first (up to 96 kHz), a Stream quality setting like Tidal and Qobuz, and real catalog formats so Deezer ranks properly against other sources. Bumps deezer-python-gql 0.22.2 to 0.23.0. Bot-MArley approved.",
    "summary": "",
-   "whats_new": "Opened 17:33Z; Bot-MArley approved 19:41Z after the 24-bit file size point was settled.",
+   "whats_new": "Copilot 06:59Z CRITICAL on deezer/streaming.py:165 (MP3 bitrate not corrected on existing mappings).",
    "blockers": [
-    "Dependency Security Review: add the dependencies-reviewed label after checking deezer-python-gql 0.23.0"
+    "Copilot CRITICAL: an existing MP3 mapping keeps a wrong bitrate because AudioFormat equality ignores bit_rate",
+    "Then: dependencies-reviewed label for deezer-python-gql 0.23.0"
    ],
    "findings": [],
    "unaddressed_comments": [],
@@ -24340,9 +24345,9 @@
    "support": null,
    "fix_thread": null,
    "related_prs": [],
-   "reviewed_now": true,
+   "reviewed_now": false,
    "reviewed_at": "2026-11-11 07:15 CET",
-   "changed_now": "new",
+   "changed_now": "reviewed",
    "marley": {
     "verdict": "approved",
     "reviewed_head": true,
@@ -24353,9 +24358,9 @@
    },
    "lab": null,
    "needs_reply": null,
-   "action": "decide",
-   "effort": 10,
-   "rank_reason": "Only a maintainer can add dependencies-reviewed (deezer-python-gql 0.22.2 to 0.23.0)",
+   "action": null,
+   "effort": null,
+   "rank_reason": null,
    "preread": null,
    "snooze": null
   },
@@ -24399,7 +24404,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
@@ -24448,7 +24453,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
@@ -24497,7 +24502,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
@@ -24509,8 +24514,8 @@
   {
    "repo": "server",
    "number": 7519,
-   "state": "open",
-   "closed_at": null,
+   "state": "merged",
+   "closed_at": "2026-11-11T06:29:21Z",
    "url": "https://github.com/music-assistant/server/pull/7519",
    "title": "Player split: permanent layers before the cutover",
    "author": "marcelveldt",
@@ -24546,7 +24551,7 @@
    "related_prs": [],
    "reviewed_now": false,
    "reviewed_at": "2026-11-10 09:05 CET",
-   "changed_now": "new",
+   "changed_now": "merged",
    "suggested_fix": null,
    "lab": null,
    "marley": null,
