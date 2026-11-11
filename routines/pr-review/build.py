@@ -1,9 +1,8 @@
 """Render the pr-review report from the routine's state file.
 
-Usage: python3 build.py <state.json> [--full <out.html>] [--digest <out.html>] [--queue]
+Usage: python3 build.py <state.json> --full <out.html>
 
---full writes the complete report for a browser, --digest the compact page for html_render,
---queue prints the Up next order as JSON.
+--full writes the complete report for a browser.
 """
 import argparse
 import hashlib
@@ -14,8 +13,6 @@ from datetime import datetime, timedelta, timezone
 from html import escape
 
 FULL_LIMIT = 2_000_000
-DIGEST_LIMIT = 40_000
-FULL_REPORT = "~/.claude-teamB/routine-reports/pr-review.html"
 WEEK = timedelta(days=7)
 COLS = [
     ("ready", "Ready to merge", "success"),
@@ -28,23 +25,6 @@ ROWS = [
     ("waiting", "Waiting for user", "Author or reporter has to act"),
 ]
 TZ_NAMES = {"CEST": 2, "CET": 1, "UTC": 0}
-ME = "MarvinSchenkel"
-# Queue score weights: base per action, plus waiting days, minus a third of the effort in minutes.
-PRIORITY = {
-    "action": {"reply": 40, "merge": 45, "rereview": 35, "approve": 30, "decide": 30, "review": 20},
-    "per_wait_day": 2,
-    "wait_cap": 40,
-    "needs_reply": 15,
-    "backport": 10,
-    "effort_div": 3,
-    "batch_per_pr": 8,
-}
-APPROVE_MIN = {"S": 5, "M": 10, "L": 20, "XL": 40}
-ACTION_COLOR = {"reply": "ask", "merge": "success", "approve": "success", "decide": "warning", "review": "info", "rereview": "info"}
-QUICK_LAB = (None, "green", "skipped", "nightly", "dev-red")
-CUTS = ((30, "30 min"), (60, "1 hour"))
-BATCH_MIN = 30
-UP_NEXT_DIGEST = 5
 REPLY_ROWS = 14
 REPLY_WRAP = 96
 
@@ -61,7 +41,7 @@ body { background: var(--background); padding: 24px 16px 48px; }
 .wrap { max-width: 1240px; margin: 0 auto; }
 """
 
-DIGEST_CSS = """
+CSS = """
 :root { color-scheme: light dark; }
 body { font: 13px/1.45 var(--font-sans); color: var(--foreground); margin: 0; }
 a { color: var(--info); text-decoration: none; }
@@ -202,26 +182,6 @@ ul.plain { margin: 0; padding-left: 18px; display: flex; flex-direction: column;
 .dh { color: var(--info); } .df { color: var(--muted-foreground); font-weight: 600; }
 .btn { font: 500 11.5px var(--font-sans); padding: 3px 9px; border-radius: var(--radius); border: 1px solid var(--border); background: transparent; color: var(--foreground); cursor: pointer; }
 .btn:hover { border-color: var(--info); }
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
-.tabs button { font: 600 13px var(--font-sans); padding: 6px 14px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; color: var(--muted-foreground); cursor: pointer; }
-.tabs button[aria-selected="true"] { color: var(--foreground); border-bottom-color: var(--info); }
-.panel { display: flex; flex-direction: column; gap: 16px; }
-ol.queue { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.qr { display: grid; grid-template-columns: 2.2em 1fr; gap: 2px 8px; padding: 8px 10px; border: 1px solid var(--border); border-left: 3px solid var(--c); border-radius: var(--radius); background: var(--card); }
-.qr.ask { border-color: var(--ask); background: color-mix(in srgb, var(--ask) 14%, var(--card)); }
-.qr.done { opacity: .45; }
-.qr .rk { font: 600 15px var(--font-mono); color: var(--muted-foreground); grid-row: span 3; }
-.qr .l1 { display: flex; flex-wrap: wrap; gap: 3px 8px; align-items: baseline; }
-.qr .l1 > a { color: var(--foreground); text-decoration: none; font-weight: 600; flex: 1 1 260px; overflow-wrap: anywhere; }
-.qr .l1 > a:hover { color: var(--info); }
-.qr .ef { font: 12px var(--font-mono); color: var(--muted-foreground); }
-.qr .why { font-size: 12.5px; color: var(--muted-foreground); }
-.qr .members { margin: 2px 0 0; padding-left: 18px; font-size: 13px; }
-.qr .cmds { --nc: var(--c); }
-.cut { display: flex; align-items: center; gap: 8px; font: 600 11px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); }
-.cut::before, .cut::after { content: ""; flex: 1; border-top: 1px dashed var(--border); }
-.snz > summary { cursor: pointer; font-size: 13px; color: var(--muted-foreground); }
-.snz ul { margin-top: 6px; }
 .pre { border: 1px solid var(--border); border-left: 3px solid var(--ask); border-radius: var(--radius); padding: 8px 11px; display: flex; flex-direction: column; gap: 6px; }
 .pre .q { font-weight: 600; }
 .pre ol { margin: 0; padding-left: 20px; }
@@ -246,14 +206,13 @@ function filt() {
 }
 q.addEventListener("input", filt);
 hd.addEventListener("change", filt);
-function tab(name) {
-  document.querySelectorAll("[data-panel]").forEach(p => { p.hidden = p.dataset.panel !== name; });
-  document.querySelectorAll("button[data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
-  try { localStorage.setItem("pr-review-tab", name); } catch (e) {}
+// Other pages deep-link a PR's dialog as #pr-<repo>-<number>, for example #pr-server-7498.
+function openHash() {
+  const d = location.hash.startsWith("#pr-") ? document.getElementById(location.hash.slice(1)) : null;
+  if (d && !d.open) { d.showModal(); d.scrollTop = 0; }
 }
-let saved = null;
-try { saved = localStorage.getItem("pr-review-tab"); } catch (e) {}
-if (saved === "matrix") tab("matrix");
+openHash();
+window.addEventListener("hashchange", openHash);
 // Edits are kept per draft hash, so a redrafted reply starts from the new draft.
 function key(b) { return "pr-review-edit:" + b.dataset.repo + "#" + b.dataset.n + ":" + b.dataset.hash; }
 function save(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
@@ -286,8 +245,6 @@ function posted(b, url, body) {
   const a = document.createElement("a");
   a.className = "btn"; a.href = url; a.rel = "noopener"; a.target = "_blank"; a.textContent = "Posted";
   b.replaceWith(a);
-  const k = b.dataset.repo + "#" + b.dataset.n;
-  document.querySelectorAll(".qr[data-k]").forEach(r => { if (r.dataset.k === k) r.classList.add("done"); });
 }
 async function post(b) {
   const err = b.parentElement.querySelector(".perr");
@@ -310,8 +267,6 @@ document.querySelectorAll("button[data-post]").forEach(b => {
   if (p && p.hash === b.dataset.hash) posted(b, p.url, p.body); else restore(b);
 });
 document.addEventListener("click", e => {
-  const tb = e.target.closest("button[data-tab]");
-  if (tb) { tab(tb.dataset.tab); return; }
   const a = e.target.closest('a[href^="#pr-"]');
   if (a) {
     const d = document.getElementById(a.getAttribute("href").slice(1));
@@ -356,30 +311,11 @@ document.addEventListener("click", e => {
 def main() -> None:
     ap = argparse.ArgumentParser(description="Render the pr-review report.")
     ap.add_argument("state")
-    ap.add_argument("--full", metavar="OUT")
-    ap.add_argument("--digest", metavar="OUT")
-    ap.add_argument("--queue", action="store_true", help="print the Up next order as JSON")
+    ap.add_argument("--full", metavar="OUT", required=True)
     args = ap.parse_args()
-    if not (args.full or args.digest or args.queue):
-        ap.error("pass --full, --digest, --queue or a mix")
     with open(args.state) as f:
         state = json.load(f)
-    now = datetime.now(timezone.utc)
-    if args.full:
-        _write(args.full, _page(state, now), FULL_LIMIT, "full")
-    if args.digest:
-        html = ""
-        for title_len in (70, 48, 32):
-            html = _digest(state, now, title_len)
-            if len(html) <= DIGEST_LIMIT:
-                break
-        _write(args.digest, html, DIGEST_LIMIT, "digest")
-    if args.queue:
-        rows = _queue(state, now)[0]
-        print(json.dumps([
-            {"rank": rank, "repo": _repo(p), "number": p["number"], "action": _action(p), "effort": _effort(p)}
-            for rank, members in enumerate(rows, 1) for p in members
-        ], indent=1))
+    _write(args.full, _page(state, datetime.now(timezone.utc)), FULL_LIMIT, "full")
 
 
 def _write(path: str, html: str, limit: int, what: str) -> None:
@@ -438,174 +374,25 @@ def _page(state: dict, now: datetime) -> str:
         f'<tbody>{"".join(rows)}</tbody></table></div>'
     )
     reviews = "".join(_detail(p, now) for p in ordered)
-    rows, snoozed = _queue(state, now)
-    tabs = (
-        '<div class="tabs" role="tablist"><button type="button" role="tab" data-tab="queue" aria-selected="true">'
-        f'Up next ({len(rows)})</button><button type="button" role="tab" data-tab="matrix" aria-selected="false">Matrix</button></div>'
-    )
     return (
         '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         f"<title>PR backlog</title><style>{THEME}{CSS}{PAGE}</style></head><body><div class=\"wrap\">"
-        f'{head}{note}{tabs}<div class="panel" data-panel="queue">{_up_next(rows, snoozed, now)}</div>'
-        f'<div class="panel" data-panel="matrix" hidden>{controls}{matrix}</div></div>{reviews}<script>{JS}</script></body></html>'
+        f'{head}{note}{controls}{matrix}</div>{reviews}<script>{JS}</script></body></html>'
     )
 
 
-def _up_next(rows: list, snoozed: list, now: datetime) -> str:
-    """The Up next tab: queue rows in priority order with effort cut lines, then the snoozed cards."""
-    items, total = [], 0
-    for rank, members in enumerate(rows, 1):
-        before = total
-        total += sum(_effort(p) for p in members)
-        items.append(_queue_row(rank, members, now))
-        items += [f'<li class="cut">{label}</li>' for limit, label in CUTS if before < limit <= total]
-    queue = f'<ol class="queue">{"".join(items)}</ol>' if items else '<p class="empty">Nothing waits on you.</p>'
-    hint = f'<p class="hint">{len(rows)} items, about {total} min. Top down; snooze what can wait.</p>'
-    if not snoozed:
-        return hint + queue
-    lis = "".join(
-        f'<li><a href="#{_anchor(p)}">{escape(_label(p))}</a> {escape(p.get("title", ""), quote=False)}, until '
-        f'{escape("new activity" if p["snooze"].get("until") == "activity" else str(p["snooze"].get("until")))}'
-        f'{": " + _md(p["snooze"]["reason"]) if p["snooze"].get("reason") else ""}</li>'
-        for p in snoozed
-    )
-    return f'{hint}{queue}<details class="snz"><summary>Snoozed ({len(snoozed)})</summary><ul class="plain">{lis}</ul></details>'
 
 
-def _queue_row(rank: int, members: list, now: datetime) -> str:
-    """One Up next row: a single PR, or a batch of quick approvals."""
-    if len(members) > 1:
-        effort = sum(_effort(p) for p in members)
-        lis = "".join(
-            f'<li><a href="#{_anchor(p)}">{escape(_label(p))}</a> {escape(p.get("title", ""), quote=False)} '
-            f'<span class="hint">{escape(p.get("author", ""))}, {escape(_rank_reason(p, now))}</span></li>'
-            for p in members
-        )
-        cmd = "approve " + " ".join(_reply_label(p) for p in members)
-        return (
-            f'<li class="qr" style="--c:var(--success)"><span class="rk">{rank}</span><div class="l1">'
-            f'<span class="pill">approve</span><span class="ef">~{effort} min</span><span>{len(members)} quick approvals</span></div>'
-            f'<ul class="members">{lis}</ul><div class="cmds">{_cmd(cmd)}</div></li>'
-        )
-    p = members[0]
-    action, rl = _action(p), _reply_label(p)
-    cmds = [f"approve {rl}"] if action == "approve" and p.get("author") != ME else []
-    if p.get("prompt"):
-        cmds.append(f"chip {rl}")
-    cmds += [f"snooze {rl} 3d", f"later {rl}"]
-    return (
-        f'<li class="qr{" ask" if _asks_you(p) else ""}" data-k="{escape(_repo(p))}#{p["number"]}" style="--c:var(--{ACTION_COLOR[action]})">'
-        f'<span class="rk">{rank}</span><div class="l1"><span class="pill">{action}</span><span class="ef">~{_effort(p)} min</span>'
-        f'<a href="#{_anchor(p)}"><span class="n">{escape(_label(p))}</span> {escape(p.get("title", ""), quote=False)}</a>'
-        f'<span class="hint">{escape(p.get("author", ""))}</span>{"".join(_tags(p, now))}</div>'
-        f'<div class="why">{escape(_rank_reason(p, now))}</div><div class="cmds">{"".join(_cmd(c) for c in cmds)}</div></li>'
-    )
 
 
-def _digest(state: dict, now: datetime, title_len: int) -> str:
-    """Build the compact page for html_render: tallies plus only the PRs this run changed."""
-    prs = _matrix_prs(state, now)
-    open_prs = [p for p in prs if not _recent_auto(p, now)]
-    autos = [p for p in prs if _recent_auto(p, now)]
-    tallies = ""
-    for c, label, v in COLS[:3]:
-        col = [p for p in open_prs if _col(p, now) == c]
-        mine = sum(1 for p in col if p.get("status") == "attention")
-        tallies += f'<span style="--c:var(--{v})">{len(col)} {escape(label.lower())}, {mine} need you</span>'
-    tallies += f'<span style="--c:var(--info)">{len(autos)} auto-approved this week</span>'
-    late = sum(1 for p in open_prs if (_wait_days(p, now) or 0) >= 7)
-    if late:
-        tallies += f'<span style="--c:var(--destructive)">{late} over the 1 week SLA</span>'
-    asks = sum(1 for p in open_prs if _asks_you(p))
-    if asks:
-        tallies += f'<span style="--c:#f97316">{asks} waiting on your reply</span>'
-    changed = [p for p in open_prs if p.get("changed_now") or p.get("reviewed_now") or _asks_you(p)]
-    changed.sort(key=lambda p: (not _asks_you(p), p.get("status") != "attention", -(_wait_days(p, now) or 0), -int(p["number"])))
-    if changed:
-        rows = "".join(_digest_row(p, now, title_len) for p in changed)
-        table = (
-            '<div class="sc"><table><thead><tr><th>PR</th><th>Title, author</th><th>Size</th><th>State</th>'
-            f'<th>Bot-MArley</th><th>Waits on</th></tr></thead><tbody>{rows}</tbody></table></div>'
-        )
-    else:
-        table = '<p class="muted">No open PR changed this run.</p>'
-    short = []
-    for p in state.get("prs", []):
-        if not p.get("changed_now") or p in changed:
-            continue
-        what = p.get("state", "open")
-        if p.get("auto_approved"):
-            what = f"auto-approved, {what}"
-        short.append(
-            f'<li><a href="{escape(p.get("url", ""))}">{escape(_label(p))}</a> {escape(_cut(p.get("title", ""), title_len))}, '
-            f'{escape(what)}</li>'
-        )
-    short_html = f'<div><b class="i">Merged, closed or auto-approved this run</b><ul>{"".join(short)}</ul></div>' if short else ""
-    head = (
-        f'<div><h1>PR backlog</h1><div class="sub">Run {escape(_fmt(state.get("last_run")))}, dev <code>'
-        f'{escape(str(state.get("dev", "")))}</code>, {len(open_prs)} open PRs, {len(changed)} changed</div></div>'
-    )
-    note = f'<p class="note">{_md(state.get("run_note"))}</p>' if state.get("run_note") else ""
-    up_next = _digest_queue(_queue(state, now)[0][:UP_NEXT_DIGEST], now, title_len)
-    footer = (
-        f'<div class="ft">Full matrix with every review in the side panel, or <code>open {FULL_REPORT}</code>. Replies: <code>post &lt;pr&gt; f&lt;n&gt;</code>, '
-        "<code>fix &lt;pr&gt;</code>, <code>approve &lt;pr&gt;</code>, <code>chip &lt;pr&gt;</code>, <code>prompt &lt;pr&gt;</code>, "
-        "<code>show &lt;pr&gt;</code>, <code>review &lt;pr&gt;</code>, <code>snooze &lt;pr&gt; [3d]</code>, <code>later &lt;pr&gt;</code>, "
-        "<code>skip &lt;pr&gt;</code>, <code>render</code>; "
-        "&lt;pr&gt; is 7045 or models#438.</div>"
-    )
-    return (
-        f'<!doctype html><html lang="en"><head><meta charset="utf-8"><style>{DIGEST_CSS}</style></head><body><div class="w">'
-        f'{head}<div class="tl">{tallies}</div>{note}{up_next}{table}{short_html}{footer}</div></body></html>'
-    )
 
 
-def _digest_queue(rows: list, now: datetime, title_len: int) -> str:
-    """The digest's Up next table: rank, PR, action, minutes and why."""
-    if not rows:
-        return ""
-    out = []
-    for rank, members in enumerate(rows, 1):
-        p = members[0]
-        links = " ".join(f'<a href="{escape(m.get("url", ""))}">{escape(_label(m))}</a>' for m in members)
-        action = _action(p)
-        cls = "o" if ACTION_COLOR[action] == "ask" else {"success": "r", "warning": "a"}.get(ACTION_COLOR[action], "i")
-        why = f"{len(members)} quick approvals" if len(members) > 1 else _rank_reason(p, now)
-        out.append(
-            f'<tr{" class=ask" if _asks_you(p) and len(members) == 1 else ""}><td class="n">{rank}</td><td class="n">{links}</td>'
-            f'<td><b class="{cls}">{action}</b></td><td>~{sum(_effort(m) for m in members)}</td>'
-            f'<td class="t">{escape(_cut(why, title_len + 10), quote=False)}</td></tr>'
-        )
-    return (
-        '<div class="sc"><table><thead><tr><th>#</th><th>Up next</th><th>Action</th><th>Min</th><th>Why</th></tr></thead>'
-        f'<tbody>{"".join(out)}</tbody></table></div>'
-    )
 
 
-def _digest_row(p: dict, now: datetime, title_len: int) -> str:
-    """One compact digest row."""
-    age = _wait_days(p, now)
-    text, cls = VERDICT_SHORT.get(p.get("verdict"), ("not ready", "x"))
-    state = f'<b class="{cls}">{text}</b>' + (" <b>draft</b>" if p.get("draft") else "")
-    change = p.get("changed_now") or ("reviewed" if p.get("reviewed_now") else "")
-    if change:
-        state += f' <b class="i">{escape(_cut(str(change), 20))}</b>'
-    mv, mv_cls = _marley_short(p)
-    ask = _asks_you(p)
-    waiting = f'you: reply to {ask.get("who", "them")}' if ask else (p.get("waiting_on") or ("you" if p.get("status") == "attention" else "author"))
-    if age is not None:
-        waiting += f" {age}d"
-    late = ' class="ask"' if ask else (' class="l"' if age is not None and age >= 7 else "")
-    return (
-        f'<tr{late}><td class="n"><a href="{escape(p.get("url", ""))}">'
-        f'{escape(_label(p))}</a></td><td class="t">{escape(_cut(p.get("title", ""), title_len), quote=False)} '
-        f'<span class="muted">{escape(_cut(p.get("author", ""), 16))}</span></td><td><b>{escape(str(p.get("size", "?")))}</b></td><td class="s">{state}</td>'
-        f'<td class="{mv_cls}">{mv}</td><td>{escape(_cut(waiting, 24))}</td></tr>'
-    )
 
 
 def _marley_short(p: dict) -> tuple:
-    """Bot-MArley verdict for a digest cell, with a colour class."""
+    """Bot-MArley verdict for a signal pill, with a colour class."""
     m = p.get("marley")
     if not isinstance(m, dict):
         return "?", "muted"
@@ -619,10 +406,6 @@ def _marley_short(p: dict) -> tuple:
     return (f"{n} open" if n else "changes"), "wn"
 
 
-def _cut(s: str, n: int) -> str:
-    """Shorten text to n characters."""
-    s = str(s or "")
-    return s if len(s) <= n else s[: n - 3].rstrip() + "..."
 
 
 def _matrix_prs(state: dict, now: datetime) -> list:
@@ -630,112 +413,20 @@ def _matrix_prs(state: dict, now: datetime) -> list:
     return [p for p in state.get("prs", []) if p.get("state", "open") == "open" or _recent_auto(p, now)]
 
 
-def _queue(state: dict, now: datetime) -> tuple:
-    """Up next rows in priority order, each a list of PRs (more than one for the quick-approval batch), plus the snoozed PRs."""
-    cards = [p for p in state.get("prs", []) if p.get("state", "open") == "open" and (p.get("status") == "attention" or _asks_you(p))]
-    snoozed = [p for p in cards if _snoozed(p, now)]
-    live = sorted(
-        (p for p in cards if not _snoozed(p, now)),
-        key=lambda p: (-_priority(p, now), -(_queue_wait(p, now) or 0), _key(p)),
-    )
-    quick, minutes = [], 0
-    for p in live:
-        if _quick(p) and (not quick or minutes + _effort(p) <= BATCH_MIN):
-            quick.append(p)
-            minutes += _effort(p)
-    if len(quick) < 2:
-        return [[p] for p in live], snoozed
-    # The batch unblocks several authors at once, so it ranks above its best member.
-    rows = [(_priority(p, now), [p]) for p in live if not any(p is x for x in quick)]
-    rows.append((_priority(quick[0], now) + PRIORITY["batch_per_pr"] * (len(quick) - 1), quick))
-    rows.sort(key=lambda r: -r[0])
-    return [members for _, members in rows], snoozed
 
 
-def _priority(p: dict, now: datetime) -> float:
-    """Queue score, higher goes first; weights live in PRIORITY."""
-    w = PRIORITY
-    score = w["action"][_action(p)] + min(w["per_wait_day"] * (_queue_wait(p, now) or 0), w["wait_cap"]) - _effort(p) / w["effort_div"]
-    if _asks_you(p):
-        score += w["needs_reply"]
-    if (p.get("backport") or {}).get("rec") is True:
-        score += w["backport"]
-    return score
 
 
-def _action(p: dict) -> str:
-    """What Marvin does next on the PR: the routine's call, else a guess from the state."""
-    if p.get("action") in PRIORITY["action"]:
-        return p["action"]
-    if _asks_you(p):
-        return "reply"
-    waiting = str(p.get("waiting_on") or "").lower()
-    if "re-review" in waiting:
-        return "rereview"
-    if p.get("verdict") == "ready" and not p.get("draft"):
-        # Marvin can't approve his own PRs; once someone else does, merging is his move.
-        if re.match(r"you: (queue (the )?)?merge\b", waiting) or p.get("author") == ME:
-            return "merge"
-        return "review" if p.get("size") in ("L", "XL") else "approve"
-    return "decide"
 
 
-def _effort(p: dict) -> int:
-    """Minutes the next action takes: the routine's estimate, else a guess from action and size."""
-    if isinstance(p.get("effort"), int):
-        return p["effort"]
-    action, size = _action(p), p.get("size")
-    if action == "reply":
-        return 10
-    if action == "decide":
-        return 30 if size in ("L", "XL") else 15
-    base = APPROVE_MIN.get(size, 10)
-    return base * 2 if action == "review" else base
 
 
-def _rank_reason(p: dict, now: datetime) -> str:
-    """One line on why the card sits where it does."""
-    if p.get("rank_reason"):
-        return str(p["rank_reason"])
-    days = _queue_wait(p, now) or 0
-    ask = _asks_you(p)
-    if ask:
-        return f'{ask.get("who", "someone")} waiting {days}d on your reply'
-    parts = [_action(p)]
-    lab = (p.get("lab") or {}).get("result")
-    if lab:
-        parts.append(f"lab {lab}")
-    if days:
-        parts.append(f"{days}d on you")
-    return ", ".join(parts + [f"{_effort(p)} min"])
 
 
-def _queue_wait(p: dict, now: datetime):
-    """Days the card has waited on Marvin, from attention_since or else the comment waiting on him."""
-    days = _wait_days(p, now)
-    if days is None and _asks_you(p):
-        at = _ts(_asks_you(p).get("at"))
-        days = None if at is None else max(0, (now - at).days)
-    return days
 
 
-def _quick(p: dict) -> bool:
-    """Whether the PR fits the quick-approval batch: small, ready, lab not red and not Marvin's own."""
-    return (
-        _action(p) == "approve" and p.get("verdict") == "ready" and p.get("size") in ("S", "M")
-        and (p.get("lab") or {}).get("result") in QUICK_LAB and p.get("author") != ME
-    )
 
 
-def _snoozed(p: dict, now: datetime) -> bool:
-    """Whether the card is snoozed out of the queue right now."""
-    s = p.get("snooze")
-    if not isinstance(s, dict):
-        return False
-    if s.get("until") == "activity":
-        return True
-    until = _ts(s.get("until"))
-    return until is not None and now < until
 
 
 def _chip(p: dict, now: datetime) -> str:

@@ -37,7 +37,9 @@ message `triage-ma-nightly: run <YYYY-MM-DD>`. Never push.
 - Anything else that looks like a bug: repeated reconnect loops, stuck tasks, provider auth failures,
   player state flapping, memory growth versus the previous run.
 - Compare every fingerprint against `known` in the state file. A fingerprint seen before gets its
-  `seen` count bumped and keeps its first-seen date; a new one is marked new in the report.
+  `seen` count bumped and keeps its first-seen date; a new one is marked new in the report. Every
+  fingerprint seen this run gets `last_seen` set to the run's date, the same date as the new `last_run_end`, so the attention page can
+  tell this run's findings from older ones.
 - Severity: critical (crash, data loss, playback dead for everyone), high (a feature or provider broken
   for the whole instance), medium (one player or provider degraded, recoverable), low (noise, cosmetic,
   one-off). Health flat with nothing new is a valid outcome, say so.
@@ -61,10 +63,12 @@ to bottom:
 
 Keep the build script that produces the page at `~/git/dotfiles/routines/triage-ma-nightly/build.py`
 once it works, and reuse it on later runs so the layout stays stable. The script takes the run's
-findings JSON and writes the HTML.
+findings JSON and writes the HTML. Write it to `~/.claude-teamB/routine-reports/triage-ma-nightly.html`
+and render that file, so the attention page can link to `http://127.0.0.1:8765/triage-ma-nightly.html`.
 
-After the render, end the turn with a chat summary of at most four sentences: what is new, what got
-worse, what you recommend Marvin looks at first.
+After the render and the commit, run `python3 ~/git/dotfiles/routines/attention/build.py --source
+triage-ma-nightly`. End the turn with a chat summary of at most four sentences: what is new, what got
+worse, what you recommend Marvin looks at first. Then paste the build's output as printed.
 
 ## Replies
 
@@ -74,7 +78,8 @@ worse, what you recommend Marvin looks at first.
   create a Claude worktree there (`EnterWorktree`, or `git worktree add .claude/worktrees/<slug> -b
   fix/<slug> origin/dev`), start with the gogogo skill, and it carries the finding details and the log
   excerpt. Link the thread in your reply.
-- `mute <id>`: add the fingerprint to `muted` in the state file and commit.
+- `mute <id>`: add the fingerprint to `muted` in the state file, commit and run the attention build
+  above.
 - Anything else: answer from the data you already have, re-query MA if needed.
 
 ## State file shape
@@ -84,7 +89,8 @@ worse, what you recommend Marvin looks at first.
   "thread_id": "<this thread's id>",
   "last_run_end": "2026-10-21T05:10:00+02:00",
   "last_run_summary": "one sentence",
-  "known": { "<fingerprint>": { "title": "", "severity": "", "first_seen": "", "seen": 1 } },
+  "known": { "<fingerprint>": { "title": "", "severity": "", "first_seen": "", "seen": 1, "last_seen": "",
+                                "fix": "<PR and version, when one fixes it>", "resolved": "<when and how, once it stopped>" } },
   "muted": [],
   "log_sources": { "docker_logs_over_ssh": null }
 }

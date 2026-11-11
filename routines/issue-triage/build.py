@@ -1,6 +1,6 @@
-"""Render the issue triage board and its inline digest from the routine's state file.
+"""Render the issue triage board from the routine's state file.
 
-Usage: python3 build.py <state.json> [--full <board.html>] [--digest <digest.html>]
+Usage: python3 build.py <state.json> --full <board.html>
 """
 import argparse
 import hashlib
@@ -8,20 +8,11 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timedelta, timezone
 from html import escape
 
 FULL_MAX = 2_000_000
-DIGEST_MAX = 40_000
-STATUS_LEN = (160, 100, 60)
 REPLY_ROWS = 14
 REPLY_WRAP = 96
-TZ_OFFSETS = {"CEST": 2, "CET": 1, "UTC": 0}
-NOTE_TIME = re.compile(r"^(\d{2}-\d{2}) (\d{2}:\d{2})")
-REPLY_GRAMMAR = (
-    "reply &lt;n&gt;, edit &lt;n&gt; &lt;change&gt;, fix|repro|discuss &lt;n&gt; [instructions], book &lt;n&gt; [milestone], "
-    "answer &lt;pr&gt;, release &lt;milestone&gt; [post], done &lt;n&gt;, drop &lt;n&gt;"
-)
 SUPPORT = "music-assistant/support"
 COL_COLOR = {
     "info": "--info",
@@ -44,15 +35,15 @@ LANES = (
     ("team", "Waiting on teammate or release", "Fix merged or on dev, or a teammate has the move.", "--muted-foreground"),
     ("reporter", "Waiting on reporter", "We spoke last: a test or info ask is out.", "--muted-foreground"),
 )
-# Sub-groups inside lanes 1 and 2, in order: ask value, sub-header, digest label.
+# Sub-groups inside lanes 1 and 2, in order: ask value, sub-header.
 ASKS = (
-    ("reply-test", "Test ask", "test"),
-    ("reply-info", "Info ask", "info"),
-    ("reply-answer", "Answer", "answer"),
-    ("input", "Input", "input"),
-    ("design", "Design", "design"),
-    ("merge", "Merge and release", "merge"),
-    ("nudge", "Nudge", "nudge"),
+    ("reply-test", "Test ask"),
+    ("reply-info", "Info ask"),
+    ("reply-answer", "Answer"),
+    ("input", "Input"),
+    ("design", "Design"),
+    ("merge", "Merge and release"),
+    ("nudge", "Nudge"),
 )
 LAUNCH_COLS = {"cantfix", "norepro"}
 REF = re.compile(
@@ -155,33 +146,6 @@ tr.ms td { font-weight: 600; background: var(--muted); }
 .hide { display: none !important; }
 @media (max-width: 1180px) { .cols { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lower { grid-template-columns: 1fr; } }
-"""
-
-DIGEST_CSS = """
-:root { color-scheme: light dark; }
-body { font-family: var(--font-sans); color: var(--foreground); margin: 0; font-size: 13.5px; line-height: 1.45; }
-a { color: inherit; text-underline-offset: 2px; text-decoration-color: var(--muted-foreground); }
-code { font-family: var(--font-mono); font-size: .9em; }
-.wrap { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 8px; }
-h1 { font-size: 15px; font-weight: 600; margin: 0; }
-h2 { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-foreground); margin: 0 0 6px; font-weight: 600; }
-.sub { color: var(--muted-foreground); font-size: 12.5px; }
-.lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 6px; }
-.lane { border: 1px solid var(--border); border-top: 3px solid var(--c); border-radius: var(--radius); padding: 6px 8px; }
-.lane .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted-foreground); line-height: 1.25; }
-.lane .v { font: 600 17px var(--font-mono); margin-top: 2px; }
-.lane .s { font-size: 11px; color: var(--muted-foreground); }
-.rows { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius); }
-.r { padding: 6px 10px; border-bottom: 1px solid var(--border); border-left: 3px solid transparent; }
-.r:last-child { border-bottom: 0; }
-.r.ch { border-left-color: var(--info); }
-.r .l1 { display: flex; gap: 8px; align-items: baseline; }
-.r .n { font: 500 12px var(--font-mono); white-space: nowrap; }
-.r .t { flex: 1; min-width: 0; }
-.r .l2 { color: var(--muted-foreground); font-size: 12.5px; margin-top: 1px; }
-.b { font: 500 10px var(--font-mono); padding: 0 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: .03em; color: var(--info); background: color-mix(in srgb, var(--info) 14%, transparent); white-space: nowrap; }
-.foot { font-size: 12px; color: var(--muted-foreground); border-top: 1px solid var(--border); padding-top: 8px; display: flex; flex-direction: column; gap: 3px; }
-.foot code { color: var(--foreground); }
 """
 
 JS = """
@@ -313,29 +277,19 @@ JS = """
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Render the issue triage board and digest.")
+    parser = argparse.ArgumentParser(description="Render the issue triage board.")
     parser.add_argument("state")
-    parser.add_argument("--full", help="write the complete board here")
-    parser.add_argument("--digest", help="write the inline digest here")
+    parser.add_argument("--full", required=True, help="write the complete board here")
     args = parser.parse_args()
-    if not (args.full or args.digest):
-        parser.error("give --full, --digest or both")
     with open(args.state) as f:
         state = json.load(f)
-    if args.full:
-        _write(args.full, render_full(state), FULL_MAX)
-    if args.digest:
-        for limit in STATUS_LEN:
-            html = render_digest(state, args.full, limit)
-            if len(html) <= DIGEST_MAX:
-                break
-        _write(args.digest, html, DIGEST_MAX)
+    _write(args.full, render_full(state), FULL_MAX)
 
 
 def render_full(state: dict) -> str:
     """Render the complete board with every card in full."""
     names = {key: name for key, name, _ in state["columns"]}
-    headers = {ask: header for ask, header, _ in ASKS}
+    headers = dict(ASKS)
     cards = sorted(state["cards"], key=_last_at, reverse=True)
     cards.sort(key=_urgency)
     lanes, dialogs = [], []
@@ -387,52 +341,6 @@ def render_full(state: dict) -> str:
     )
 
 
-def render_digest(state: dict, board_path: str | None, status_len: int) -> str:
-    """Render the compact inline digest: lane counts, info asks held for Marvin, cards changed this run, release counts."""
-    run = state.get("last_run") or ""
-    run_at = _run_time(run)
-    cards = sorted(state["cards"], key=_last_at, reverse=True)
-    cards.sort(key=_urgency)
-    names = {key: name for key, name, _ in state["columns"]}
-    lanes = []
-    for lane, name, _, color in LANES:
-        in_lane = [c for c in cards if _lane(c) == lane]
-        short = {ask: label for ask, _, label in ASKS}
-        split = ", ".join(
-            f"{short.get(ask, ask)} {len(group)}" for ask, group in _ask_groups(in_lane)
-        ) if lane in ("reply", "decision") else ""
-        lanes.append(
-            f'<div class="lane" style="--c:var({color})"><div class="k">{escape(name)}</div>'
-            f'<div class="v">{len(in_lane)}</div><div class="s">{escape(split) if split else "&nbsp;"}</div></div>'
-        )
-    table = state.get("release_table") or {}
-    changed = [c for c in cards if _new(c, run) or _changed(c, run)]
-    held = [c for c in cards if any(_kind(b) == "auto held" for b in c["badges"])]
-    board = escape((board_path or "~/.claude-teamB/routine-reports/issue-triage.html").replace(os.path.expanduser("~"), "~", 1))
-    parts = [
-        f'<div><h1>Support issue triage</h1><div class="sub">Last run {escape(run or "never")}</div></div>',
-        '<div class="lanes">' + "".join(lanes) + "</div>",
-        (f"<section><h2>Info asks held for you ({len(held)})</h2>"
-         + '<div class="rows">' + "".join(_row(c, names, run, run_at, status_len) for c in held) + "</div></section>"
-         if held else ""),
-        f"<section><h2>Changed this run ({len(changed)})</h2>"
-        + ('<div class="rows">' + "".join(_row(c, names, run, run_at, status_len) for c in changed) + "</div>"
-           if changed else '<div class="sub">Nothing changed this run.</div>')
-        + "</section>",
-        ("<section><h2>Release table</h2>" + '<div class="rows">' + "".join(
-            f'<div class="r"><div class="l1"><span class="n">{escape(ms)}</span><span class="t">{len(issues)} issues, '
-            f'{sum(1 for i in issues if i.get("on_stable") is True)} on stable</span></div></div>'
-            for ms, issues in table.items()) + "</div></section>"
-         if table else ""),
-        f'<div class="foot"><span>Full board with filter, drafts and diffs in the side panel, or <code>open {board}</code></span>'
-        f"<span>Replies: <code>{REPLY_GRAMMAR}</code></span></div>",
-    ]
-    return (
-        '<!doctype html><html><head><meta charset="utf-8"><title>Support issue triage</title><base target="_blank"><style>'
-        + DIGEST_CSS + '</style></head><body><div class="wrap">' + "".join(parts) + "</div></body></html>"
-    )
-
-
 def _write(path: str, html: str, limit: int) -> None:
     """Write a page after checking it against its size limit."""
     if len(html) > limit:
@@ -441,59 +349,6 @@ def _write(path: str, html: str, limit: int) -> None:
     with open(path, "w") as f:
         f.write(html)
     print(f"{path}: {len(html)} characters")
-
-
-def _row(c: dict, names: dict, run: str, run_at: datetime | None, status_len: int) -> str:
-    """Render one digest row."""
-    mark = ""
-    if _new(c, run):
-        mark = '<span class="b">new</span>'
-    elif _changed(c, run):
-        mark = '<span class="b">changed</span>'
-    status = (c.get("action") or _todo_fallback(c)) if _pending(c) else (c["notes"][-1] if c.get("notes") else "")
-    status = " ".join(status.split())
-    if len(status) > status_len:
-        status = status[:status_len].rstrip() + "\u2026"
-    meta = " \u00b7 ".join(x for x in (names.get(c["col"], c["col"]), _age(c, run_at), escape(status, quote=False)) if x)
-    return (
-        f'<div class="r{" ch" if mark else ""}"><div class="l1"><a class="n" href="{_issue_url(c)}">{escape(_ref(c))}</a>'
-        f'<span class="t">{escape(c["title"], quote=False)}</span>{mark}</div><div class="l2">{meta}</div></div>'
-    )
-
-
-def _changed(c: dict, run: str) -> bool:
-    """Whether the card's newest note is from the last run or later."""
-    m = NOTE_TIME.match((c.get("notes") or [""])[-1])
-    return bool(m and run) and f"{m.group(1)} {m.group(2)}" >= run[5:16]
-
-
-def _new(c: dict, run: str) -> bool:
-    """Whether the card was first seen in the last run."""
-    return bool(run) and (c.get("since") or "")[:16] == run[:16]
-
-
-def _run_time(run: str) -> datetime | None:
-    """Parse a last_run string like '2026-10-21 07:38 CEST'."""
-    try:
-        stamp, tz = run[:16], run[17:].strip() or "UTC"
-        return datetime.strptime(stamp, "%Y-%m-%d %H:%M").replace(tzinfo=timezone(timedelta(hours=TZ_OFFSETS.get(tz, 0))))
-    except ValueError:
-        return None
-
-
-def _age(c: dict, run_at: datetime | None) -> str:
-    """Time since the last activity on the issue, relative to the run."""
-    last = _last_at(c)
-    if not run_at or not last:
-        return ""
-    try:
-        at = datetime.fromisoformat(last.replace("Z", "+00:00"))
-    except ValueError:
-        return ""
-    if at.tzinfo is None:
-        at = at.replace(tzinfo=run_at.tzinfo)
-    hours = max(0, (run_at - at).total_seconds() / 3600)
-    return f"{int(hours * 60)}m ago" if hours < 1 else f"{int(hours)}h ago" if hours < 48 else f"{int(hours // 24)}d ago"
 
 
 def _kind(b: list) -> str:
@@ -528,7 +383,7 @@ def _lane(c: dict) -> str:
 
 def _ask_groups(cards: list) -> list:
     """Cards split into (ask, cards) sub-groups in ASKS order, empty groups left out."""
-    order = [ask for ask, _, _ in ASKS]
+    order = [ask for ask, _ in ASKS]
     asks = sorted({c["ask"] for c in cards}, key=lambda a: order.index(a) if a in order else len(order))
     return [(ask, [c for c in cards if c["ask"] == ask]) for ask in asks]
 

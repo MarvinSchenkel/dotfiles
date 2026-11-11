@@ -1,6 +1,6 @@
-"""Render the security inbox board and its inline digest from the routine's state file.
+"""Render the security inbox board from the routine's state file.
 
-Usage: python3 build.py <state.json> [--full <board.html>] [--digest <digest.html>]
+Usage: python3 build.py <state.json> --full <board.html>
 """
 import argparse
 import json
@@ -10,7 +10,6 @@ from html import escape
 
 REPO = "https://github.com/music-assistant/server"
 FULL_MAX = 2_000_000
-DIGEST_MAX = 40_000
 # (key, lane name, lane description, color, board)
 LANES = [
     ("draft", "Draft", "New reports to accept or close", "--info", "adv"),
@@ -27,7 +26,6 @@ BADGES = {
 }
 SEV_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 SEV_TONE = {"critical": "bad", "high": "warn"}
-REPLY_GRAMMAR = "fix &lt;id&gt;, close &lt;ghsa&gt;, dismiss cs-&lt;n&gt;, draft &lt;id&gt;"
 
 CSS = """
 :root { color-scheme: light dark; }
@@ -106,31 +104,6 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 640px) { .cols { grid-template-columns: 1fr; } }
 """
 
-DIGEST_CSS = """
-:root { color-scheme: light dark; }
-body { font-family: var(--font-sans); color: var(--foreground); margin: 0; font-size: 13.5px; line-height: 1.45; }
-a { color: inherit; text-underline-offset: 2px; text-decoration-color: var(--muted-foreground); }
-code { font-family: var(--font-mono); font-size: .9em; }
-.wrap { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 8px; }
-h1 { font-size: 15px; font-weight: 600; margin: 0; }
-h2 { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-foreground); margin: 0 0 6px; font-weight: 600; }
-.sub { color: var(--muted-foreground); font-size: 12.5px; }
-.lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 6px; }
-.lane { border: 1px solid var(--border); border-top: 3px solid var(--c); border-radius: var(--radius); padding: 6px 8px; }
-.lane .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted-foreground); line-height: 1.25; }
-.lane .v { font: 600 17px var(--font-mono); margin-top: 2px; }
-.lane .s { font-size: 11px; color: var(--warning); }
-.rows { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius); }
-.r { padding: 6px 10px; border-bottom: 1px solid var(--border); border-left: 3px solid var(--info); }
-.r:last-child { border-bottom: 0; }
-.r .l1 { display: flex; gap: 8px; align-items: baseline; }
-.r .n { font: 500 12px var(--font-mono); white-space: nowrap; }
-.r .t { flex: 1; min-width: 0; }
-.r .l2 { color: var(--muted-foreground); font-size: 12.5px; margin-top: 1px; }
-.foot { font-size: 12px; color: var(--muted-foreground); border-top: 1px solid var(--border); padding-top: 8px; display: flex; flex-direction: column; gap: 3px; }
-.foot code { color: var(--foreground); }
-"""
-
 JS = """
 (function(){
   document.querySelectorAll("a.chip").forEach(a => a.addEventListener("click", e => {
@@ -173,19 +146,13 @@ JS = """
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Render the security inbox board and digest.")
+    parser = argparse.ArgumentParser(description="Render the security inbox board.")
     parser.add_argument("state")
-    parser.add_argument("--full", help="write the complete board here")
-    parser.add_argument("--digest", help="write the inline digest here")
+    parser.add_argument("--full", required=True, help="write the complete board here")
     args = parser.parse_args()
-    if not (args.full or args.digest):
-        parser.error("give --full, --digest or both")
     with open(args.state) as f:
         state = json.load(f)
-    if args.full:
-        _write(args.full, render_full(state), FULL_MAX)
-    if args.digest:
-        _write(args.digest, render_digest(state, args.full), DIGEST_MAX)
+    _write(args.full, render_full(state), FULL_MAX)
 
 
 def render_full(state: dict) -> str:
@@ -226,40 +193,6 @@ def render_full(state: dict) -> str:
     )
 
 
-def render_digest(state: dict, board_path: str | None) -> str:
-    """Render the compact inline digest: lane counts and the cards that changed this run."""
-    run = state.get("last_run") or ""
-    lanes, changed = [], []
-    for key, name, _, color, board in LANES:
-        in_lane = _lane_cards(state, key, board)
-        due = sum(1 for c in in_lane if _pending(c))
-        lanes.append(
-            f'<div class="lane" style="--c:var({color})"><div class="k">{escape(name)}</div>'
-            f'<div class="v">{len(in_lane)}</div><div class="s">{f"{due} need you" if due else "&nbsp;"}</div></div>'
-        )
-        changed += [(c, name) for c in in_lane if _changed(c, run)]
-    rows = [_row(c, name) for c, name in changed] + [
-        f'<div class="r"><div class="l1"><a class="n" href="{REPO}/security/code-scanning/{escape(str(d["number"]))}">'
-        f'#{escape(str(d["number"]))}</a><span class="t">{escape(d.get("rule") or "")}</span></div>'
-        f'<div class="l2">Dismissed as false positive · {escape(d["reason"])}</div></div>'
-        for d in state.get("dismissed_this_run") or []
-    ]
-    board = escape((board_path or "~/.claude-teamB/routine-reports/security-inbox.html").replace(os.path.expanduser("~"), "~", 1))
-    parts = [
-        f'<div><h1>Security inbox</h1><div class="sub">Last run {escape(run or "never")}</div></div>',
-        '<div class="lanes">' + "".join(lanes) + "</div>",
-        f"<section><h2>Changed this run ({len(rows)})</h2>"
-        + ('<div class="rows">' + "".join(rows) + "</div>" if rows else '<div class="sub">Nothing changed this run.</div>')
-        + "</section>",
-        f'<div class="foot"><span>Full board with filter, CVSS and drafts in the side panel, or <code>open {board}</code></span>'
-        f"<span>Replies: <code>{REPLY_GRAMMAR}</code></span></div>",
-    ]
-    return (
-        '<!doctype html><html><head><meta charset="utf-8"><title>Security inbox</title><base target="_blank"><style>'
-        + DIGEST_CSS + '</style></head><body><div class="wrap">' + "".join(parts) + "</div></body></html>"
-    )
-
-
 def _write(path: str, html: str, limit: int) -> None:
     """Write a page after checking it against its size limit."""
     if len(html) > limit:
@@ -274,37 +207,6 @@ def _lane_cards(state: dict, key: str, board: str) -> list:
     """Return the lane's cards, attention first, then by severity."""
     cards = state.get("advisories" if board == "adv" else "code_scanning", [])
     return sorted((c for c in cards if c.get("column") == key), key=_sort_key)
-
-
-def _row(c: dict, lane: str) -> str:
-    """Render one digest row."""
-    status = c["action"] if _pending(c) and c.get("action") else _plain((c.get("status") or [""])[0])
-    status = " ".join(status.split())
-    if len(status) > 160:
-        status = status[:160].rstrip() + "…"
-    meta = " · ".join(x for x in (lane, escape(status, quote=False)) if x)
-    return (
-        f'<div class="r"><div class="l1"><a class="n" href="{escape(c["url"])}">{escape(_short(c))}</a>'
-        f'<span class="t">{escape(c["title"], quote=False)}</span></div><div class="l2">{meta}</div></div>'
-    )
-
-
-def _changed(c: dict, run: str) -> bool:
-    """Whether the card's newest status line was written on the run's day."""
-    return bool(run) and (c.get("status") or [""])[0].startswith(run[5:10])
-
-
-def _plain(text: str) -> str:
-    """Strip the HTML tags status lines may carry."""
-    out, depth = [], 0
-    for ch in text:
-        if ch == "<":
-            depth += 1
-        elif ch == ">" and depth:
-            depth -= 1
-        elif not depth:
-            out.append(ch)
-    return "".join(out)
 
 
 def _badges(c: dict) -> list:

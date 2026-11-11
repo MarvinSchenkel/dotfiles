@@ -9,6 +9,8 @@ You are the routine thread for this job. Each scheduled run arrives as a new tur
 Read `~/git/dotfiles/routines/state/lab-deep.json` first, then do the run below, then write the
 state back and commit it in `~/git/dotfiles` as Marvin (marvinschenkel@gmail.com) with the message
 `lab-deep: run <YYYY-MM-DD>`. Never push. Never create issues, PRs or comments from this thread.
+Set `thread_id` in the state to this thread's id when it is missing; the attention thread forwards
+Marvin's replies for this routine to it.
 
 ## Inputs
 
@@ -56,7 +58,11 @@ compact digest of it rendered inline. Change the layout in `build.py`, never by 
 2. Save the `lab flakes` output to `/tmp/lab-deep-flakes.txt`.
 3. Write the state first: `last_run` and the run ids under `runs`. When the bench did not run, set
    `runs.hw` to `[]` and `hw_skipped` to the reason; drop `hw_skipped` when it did. Leave `last_flakes` at the previous run's list until after the
-   build; the report marks flakes missing from it as new.
+   build; the report marks flakes missing from it as new. Replace `reds` with one entry per test that is
+   red in this run and not in `known_red`: `status` as JUnit reports it (`failed` or `error`), `read` is
+   your read by the rule in step 9 (`server` for a dev regression, `lab` for a lab or environment error), `since`
+   carried over from the previous `reds` entry of the same test or today's date, and `note` the first
+   line of its failure. A green run writes `"reds": []`. The attention page reads this list.
 4. Build:
 
    ```
@@ -77,13 +83,14 @@ compact digest of it rendered inline. Change the layout in `build.py`, never by 
    in the chat message.
 6. `html_render` the digest with title "Lab deep run". It stays under 40,000 characters because
    `html_render` takes the page as a tool argument.
-7. End with a short chat message. First line: passed, failed (known), skipped, the sha per group (tier 1,
+7. Set `last_flakes` to this run's flakes, then commit.
+8. `python3 ~/git/dotfiles/routines/attention/build.py --source lab-deep`.
+9. End with a short chat message. First line: passed, failed (known), skipped, the sha per group (tier 1,
    tier 2, hw). Then one line per new red (not still red, not known): the first line of its failure and
    your read on server or lab. A test that fails the same way on `dev` as on the previous day is a dev
    regression; a capture, fixture or lab-code error is the lab's. No fixes from this thread. Then a line
-   for every `known_red` entry dropped this run. End with the footer "Reply `investigate <test>` to start
-   a session on a red, `known <test>` to list it as a known red."
-8. Set `last_flakes` to this run's flakes, then commit.
+   for every `known_red` entry dropped this run, and the output of step 8 as printed. End with the footer
+   "Reply `investigate <test>` to start a session on a red, `known <test>` to list it as a known red."
 
 The full page: header with the runs per tier, the bench line and the total time; tiles for passed,
 failed, skipped and pass rate with a 14-day trend; failures with new reds first, then still red, then
@@ -94,9 +101,12 @@ slowest tests; a green day is just the header, the tiles and the footer.
 
 ## State
 
-`{"last_run": "<date>", "runs": {"dev": [ids], "stable": [ids], "hw": [ids]}, "hw_skipped": "<reason,
-only when the bench did not run>", "known_red": [{"test": "...", "since": "<date>", "note": "..."}],
-"last_flakes": [...]}`. A `known_red` test is a node id or part of one; two tests join with " and ", and a
+`{"thread_id": "<this thread's id>", "last_run": "<date>", "runs": {"dev": [ids], "stable": [ids], "hw":
+[ids]}, "hw_skipped": "<reason, only when the bench did not run>", "known_red": [{"test": "...", "since":
+"<date>", "note": "..."}], "reds": [{"test": "...", "status": "failed | error", "read": "server | lab",
+"since": "<date>", "note": "..."}], "last_flakes": [...]}`. A `known_red` test is a node id or part of one; two tests join with " and ", and a
 trailing note in parentheses is ignored when matching, and "on <set>" (such as "on spotify-a")
 limits the entry to that set's group (`music_spotify`). Keep `known_red` current when Marvin
 replies `known <test>`; drop an entry once the test passes two days in a row and say so in the chat message.
+A `known <test>` reply also drops the test from `reds`, commits and ends with the attention build of
+step 8.

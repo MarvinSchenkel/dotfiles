@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Hourly review of changed and open Music Assistant PRs from Bot-MArley's reviews, auto-approval of safe PRs, and a PR backlog report rendered inline in this thread
+description: Hourly review of changed and open Music Assistant PRs from Bot-MArley's reviews, auto-approval of safe PRs, and a PR backlog report on a local page
 ---
 
 # PR review
@@ -153,19 +153,16 @@ answered. Only comments after Marvin's last comment or review count, and his `@B
 judge: a maintainer asking the author, or a status update nobody has to answer, doesn't count. Set
 `needs_reply: {at, who, url, summary}` with a one-line summary of what they want from Marvin, set `status`
 to `attention` and `attention_since` to the first such comment. Clear `needs_reply` once Marvin has
-commented or reviewed after it. The report colours these cards orange, never dims them, even as drafts,
-and the digest lists them first on every run.
+commented or reviewed after it. The report colours these cards orange, never dims them, even as drafts.
 
-## Up next queue
+## Attention fields
 
-The full report opens on an Up next tab that lists every open card with status `attention` or a
-`needs_reply`, best first, so Marvin can work top down. `build.py` scores each card from its action,
-the days it has waited, `needs_reply`, a backport recommendation and its effort. It folds small ready
-approvals into one batch row. `python3 build.py <state> --queue` prints the same order as JSON.
+The attention page (`~/git/dotfiles/routines/attention`) ranks the open cards with status `attention`
+or a `needs_reply` together with the asks of the other routines, so this routine doesn't rank them.
 
-Every run sets three fields on every attention card. The build has fallbacks for all three, but they
-only look at the verdict and size, so your call is better. A "reply" on an XL design question is 30
-minutes or more, not the fallback 10.
+Every run sets `action` and `effort` on every attention card. The page has fallbacks for both, but
+they only look at the verdict and size, so your call is better. A "reply" on an XL design question is
+30 minutes or more, not the fallback 10.
 
 - `action`: what Marvin does next. One of `reply` (someone waits on his answer), `approve` (ready, he
   approves), `merge` (approved already, he queues the merge), `decide` (almost or not ready, he has to
@@ -173,25 +170,31 @@ minutes or more, not the fallback 10.
   `rereview` (his own changes-requested review sits on an old head).
 - `effort`: minutes for that action, as an int. Guide values are 5 for an S approval, 10 for M, 20 for
   L, 40 for XL, 10 for a plain reply and 15 to 30 for a decision.
-- `rank_reason`: one line on why it sits where it does, naming who waits and how long, for example
-  "lawrence-jeff waiting 25d on your reply" or "approve, lab green, 5 min".
+
+Set `links` on any card where they apply: `[{id, rel, src: "model"}]`, with `id` a canonical id such
+as `music-assistant/support#6731`.
+
+- `rel: "fixes"` when the review concludes the PR resolves that issue. Marvin's own PRs say "related
+  issue" by convention, so GitHub's closing keywords miss them.
+- `rel: "blocked_by"` when the PR has to wait for another PR or issue first.
+- Never put an advisory id in a link. This state file is tracked in a public repo.
 
 ### Snoozing
 
-`snooze: {at, until, reason}` takes a card out of the queue. `at` is when Marvin snoozed it, in UTC
+`snooze: {at, until, reason}` takes a card off the attention page. `at` is when Marvin snoozed it, in UTC
 ISO-8601. `until` is an ISO date and the card comes back on that date. `until: "activity"` keeps it
 out until something new happens. Each run, unsnooze a card when its PR got a push, or a comment or
 review from someone other than a bot, after `snooze.at`, whatever `until` says. Marvin's own
-`@Bot-MArley` pings don't count. Drop snoozes whose date has come. Snoozed cards stay in the matrix and in a collapsed list under the
-queue.
+`@Bot-MArley` pings don't count. Drop snoozes whose date has come. Snoozed cards stay in the matrix.
 
 ### Pre-reads
 
 A pre-read prepares a reply or decide card so Marvin can answer in one go. It holds the question, the
 options, a recommendation and a draft reply that he can post from the dialog.
 
-After the state is written each run, and before the commit, run `build.py --queue` and walk it from the
-top. Take the cards with action `reply` or `decide` that have no `preread`, or whose `preread` is stale.
+After the state is written each run, and before the commit, run
+`python3 ~/git/dotfiles/routines/attention/build.py --queue pr-review` and walk its JSON rows from the
+top. Take the rows with action `reply` or `decide` whose card has no `preread`, or a stale one.
 Stale means `preread.head` differs from `head_sha`, or the PR has a comment or review from someone
 other than a bot newer than `preread.at` (the same rule the Post button checks; `asks.py` and
 `rc.sh` show them).
@@ -202,7 +205,7 @@ Spawn one Agent subagent per picked card with model `opus`, all in one message s
 in the foreground. Note the UTC time right before you spawn them. Fill in the brief below per card.
 Each returns JSON. Store it as `preread` with `at` set to that spawn time in ISO-8601 (so a comment that
 lands while the subagent works still counts as newer), `head` set to `head_sha` and `posted: null`,
-then rebuild both pages. A subagent that returns no usable JSON gets no preread and does not count toward the budget.
+then rebuild the page. A subagent that returns no usable JSON gets no preread and does not count toward the budget.
 
 ```text
 You prepare a pre-read for Marvin on music-assistant/<repo>#<n>, <url>, head <head_sha>. Marvin
@@ -286,15 +289,15 @@ Marvin cannot approve his own PRs, so never auto-approve them.
 
 ## Report
 
-The report has two pages, both built from the state file by `build.py`:
+`build.py` builds the report page from the state file:
 
 ```sh
 mkdir -p ~/.claude-teamB/routine-reports
 python3 ~/git/dotfiles/routines/pr-review/build.py ~/git/dotfiles/routines/state/pr-review.json \
-  --full ~/.claude-teamB/routine-reports/pr-review.html --digest <tmp>/pr-review-digest.html
+  --full ~/.claude-teamB/routine-reports/pr-review.html
 ```
 
-- The full report goes to `~/.claude-teamB/routine-reports/pr-review.html`, outside git on purpose. It
+- The report goes to `~/.claude-teamB/routine-reports/pr-review.html`, outside git on purpose. It
   holds every review untrimmed. The `local.routine-reports` LaunchAgent (`routines/launchd/`, installed by
   `install.sh`) serves that folder on `http://127.0.0.1:8765`, and the report stays open in this thread's
   side panel. Marvin can also run `open ~/.claude-teamB/routine-reports/pr-review.html`.
@@ -304,19 +307,12 @@ python3 ~/git/dotfiles/routines/pr-review/build.py ~/git/dotfiles/routines/state
   `preview_open` that URL. If the URL doesn't answer, run
   `launchctl kickstart -k gui/$(id -u)/local.routine-reports` and retry once; if it still fails, say so in
   the chat summary. A `render` reply refreshes the panel the same way.
-- The digest is what this thread shows. Render it with `html_render`. Preview it with `html_preview` first
-  only when `build.py` changed since the last run; otherwise render it directly. The digest stays under
-  40,000 characters because `html_render` takes the page as a tool argument and this runs 11 times a day.
 
-Don't edit either page by hand. If the layout has to change, change `build.py` and tell Marvin; run
+Don't edit the page by hand. If the layout has to change, change `build.py` and tell Marvin; run
 commits still hold only the state file.
 
-The full report shows:
+The report shows:
 
-- Two tabs. Up next comes first and lists the queue described above: rank, action, effort, PR, author,
-  `rank_reason` and copy chips for `approve`, `chip`, `snooze` and `later`. Dashed lines mark where the
-  running effort passes 30 minutes and 1 hour. The Matrix tab holds the matrix below. Both open the
-  same dialogs.
 - A matrix with the status on the Y axis, needs my attention or waiting for user, and the ready state on the
   X axis: ready to merge, almost ready, not ready yet, plus one extra column for auto-approved PRs so Marvin
   can keep track of them. That column only shows PRs auto-approved in the last week.
@@ -328,7 +324,8 @@ The full report shows:
 - Badges on the cards, only in the report, never as GitHub labels: size, draft, user replied, reporter
   replied, backport recommended on ready and auto-approved PRs, yours, new review, failing CI, stacked, and
   days waiting on Marvin.
-- Per PR, in a dialog that opens when Marvin clicks its card, ordered by what he needs first: a next-step
+- Per PR, in a dialog that opens when Marvin clicks its card or opens the page at
+  `pr-review.html#pr-<repo>-<number>` (the attention page links there), ordered by what he needs first: a next-step
   panel (one line on what to do, up to three blockers, and the reply commands as copy chips), one-word
   pills for CI, merge, Bot-MArley, lab and backport, the `tldr`, then the findings one line each with
   their id `f1`, `f2` and so on so Marvin can reply `post <pr> f2`. Set `model` on every finding to
@@ -341,17 +338,9 @@ The full report shows:
 - For almost ready: your suggestion to fix the small outstanding thing, the patch as a coloured diff, and
   the prompt for a fix session with the necessary context and instructions, readable in place and with a
   copy button.
-- Nothing below the matrix. Merged and closed PRs show up in the digest of the run that saw them.
+- Nothing below the matrix. Merged and closed PRs show up in the chat summary of the run that saw them.
 
-The digest shows the run time, dev sha and run note, then per column how many PRs it holds and how many
-need Marvin, and the count past the SLA. Next comes an Up next table with the top 5 queue rows: rank, PR,
-action, minutes and `rank_reason`. Below that, only the open PRs this run changed, one compact row
-each: the number linked to GitHub, title and author, size, state with the `changed_now` mark, the Bot-MArley
-verdict, who it waits on, and red rows past the SLA. Attention rows come first. PRs merged,
-closed or auto-approved this run follow as a short list. The footer points at the side panel and the
-`open` command, plus the reply grammar. No finding bodies, prompts or patches; Marvin gets those from the
-side panel or with `show <pr>` and `prompt <pr>`. Fill `marley` and `waiting_on` on every PR so the
-digest columns say something useful.
+Fill `marley` and `waiting_on` on every PR so the pills and the next-step panel say something useful.
 
 Set `changed_now` on every PR this run touched, as a short reason: `new`, `reviewed`, `pushed`, `merged`,
 `closed`, `auto-approved`, `reporter replied`, `author replied`, `drafted`, `ready for review`,
@@ -362,22 +351,31 @@ The report must always be up to date and combined with the previous runs. If an 
 almost ready and Marvin hasn't acted on it, it stays. A PR only leaves the matrix when it is merged or
 closed, except an auto-approved PR, which stays in its column for a week.
 
-Write `run_note` before building: two to four sentences on what changed this run. Both pages show it.
+Write `run_note` before building: two to four sentences on what changed this run. The page shows it.
 
-If `build.py` exits with a budget error, skip the render and say so in the chat summary.
+If `build.py` exits with a budget error, say so in the chat summary.
 
 ## Chat summary
 
-After the render, end the turn with a short chat summary: what changed, which cards need Marvin first with
-red ones at the top, reporter replies, test asks without an answer for 7 days, what was auto-approved, and
-anything that failed or was skipped. Link every PR to its GitHub page.
-Always end the summary with a clickable link to the matrix,
+The last step of every run is the attention build, after the commit:
+
+```sh
+python3 ~/git/dotfiles/routines/attention/build.py --source pr-review
+```
+
+Then end the turn with a short chat summary of what this run changed: new, reviewed, merged and closed
+PRs, reporter replies, test asks that passed 7 days without an answer, what was auto-approved, and
+anything that failed or was skipped. Link every PR to its GitHub page. Don't list the cards that wait on
+Marvin; the attention page ranks them. Paste the attention build's output: its `+ Act` lines, then its
+last `attention:` line. Always end the summary with a clickable link to the matrix,
 `[Open the PR matrix](http://127.0.0.1:8765/pr-review.html?run=<YYYYMMDDHHMM>)`, since the side panel
 tab isn't always visible to Marvin.
 
 ## Replies
 
-Marvin answers in this thread. Handle each reply straight away; don't wait for the next run. `<pr>` is
+Marvin answers in this thread. Handle each reply straight away; don't wait for the next run. The
+attention thread forwards the commands Marvin gives on the attention page here as plain messages, in
+the same grammar; handle them like his own replies. `<pr>` is
 the number for a server PR, with or without `#`, and `<repo>#<n>` for the other repos, the same labels the
 page shows. One reply can hold several commands, for example `post 7045 f1 f3, approve 7130`.
 
@@ -413,11 +411,13 @@ page shows. One reply can hold several commands, for example `post 7045 f1 f3, a
 - `unsnooze <pr>`: remove `snooze`.
 - `skip <pr>` and `unskip <pr>`: add the PR to `skip` with a one-line reason, or take it out. A skipped PR
   stays out of the report until unskipped.
-- `render`: build both pages from the current state and render the digest.
+- `render`: build the page from the current state.
 - Anything else: answer from the state file and re-query GitHub when needed.
 
 A reply that changes the state writes it back and commits it the same way, with the message
-`pr-review: reply <YYYY-MM-DD HH:MM>`. Never push.
+`pr-review: reply <YYYY-MM-DD HH:MM>`. Never push. Every handled reply, forwarded or not, ends by
+rebuilding this routine's page, then running the attention build as in the chat summary, and pasting
+its last line into the answer.
 
 ## State file shape
 
@@ -461,7 +461,7 @@ A reply that changes the state writes it back and commits it the same way, with 
       "support": [ { "issue": "support#6731", "my_last_comment_at": "", "test_asked_at": "" } ],
       "fix_thread": "link to the launched thread",
       "action": "reply | approve | merge | decide | review | rereview", "effort": 10,
-      "rank_reason": "lawrence-jeff waiting 25d on your reply",
+      "links": [ { "id": "music-assistant/support#6731", "rel": "fixes | blocked_by", "src": "model" } ],
       "snooze": { "at": "2026-10-21T06:30:00Z", "until": "2026-10-24 | activity", "reason": "" },
       "preread": { "at": "2026-10-21T06:30:00Z", "head": "babefc242", "question": "", "options": [""],
                    "recommendation": "", "draft_reply": "", "posted": { "at": "", "url": "", "hash": "", "body": "" } },
@@ -473,7 +473,7 @@ A reply that changes the state writes it back and commits it the same way, with 
 ```
 
 `posted`, `pushed`, `author_replied`, `needs_reply`, `reporter_reply`, `support`, `fix_thread`, `snooze` and
-`preread` are null or absent until they apply. `action`, `effort` and `rank_reason` are set on every
-attention card. Set `reviewed_now` only on PRs reviewed in the current run and clear it on the rest.
-`waiting_on` is a short string for the digest column. Entries with `state` merged or closed
+`preread` are null or absent until they apply, `links` is empty or absent until one applies. `action`
+and `effort` are set on every attention card. Set `reviewed_now` only on PRs reviewed in the current run and clear it on the rest.
+`waiting_on` is a short string for the next-step panel. Entries with `state` merged or closed
 and `closed_at` more than 30 days old are dropped at the start of a run.

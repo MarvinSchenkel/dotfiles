@@ -102,7 +102,9 @@ The runtime is full access: nothing in the harness gates GitHub writes, so this 
 ## Cards
 
 - Cards carry over from run to run. A card leaves only when its advisory is published or closed on
-  GitHub, or its alert is no longer open. If nothing changed, the card stays as it is.
+  GitHub, or its alert is no longer open. If nothing changed, the card stays as it is. One exception: an
+  advisory closed as a duplicate keeps its card while it has a deadline, until its canonical advisory is
+  published, because a coordinator's clock keeps running on a closed duplicate.
 - Each run puts one dated line at the top of `status`, for example "10-21: no change on GitHub", keeps the
   older lines and updates `checked`.
 - Badges: `needs_attention` when Marvin has to act, with a one or two sentence `action`;
@@ -112,13 +114,62 @@ The runtime is full access: nothing in the harness gates GitHub writes, so this 
   Claude on Marvin's behalf".
 - The page sorts attention first, so keep the badges honest.
 
+## Attention fields
+
+The attention page (`routines/attention/`) ranks Marvin's asks across all routines. It reads the fields
+below from each advisory card. Keep them current on every run and after every reply. Record inputs only:
+the attention build computes the SSVC outcome and the tier, so never write either.
+
+- `ssvc`: the SSVC inputs, judged on the worst affected supported release (the current stable, not the
+  version the reporter tested).
+  - `exploitation`: `none`, `public_poc` (a public PoC or a well-known method) or `active` (credible
+    public reports of use in the wild). A PoC that only sits in the report is `none`. Re-check when a
+    coordinator publishes.
+  - `technical_impact`: `total` for full control of MA's behaviour or disclosure of all its data, else
+    `partial`.
+  - `reaches`: how far the damage goes. `ma_only` (library, settings, provider credentials), `ha_read`
+    (a read-only view of HA data), `ha_control` (HA Core write or the Supervisor token), `host` (root on
+    the host or HAOS). Code execution or file read inside the add-on container is `ha_control`, because
+    the container holds the Supervisor token.
+  - `evaluated_on`: the release these inputs hold for, such as `2.10.9`.
+- `exposure`: who can reach it. `install` (`addon`, `docker` or `all`), `config` (`default` or
+  `opt_in`), `provider` (the provider an opt-in setup needs, else null), `auth` (`none`, `member` or
+  `admin`), `network` (`lan` or `remote`), `user_action` (true when the victim has to do something, such
+  as pick an attacker-run server).
+- `remaining_steps`: the ordered steps left until the advisory is published, each
+  `{"step", "owner", "effort"}`. `owner` is `marvin` or a GitHub login (the coordinator's name for
+  `wait_external`), `effort` is Marvin's minutes. Steps: `ack_coordinator`, `decide_fix`, `review_fix`,
+  `merge_fix`, `backport_decision`, `review_backport`, `set_ranges`, `reply`, `cve`, `credit`,
+  `publish`, `wait_external` (a CVE request or a reporter's answer is pending). Every run checks the list
+  against GitHub and the releases: a step that is done leaves the list. The first entry is the next step,
+  and its `owner` decides whether it is Marvin's turn.
+- `fix_prs`: `[{"repo": "music-assistant/server", "number": 1234, "backport_label": true}]`, every PR
+  that fixes or backports the advisory. `backport_label` is true when the PR carries
+  `backport-to-stable`. The page reads PR state from GitHub itself.
+- `deadlines`: `[{"source": "zdi" | "reporter" | "own", "case_id", "kind": "ack" | "fix" | "publish",
+  "date"}]`, one per clock a coordinator or reporter set. Record only dates they stated.
+- `ack_sent_at`: the date the coordinator got its acknowledgement, else null. The routine cannot read
+  advisory comments, so set it when Marvin says he sent it.
+- `duplicate_of`: the full GHSA id of the canonical advisory. A duplicate gets no `remaining_steps` of its
+  own; its `deadlines` stay on its own card so the cluster takes the earliest one.
+- `chain_with`: GHSA ids of open advisories this one chains into on the same release (an entry bug that
+  gives admin, plus an admin bug that gives root). Drop an id once that advisory is fixed there.
+- `blocked_since`: `{"who": "<login>", "since": "<date>"}` when a contributor or reviewer waits on Marvin
+  for this advisory, else null.
+- `cve`: `{"state": "not_requested" | "requested" | "assigned", "via": "github" | "zdi",
+  "requested_at"}`.
+
+At the top level, each `releases` entry of a channel with a pending release carries `next_cut`:
+`{"channel": "stable", "version": "2.10.10", "planned_date": null}`. `planned_date` stays null until a
+date is set; backport due dates hang on it.
+
 ## Report
 
-Write the state file, then build both pages in one call:
+Write the state file, then build the board:
 
 ```
 python3 ~/git/dotfiles/routines/security-advisories--code-scanning/build.py ~/git/dotfiles/routines/state/security-inbox.json \
-  --full ~/.claude-teamB/routine-reports/security-inbox.html --digest /tmp/security-inbox-digest.html
+  --full ~/.claude-teamB/routine-reports/security-inbox.html
 ```
 
 - The full board goes to `~/.claude-teamB/routine-reports/security-inbox.html`, outside git on purpose. The
@@ -130,13 +181,7 @@ python3 ~/git/dotfiles/routines/security-advisories--code-scanning/build.py ~/gi
   panel from showing the cached previous board. With no such tab, `preview_open` that URL. If the URL
   doesn't answer, run `launchctl kickstart -k gui/$(id -u)/local.routine-reports` and retry once; if it
   still fails, say so in the chat summary.
-- The digest is what you show in the thread with `html_render`, title "Security inbox". It stays under
-  40,000 characters because `html_render` takes the page as a tool argument. Run `html_preview` on it first
-  only when `build.py` changed since the last run, which
-  `git -C ~/git/dotfiles log -1 --format=%cI -- routines/security-advisories--code-scanning/build.py`
-  against `last_run` tells you; otherwise render it directly. Use the preview's `contentHeight` capped at
-  2000, or 2000 without a preview.
-- Change the layout in `build.py`, never by hand, so both pages stay stable from run to run.
+- Change the layout in `build.py`, never by hand, so the board stays stable from run to run.
 
 The full board: the title and "Last run"; a filter box and an "Only cards that need attention" toggle; one
 swimlane per column, Draft, Open and False positive for advisories, then Not picked up, PR in draft and
@@ -146,20 +191,22 @@ attention pane, status with older lines folded, details, CVSS table, fix PR, dra
 and the replies that apply to it; then release and fix tracking, the run note with the alerts dismissed this
 run and the reply verbs.
 
-The digest: the title and "Last run", the card count per lane with how many need Marvin, the cards whose
-newest status line is from this run plus the alerts dismissed this run, one compact row each, and a footer
-pointing at the side panel.
-
 Don't edit build.py or this file in a scheduled run. If the layout needs a change, say so in the summary.
 
-After the render, end the turn with a chat summary: what changed this run, each alert dismissed with its
-reason, and then a short list of all cards that currently need Marvin's attention, one line each with the
-id and what he has to do, including cards carried over from earlier runs that did not change.
+Last step of every run: `python3 ~/git/dotfiles/routines/attention/build.py --source security-inbox`.
+Then end the turn with a chat summary: what changed this run and each alert dismissed with its reason,
+followed by the build's output as printed (its `+ Act` lines and the `attention:` line). Do not list the
+cards that need Marvin; the attention page does that.
 
 ## Replies
 
 Ids: a full GHSA id or its first block after `GHSA-`, such as `abcd`; `cs-<n>` or `#<n>` for alerts.
-After any reply that changes a card, write the state and rebuild both pages: refresh the side panel and render the digest.
+After any reply that changes a card, write the state, rebuild the board and refresh the side panel. The
+last step of every handled reply is the attention build with `--source security-inbox`; paste its output
+in the answer.
+
+The attention thread forwards Marvin's commands for this inbox here as plain messages, so this thread
+stays the only writer of its state. Handle a forwarded command like any reply below.
 
 - `close <ghsa> [message]`: post the card's draft close message, or the given one, in a fenced block so
   Marvin can paste it on the advisory, then
@@ -184,7 +231,8 @@ After any reply that changes a card, write the state and rebuild both pages: ref
   "dev": "<origin/dev short sha>",
   "note": "one line about this run, shown above the footer",
   "dismissed_this_run": [ { "number": 186, "rule": "py/...", "reason": "re-key of #13" } ],
-  "releases": [ { "label": "beta", "value": "2.11.0b5", "note": "tagged 10-14", "url": null } ],
+  "releases": [ { "label": "beta", "value": "2.11.0b5", "note": "tagged 10-14", "url": null,
+                  "next_cut": { "channel": "beta", "version": "2.11.0b6", "planned_date": null } } ],
   "advisories": [
     {
       "id": "GHSA-xxxx-xxxx-xxxx", "label": "GHSA-xxxx-xxxx-xxxx", "url": "",
@@ -197,7 +245,14 @@ After any reply that changes a card, write the state and rebuild both pages: ref
       "draft_comment": { "title": "", "text": "" },
       "pr": { "label": "", "url": "" },
       "tracking": { "fix": [ { "label": "server#6771", "url": "" } ], "dev": "", "beta": "", "stable": "", "cve": "" },
-      "fix_thread": null
+      "fix_thread": null,
+      "ssvc": { "exploitation": "none", "technical_impact": "partial", "reaches": "ma_only", "evaluated_on": "2.10.9" },
+      "exposure": { "install": "all", "config": "default", "provider": null, "auth": "admin", "network": "lan", "user_action": false },
+      "remaining_steps": [ { "step": "review_fix", "owner": "marvin", "effort": 20 } ],
+      "fix_prs": [ { "repo": "music-assistant/server", "number": 1234, "backport_label": false } ],
+      "deadlines": [ { "source": "zdi", "case_id": "ZDI-CAN-00000", "kind": "fix", "date": "2027-01-01" } ],
+      "ack_sent_at": null, "duplicate_of": null, "chain_with": [], "blocked_since": null,
+      "cve": { "state": "not_requested", "via": "github", "requested_at": null }
     }
   ],
   "code_scanning": [

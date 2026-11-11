@@ -2,8 +2,8 @@
 
 Usage: python3 sync.py <state.json> [--since <ISO>] [--report <path>] [--actions-log <path>] [--dry-run]
 
-Writes card["sync"], refreshes gh, last, milestone and the test-asked badge, drops closed cards, prunes
-design rows and follow-ups, rebuilds release_table and emits a JSON delta report for the model.
+Writes card["sync"] (impact signals included), refreshes gh, last, milestone and the test-asked badge, drops closed
+cards, prunes design rows and follow-ups, rebuilds release_table and emits a JSON delta report for the model.
 """
 import argparse
 import json
@@ -36,24 +36,40 @@ SUPPORT_REF = re.compile(r"(?:music-assistant/support#|\bsupport#|github\.com/mu
 LEAD_REFS = re.compile(r"^#\d+(?:\s*(?:,|/|\+|&|and)\s*#\d+)*")
 PR_URL = re.compile(r"github\.com/([\w.-]+/[\w.-]+)/pull/(\d+)")
 STABLE_SUBJECT = re.compile(r"\(#(\d+)\)")
+# A commenter who says they have the problem too (research/issue-impact.md section 6), or attaches diagnostics.
+METOO = re.compile(
+    r"\bme too\b|\bsame (here|issue|problem|for me|thing|behaviou?r|error|symptom|on (my|a|an)|with my|boat|story)\b|exact(ly)? (the )?same|"
+    r"\bi'?m? (also |too )?(have|had|having|see|seeing|get|getting|experienc\w*|noticed|noticing) (the )?(exact )?(same|this|it too|it as well|something similar)|"
+    r"\balso (have|having|seeing|experiencing|affected|happening|an issue)|\bcan confirm|\bconfirming\b|\bconfirm(ed)? (this|the same|that)|(^|\s)\+1\b|"
+    r"happen(s|ing) (to me|for me|here) (as well|too)|not (just|only) me|affects me|i can reproduce|independent(ly)? reproduc|"
+    r"(run|ran) into this|was experiencing this|another affected|similar (issue|problem|symptom) (here|on)|having this (issue|problem)|this (also|too) happens"
+    r"|music-assistant-diagnostics-[\w-]*\.json",
+    re.I,
+)
+FORM_VERSION = re.compile(r"### Music Assistant version\s*\n+\s*([^\n]+)")
+VERSION = re.compile(r"\b\d+\.\d+(?:\.\d+)?(?:b\d+|\.dev\.?\d+)?")
+BODY_VERSION = re.compile(r"\b2\.\d+\.\d+(?:b\d+|\.dev\.?\d+)?\b")
 CARD_BATCH = 12
 PR_BATCH = 25
-COMMENTS = 15
+COMMENTS = 100
 WORKERS = 8
 
 PR_FIELDS = "number url state isDraft mergedAt createdAt author{login} repository{nameWithOwner} mergeCommit{oid}"
 COMMENT_FIELDS = "author{login __typename} authorAssociation createdAt url body"
+ISSUE_REF = "... on Issue{number author{login} authorAssociation repository{nameWithOwner}}"
+REACTIONS = "reactionGroups{content reactors{totalCount}}"
 ISSUE_FIELDS = f"""
   number title url state stateReason createdAt closedAt author{{login}} assignees(first:10){{nodes{{login}}}}
-  labels(first:30){{nodes{{name}}}} milestone{{title}}
+  labels(first:30){{nodes{{name}}}} milestone{{title}} body {REACTIONS}
   comments(last:{COMMENTS}){{nodes{{{COMMENT_FIELDS}}}}}
-  timelineItems(itemTypes:[CROSS_REFERENCED_EVENT,CONNECTED_EVENT,CLOSED_EVENT], last:50){{nodes{{__typename
-    ... on CrossReferencedEvent{{createdAt willCloseTarget source{{... on PullRequest{{{PR_FIELDS}}}}}}}
+  timelineItems(itemTypes:[CROSS_REFERENCED_EVENT,CONNECTED_EVENT,CLOSED_EVENT,MARKED_AS_DUPLICATE_EVENT], last:50){{nodes{{__typename
+    ... on CrossReferencedEvent{{createdAt willCloseTarget actor{{login}} source{{__typename ... on PullRequest{{{PR_FIELDS}}} {ISSUE_REF}}}}}
     ... on ConnectedEvent{{createdAt subject{{... on PullRequest{{{PR_FIELDS}}}}}}}
-    ... on ClosedEvent{{createdAt actor{{login}}}}}}}}
+    ... on ClosedEvent{{createdAt actor{{login}}}}
+    ... on MarkedAsDuplicateEvent{{canonical{{... on Issue{{number}}}} duplicate{{{ISSUE_REF}}}}}}}}}
 """
 DISCUSSION_FIELDS = f"""
-  number title url closed closedAt stateReason createdAt author{{login}} labels(first:30){{nodes{{name}}}}
+  number title url closed closedAt stateReason createdAt author{{login}} labels(first:30){{nodes{{name}}}} body {REACTIONS}
   comments(last:{COMMENTS}){{nodes{{{COMMENT_FIELDS} replies(last:1){{nodes{{{COMMENT_FIELDS}}}}}}}}}
 """
 
@@ -225,6 +241,7 @@ def sync_card(card: dict, node: dict, ctx: dict) -> dict:
         "test_ask": {"at": ask["at"], "url": ask["url"]} if ask else None,
         "after_test_ask_reporter": after_ask,
         "labels": labels,
+        "impact": impact(node, repo, ctx["codeowners"], ctx["now"]),
     }
     return {
         "reporter_new": card["sync"]["reporter_new"],
@@ -238,6 +255,25 @@ def sync_card(card: dict, node: dict, ctx: dict) -> dict:
     }
 
 
+def impact(node: dict, repo: str, codeowners: set[str], now: datetime) -> dict:
+    """Impact signals of an issue or discussion node: people affected, days since a non-team human spoke, reporter's release."""
+    author = _login(node.get("author"))
+    people = {author or "ghost"}
+    last = _parse(node["createdAt"])
+    for cm in _comments(node):
+        login = _login(cm.get("author"))
+        if not login or _is_bot(cm.get("author")) or _is_team(login, cm.get("authorAssociation"), author, codeowners):
+            continue
+        last = max(last, _parse(cm["createdAt"]))
+        body = cm.get("body") or ""
+        if METOO.search(body) and not TEST_ASK.search(body):
+            people.add(login)
+    people |= _linked_reporters(node, repo, author, codeowners)
+    thumbs = sum(g["reactors"]["totalCount"] for g in node.get("reactionGroups") or [] if g["content"] == "THUMBS_UP")
+    channel, version = _version(node.get("body") or "")
+    return {"affected": len(people) + thumbs, "idle_days": (now - last).days, "channel": channel, "version": version}
+
+
 def _card_prs(card: dict, node: dict, ctx: dict) -> tuple[list[dict], list[dict], list[dict]]:
     """Merge listed and cross-referenced PRs into sync.pr entries plus the report's merged/opened lists."""
     repo, n = _key(card)
@@ -245,8 +281,8 @@ def _card_prs(card: dict, node: dict, ctx: dict) -> tuple[list[dict], list[dict]
     listed = _listed_prs(card)
     refs: dict[tuple[str, int], dict] = {}
     for ev in ((node.get("timelineItems") or {}).get("nodes") or []):
-        pr = ev.get("source") or ev.get("subject")
-        if not pr or "number" not in pr:
+        pr = _event_pr(ev)
+        if not pr:
             continue
         k = (pr["repository"]["nameWithOwner"], pr["number"])
         prev = refs.get(k)
@@ -403,7 +439,7 @@ def _fetch_pr_details(cards: list[dict], nodes: dict, pool: ThreadPoolExecutor, 
         listed = _listed_prs(c)
         refs = {(p["repository"]["nameWithOwner"], p["number"])
                 for ev in (node.get("timelineItems") or {}).get("nodes") or []
-                if (p := ev.get("source") or ev.get("subject")) and "number" in p}
+                if (p := _event_pr(ev))}
         for k in listed:
             if k not in refs:
                 want.setdefault(k, False)
@@ -612,6 +648,48 @@ def _comments(node: dict) -> list[dict]:
         out.append(cm)
         out.extend(r for r in ((cm.get("replies") or {}).get("nodes") or []) if r)
     return out
+
+
+def _linked_reporters(node: dict, repo: str, author: str | None, codeowners: set[str]) -> set[str]:
+    """Authors of duplicates of this issue and of other issues in its repo that a non-team human linked to it."""
+    out = set()
+    for ev in (node.get("timelineItems") or {}).get("nodes") or []:
+        kind = ev.get("__typename")
+        if kind == "MarkedAsDuplicateEvent" and (ev.get("canonical") or {}).get("number") == node["number"]:
+            src, actor = ev.get("duplicate") or {}, None
+        elif kind == "CrossReferencedEvent" and (ev.get("source") or {}).get("__typename") == "Issue":
+            src, actor = ev["source"], ev.get("actor")
+        else:
+            continue
+        login = _login(src.get("author"))
+        if (not login or src.get("number") == node["number"] or src["repository"]["nameWithOwner"] != repo
+                or _is_bot(src.get("author")) or _is_team(login, src.get("authorAssociation"), author, codeowners)):
+            continue
+        # A teammate linking a related issue says nothing about who has this problem; marking a duplicate does.
+        if actor and (_is_bot(actor) or _is_team(_login(actor) or "", None, author, codeowners)):
+            continue
+        out.add(login)
+    return out
+
+
+def _version(body: str) -> tuple[str | None, str | None]:
+    """Channel and version the reporter runs, from the form field or else the first 2.x.y in the body."""
+    m = FORM_VERSION.search(body)
+    raw = m.group(1) if m else ""
+    token = VERSION.search(raw)
+    if not token and re.search(r"\b(dev|nightly)\b", raw, re.I):
+        return "dev", None
+    token = token or BODY_VERSION.search(body)
+    if not token:
+        return None, None
+    v = token.group(0)
+    return ("dev" if ".dev" in v else "beta" if "b" in v else "stable"), v
+
+
+def _event_pr(ev: dict) -> dict | None:
+    """The PR a cross-reference or connected event points at, if any."""
+    pr = ev.get("source") or ev.get("subject")
+    return pr if pr and "number" in pr and pr.get("__typename") != "Issue" else None
 
 
 def _listed_prs(card: dict) -> list[tuple[str, int]]:

@@ -1,6 +1,6 @@
 ---
 name: issue-triage
-description: Hourly first-line support triage of Music Assistant issues, HA core issues and tagged support discussions, kept on a board rendered inline in this thread
+description: Hourly first-line support triage of Music Assistant issues, HA core issues and tagged support discussions, kept on a board in this thread's side panel
 ---
 
 # Support issue triage
@@ -44,7 +44,9 @@ python3 ~/git/dotfiles/routines/issue-triage/sync.py ~/git/dotfiles/routines/sta
 `sync.py` computes everything that is a fact rather than a judgement, for every card, every run: board
 posts from the Post button (folded in like a `reply <n>`), the newest human comment (`gh`, `last`), who is a
 teammate, PR state, test asks (`test asked` badge), closed issues (moved to `gone`, their `design` and
-`followups` rows pruned), milestones and the release table. It never sets or clears `ask`. A teammate is a
+`followups` rows pruned), milestones, the release table and `sync.impact` (`affected`: the reporter, body
+thumbs, me-too commenters and authors of duplicates and linked issues; `idle_days` since a non-team human
+spoke; the reporter's `channel` and `version`). It never sets or clears `ask`. A teammate is a
 comment author with authorAssociation MEMBER, OWNER or COLLABORATOR, or a `codeowners` login in a provider
 manifest on server `origin/dev`; the issue's own author never counts as a teammate on that issue.
 
@@ -125,6 +127,18 @@ every card as the outcome and shows as a small tag.
 In the first two lanes cards are grouped by `ask`. When a card needs two things, pick the one that
 unblocks it. Set `waiting_on` only to override the default lane, for example `team` while a teammate's PR
 or answer is pending.
+
+Whenever you set an `ask`, also set these, which the attention page ranks on:
+- `effort`: minutes Marvin needs for the ask, not what the fix costs. A reply he only has to approve is 5 to
+  10, an input question 10 to 20, a design call 30 or more.
+- `regression`: `{"broke_in": "2.10.9", "worked_in": "2.10.8", "on": "stable" | "beta" | "dev"}` once the
+  git log between the two versions confirms it, otherwise `false`. A claim in the issue alone is not enough.
+- `domains`: the provider or player domains that carry the bug, as narrow as the evidence allows
+  (`["sonos_s1"]`, not `["sonos"]`).
+
+Links. Keep `links` on a card current: `[{"id": "music-assistant/support#6935", "rel": "duplicate_of" |
+"blocked_by" | "related", "src": "model"}]`, full `owner/repo#n` ids. `blocked_by` means the card can't move
+before that item is done. pr-review writes `fixes` on the PR side, so don't. Never link an advisory id.
 
 ## Reproduction rules
 
@@ -238,9 +252,7 @@ badge `["warn", "Auto-post held: <short reason>", "auto held"]` and start its `a
 an earlier ask of ours still unanswered, a repeat of something already asked, a discussion, an HA core issue,
 assigned to someone else, or `auto_post.enabled` false. A card without a draft, or where Marvin or a
 teammate spoke last, gets no badge: there is nothing to post. Drop the badge when the ask goes out, when the
-draft is cleared, or when the reason no longer holds. The digest lists these cards under "Info asks held
-for you", and the chat summary puts them right after "Posted on your behalf" under "Held for you", one line
-each with the issue, the reason and what Marvin should do.
+draft is cleared, or when the reason no longer holds.
 There is no cap per run. Post with `gh issue comment <n> -R <repo> --body-file -`, then treat it like a
 `reply <n>`: clear `reply`, `action` and the attention badges, add the waiting badge, refresh `gh`, and add a
 note `<MM-DD HH:MM> run: posted on your behalf (<url>), GPT: <verdict>, <one-line reason>`.
@@ -259,11 +271,11 @@ card "new" when `since` equals the run time.
 
 ## Report
 
-Write the state file, then build both pages in one call:
+Write the state file, then build the board:
 
 ```
 python3 ~/git/dotfiles/routines/issue-triage/build.py ~/git/dotfiles/routines/state/issue-triage.json \
-  --full ~/.claude-teamB/routine-reports/issue-triage.html --digest /tmp/issue-triage-digest.html
+  --full ~/.claude-teamB/routine-reports/issue-triage.html
 ```
 
 - The full board goes to `~/.claude-teamB/routine-reports/issue-triage.html`, outside git on purpose.
@@ -276,25 +288,12 @@ python3 ~/git/dotfiles/routines/issue-triage/build.py ~/git/dotfiles/routines/st
   `preview_open` that URL.
   If the URL doesn't answer, run `launchctl kickstart -k gui/$(id -u)/local.routine-reports` and retry
   once; if it still fails, say so in the chat summary.
-- The digest is what you show in the thread with `html_render`. It stays under 40,000 characters,
-  because `html_render` takes the page as a tool argument and the routine runs eleven times a day. Run
-  `html_preview` on the digest first only when `build.py` changed since the last run, which
-  `git -C ~/git/dotfiles log -1 --format=%cI -- routines/issue-triage/build.py` against `last_run` tells
-  you; otherwise render it directly. Use the preview's `contentHeight` capped at 2000, or 2000 without a preview; a
-  longer digest scrolls inside the frame.
-- Change the layout in `build.py`, never by hand, so both pages stay stable from run to run.
+- Change the layout in `build.py`, never by hand, so the board stays stable from run to run.
+- Last, run the attention build, which ranks the asks of every routine on one page:
 
-The digest:
-
-- The title and only "Last run <time>".
-- The card count per lane, with the `ask` breakdown for the first two lanes, and the release table as
-  counts per milestone.
-- Only the cards that are new or changed this run, one compact row each: the number linked to GitHub, the
-  title, the lane, a one-line status, the age of the last activity and a "new" or "changed" mark. Cards
-  that need Marvin come first. A card counts as changed when its newest note carries the time of the last
-  run, so stamp every note a run writes with `<MM-DD HH:MM> run:` using the run time.
-- A footer pointing at the side panel and the `open` command, plus the reply grammar.
-- No attention list, no design calls, no drafts, no diffs and no note bodies; those live on the full board.
+  ```
+  python3 ~/git/dotfiles/routines/attention/build.py --source issue-triage
+  ```
 
 The full board:
 
@@ -321,20 +320,11 @@ a card needs Marvin, `ask` does. `backport?` is muted information.
 No badges like "draft reply"; Marvin expects those to be there when he opens the issue. Set `action` on
 every card with an `ask`; it is the text of the highlighted pane.
 
-After the render, end the turn with a chat summary. Say what changed this run in a few sentences. If the
+End the turn with a chat summary of this run's changes only. Say what changed in a few sentences. If the
 run posted info asks on its own, list them next under "Posted on your behalf", one line each with the issue,
-what was asked and the comment link; held ones follow under "Held for you". Then the overview of what
-needs Marvin:
-
-- On the first run of the day, and whenever a card entered or left the list since the previous run: the
-  full list, grouped by `ask` under these headings in this order, empty groups left out. Replies to
-  confirm (`reply-*`, each line starting with test ask, info ask or answer), Input (`input`), Design calls
-  (`design`), Merge and release (`merge`), Nudges (`nudge`). One line per card with the issue and what
-  Marvin needs to do, most important first within a group.
-- Otherwise only the counts per group, for example "Needs you: 29 (replies 7, input 7, design 11, merge 3,
-  nudge 1), unchanged since the last run".
-Keep the list of card numbers you showed in `summary_cards` in the state file to tell the two apart.
-Write every issue number as a link to its card on the board,
+what was asked and the comment link. Then paste the attention build's output as it printed it: the `+`
+lines, if any, and the `attention:` line. The attention page holds the list of what needs Marvin, so the
+summary doesn't list asks. Write every issue number as a link to its card on the board,
 filtered and opened: `[#6823](http://127.0.0.1:8765/issue-triage.html?q=6823#c-6823)`; a core card uses
 `?q=<n>#c-core-<n>`.
 
@@ -345,6 +335,8 @@ account: pass `modelSelection` `{"instanceId":"claudeAgent","model":"claude-opus
 `t3_thread_launch`. Never let it inherit this routine's `claudeAgent_claude_2` instance.
 
 Marvin acts on cards by replying in this thread. Handle the reply right away, outside the scheduled run.
+The attention thread forwards the commands Marvin gives there to this thread as plain messages in the same
+grammar; handle them like his own replies.
 `<n>` is the issue or discussion number in the support repo; use `core#<n>` for a card on
 `home-assistant/core`. Several numbers in one reply, like `reply 6831 6833`, act on each of them.
 
@@ -390,9 +382,10 @@ Marvin acts on cards by replying in this thread. Handle the reply right away, ou
 - Anything else: answer from the state file, and check GitHub when the state may be stale.
 
 After a reply that changes the state, write and commit the state file with the message
-`issue-triage: <verb> <n>`. Answer with one confirmation line and the link to what was posted. Do not
-render the digest. After `edit`, rebuild the pages and refresh the side panel, so the Post button carries
-the new draft; otherwise the next run shows the change.
+`issue-triage: <verb> <n>`. After `edit` and after every forwarded command, rebuild the board and refresh
+the side panel, so the Post button carries the new draft; otherwise the next run shows the change. Then run
+the attention build as the last step of every handled reply and answer with one confirmation line, the link
+to what was posted and the build's output.
 
 ## State file shape
 
@@ -419,6 +412,10 @@ board embedded, so earlier run notes still match.
       "summary": "",
       "action": "one or two sentences for the attention pane",
       "ask": "reply-test | reply-info | reply-answer | input | design | merge | nudge",
+      "effort": 10,
+      "regression": false,
+      "domains": ["airplay"],
+      "links": [{ "id": "music-assistant/support#6935", "rel": "duplicate_of", "src": "model" }],
       "badges": [["info", "Test asked 10-21", "test asked"]],
       "reply": "draft reply, starting with the NOTE header",
       "prs": [{ "url": "https://github.com/music-assistant/server/pull/7131", "label": "server#7131 (ours, draft, CI green)" }],
@@ -442,7 +439,6 @@ board embedded, so earlier run notes still match.
   "milestones": { "2.10.8": 39 },
   "auto_post": { "enabled": true },
   "release_table": { "2.10.8": [{ "n": 6833, "title": "", "prs": ["server#7131"], "on_stable": true }] },
-  "summary_cards": [6835, 6671],
   "actions_applied_at": "2026-10-21T09:12:00Z",
   "gone": "Closed and dropped issues with dates and reasons, never shown on the board."
 }
