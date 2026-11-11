@@ -1,10 +1,11 @@
 """Build the attention page: sync GitHub, collect every routine's asks, rank them and render the page.
 
 Usage: python3 build.py [--no-sync] [--source NAME] [--state-dir DIR] [--cache FILE] [--out FILE]
-                        [--queue SOURCE]
+                        [--queue SOURCE] [--rows]
 
 Prints the rows that entered Act or Unblock since the previous build, then one summary line.
-`--queue pr-review` prints the live PR rows as JSON and writes nothing.
+`--queue pr-review` prints the live PR rows as JSON and writes nothing. `--rows` prints every row as
+one JSON line and writes nothing.
 """
 import argparse
 import hashlib
@@ -48,10 +49,15 @@ def main() -> None:
     p.add_argument("--cache", type=Path, default=gh_sync.CACHE)
     p.add_argument("--out", type=Path, default=OUT)
     p.add_argument("--queue", choices=("pr-review",), help="print the live PR rows as JSON and write nothing")
+    p.add_argument("--rows", action="store_true", help="print every row as one JSON line and write nothing")
     args = p.parse_args()
     now = datetime.now(UTC)
     if args.queue:
         print(json.dumps(queue(_rank(args.state_dir, args.cache, now)), indent=1))
+        return
+    if args.rows:
+        for line in row_lines(_rank(args.state_dir, args.cache, now)):
+            print(json.dumps(line))
         return
     stale = not args.no_sync and not gh_sync.sync(args.state_dir, args.cache)
     for line in build(args.state_dir, args.cache, args.out, now, stale):
@@ -100,8 +106,24 @@ def queue(rows: list[Row]) -> list[dict]:
             repo, number = ask.id.split("#")
             out.append({
                 "id": ask.id, "repo": repo.split("/")[1], "number": int(number), "tier": row.tier.label,
-                "action": ask.action, "effort": rank._effort(ask) if batch else row.effort, "reason": row.reason,
+                "action": ask.action, "effort": rank.effort_of(ask) if batch else row.effort, "reason": row.reason,
             })
+    return out
+
+
+def row_lines(rows: list[Row]) -> list[dict]:
+    """Every row in page order as a flat dict, addressed by the short id Marvin types."""
+    out = []
+    for row in rows:
+        act = row.members[0]
+        last = max((ask.last_activity for ask in row.members if ask.last_activity), default=None)
+        out.append({
+            "id": short_id(row.id), "full_id": row.id, "source": act.src, "kind": act.kind, "state": row.state,
+            "tier": row.tier.label, "action": row.action, "reason": row.reason, "effort": row.effort,
+            "title": act.title, "url": act.url, "who_waits": row.who_waits,
+            "last_activity": last and last.isoformat(), "blocked_by": [short_id(id) for id in row.blocked_by],
+            "members": [short_id(ask.id) for ask in row.members],
+        })
     return out
 
 
@@ -223,7 +245,7 @@ class _Page:
     def _batch_body(self, row: Row) -> str:
         """Detail of a batch: every member with its own link, draft and commands."""
         members = "".join(
-            f'<li class="member">{_item(ask, rank._effort(ask))}{_draft(ask) if _postable(ask) else ""}'
+            f'<li class="member">{_item(ask, rank.effort_of(ask))}{_draft(ask) if _postable(ask) else ""}'
             f"{_commands(ask, short_id(ask.id), row.state)}</li>"
             for ask in row.members
         )

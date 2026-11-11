@@ -10,7 +10,8 @@ Read `~/git/dotfiles/routines/state/lab-deep.json` first, then do the run below,
 state back and commit it in `~/git/dotfiles` as Marvin (marvinschenkel@gmail.com) with the message
 `lab-deep: run <YYYY-MM-DD>`. Never push. Never create issues, PRs or comments from this thread.
 Set `thread_id` in the state to this thread's id when it is missing; the attention thread forwards
-Marvin's replies for this routine to it.
+Marvin's replies for this routine to it. A forwarded reply may name a red by its attention id
+`lab:<test>`; drop the `lab:` prefix to get the `<test>` of `investigate` and `known`.
 
 ## Inputs
 

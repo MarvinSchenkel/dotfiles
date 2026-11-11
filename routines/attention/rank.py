@@ -26,7 +26,8 @@ HIGH_AFFECTED = 3  # collectors: distinct affected users that make impact high
 SWEEP_ROWS = 5  # attention thread: parked rows per weekly sweep
 DEFER_HORIZON_DAYS = 60  # a deferred advisory comes back this long before its deadline
 SSVC_LEAD_DAYS = {"decide_fix": 45, "review_fix": 21, "merge_fix": 21, "publish": 0}
-DEFAULT_EFFORT = {"reply": 10, "input": 20, "design": 30, "merge": 10, "nudge": 10, "review": 20, "post": 5}
+DEFAULT_EFFORT = {"reply": 10, "input": 20, "design": 30, "merge": 10, "nudge": 10, "review": 20, "post": 5,
+                  "log_finding": 5}
 APPROVE_EFFORT = {"S": 5, "M": 10, "L": 20, "XL": 40}
 OTHER_EFFORT = 15  # any action without a default above
 _LAST = datetime.max.replace(tzinfo=UTC)
@@ -132,12 +133,14 @@ class Ask:
     author: str | None = None
     who_waits: str | None = None  # login of the person waiting on Marvin
     waiting_since: datetime | None = None  # when who_waits started waiting
-    last_speaker: str | None = None  # issues: login of the newest comment, bots included
+    last_speaker: str | None = None  # issues: login of the newest human comment
     last_activity: datetime | None = None  # newest human event by anyone
     open: bool = True
     waiting_on: str | None = None  # reporter | team | release: not his turn
     step_owner: str | None = None  # advisories: "marvin" or a login
     pr: PRFacts | None = None
+    flagged: bool | None = None  # pr-review card: the routine marks it for Marvin; None without a card
+    checked_at: datetime | None = None  # pr-review card: when the routine last looked
     size: str | None = None  # S | M | L | XL
     impact_high: bool = False
     regression_stable: bool = False
@@ -204,7 +207,7 @@ def gate(ask: Ask, now: datetime) -> bool:
     if not ask.open or ask.waiting_on is not None:
         return False
     if ask.pr is not None:
-        return _pr_turn(ask.pr)
+        return _pr_turn(ask)
     if ask.kind == "advisory":
         return ask.step_owner == "marvin" and not _deferred(ask, now)
     if ask.kind in ISSUE_KINDS:
@@ -313,6 +316,8 @@ def reason(row: Row, now: datetime) -> str:
         case "quick_answer":
             return f"{waits}, quick answer"
         case "merge":
+            if act.kind == "release":
+                return "release PR"
             return "approved, CI green, clean" if act.pr else "ready to merge"
         case "flip":
             return "CI green, Bot-MArley approved the head"
@@ -332,6 +337,15 @@ def short_id(id: str) -> str:
     return id.removeprefix("music-assistant/")
 
 
+def effort_of(ask: Ask) -> int:
+    """Minutes the ask takes, its own estimate first, else the default for its action."""
+    if ask.effort is not None:
+        return ask.effort
+    if ask.action == "approve":
+        return APPROVE_EFFORT.get(ask.size, OTHER_EFFORT)
+    return DEFAULT_EFFORT.get(ask.action, OTHER_EFFORT)
+
+
 def _checked_action(ask: Ask) -> str:
     """Action corrected by PR facts: own PRs by readiness, no merge on a PR that is not ready."""
     pr = ask.pr
@@ -344,10 +358,15 @@ def _checked_action(ask: Ask) -> str:
     return ask.action
 
 
-def _pr_turn(pr: PRFacts) -> bool:
-    """Marvin's turn on a PR per its facts."""
+def _pr_turn(ask: Ask) -> bool:
+    """Marvin's turn on a PR: his own by its facts, a carded one by the routine's flag, the rest by events."""
+    pr = ask.pr
     if pr.own:
         return _ready_to_merge(pr) or _ready_to_flip(pr) or _newer(pr.other_last_at, pr.my_last_at)
+    if ask.flagged is not None:
+        # His comment after the routine's last look answers the flag until the author moves again.
+        answered = _newer(pr.my_said_at, ask.checked_at) and _newer(pr.my_said_at, pr.author_last_at)
+        return ask.flagged and not answered
     if pr.draft:
         return pr.question_for_me
     return not _newer(pr.my_said_at, pr.author_last_at)
@@ -389,10 +408,10 @@ def _root(parent: dict[str, str], id: str) -> str:
     return id
 
 
-def _act_on_rank(ask: Ask) -> tuple[int, bool]:
-    """Act-on preference: PR, then canonical advisory, then the rest."""
+def _act_on_rank(ask: Ask) -> tuple[int, bool, int]:
+    """Act-on preference: PR, then canonical advisory, then the rest; the larger step among equals."""
     kind_rank = {"pr": 0, "advisory": 1}.get(ask.kind, 2)
-    return kind_rank, any(link["rel"] == "duplicate_of" for link in ask.links)
+    return kind_rank, any(link["rel"] == "duplicate_of" for link in ask.links), -effort_of(ask)
 
 
 def _row(cluster: list[Ask], now: datetime) -> Row:
@@ -403,7 +422,7 @@ def _row(cluster: list[Ask], now: datetime) -> Row:
     blockers = [b for ask in cluster for b in ask.blocked_by + _link_ids(ask, {"blocked_by"})]
     see_also = [i for ask in cluster for i in _link_ids(ask, SEE_ALSO_RELS)]
     return Row(
-        id=act.id, tier=row_tier, rule=rule, members=cluster, action=_sentence(cluster), effort=_effort(act),
+        id=act.id, tier=row_tier, rule=rule, members=cluster, action=_sentence(cluster), effort=effort_of(act),
         who_waits=act.who_waits, waiting_since=act.waiting_since,
         due=min((ask.due for ask in cluster if ask.due), default=None),
         blocked_by=_unique(b for b in blockers if b not in ids),
@@ -434,15 +453,6 @@ def _sentence(cluster: list[Ask]) -> str:
     return text
 
 
-def _effort(ask: Ask) -> int:
-    """Minutes for the ask, its own estimate first."""
-    if ask.effort is not None:
-        return ask.effort
-    if ask.action == "approve":
-        return APPROVE_EFFORT.get(ask.size, OTHER_EFFORT)
-    return DEFAULT_EFFORT.get(ask.action, OTHER_EFFORT)
-
-
 def _outcome(cluster: list[Ask]) -> str | None:
     """Highest SSVC outcome in the work item."""
     outcomes = [ask.ssvc_outcome for ask in cluster if ask.ssvc_outcome]
@@ -461,7 +471,7 @@ def _quick_answer(ask: Ask) -> bool:
         ask.who_waits is not None
         and ask.action in ANSWERS
         and not ask.low_impact
-        and _effort(ask) <= UNBLOCK_MAX_MIN
+        and effort_of(ask) <= UNBLOCK_MAX_MIN
     )
 
 

@@ -72,6 +72,10 @@ worse, what you recommend Marvin looks at first. Then paste the build's output a
 
 ## Replies
 
+The attention thread forwards Marvin's commands from the attention page here as plain messages; handle
+them like his own replies. A forwarded command may name a finding by its attention id `log:<fingerprint>`:
+that is its key in `known`, the same finding as its `f<n>` in the last report.
+
 - `fix <id>`: launch a thread with `t3_thread_launch`, workspaceStrategy `{"type":"root"}`, title
   "Fix: <finding title>". T3 cannot make worktrees for this project because the workspace root is not a
   git repo, so the message tells the new thread to work inside `/Users/marvin/git/music-assistant/server`,

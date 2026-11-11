@@ -46,8 +46,7 @@ posts from the Post button (folded in like a `reply <n>`), the newest human comm
 teammate, PR state, test asks (`test asked` badge), closed issues (moved to `gone`, their `design` and
 `followups` rows pruned), milestones, the release table and `sync.impact` (`affected`: the reporter, body
 thumbs, me-too commenters and authors of duplicates and linked issues; `idle_days` since a non-team human
-spoke; the reporter's `channel` and `version`) and `sync.last_speaker` (`login`, `at`, `bot`: the newest
-comment by anyone, bots included, so a held info ask shows that the bot spoke last). It never sets or clears `ask`. A teammate is a
+spoke; the reporter's `channel` and `version`). It never sets or clears `ask`. A teammate is a
 comment author with authorAssociation MEMBER, OWNER or COLLABORATOR, or a `codeowners` login in a provider
 manifest on server `origin/dev`; the issue's own author never counts as a teammate on that issue.
 
@@ -138,8 +137,9 @@ Whenever you set an `ask`, also set these, which the attention page ranks on:
   (`["sonos_s1"]`, not `["sonos"]`).
 
 Links. Keep `links` on a card current: `[{"id": "music-assistant/support#6935", "rel": "duplicate_of" |
-"blocked_by" | "related", "src": "model"}]`, full `owner/repo#n` ids. `blocked_by` means the card can't move
-before that item is done. pr-review writes `fixes` on the PR side, so don't. Never link an advisory id.
+"blocked_by" | "related" | "fixes", "src": "model"}]`, full `owner/repo#n` ids. `blocked_by` means the card
+can't move before that item is done. Use `fixes` towards a PR when you judge that it resolves the whole
+issue; a PR that fixes part of it stays `related`. Never link an advisory id.
 
 ## Reproduction rules
 
@@ -337,7 +337,9 @@ account: pass `modelSelection` `{"instanceId":"claudeAgent","model":"claude-opus
 
 Marvin acts on cards by replying in this thread. Handle the reply right away, outside the scheduled run.
 The attention thread forwards the commands Marvin gives there to this thread as plain messages in the same
-grammar; handle them like his own replies.
+grammar; handle them like his own replies. A forwarded command may name a card by its attention id:
+`support#<n>` is `<n>`, `home-assistant/core#<n>` is `core#<n>`, and any other `<repo>#<n>` is the card on
+that repo.
 `<n>` is the issue or discussion number in the support repo; use `core#<n>` for a card on
 `home-assistant/core`. Several numbers in one reply, like `reply 6831 6833`, act on each of them.
 

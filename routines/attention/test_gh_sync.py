@@ -139,6 +139,25 @@ def test_push_goes_to_the_committer_and_bot_commits_are_no_push() -> None:
     assert gh_sync.pr_facts(picked)["other_last"] is None
 
 
+@pytest.mark.parametrize(("committer", "author"), [
+    ({"name": "claude", "user": {"login": "claude"}}, {"name": "claude", "user": {"login": "claude"}}),
+    ({"name": "github-actions[bot]", "user": {"login": "github-actions[bot]"}}, {"name": "bob", "user": None}),
+])
+def test_push_through_another_account_is_the_pr_authors_move(committer: dict, author: dict) -> None:
+    node = _node(commits={"nodes": [{"commit": {"committedDate": "2026-11-09T00:00:00Z", "statusCheckRollup": None,
+                                                "author": author, "committer": committer}}]})
+    facts = gh_sync.pr_facts(node)
+    assert facts["other_last"] == {"login": "alice", "at": "2026-11-09T00:00:00Z", "kind": "push"}
+    assert facts["author_last"] == {"at": "2026-11-09T00:00:00Z", "kind": "push"}
+
+
+def test_web_ui_commit_authored_by_me_is_my_push() -> None:
+    node = _node(commits={"nodes": [{"commit": {"committedDate": "2026-11-09T00:00:00Z", "statusCheckRollup": None,
+                                                "author": {"name": ME, "user": {"login": ME}},
+                                                "committer": {"name": "GitHub", "user": None}}}]})
+    assert gh_sync.pr_facts(node)["my_last"] == {"at": "2026-11-09T00:00:00Z", "kind": "push"}
+
+
 def test_issue_turn_counts_the_body_and_skips_bots() -> None:
     node = {"author": _user("bob"), "createdAt": "2026-11-01T00:00:00Z", "body": f"@{ME} this breaks", "comments": {"nodes": [
         _comment(ME, "2026-11-02T00:00:00Z", "which version?"),

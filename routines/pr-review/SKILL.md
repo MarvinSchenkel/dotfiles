@@ -375,7 +375,9 @@ tab isn't always visible to Marvin.
 
 Marvin answers in this thread. Handle each reply straight away; don't wait for the next run. The
 attention thread forwards the commands Marvin gives on the attention page here as plain messages, in
-the same grammar; handle them like his own replies. `<pr>` is
+the same grammar; handle them like his own replies. A forwarded command may name a PR by its attention id,
+such as `server#7498` or `frontend#3004`: `server#<n>` is the server PR `<n>`, any other id is already
+`<repo>#<n>`. `<pr>` is
 the number for a server PR, with or without `#`, and `<repo>#<n>` for the other repos, the same labels the
 page shows. One reply can hold several commands, for example `post 7045 f1 f3, approve 7130`.
 

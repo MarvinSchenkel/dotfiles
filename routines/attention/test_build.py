@@ -44,3 +44,16 @@ def test_office_hour_sources_are_late_only_in_office_hours() -> None:
 def test_security_is_late_after_five_days_and_github_only_when_the_sync_failed() -> None:
     ages = {"security-inbox": NOW - timedelta(days=6), "github": NOW - timedelta(days=9)}
     assert build.late_sources(_meta(ages, stale=True)) == ["security-inbox", "github"]
+
+
+def test_rows_lines_address_rows_by_short_id() -> None:
+    ask = Ask(id="music-assistant/support#1", kind="issue", src="issue-triage", title="t", url="u", action="post",
+              who_waits="alice", last_activity=NOW, blocked_by=["music-assistant/server#2"])
+    row = _row(ask)
+    row.blocked_by = ask.blocked_by
+    assert build.row_lines([row]) == [{
+        "id": "support#1", "full_id": "music-assistant/support#1", "source": "issue-triage", "kind": "issue",
+        "state": "live", "tier": "Unblock", "action": f"Post the reply on {EVIL}", "reason": "alice waits 2 d, quick answer",
+        "effort": 5, "title": "t", "url": "u", "who_waits": None, "last_activity": "2026-11-11T09:00:00+00:00",
+        "blocked_by": ["server#2"], "members": ["support#1"],
+    }]

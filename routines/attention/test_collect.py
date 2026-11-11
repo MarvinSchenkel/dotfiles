@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -33,9 +34,8 @@ def card(**over: object) -> dict:
 
 
 def issue_card(**over: object) -> dict:
-    sync = {"last_human": {"login": "bob", "at": "2026-11-09T00:00:00Z", "team": False},
-            "last_speaker": {"login": "bob", "at": "2026-11-09T00:00:00Z", "bot": False}, "pr": [], "test_ask": None}
-    return {"n": 90001, "title": "Broken", "col": "info", "ask": "reply-info", "sync": sync} | over
+    sync = {"last_human": {"login": "bob", "at": "2026-11-09T00:00:00Z", "team": False}, "pr": [], "test_ask": None}
+    return {"n": 90001, "title": "Broken", "col": "info", "ask": "reply-answer", "sync": sync} | over
 
 
 def advisory(**over: object) -> dict:
@@ -64,7 +64,14 @@ def test_pr_card_with_facts_falls_back_to_rereview_and_skips_the_backport() -> N
     ask = asks[0]
     assert (ask.action, ask.who_waits, ask.size) == ("rereview", "alice", "S")
     assert ask.detail_url == "http://127.0.0.1:8765/pr-review.html#pr-server-90002"
-    assert rank.gate(ask, NOW)  # alice pushed after his review
+
+
+def test_unflagged_pr_card_is_off_although_the_author_pushed_after_his_review() -> None:
+    state = {"last_run": "2026-11-11T09:00:00Z", "prs": [card(), card(number=1, status="attention")]}
+    waiting, flagged = collect.pr_review_asks(state, {"prs": {PR: pr_facts(), "music-assistant/server#1": pr_facts()}})
+    assert (waiting.flagged, waiting.checked_at) == (False, datetime(2026, 11, 11, 9, 0, tzinfo=UTC))
+    assert not rank.gate(waiting, NOW)
+    assert flagged.flagged and rank.gate(flagged, NOW)
 
 
 def test_pr_snooze_until_activity_ends_with_a_human_event() -> None:
@@ -80,21 +87,26 @@ def test_pr_snooze_until_activity_ends_with_a_human_event() -> None:
 
 
 def test_drafted_replies_split_by_who_spoke_last() -> None:
-    marvin_last = {"last_human": {"login": ME, "at": "2026-11-09T00:00:00Z", "team": True},
-                   "last_speaker": {"login": ME, "at": "2026-11-09T00:00:00Z", "bot": False}}
-    bot_last = issue_card()["sync"] | {"last_speaker": {"login": "github-actions", "at": "2026-11-10T00:00:00Z", "bot": True}}
+    marvin_last = issue_card()["sync"] | {"last_human": {"login": ME, "at": "2026-11-10T00:00:00Z", "team": True}}
     cards = [
         issue_card(n=1, reply="draft"),
-        issue_card(n=2, reply="draft", sync=marvin_last),
-        issue_card(n=3, reply="draft", sync=bot_last),
-        issue_card(n=4, ask=None, reply="", sync=marvin_last),
-        issue_card(n=5, ask=None, reply="", sync=bot_last),
+        issue_card(n=2, ask="reply-info", reply="draft"),
+        issue_card(n=3, ask="reply-test", reply="draft"),
+        issue_card(n=4, reply="draft", sync=marvin_last),
     ]
     rows = {row.id: row for row in rank.rank(collect.issue_asks({"cards": cards}), NOW)}
     assert rows["music-assistant/support#1"].tier is Tier.UNBLOCK
     assert rows["music-assistant/support#1"].action == "Post the reply to bob on support#1"
-    assert [a.id for a in rows["batch:drafts"].members] == ["music-assistant/support#2", "music-assistant/support#3"]
+    assert [a.id for a in rows["batch:drafts"].members] == [f"music-assistant/support#{n}" for n in (2, 3, 4)]
     assert len(rows) == 2
+
+
+def test_reporter_waits_after_the_last_human_unless_marvin_asked_him() -> None:
+    teammate_last = issue_card()["sync"] | {"last_human": {"login": "OzGav", "at": "2026-11-10T00:00:00Z", "team": True}}
+    waits = {ask: collect.issue_ask(issue_card(ask=ask)).who_waits for ask in ("input", "design", "reply-info", "reply-test")}
+    assert waits == {"input": "bob", "design": "bob", "reply-info": None, "reply-test": None}
+    assert collect.issue_ask(issue_card(ask="input")).waiting_since == datetime(2026, 11, 9, tzinfo=UTC)
+    assert collect.issue_ask(issue_card(ask="input", sync=teammate_last)).who_waits is None
 
 
 def test_drafts_on_input_and_design_asks_keep_their_action() -> None:
@@ -118,6 +130,29 @@ def test_issue_ask_fields() -> None:
 def test_unanswered_test_ask_is_the_reporters_turn() -> None:
     sync = issue_card()["sync"] | {"test_ask": {"at": "2026-11-09T00:00:00Z"}, "after_test_ask_reporter": False}
     assert collect.issue_ask(issue_card(ask="input", sync=sync)).waiting_on == "reporter"
+
+
+def test_merge_ask_becomes_the_linked_pr_row_with_the_action_from_its_facts(tmp_path: Path) -> None:
+    sync = issue_card()["sync"] | {"pr": [{"repo": "music-assistant/server", "n": 90003, "state": "OPEN"}]}
+    triage = {"cards": [issue_card(ask="merge", sync=sync)]}
+    security = {"advisories": [advisory(fix_prs=[{"repo": "server", "number": 90003}], remaining_steps=[])]}
+    (tmp_path / "issue-triage.json").write_text(json.dumps(triage))
+    (tmp_path / "security-inbox.json").write_text(json.dumps(security))
+    behind = pr_facts(review_decision="REVIEW_REQUIRED", merge_state="BEHIND", unresolved_threads=1)
+    cache = {"prs": {FIX: behind}, "review_requested": [FIX],
+             "mentions": [{"id": FIX, "is_pr": True, "title": "t", "url": "u", "author": "alice"}]}
+    asks = collect.collect(tmp_path, cache, {}, NOW)
+    assert [(a.id, a.action) for a in asks] == [("music-assistant/support#90001", "merge"), (FIX, "merge")]
+    [row] = rank.rank(asks, NOW)
+    assert row.action == "Answer alice on server#90003, it resolves support#90001"
+
+
+def test_linked_pr_without_review_card_is_an_event_rule_pr_ask() -> None:
+    linked = [{"repo": "music-assistant/server", "n": n, "state": "OPEN"} for n in (90002, 90003, 90004)]
+    state = {"cards": [issue_card(ask="input", sync=issue_card()["sync"] | {"pr": linked})]}
+    cache = {"prs": {PR: pr_facts(), FIX: pr_facts()}}
+    [ask] = collect.issue_pr_asks(state, cache, covered={PR})
+    assert (ask.id, ask.action, ask.flagged) == (FIX, "review", None)
 
 
 # security adapter

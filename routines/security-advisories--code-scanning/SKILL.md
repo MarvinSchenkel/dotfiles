@@ -206,7 +206,8 @@ last step of every handled reply is the attention build with `--source security-
 in the answer.
 
 The attention thread forwards Marvin's commands for this inbox here as plain messages, so this thread
-stays the only writer of its state. Handle a forwarded command like any reply below.
+stays the only writer of its state. Handle a forwarded command like any reply below. A forwarded command
+names an advisory by its attention id, the first block after `GHSA-`, which is the short id above.
 
 - `close <ghsa> [message]`: post the card's draft close message, or the given one, in a fenced block so
   Marvin can paste it on the advisory, then

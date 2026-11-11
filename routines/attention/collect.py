@@ -25,6 +25,7 @@ SOURCES = ("pr-review", "issue-triage", "security-inbox", "lab-deep", "triage-ma
 # Derived rows have no routine; commands on them go to the pr-review thread.
 OWNER = {"github": "pr-review", "release": "pr-review"}
 ISSUE_ACTIONS = {"reply-test": "reply", "reply-info": "reply", "reply-answer": "reply"}
+ASKS_REPORTER = frozenset({"reply-info", "reply-test"})  # issue asks where Marvin asks the reporter something
 PUBLISH_STEPS = rank.CHORE_STEPS | {"reply"}
 BACKPORT_STEPS = frozenset({"backport_decision", "review_backport"})
 LOCAL_STAMP = re.compile(r"(\d{4}-\d\d-\d\d \d\d:\d\d) ([A-Z]+)")
@@ -34,15 +35,16 @@ def collect(state_dir: Path, cache: dict, attention: dict, now: datetime) -> lis
     """Every ask of every source, with snoozes, due dates, blockers and pending commands applied."""
     states = load_states(state_dir)
     backport = (cache.get("release") or {}).get("backport_pr")
-    asks = pr_review_asks(states["pr-review"], cache) + issue_asks(states["issue-triage"])
     carded = _card_ids(states) | {backport}
+    skipped = {f"{ORG}/{ref}" for ref in states["pr-review"].get("skip") or {}}
+    asks = pr_review_asks(states["pr-review"], cache) + issue_asks(states["issue-triage"])
+    asks += issue_pr_asks(states["issue-triage"], cache, carded | skipped)
     asks += security_asks(states["security-inbox"], cache, carded)
     asks += lab_asks(states["lab-deep"]) + nightly_asks(states["triage-ma-nightly"])
     asks += release_asks(cache, states["security-inbox"])
-    skipped = {f"{ORG}/{ref}" for ref in states["pr-review"].get("skip") or {}}
-    asks += github_asks(cache, carded | skipped | {ask.id for ask in asks})
+    asks += github_asks(cache, carded | skipped)
     runs = {source: last_run(state) for source, state in states.items()}
-    return apply_overrides(asks, attention, runs)
+    return apply_overrides(_first_per_id(asks), attention, runs)
 
 
 def load_states(state_dir: Path) -> dict[str, dict]:
@@ -111,17 +113,21 @@ def apply_overrides(asks: list[Ask], attention: dict, runs: dict[str, datetime |
 
 
 def pr_review_asks(state: dict, cache: dict) -> list[Ask]:
-    """Open review cards: all of them with GitHub facts, else only those the routine marked."""
+    """Open review cards: all of them with GitHub facts, else only those the routine marked.
+
+    Each ask carries whether the routine flagged the card and when the routine last ran.
+    """
     backport = (cache.get("release") or {}).get("backport_pr")
+    checked_at = last_run(state)
     asks = []
     for card in state.get("prs", []):
         if card.get("state") != "open":
             continue
         id = f"{ORG}/{card['repo']}#{card['number']}"
         facts = cache.get("prs", {}).get(id)
-        marked = card.get("status") == "attention" or card.get("needs_reply")
+        marked = card.get("status") == "attention" or bool(card.get("needs_reply"))
         if id != backport and (facts or marked):
-            asks.append(pr_ask(id, facts, card))
+            asks.append(replace(pr_ask(id, facts, card), flagged=marked, checked_at=checked_at))
     return asks
 
 
@@ -161,30 +167,45 @@ def issue_ask(card: dict) -> Ask:
     repo = card.get("repo") or SUPPORT
     sync = card.get("sync") or {}
     last = sync.get("last_human") or {}
-    speaker = sync.get("last_speaker") or {}
-    # When a human spoke last, last_human is that same comment and carries the team flag.
-    reporter_spoke = speaker.get("login") not in (None, ME) and not speaker.get("bot") and not last.get("team")
     draft = card.get("reply") or None
     ask = card.get("ask")
+    # An info or test ask is Marvin's question to the reporter, so nobody waits on him there.
+    reporter_spoke = last.get("login") not in (None, ME) and not last.get("team") and ask not in ASKS_REPORTER
     action = "post" if draft and (not ask or ask in ISSUE_ACTIONS) else ISSUE_ACTIONS.get(ask, ask)
     stable = (card.get("regression") or {}).get("on") == "stable"
     affected = (sync.get("impact") or {}).get("affected", 0)
     kind = "discussion" if card.get("discussion") else "issue"
-    related = [{"id": f"{p['repo']}#{p['n']}", "rel": "related", "src": "sync"}
-               for p in sync.get("pr") or [] if p.get("state") == "OPEN"]
+    # A merge ask means merging its linked PR, so the PR joins the row and its facts set the action.
+    rel = "fixes" if ask == "merge" else "related"
+    related = [{"id": id, "rel": rel, "src": "sync"} for id in _open_prs(card)]
     return Ask(
         id=f"{repo}#{card['n']}", kind=kind, src="issue-triage", title=card.get("title", ""),
         url=f"https://github.com/{repo}/{'discussions' if kind == 'discussion' else 'issues'}/{card['n']}",
         action=action, effort=card.get("effort"),
         detail_url=f"{REPORTS}/issue-triage.html?q={card['n']}#{_board_anchor(repo, card['n'])}",
-        who_waits=speaker["login"] if reporter_spoke else None,
-        waiting_since=_time(speaker.get("at")) if reporter_spoke else None,
-        last_speaker=_speaker_login(speaker), last_activity=_time(last.get("at")),
+        who_waits=last["login"] if reporter_spoke else None,
+        waiting_since=_time(last.get("at")) if reporter_spoke else None,
+        last_speaker=last.get("login"), last_activity=_time(last.get("at")),
         waiting_on=card.get("waiting_on") or _test_pending(sync, draft, action),
         impact_high=stable or affected >= rank.HIGH_AFFECTED, regression_stable=stable, draft_reply=draft,
         low_impact=kind == "discussion" or card.get("col") == "user" or action == "nudge",
         links=list(card.get("links") or []) + related,
     )
+
+
+def issue_pr_asks(state: dict, cache: dict, covered: set[str]) -> list[Ask]:
+    """A PR ask for each cached open PR linked from a triage card that no review card covers.
+
+    A PR linked from a `merge` ask asks for the merge; the rest take their action from the facts.
+    """
+    prs = cache.get("prs", {})
+    asks = []
+    for card in state.get("cards", []):
+        for id in _open_prs(card):
+            if id in prs and id not in covered:
+                ask = pr_ask(id, prs[id], src="github")
+                asks.append(replace(ask, action="merge") if card.get("ask") == "merge" else ask)
+    return asks
 
 
 def security_asks(state: dict, cache: dict, carded: set[str]) -> list[Ask]:
@@ -313,6 +334,19 @@ def _card_ids(states: dict[str, dict]) -> set[str]:
     return prs | issues
 
 
+def _first_per_id(asks: list[Ask]) -> list[Ask]:
+    """Asks with only the first one of each id; adapters overlap on linked, fix and mentioned PRs."""
+    first: dict[str, Ask] = {}
+    for ask in asks:
+        first.setdefault(ask.id, ask)
+    return list(first.values())
+
+
+def _open_prs(card: dict) -> list[str]:
+    """Ids of the open PRs sync.py linked to a triage card."""
+    return [f"{p['repo']}#{p['n']}" for p in (card.get("sync") or {}).get("pr") or [] if p.get("state") == "OPEN"]
+
+
 def _pr_facts(facts: dict, needs: dict) -> PRFacts:
     """rank.PRFacts from a cache entry and the card's needs_reply."""
     my_said = _time((facts.get("my_said") or {}).get("at"))
@@ -354,12 +388,6 @@ def _unposted_draft(preread: dict | None) -> str | None:
     if not preread or preread.get("posted"):
         return None
     return preread.get("draft_reply") or None
-
-
-def _speaker_login(speaker: dict) -> str | None:
-    """Login of the last speaker, with GitHub's `[bot]` suffix when sync.py saw a bot."""
-    login = speaker.get("login")
-    return f"{login}[bot]" if login and speaker.get("bot") and not login.endswith("[bot]") else login
 
 
 def _needs_backport(adv: dict, pending: set[str]) -> bool:

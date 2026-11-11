@@ -344,18 +344,10 @@ def _event(actor: dict | None, at: str, kind: str, body: str | None = None) -> d
 
 
 def _commit_actor(commit: dict, pr_author: dict | None) -> dict | None:
-    """Who pushed the head commit: committer, then author, then the PR author; None for a bot commit."""
-    # A rebase or cherry-pick keeps the original author, the committer is who pushed it.
-    # Web UI commits ("Update branch", suggestions) have GitHub as committer, so the author did it.
-    for who in (commit.get("committer"), commit.get("author")):
-        who = who or {}
-        if who.get("name") == "GitHub":
-            continue
-        if who.get("user"):
-            return who["user"]
-        if (who.get("name") or "").endswith("[bot]"):
-            return None
-    return pr_author
+    """Whose move the head commit is: Marvin's when he committed or authored it, else the PR author's."""
+    # Contributors push through other accounts (a `claude` login, a bot syncing the branch).
+    logins = {_login((who or {}).get("user")) for who in (commit.get("committer"), commit.get("author"))}
+    return {"login": ME, "__typename": "User"} if ME in logins else pr_author
 
 
 def _is_bot(actor: dict | None) -> bool:

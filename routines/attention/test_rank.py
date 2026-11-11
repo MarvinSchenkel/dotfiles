@@ -104,19 +104,48 @@ def test_deferred_advisory_without_deadline_is_off() -> None:
     assert not rank.gate(advisory(action="decide_fix", ssvc_outcome=rank.DEFER), NOW)
 
 
-def test_other_pr_is_off_after_my_review_until_the_author_acts() -> None:
+def test_uncarded_pr_is_off_after_my_review_until_the_author_acts() -> None:
     assert not rank.gate(pull(pr=facts(my_said_at=ago(1), author_last_at=ago(2))), NOW)
     assert rank.gate(pull(pr=facts(my_said_at=ago(2), author_last_at=ago(1))), NOW)
 
 
-def test_my_push_to_a_contributor_pr_is_no_answer() -> None:
+def test_my_push_to_an_uncarded_contributor_pr_is_no_answer() -> None:
     pr = facts(my_last_at=ago(1), other_last_at=ago(2), my_said_at=ago(3), author_last_at=ago(2))
     assert rank.gate(pull(pr=pr), NOW)
 
 
-def test_teammate_comment_on_a_contributor_pr_is_not_the_author_acting() -> None:
+def test_teammate_comment_on_an_uncarded_contributor_pr_is_not_the_author_acting() -> None:
     pr = facts(my_last_at=ago(2), other_last_at=ago(1), my_said_at=ago(2), author_last_at=ago(3))
     assert not rank.gate(pull(pr=pr), NOW)
+
+
+def test_flagged_card_is_my_turn_whatever_the_events_say() -> None:
+    pr = facts(draft=True, my_said_at=ago(3), author_last_at=ago(4))
+    assert rank.gate(pull(pr=pr, flagged=True, checked_at=ago(1)), NOW)
+
+
+def test_unflagged_card_is_off_whatever_the_events_say() -> None:
+    pr = facts(my_said_at=ago(3), author_last_at=ago(1), question_for_me=True)
+    assert not rank.gate(pull(pr=pr, flagged=False, checked_at=ago(0.5)), NOW)
+
+
+def test_my_reply_after_the_routine_looked_answers_the_flag_until_the_author_moves() -> None:
+    def turn(author_days: float) -> bool:
+        pr = facts(my_said_at=ago(1), author_last_at=ago(author_days))
+        return rank.gate(pull(pr=pr, flagged=True, checked_at=ago(2)), NOW)
+
+    assert not turn(3)
+    assert turn(0.5)
+
+
+def test_my_reply_the_routine_already_saw_keeps_the_flag() -> None:
+    pr = facts(my_said_at=ago(2), author_last_at=ago(3))
+    assert rank.gate(pull(pr=pr, flagged=True, checked_at=ago(1)), NOW)
+
+
+def test_own_carded_pr_keeps_the_event_rule() -> None:
+    pr = facts(author=rank.ME, review_decision="APPROVED", my_last_at=ago(1), other_last_at=None)
+    assert rank.gate(pull(pr=pr, flagged=False, checked_at=ago(0.5)), NOW)
 
 
 def test_own_draft_is_off_until_ready_to_flip() -> None:
@@ -159,6 +188,16 @@ def test_asks_linked_to_the_same_merged_pr_are_one_row() -> None:
     ]
     rows = rank.rank(asks, NOW)
     assert sorted(len(row.members) for row in rows) == [2, 2]
+
+
+def test_advisories_sharing_a_merged_fix_act_on_the_larger_step() -> None:
+    merged = "music-assistant/server#90030"
+    asks = [
+        advisory(action="credit", effort=0, links=[link(merged, "advisory_fix")]),
+        advisory("GHSA-test-0002", effort=15, links=[link(merged, "advisory_fix")]),
+    ]
+    [row] = rank.rank(asks, NOW)
+    assert (row.id, row.effort) == ("GHSA-test-0002", 15)
 
 
 def test_related_link_shows_as_see_also_without_merging() -> None:
@@ -241,6 +280,15 @@ def test_picks_are_keep_warm_and_the_release_merge_lands_after_them() -> None:
     picks, merge = rows["release:2.10.99/picks"], rows["release:2.10.99"]
     assert (picks.tier, picks.state, picks.action) == (Tier.KEEP_WARM, "live", "pick it")
     assert (merge.tier, merge.state, merge.action) == (Tier.LAND, "blocked", "merge it")
+
+
+def test_release_merge_reason_makes_no_claim_about_ci() -> None:
+    merge = rank.Ask(id="release:2.10.99", kind="release", src="release", title="t", url="u", action="merge")
+    assert rank.rank([merge], NOW)[0].reason == "release PR"
+
+
+def test_log_finding_defaults_to_five_minutes() -> None:
+    assert rank.effort_of(chore("log:abc", "log_finding")) == 5
 
 
 def test_lab_and_log_rows_read_their_title() -> None:
