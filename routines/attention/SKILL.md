@@ -14,6 +14,18 @@ to that routine's thread.
 Every question to Marvin is an `AskUserQuestion` popup: one question per popup, recommended option
 first with "(Recommended)" after its label. Never ask a question in running text.
 
+## Page
+
+Marvin works from this thread with the page next to it.
+
+- Keep the page open in this thread's side panel. At the start of every turn call `t3_preview_list`;
+  when no tab's URL starts with `http://127.0.0.1:8765/attention.html`, `preview_open` that URL. Never
+  navigate or reload an open tab: the page reloads itself after each build, and a reload would drop a
+  draft Marvin is editing.
+- End every answer with the link on its own line:
+  `[Open the attention page](http://127.0.0.1:8765/attention.html)`. This also holds for the one-line
+  answers below and for the sweep's closing line.
+
 ## Rows
 
 List the current rows, one JSON line each. This reads every state file and the GitHub cache and writes
