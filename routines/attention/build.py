@@ -31,6 +31,13 @@ OFFICE_HOURS = (9, 18)  # before 09:00 the first runs of the day are still due
 POST_ENDPOINTS = frozenset({"issue-triage", "pr-review"})  # sources whose drafts report_server.py can post
 DRAFT_ROWS = 12
 DETAIL_NAMES = {"pr-review": "matrix", "issue-triage": "board", "security-inbox": "inbox"}
+TIER_NOTES = {
+    Tier.ACT: "Security steps, deadlines and regressions on stable",
+    Tier.UNBLOCK: "Someone waits on a short answer",
+    Tier.LAND: "Ready for your approval or merge",
+    Tier.DECIDE: "Design calls, reviews and input",
+    Tier.KEEP_WARM: "Chores and drafted replies",
+}
 # Copy chips per source, in the owning routine's reply grammar; an action entry replaces the source's list.
 SOURCE_COMMANDS = {
     "pr-review": ("show {r}", "review {r}", "chip {r}"),
@@ -160,19 +167,20 @@ def render(rows: list[Row], meta: dict) -> str:
         by_section[_section(row)].append(row)
     page = _Page(rows, meta["now"].astimezone(collect.LOCAL).date())
     late = late_sources(meta)
-    later = by_section["Later"]
+    today, later = by_section["Today"], by_section["Later"]
     body = [
-        _header(meta, len(by_section["Today"]), late),
-        f'<section class="today" aria-label="Today">{page.groups(by_section["Today"]) or EMPTY_TODAY}</section>',
+        _header(meta, today, late),
+        f'<section class="today" aria-label="Today">{page.groups(today, lead=True) or EMPTY_TODAY}</section>',
     ]
     if later:
         body.append(
-            f'<section class="later"><h2>Later <span>below the {meta["budget"]} min line · {_count(later)}</span></h2>'
-            f"{page.groups(later)}</section>"
+            f'<section class="later"><div class="cut" role="separator">{meta["budget"]} min line</div>'
+            f'<h2>Later <span class="n">{_count(later)}</span></h2>{page.groups(later)}</section>'
         )
     folds = [
-        f'<details class="fold" id="fold-{name.lower()}"><summary><h2>{name} <span>{len(by_section[name])}</span>'
-        f"</h2></summary>{page.groups(by_section[name])}</details>"
+        f'<details class="fold" id="fold-{name.lower()}"><summary><h2>{name}</h2>'
+        f'<span class="n">{len(by_section[name])}</span><span class="chev" aria-hidden="true"></span></summary>'
+        f"{page.groups(by_section[name])}</details>"
         for name in ("Blocked", "Snoozed", "Parked") if by_section[name]
     ]
     if folds:
@@ -204,6 +212,7 @@ class _Page:
 
     def __init__(self, rows: list[Row], today: date) -> None:
         self.today = today
+        self.number = {row.id: n for n, row in enumerate((r for r in rows if r.state == "live"), 1)}
         self.anchor = {ask.id: _slug(row.id) for row in rows for ask in row.members}
         self.anchor.update({row.id: _slug(row.id) for row in rows})
         self.unblocks: dict[str, list[str]] = {}
@@ -213,12 +222,16 @@ class _Page:
                 if row.id not in ids:
                     ids.append(row.id)
 
-    def groups(self, rows: list[Row]) -> str:
-        """Rows under a small tier heading wherever the tier changes."""
+    def groups(self, rows: list[Row], lead: bool = False) -> str:
+        """Rows under a tier heading wherever the tier changes; the lead section's headings say what the tier is."""
         out = []
         for tier, group in _runs(rows):
+            slug = tier.name.lower()
+            anchor = f' id="t-{slug}"' if lead else ""
+            note = f'<p class="note">{TIER_NOTES[tier]}</p>' if lead else ""
             out.append(
-                f'<div class="grp"><h3>{tier.label} <span>{_count(group)}</span></h3>'
+                f'<div class="grp tier-{slug}"{anchor}><div class="gh"><h3>{tier.label}</h3>'
+                f'<span class="n">{_count(group)}</span>{note}</div>'
                 f'<ol class="rows">{"".join(f"<li>{self.row(row)}</li>" for row in group)}</ol></div>'
             )
         return "".join(out)
@@ -226,25 +239,32 @@ class _Page:
     def row(self, row: Row) -> str:
         """One row: the summary line and its folded detail."""
         act = row.members[0]
+        chips = f'<span class="chip sent">sent: {escape(act.pending)}</span>' if act.pending else ""
+        chips += self._due_chip(row)
         bits = []
-        if act.pending:
-            bits.append(f'<span class="sent">sent: {escape(act.pending)}</span>')
         if row.who_waits and row.who_waits not in row.reason:
             bits.append(escape(f"{row.who_waits} waits"))
-        if row.due and row.rule != "due":
-            bits.append(f'<span class="due">due {row.due:%m-%d}</span>')
-        bits.append(f'<span class="due">{escape(row.reason)}</span>' if row.rule == "due" else escape(row.reason))
-        if row.rule != "batch":
+        if row.rule != "due":
+            bits.append(escape(row.reason))
+        if row.rule != "batch" and act.title != row.action:
             bits.append(f'<span class="t">{escape(act.title)}</span>')
-        due_cls = " overdue" if row.due and row.due <= self.today else ""
         est = '<span class="est"> est.</span>' if act.effort is None else ""
         body = self._batch_body(row) if row.rule == "batch" else self._body(row)
         return (
-            f'<details class="row tier-{row.tier.name.lower()}{due_cls}" id="r-{_slug(row.id)}" data-id="{escape(row.id)}">'
-            f'<summary><span class="dot" aria-hidden="true"></span><span class="main">'
-            f'<span class="act">{escape(row.action)}</span><span class="meta">{" · ".join(bits)}</span></span>'
-            f'<span class="eff">{row.effort} min{est}</span></summary><div class="body">{body}</div></details>'
+            f'<details class="row" id="r-{_slug(row.id)}" data-id="{escape(row.id)}">'
+            f'<summary><span class="num" aria-hidden="true">{self.number.get(row.id, "")}</span><span class="main">'
+            f'<span class="act">{escape(row.action)}</span><span class="meta">{chips}{" · ".join(bits)}</span></span>'
+            f'<span class="eff">{row.effort} min{est}</span><span class="chev" aria-hidden="true"></span></summary>'
+            f'<div class="body">{body}</div></details>'
         )
+
+    def _due_chip(self, row: Row) -> str:
+        """The row's due date as a chip that says how far off it is."""
+        if not row.due:
+            return ""
+        days = (row.due - self.today).days
+        text = f"overdue {-days} d" if days < 0 else "due today" if days == 0 else f"due {row.due:%m-%d}"
+        return f'<span class="chip due{" late" * (days <= 0)}">{text}</span>'
 
     def _body(self, row: Row) -> str:
         """Detail of a work item: members, related rows, drafts and commands."""
@@ -309,17 +329,32 @@ def _section(row: Row) -> str:
     return row.state.capitalize()
 
 
-def _header(meta: dict, today: int, late: list[str]) -> str:
-    """Date, budget line and, when a source is late, one line naming it."""
+def _header(meta: dict, today: list[Row], late: list[str]) -> str:
+    """Title, date, the day's budget as a bar split by tier and, when a source is late, one line naming it."""
     local = meta["now"].astimezone(collect.LOCAL)
+    used, budget = meta["budget_used"], meta["budget"]
+    segments, legend = [], []
+    for tier, group in _runs(today):
+        slug, minutes = tier.name.lower(), sum(row.effort for row in group)
+        segments.append(f'<i class="tier-{slug}" style="flex:{minutes}"></i>')
+        legend.append(
+            f'<a class="tier-{slug}" href="#t-{slug}"><b>{tier.label}</b> <span>{len(group)} · {minutes} min</span></a>'
+        )
+    if used < budget:
+        segments.append(f'<i style="flex:{budget - used}"></i>')
+        legend.append(f'<span class="free">{budget - used} min free</span>')
     alert = ""
     if late:
         names = ", ".join("GitHub sync failed" if src == "github" else f"{src} {_age(meta['now'], meta['ages'][src])}"
                           for src in late)
         alert = f'<p class="alert">Old data: {escape(names)}</p>'
+    rows = f"{len(today)} row{'s' * (len(today) != 1)} today"
     return (
-        f'<header><h1>Attention</h1><p class="date">{local:%A} {local.day} {local:%B} · built {local:%H:%M}</p>'
-        f'<p class="budget"><b>{today} rows</b>, {meta["budget_used"]} of {meta["budget"]} min</p>{alert}</header>'
+        f'<header><div class="top"><h1>Attention</h1>'
+        f'<p class="date">{local:%A} {local.day} {local:%B} · built {local:%H:%M}</p></div>'
+        f'<div class="budget"><p class="bline"><b>{rows}</b><span>{used} of {budget} min</span></p>'
+        f'<div class="meter" role="img" aria-label="{used} of {budget} minutes planned">{"".join(segments)}</div>'
+        f'<nav class="legend" aria-label="Tiers">{"".join(legend)}</nav></div>{alert}</header>'
     )
 
 
@@ -383,7 +418,8 @@ def _draft(ask: Ask) -> str:
     label = escape(f"Draft reply on {short_id(ask.id)}")
     return (
         # The parser drops the newline right after <textarea>, so a draft's own leading newline survives.
-        f'<div class="draft"><textarea id="d-{_slug(ask.id)}" rows="{rows}" aria-label="{label}">\n'
+        f'<div class="draft"><span class="lbl">Draft reply</span>'
+        f'<textarea id="d-{_slug(ask.id)}" rows="{rows}" aria-label="{label}">\n'
         f"{escape(text, quote=False)}</textarea><div class=\"bar\">"
         f'<button class="btn post" type="button" data-post data-src="{ask.src}" data-repo="{escape(repo)}" '
         f'data-n="{n}" data-hash="{draft_hash(text)}">Post</button>'
@@ -401,7 +437,7 @@ def _commands(asks: list[Ask], ref: str, state: str) -> str:
         f'<button class="cmd" type="button" data-cmd="{escape(c)}" title="Copy for the attention thread">{escape(c)}</button>'
         for c in (*routine, *(cmd.format(r=ref) for cmd in own))
     )
-    return f'<div class="cmds">{chips}</div>'
+    return f'<div class="cmds"><span class="lbl">Copy a command</span>{chips}</div>'
 
 
 def _gh_url(id: str) -> str | None:
@@ -432,97 +468,159 @@ EMPTY_TODAY = '<p class="empty">Nothing above the line. Work from Later, or take
 
 THEME = """
 :root { --foreground: #18201d; --muted-foreground: #5b6863; --border: #d9e0dc; --card: #ffffff;
-  --background: #f4f6f5; --accent: #eaefec; --destructive: #b03c2a; --warning: #a66a12; --info: #2c5e8c; --ask: #c2410c;
-  --radius: 6px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif; --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --background: #f4f6f5; --accent: #eaefec; --destructive: #b03c2a; --destructive-surface: #f8e4df; --warning: #a66a12;
+  --info: #2c5e8c; --ask: #c2410c; --land: #3f5a50; --decide: #84948d; --warm: #b7c2bd; --track: #e2e8e5;
+  --radius: 8px; --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif; --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   color-scheme: light; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --foreground: #e4eae7; --muted-foreground: #95a39d;
-  --border: #2c3632; --card: #1a211e; --background: #121715; --accent: #222b27; --destructive: #ec7e6b; --warning: #e2a64a;
-  --info: #7fb0de; --ask: #fb923c; color-scheme: dark; } }
+  --border: #2c3632; --card: #1a211e; --background: #121715; --accent: #1f2824; --destructive: #ec7e6b;
+  --destructive-surface: #3b211c; --warning: #e2a64a; --info: #7fb0de; --ask: #fb923c; --land: #a3bdb2; --decide: #6b7a74;
+  --warm: #46524d; --track: #232c28; color-scheme: dark; } }
 :root[data-theme="dark"] { --foreground: #e4eae7; --muted-foreground: #95a39d; --border: #2c3632; --card: #1a211e;
-  --background: #121715; --accent: #222b27; --destructive: #ec7e6b; --warning: #e2a64a; --info: #7fb0de; --ask: #fb923c;
+  --background: #121715; --accent: #1f2824; --destructive: #ec7e6b; --destructive-surface: #3b211c; --warning: #e2a64a;
+  --info: #7fb0de; --ask: #fb923c; --land: #a3bdb2; --decide: #6b7a74; --warm: #46524d; --track: #232c28;
   color-scheme: dark; }
 """
 
-# A calm reading list: one column, hairlines between rows, colour and weight only on Today rows.
+# One ranked column. Tier headings carry the structure, the budget bar is the summary, and only an
+# open row becomes a card. Colour marks the two urgent tiers and nothing below the cut line.
 CSS = THEME + """
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--background); color: var(--foreground); font: 14px/1.5 var(--font-sans);
-  padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-.wrap { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+  padding-block: 36px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
 a { color: var(--info); text-decoration: none; } a:hover { text-decoration: underline; }
-:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; border-radius: 3px; }
-header { display: flex; flex-direction: column; gap: 2px; }
-h1 { font-size: 22px; font-weight: 650; letter-spacing: -.01em; margin: 0 0 2px; }
-header p { margin: 0; } .date { color: var(--muted-foreground); }
-.budget { font-size: 15px; font-variant-numeric: tabular-nums; } .budget b { font-weight: 600; }
-.alert { color: var(--warning); font-weight: 600; font-size: 13px; }
-h2 { font-size: 13px; font-weight: 600; margin: 0; display: flex; gap: 8px; align-items: baseline; }
-h2 span, h3 span { font-weight: 400; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
-h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted-foreground);
-  margin: 0; padding: 14px 0 4px 26px; display: flex; gap: 8px; align-items: baseline; }
-h3 span { text-transform: none; letter-spacing: 0; }
-.grp:first-child h3 { padding-top: 0; }
+:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; border-radius: 4px; }
 ol, ul { list-style: none; margin: 0; padding: 0; }
+p, h1, h2, h3 { margin: 0; }
+.n { font-size: 13px; font-weight: 400; color: var(--muted-foreground); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tier-act { --tier: var(--destructive); } .tier-unblock { --tier: var(--ask); } .tier-land { --tier: var(--land); }
+.tier-decide { --tier: var(--decide); } .tier-keep_warm { --tier: var(--warm); }
+
+header { display: flex; flex-direction: column; gap: 18px; }
+.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 16px; }
+h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+.date { color: var(--muted-foreground); font-size: 13px; }
+.budget { display: flex; flex-direction: column; gap: 9px; }
+.bline { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-variant-numeric: tabular-nums; }
+.bline b { font-size: 15px; font-weight: 600; } .bline span { font-size: 13px; color: var(--muted-foreground); }
+.meter { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; }
+.meter i { background: var(--tier, var(--track)); min-width: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 13px; }
+.legend a { color: var(--foreground); display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.legend a::before { content: ""; width: 9px; height: 9px; border-radius: 3px; background: var(--tier); }
+.legend b { font-weight: 600; }
+.legend span { color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.legend .free { margin-left: auto; }
+.alert { color: var(--warning); font-weight: 600; font-size: 13px; }
+
+.today { display: flex; flex-direction: column; gap: 34px; }
+.grp { scroll-margin-top: 16px; }
+.gh { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 0 12px; padding: 0 12px 10px; }
+.gh h3 { font-size: 19px; font-weight: 650; letter-spacing: -.01em; line-height: 1.3; display: flex; align-items: center; gap: 10px; }
+.gh h3::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 3px; background: var(--tier); }
+.note { grid-column: 1 / -1; padding-left: 20px; font-size: 13px; color: var(--muted-foreground); }
+ol.rows { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 ol.rows > li + li { border-top: 1px solid var(--border); }
-.row > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 12px minmax(0, 1fr) auto;
-  gap: 2px 14px; align-items: baseline; padding: 8px 6px; border-radius: var(--radius); }
+ol.rows > li:has(> .row[open]), ol.rows > li:has(> .row[open]) + li { border-top-color: transparent; }
+
+.row { border: 1px solid transparent; border-radius: var(--radius); }
+.row > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto 10px;
+  gap: 0 12px; align-items: baseline; padding: 11px 12px; border-radius: var(--radius); }
 .row > summary::-webkit-details-marker { display: none; }
-.row > summary:hover, .row[open] > summary { background: var(--accent); }
-.main { display: flex; flex-direction: column; min-width: 0; }
-.act { font-size: 14.5px; overflow-wrap: anywhere; }
-.meta { font-size: 12.5px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.meta .sent { font-style: italic; }
-.eff { font-size: 12.5px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.row:not([open]) > summary:hover { background: var(--accent); }
+.num { font: 12px var(--font-mono); color: var(--muted-foreground); text-align: right; font-variant-numeric: tabular-nums; }
+.main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.act { font-size: 15px; line-height: 1.35; overflow-wrap: anywhere; }
+.meta { font-size: 13px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip { display: inline-block; font-size: 11.5px; font-weight: 600; line-height: 18px; padding: 0 8px; margin-right: 8px;
+  border-radius: 999px; border: 1px solid var(--border); color: var(--muted-foreground); vertical-align: 1px;
+  font-variant-numeric: tabular-nums; }
+.chip.sent { font-family: var(--font-mono); font-weight: 400; background: var(--accent); border-color: transparent; }
+.eff { font-size: 13px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .est { font-size: 11px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; align-self: start; margin-top: 8px; }
+.chev { width: 7px; height: 7px; border: solid var(--muted-foreground); border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg);
+  align-self: center; opacity: .55; }
+details[open] > summary > .chev { transform: rotate(45deg); }
 .today .act { font-weight: 600; }
 .today .eff { color: var(--foreground); }
-.today .dot { background: var(--ask); }
-.today .tier-act .dot { background: var(--destructive); }
-.today .overdue .due { color: var(--destructive); font-weight: 600; }
-.body { padding: 6px 6px 16px 32px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
-.items, .members { display: flex; flex-direction: column; gap: 4px; }
-.members { gap: 14px; }
-.member { display: flex; flex-direction: column; gap: 8px; }
+.today .chip.due { color: var(--foreground); }
+.today .chip.late { background: var(--destructive-surface); border-color: transparent; color: var(--destructive); }
+
+.row[open] { background: var(--card); border-color: var(--border); margin: 8px 0; box-shadow: 0 1px 2px rgb(0 0 0 / .05); }
+.row[open] > summary { border-bottom: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; }
+.row[open] .meta { white-space: normal; }
+.body { padding: 14px 16px 16px 44px; display: flex; flex-direction: column; gap: 14px; font-size: 13px; }
+.items, .members { display: flex; flex-direction: column; gap: 6px; }
+.members { gap: 18px; }
+.member { display: flex; flex-direction: column; gap: 10px; }
+.member + .member { border-top: 1px solid var(--border); padding-top: 16px; }
 .item { overflow-wrap: anywhere; padding-left: 1.5em; text-indent: -1.5em; }
 .item .id { font: 12px var(--font-mono); white-space: nowrap; margin-right: 6px; }
 .m { font-size: 12px; color: var(--muted-foreground); white-space: nowrap; margin-left: 8px; }
 a.m { color: var(--info); }
-.refs { margin: 0; display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; font: 12px var(--font-mono); }
+.refs { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; font: 12px var(--font-mono); }
 .lbl { font: 600 11px var(--font-sans); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); }
 .draft { display: flex; flex-direction: column; gap: 6px; }
-textarea { display: block; width: 100%; resize: vertical; font: 12.5px/1.5 var(--font-mono); padding: 8px 10px;
-  color: var(--foreground); background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+textarea { display: block; width: 100%; resize: vertical; font: 12.5px/1.55 var(--font-mono); padding: 10px 12px;
+  color: var(--foreground); background: var(--background); border: 1px solid var(--border); border-radius: 6px; }
 textarea[readonly] { background: transparent; }
 .bar { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12.5px; color: var(--muted-foreground); }
-.btn { font: 500 12px var(--font-sans); padding: 4px 12px; border-radius: var(--radius); border: 1px solid var(--foreground);
+.btn { font: 600 12.5px var(--font-sans); padding: 5px 14px; border-radius: 6px; border: 1px solid var(--foreground);
   background: var(--foreground); color: var(--background); cursor: pointer; }
 .btn:disabled { cursor: progress; }
 a.btn { background: transparent; color: var(--foreground); border-color: var(--border); text-decoration: none; }
 .perr { color: var(--destructive); }
-.cmds { display: flex; flex-wrap: wrap; gap: 6px; }
-.cmd { font: 11.5px var(--font-mono); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border);
+.cmds { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cmds .lbl { margin-right: 4px; }
+.cmd { font: 11.5px var(--font-mono); padding: 3px 9px; border-radius: 5px; border: 1px solid var(--border);
   background: transparent; color: var(--muted-foreground); cursor: copy; }
 .cmd:hover { color: var(--foreground); border-color: var(--muted-foreground); }
-.later { display: flex; flex-direction: column; gap: 10px; }
-.later > h2 { border-top: 1px dashed var(--muted-foreground); padding-top: 12px; }
-.folds { display: flex; flex-direction: column; gap: 2px; }
-.fold > summary { list-style: none; cursor: pointer; padding: 4px 0; }
+
+.later { display: flex; flex-direction: column; gap: 14px; }
+.cut { display: flex; align-items: center; gap: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--muted-foreground); }
+.cut::before, .cut::after { content: ""; flex: 1; border-top: 1px dashed var(--muted-foreground); opacity: .5; }
+.later > h2 { font-size: 19px; font-weight: 650; letter-spacing: -.01em; padding: 0 12px; display: flex; gap: 12px;
+  justify-content: space-between; align-items: baseline; }
+.later .grp + .grp, .fold .grp + .grp { margin-top: 18px; }
+.later .gh, .fold .gh { padding-bottom: 6px; }
+.later .gh h3, .fold .gh h3 { font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--muted-foreground); }
+.later .gh h3::before, .fold .gh h3::before { display: none; }
+
+.folds { display: flex; flex-direction: column; border-bottom: 1px solid var(--border); }
+.fold { border-top: 1px solid var(--border); }
+.fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 13px 12px; }
 .fold > summary::-webkit-details-marker { display: none; }
-.fold > summary h2::before { content: "\\25B8"; font-size: 10px; color: var(--muted-foreground); }
-.fold[open] > summary h2::before { content: "\\25BE"; }
-.fold > .grp { margin-top: 6px; }
-.empty { margin: 0; color: var(--muted-foreground); }
-footer { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--border); padding-top: 14px; }
-.src { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12.5px; color: var(--muted-foreground); }
+.fold > summary:hover { background: var(--accent); }
+.fold h2 { font-size: 15px; font-weight: 600; }
+.fold > summary .chev { margin-left: auto; }
+.fold[open] { padding-bottom: 18px; }
+.fold > .grp:first-of-type { margin-top: 8px; }
+.empty { color: var(--muted-foreground); }
+
+footer { display: flex; flex-direction: column; gap: 8px; }
+footer h2 { font: 600 11px var(--font-sans); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); }
+.src { display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 13px; color: var(--muted-foreground); }
 .src span { font-variant-numeric: tabular-nums; }
 .src .late, .src .late a, .src .late span { color: var(--warning); font-weight: 600; }
+
 @media (max-width: 520px) {
-  .row > summary { gap: 2px 10px; padding-inline: 2px; }
-  .body { padding-left: 8px; }
-  h3 { padding-left: 22px; }
+  body { padding-block: 24px 56px; }
+  .wrap { gap: 32px; }
+  h1 { font-size: 24px; }
+  .gh, .later > h2 { padding-inline: 4px; }
+  .row > summary { grid-template-columns: 16px minmax(0, 1fr) auto; gap: 0 10px; padding-inline: 4px; }
+  .row > summary > .chev { display: none; }
+  .row[open] > summary { padding-inline: 10px; }
+  .body { padding: 12px; }
+  .fold > summary { padding-inline: 4px; }
+  .legend .free { margin-left: 0; }
 }
-@media (prefers-reduced-motion: no-preference) { .row > summary { transition: background-color .12s; } }
+@media (prefers-reduced-motion: no-preference) {
+  .row > summary, .fold > summary { transition: background-color .12s; }
+  .chev { transition: transform .12s; }
+}
 [hidden] { display: none !important; }
 """
 
